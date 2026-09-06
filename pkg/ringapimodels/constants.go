@@ -2,11 +2,14 @@ package ringapimodels
 
 const (
 	// Ring API base URIs
-	RingAPIBaseURI = "https://api.ring.com"
-	RingOAuthURI   = "https://oauth.ring.com/oauth/token"
+	RingAPIBaseURI   = "https://api.ring.com"
+	RingOAuthBaseURI = "https://oauth.ring.com"
+	RingOAuthURI     = RingOAuthBaseURI + "/oauth/token"
 
 	// Ring API endpoints
 	RingDevicesEndpoint      = "/clients_api/ring_devices"
+	RingDevicesV3Endpoint    = "/device_info/v3/devices"
+	RingSessionEndpoint      = "/clients_api/session"
 	RingDingsActiveEndpoint  = "/clients_api/dings/active"
 	RingDingsHistoryEndpoint = "/clients_api/dings/history"
 	RingRecordingEndpoint    = "/clients_api/dings/{id}/recording"

@@ -16,6 +16,7 @@ type RingDevice struct {
 	Description            string                 `json:"description"` // Used when name is not present (e.g., for other devices)
 	Kind                   string                 `json:"kind"`        // Device kind (e.g., "intercom_handset_audio")
 	Family                 string                 `json:"family"`
+	Owned                  *bool                  `json:"owned,omitempty"`
 	Address                string                 `json:"address"`
 	Timezone               string                 `json:"timezone"`
 	TimeZone               string                 `json:"time_zone"` // Alternative field name used by some devices

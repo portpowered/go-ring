@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
@@ -23,6 +24,8 @@ type Client struct {
 	tokenGetter func(ctx context.Context) (string, error)
 	userAgent   string
 	hardwareID  string
+	authMu      sync.Mutex
+	pendingPKCE *pkceState
 }
 
 // ClientOption is a function that configures a Client

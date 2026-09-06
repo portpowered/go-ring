@@ -4,7 +4,10 @@ package ring
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
@@ -25,6 +28,8 @@ type Client struct {
 	rtcWebSocketURL   string
 	eventWebSocketURL string
 	mu                sync.RWMutex
+	sessionMu         sync.Mutex
+	sessionRegistered bool
 	closed            bool
 }
 
@@ -208,8 +213,46 @@ func (w withEventWebSocketURL) Apply(c *Client) error {
 
 // NewClientWithToken creates a client with an access token (convenience function)
 func NewClientWithToken(accessToken string, opts ...Option) (*Client, error) {
-	opts = append([]Option{WithAccessToken(accessToken)}, opts...)
+	baseOptions := []Option{WithAccessToken(accessToken)}
+	if hardwareID := hardwareIDFromAccessToken(accessToken); hardwareID != "" {
+		baseOptions = append(baseOptions, WithHardwareID(hardwareID))
+	}
+	opts = append(baseOptions, opts...)
 	return NewClient(opts...)
+}
+
+func hardwareIDFromAccessToken(accessToken string) string {
+	parts := strings.Split(accessToken, ".")
+	if len(parts) != 3 {
+		return ""
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return ""
+	}
+	var claims struct {
+		HardwareID string `json:"hardware_id"`
+	}
+	if json.Unmarshal(payload, &claims) != nil {
+		return ""
+	}
+	return claims.HardwareID
+}
+
+func (c *Client) ensureSession(ctx context.Context) error {
+	if c.hardwareID == "" {
+		return nil
+	}
+	c.sessionMu.Lock()
+	defer c.sessionMu.Unlock()
+	if c.sessionRegistered {
+		return nil
+	}
+	if err := c.restClient.RegisterSession(ctx); err != nil {
+		return err
+	}
+	c.sessionRegistered = true
+	return nil
 }
 
 // getToken retrieves the access token

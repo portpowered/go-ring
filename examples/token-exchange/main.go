@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -15,8 +16,11 @@ func main() {
 	// Get credentials from environment variables
 	username := os.Getenv("RING_USERNAME")
 	password := os.Getenv("RING_PASSWORD")
-	refreshToken := os.Getenv("RING_REFRESH_TOKEN")
 	ringOtpCode := os.Getenv("RING_OTP_CODE")
+	tokenFile := os.Getenv("RING_TOKEN_FILE")
+	if tokenFile == "" {
+		tokenFile = "tokens.json"
+	}
 	if username == "" || password == "" {
 		log.Fatal("RING_USERNAME and RING_PASSWORD environment variables must be set")
 	}
@@ -71,46 +75,54 @@ func main() {
 	}
 
 	fmt.Printf("✓ Authentication successful!\n")
-	fmt.Printf("  Access Token: %s...%s (length: %d)\n",
-		authResp.AccessToken[:20],
-		authResp.AccessToken[len(authResp.AccessToken)-10:],
-		len(authResp.AccessToken))
-	fmt.Printf("  Refresh Token: %s...%s (length: %d)\n",
-		authResp.RefreshToken[:20],
-		authResp.RefreshToken[len(authResp.RefreshToken)-10:],
-		len(authResp.RefreshToken))
+	fmt.Printf("  Access Token length: %d\n", len(authResp.AccessToken))
+	fmt.Printf("  Refresh Token length: %d\n", len(authResp.RefreshToken))
 	fmt.Printf("  Token Type: %s\n", authResp.TokenType)
 	fmt.Printf("  Expires In: %d seconds\n", authResp.ExpiresIn)
 	fmt.Println()
 
-	// Step 2: Use the refresh token to get a new access token
-	refreshToken = authResp.RefreshToken
-	fmt.Println("Step 2: Refreshing token using refresh token from environment...")
-	refreshResp, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
-		RefreshToken: refreshToken,
-	})
+	// Save full tokens to a file instead of printing them to the terminal.
+	tokenData := map[string]any{
+		"access_token":  authResp.AccessToken,
+		"refresh_token": authResp.RefreshToken,
+		"token_type":    authResp.TokenType,
+		"expires_in":    authResp.ExpiresIn,
+	}
+	encoded, err := json.MarshalIndent(tokenData, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to refresh token: %v", err)
+		log.Fatalf("Failed to encode tokens: %v", err)
 	}
+	if err := os.WriteFile(tokenFile, append(encoded, '\n'), 0o600); err != nil {
+		log.Fatalf("Failed to write tokens to %s: %v", tokenFile, err)
+	}
+	fmt.Printf("✓ Tokens saved to %s (mode 0600)\n\n", tokenFile)
 
-	if refreshResp == nil {
-		log.Fatal("Token refresh response is nil")
-	}
+	// // Step 2: Use the refresh token to get a new access token
+	// refreshToken = authResp.RefreshToken
+	// fmt.Println("Step 2: Refreshing token using refresh token from environment...")
+	// refreshResp, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
+	// 	RefreshToken: refreshToken,
+	// })
+	// if err != nil {
+	// 	log.Fatalf("Failed to refresh token: %v", err)
+	// }
 
-	fmt.Printf("✓ Token refresh successful!\n")
-	fmt.Printf("  New Access Token: %s...%s (length: %d)\n",
-		refreshResp.AccessToken[:20],
-		refreshResp.AccessToken[len(refreshResp.AccessToken)-10:],
-		len(refreshResp.AccessToken))
-	if refreshResp.RefreshToken != "" {
-		fmt.Printf("  New Refresh Token: %s...%s (length: %d)\n",
-			refreshResp.RefreshToken[:20],
-			refreshResp.RefreshToken[len(refreshResp.RefreshToken)-10:],
-			len(refreshResp.RefreshToken))
-	}
-	fmt.Printf("  Token Type: %s\n", refreshResp.TokenType)
-	fmt.Printf("  Expires In: %d seconds\n", refreshResp.ExpiresIn)
-	fmt.Println()
+	// if refreshResp == nil {
+	// 	log.Fatal("Token refresh response is nil")
+	// }
+
+	// fmt.Printf("✓ Token refresh successful!\n")
+	// fmt.Printf("  New Access Token: %s...%s (length: %d)\n",
+	// 	refreshResp.AccessToken,
+	// 	len(refreshResp.AccessToken))
+	// if refreshResp.RefreshToken != "" {
+	// 	fmt.Printf("  New Refresh Token: %s...%s (length: %d)\n",
+	// 		refreshResp.RefreshToken,
+	// 		len(refreshResp.RefreshToken))
+	// }
+	// fmt.Printf("  Token Type: %s\n", refreshResp.TokenType)
+	// fmt.Printf("  Expires In: %d seconds\n", refreshResp.ExpiresIn)
+	// fmt.Println()
 
 	fmt.Println("Example completed successfully!")
 }

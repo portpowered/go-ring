@@ -143,8 +143,19 @@ func (m *MockTransport) loadFixtureResponse(req *http.Request) *http.Response {
 
 // wrapFixtureResponse wraps array responses in the expected object structure
 func (m *MockTransport) wrapFixtureResponse(req *http.Request, data []byte) []byte {
-
-	// Check if data is an array
+	if strings.Contains(req.URL.Path, "/device_info/v3/devices") {
+		var grouped map[string][]json.RawMessage
+		if json.Unmarshal(data, &grouped) == nil {
+			devices := make([]json.RawMessage, 0)
+			for _, key := range []string{"doorbots", "authorized_doorbots", "chimes", "stickup_cams", "other"} {
+				devices = append(devices, grouped[key]...)
+			}
+			wrapped, err := json.Marshal(map[string]any{"devices": devices})
+			if err == nil {
+				return wrapped
+			}
+		}
+	}
 	return data
 }
 
@@ -172,7 +183,7 @@ func (m *MockTransport) getFixtureName(req *http.Request) string {
 	}
 
 	// Devices endpoint
-	if strings.Contains(path, "/ring_devices") {
+	if strings.Contains(path, "/ring_devices") || strings.Contains(path, "/device_info/v3/devices") {
 		// Check for updated devices
 		if strings.Contains(url, "updated") {
 			return "ring_devices_updated.json"

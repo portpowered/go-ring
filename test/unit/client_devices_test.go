@@ -26,7 +26,7 @@ func TestListDevices_Success(t *testing.T) {
 	require.Len(t, requests, 1)
 	req := requests[0]
 	assert.Equal(t, "GET", req.Method)
-	assert.Contains(t, req.URL, "/ring_devices")
+	assert.Contains(t, req.URL, "/device_info/v3/devices")
 	assert.Equal(t, "Bearer test_token", req.Headers.Get("Authorization"))
 
 	// Verify devices were parsed (check if we have any devices)
@@ -42,12 +42,8 @@ func TestListDevices_Empty(t *testing.T) {
 	defer client.Close()
 
 	// Set up empty devices response
-	mockTransport.SetResponseWithBody("GET", "/clients_api/ring_devices", http.StatusOK, map[string]interface{}{
-		"doorbots":            []interface{}{},
-		"authorized_doorbots": []interface{}{},
-		"chimes":              []interface{}{},
-		"stickup_cams":        []interface{}{},
-		"other":               []interface{}{},
+	mockTransport.SetResponseWithBody("GET", "/device_info/v3/devices", http.StatusOK, map[string]interface{}{
+		"devices": []interface{}{},
 	})
 
 	ctx := newTestContext()

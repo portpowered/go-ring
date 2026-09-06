@@ -44,6 +44,9 @@ type RTCStream struct {
 // StartRTCStream starts a WebRTC stream for live video from a device
 // req.SDPOffer is the SDP offer from the caller
 func (c *Client) StartRTCStream(ctx context.Context, req StartRTCStreamRequest) (*RTCStream, error) {
+	if err := c.ensureSession(ctx); err != nil {
+		return nil, ringapimodels.NewConnectionError("failed to register Ring session", err)
+	}
 	// Convert string deviceID to int64 for Ring API (doorbot_id)
 	// Get ticket from Ring API
 	token, err := c.getToken(ctx)

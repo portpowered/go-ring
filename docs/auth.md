@@ -1,384 +1,145 @@
-This document describes the authentication system for the Ring API, including endpoints, authentication flows, CORS limitations, and token management.
+# Ring authentication
 
-## Authentication Endpoints
+`go-ring` authenticates server-side with Ring's OAuth 2.0 authorization-code flow and PKCE. Ring requires two-factor authentication for most accounts, so initial authentication is a two-call operation: request a code, then complete the same pending OAuth session with that code.
 
-### Primary Endpoint
-- **OAuth Token**: `https://oauth.ring.com/oauth/token`
-  - Method: `POST`
-  - Content-Type: `application/x-www-form-urlencoded`
+Ring's APIs are unofficial and may change without notice. The implementation follows the current Android-client-compatible flow and retains a legacy password-grant fallback only when the OAuth v2 authorization endpoint is unavailable.
 
-## Authentication Flow
+## Endpoints
 
-### Initial Authentication Request
+- Authorization: `https://oauth.ring.com/oauth/v2/authorize`
+- Credential submission: `https://oauth.ring.com/oauth/v2/signin`
+- 2FA verification: `https://oauth.ring.com/oauth/v2/2fa/verify`
+- Code exchange and refresh: `https://oauth.ring.com/oauth/token`
+- Client session registration: `https://api.ring.com/clients_api/session`
+- Device inventory: `https://api.ring.com/device_info/v3/devices`
 
-The Ring OAuth flow uses a password grant type with the following parameters:
+All calls must be made from a backend process. Ring's OAuth pages do not support cross-origin browser authentication.
 
-**Request Body:**
-- `grant_type`: `"password"`
-- `username`: User's Ring email address
-- `password`: User's Ring password
-- `client_id`: `"ring_official_android"`
-- `scope`: `"client"`
+## Initial authentication
 
-**Required Headers:**
-- `Content-Type`: `application/x-www-form-urlencoded`
-- `User-Agent`: `android:com.ringapp`
-- `hardware_id`: UUID string (should be generated once and reused per device/installation)
+Create one client and use it for both 2FA calls. The client retains the PKCE verifier, OAuth state, CSRF token, cookies, and hardware ID between calls.
 
-### Two-Factor Authentication (2FA)
+```go
+client, err := ring.NewClient()
+if err != nil {
+	return err
+}
+defer client.Close()
 
-Ring requires 2FA for most accounts. The authentication flow handles this as follows:
+err = client.Request2FACode(ctx, ring.Request2FACodeRequest{
+	Username: username,
+	Password: password,
+})
+if err != nil {
+	return err
+}
 
-1. **Initial Request** (without 2FA code)
-   - Submit username and password
-   - Server responds with HTTP `412 Precondition Failed` if 2FA is required
-   - Response body may include:
-     ```json
-     {
-       "next_time_in_secs": 60,
-       "phone": "+1xxxxxxxx67",
-       "tsv_state": "sms"
-     }
-     ```
-     This denotes that an OTP code is required and its been sent to the user's phone number for the next 60 seconds.
+tokens, err := client.Authenticate(ctx, ring.AuthenticateRequest{
+	Username: username,
+	Password: password,
+	OTPCode:  otpCode,
+})
+if err != nil {
+	return err
+}
+```
 
-2. **2FA Verification Request** (with OTP code)
-   - Include additional headers:
-     - `2fa-support`: `"true"`
-     - `2fa-code`: The 6-digit OTP code from SMS/authenticator app
-   - Resubmit with same credentials plus OTP code
-   - Server responds with tokens on success
+The flow performs these steps:
 
-### Successful Authentication Response
+1. Generate a cryptographically random PKCE verifier, S256 challenge, OAuth state, and persistent hardware UUID.
+2. Open `/oauth/v2/authorize` and retain Ring's cookies and CSRF token.
+3. Submit credentials to `/oauth/v2/signin`, which normally triggers 2FA.
+4. Submit the code to `/oauth/v2/2fa/verify` using the same cookies and CSRF token.
+5. Follow the authorization redirect, validate its state, and exchange the returned code with the PKCE verifier.
+6. Rotate the returned refresh token once. Ring's client APIs may reject the initial code-exchange access token, while the rotated access token is immediately usable.
 
-On successful authentication (with or without 2FA), the API returns:
+Do not call `Request2FACode` repeatedly. Ring rate-limits verification-code delivery, and starting a new client discards the pending OAuth session needed to verify the code.
+
+## Token response and storage
+
+Authentication and refresh return the same structure:
 
 ```json
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIs...",
-  "refresh_token": "eyJhbGciOiJSUzI1NiIs...",
+  "access_token": "...",
+  "refresh_token": "...",
   "expires_in": 14400,
-  "token_type": "Bearer",
-  "scope": "client"
+  "token_type": "Bearer"
 }
 ```
 
-**Token Details:**
-- `access_token`: JWT token for authenticated API requests
-- `refresh_token`: JWT token for refreshing the access token
-- `expires_in`: Token validity period in seconds (typically 14400 = 4 hours)
-- `token_type`: Always `"Bearer"`
-- `scope`: Granted scopes (typically `"client"`)
+- Access tokens normally last four hours.
+- Refresh tokens are rotated. Persist the complete response after every successful authentication or refresh; continuing to store the previous refresh token can force another 2FA login.
+- Store token files with owner-only permissions such as `0600` and never log token contents.
+- The access-token JWT includes the hardware ID. `NewClientWithToken` recovers it automatically so subsequent session registration uses the same identity.
 
-### JWT Claims (Access/Refresh Tokens)
+The token-exchange example writes the complete response without printing either token:
 
-Both the access and refresh tokens are JWTs with the following payload shape (example):
-
-#### Access Token JWT Claims
-```json
-{
-  "app_id": "ring_official_android",
-  "cid": "ring_official_android",
-  "exp": 1766497048,
-  "hardware_id": "12312312312-eac7-4bdf-85eb-aba3fa64f681",
-  "iat": 1766482648,
-  "iss": "RingOauthService-prod:us-east-1:cef51789",
-  "oiat": 1766482648,
-  "rnd": "123123123",
-  "scopes": ["client"],
-  "session_id": "ring-session-123123123-b2c2-4261-b92a-8ba2b5d8311a",
-  "user_id": 180752665
-}
-```
-
-#### Refresh Token JWT Claims
-```json
-{
-  "iat": 1766482648,
-  "iss": "RingOauthService-prod:us-east-1:cef51789",
-  "oiat": 1766482648,
-  "refresh_cid": "ring_official_android",
-  "refresh_scopes": [
-    "client"
-  ],
-  "refresh_user_id": 180752665,
-  "rnd": "12312312",
-  "session_id": "ring-session-123123123b-b2c2-4261-b92a-8ba2b5d8311a",
-  "type": "refresh-token"
-}
-```
-
-Field notes:
-- `app_id` / `cid`: Client identifier (`ring_official_android` for the mobile app).
-- `hardware_id`: The hardware UUID supplied in the request; persists across sessions.
-- `session_id`: Server-generated session identifier.
-- `scopes`: Granted scopes (typically `client`).
-- `exp`: Expiry epoch seconds (access token ~4 hours).
-- `iat` / `oiat`: Issued-at timestamps.
-- `iss`: Ring OAuth issuer identifier.
-- `user_id`: Internal Ring user identifier.
-- `rnd`: Random nonce value returned by Ring.
-
-## CORS Limitations
-
-### Critical Limitation
-
-**The Ring OAuth endpoint does NOT have CORS enabled.** This means:
-
-- ❌ Direct browser-based `fetch()` calls will fail with CORS errors
-- ❌ Browser preflight (OPTIONS) requests receive no CORS headers
-- ✅ Server-side requests work correctly (no CORS restrictions)
-
-### CORS Test Results
-
-When testing the endpoint:
-- **OPTIONS request**: Returns `400 Bad Request` with no CORS headers
-- **GET/POST from browser**: Fails with "Failed to fetch" (CORS error)
-- **Server-side requests**: Work correctly via curl or backend services
-
-### Required Solution
-
-**A backend proxy service is required** to handle Ring authentication:
-
-1. Frontend sends credentials to backend endpoint
-2. Backend makes request to `https://oauth.ring.com/oauth/token`
-3. Backend returns tokens to frontend
-4. Frontend uses tokens for subsequent API calls
-
-This is a common pattern for OAuth providers that don't support CORS.
-
-## Required HTTP Headers
-
-### Request Headers (All Requests)
-- `Content-Type`: `application/x-www-form-urlencoded`
-- `User-Agent`: `android:com.ringapp` (must match Android app user agent)
-- `hardware_id`: UUID string (should be persistent per installation)
-
-### Request Headers (2FA Requests Only)
-- `2fa-support`: `"true"`
-- `2fa-code`: 6-digit OTP code (e.g., `"965007"`)
-
-### Response Headers
-- Standard HTTP headers only
-- No custom CORS headers present
-- Tokens are in response body, not headers
-
-## Hardware ID Management
-
-The `hardware_id` header is used to identify the device/client:
-
-- **Format**: UUID v4 string (e.g., `"7198882a-eac7-4bdf-85eb-aba3fa64f681"`)
-- **Generation**: Should be generated once per installation/device
-- **Persistence**: Should be stored and reused across authentication sessions
-- **Purpose**: Helps Ring track and manage device sessions
-
-**Implementation Note**: In production, generate a hardware ID once and store it securely. Reusing the same hardware ID helps maintain session continuity.
-
-## Error Handling
-
-### HTTP Status Codes
-
-- **200 OK**: Authentication successful, tokens returned
-- **412 Precondition Failed**: 2FA required (initial request without OTP)
-- **400 Bad Request**: Invalid request parameters or credentials
-- **401 Unauthorized**: Invalid credentials (username/password incorrect)
-
-### Error Response Format
-
-```json
-{
-  "error": "invalid_request",
-  "error_description": "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed."
-}
-```
-
-### 2FA Error Response
-
-When 2FA is required, the response may include:
-
-```json
-{
-  "next_time_in_secs": 60,
-  "phone": "+1xxxxxxxx67",
-  "tsv_state": "sms"
-}
-```
-
-This indicates:
-- `next_time_in_secs`: Time until next OTP can be requested
-- `phone`: Masked phone number where OTP was sent
-- `tsv_state`: Type of 2FA (`"sms"` for SMS-based)
-
-## Token Management
-
-### Access Token
-- **Type**: JWT (JSON Web Token)
-- **Validity**: Typically 4 hours (14400 seconds)
-- **Usage**: Include in `Authorization: Bearer {access_token}` header for API requests
-- **Refresh**: Use refresh token to obtain new access token when expired
-
-### Refresh Token
-- **Type**: JWT (JSON Web Token)
-- **Validity**: Longer-lived than access token
-- **Usage**: Exchange for new access token when current one expires
-- **Storage**: Must be stored securely (encrypted at rest recommended)
-
-### Token Refresh Flow
-
-When access token expires:
-1. Use refresh token to obtain new access token
-2. Refresh endpoint: `https://oauth.ring.com/oauth/token`
-3. Request body:
-   - `grant_type`: `"refresh_token"`
-   - `refresh_token`: Current refresh token
-   - `client_id`: `"ring_official_android"`
-
-## Security Considerations
-
-### Credential Security
-- **Never store passwords**: Only store tokens after successful authentication
-- **Encrypt tokens at rest**: Access and refresh tokens should be encrypted when stored
-- **Secure transmission**: Always use HTTPS for all authentication requests
-- **Token rotation**: Implement refresh token rotation when possible
-
-### CORS Security
-- The lack of CORS is actually a security feature for Ring
-- Forces authentication through backend services
-- Prevents direct credential exposure in frontend code
-- Backend can implement additional security measures (rate limiting, logging, etc.)
-
-### Hardware ID Security
-- Hardware ID should be treated as semi-sensitive
-- Can be used to track devices/sessions
-- Should be generated securely (cryptographically random UUID)
-- Consider device fingerprinting implications
-
-### Two-Factor Authentication
-- 2FA codes are time-sensitive (typically 60 seconds)
-- Codes should be entered promptly
-- Failed attempts may trigger rate limiting
-- SMS-based 2FA requires phone number verification
-
-## Implementation Notes
-
-### Frontend Implementation (Current State)
-
-The current frontend implementation (`RingLogin.tsx`) attempts direct browser-based authentication but will fail due to CORS:
-
-```typescript
-// This will fail in browser due to CORS
-const response = await fetch(RING_OAUTH_ENDPOINT, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/x-www-form-urlencoded",
-    "User-Agent": "android:com.ringapp",
-    "hardware_id": hardwareId,
-  },
-  body: formData.toString(),
-});
-```
-
-**TODO**: Implement backend proxy endpoint to handle authentication.
-
-### Backend Implementation (Required)
-
-A backend endpoint should be created to proxy authentication requests:
-
-1. **Endpoint**: `/api/integrations/ring/auth` (or similar)
-2. **Method**: `POST`
-3. **Request Body**:
-   ```json
-   {
-     "username": "user@example.com",
-     "password": "password",
-     "otpCode": "965007" // optional, only for 2FA
-   }
-   ```
-4. **Backend Process**:
-   - Validate request
-   - Make request to `https://oauth.ring.com/oauth/token`
-   - Return tokens to frontend
-   - Handle errors appropriately
-
-### Production Considerations
-
-- **Rate Limiting**: Implement rate limiting on backend proxy
-- **Logging**: Log authentication attempts (without sensitive data)
-- **Error Handling**: Provide user-friendly error messages
-- **Session Management**: Store tokens securely and manage refresh
-- **Monitoring**: Monitor authentication success/failure rates
-- **Hardware ID Persistence**: Store hardware ID per user/device
-
-## Testing
-
-### Manual Testing with curl
-
-**Initial Request (without 2FA):**
 ```bash
-curl -X POST "https://oauth.ring.com/oauth/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -H "User-Agent: android:com.ringapp" \
-  -H "hardware_id: $(uuidgen)" \
-  -d "grant_type=password&username=user@example.com&password=password&client_id=ring_official_android&scope=client"
+RING_USERNAME='user@example.com' \
+RING_PASSWORD='...' \
+RING_TOKEN_FILE="$HOME/.agent-cli/secrets/token.json" \
+go run ./examples/token-exchange
 ```
 
-**2FA Request (with OTP):**
-```bash
-curl -X POST "https://oauth.ring.com/oauth/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -H "User-Agent: android:com.ringapp" \
-  -H "hardware_id: $(uuidgen)" \
-  -H "2fa-support: true" \
-  -H "2fa-code: 965007" \
-  -d "grant_type=password&username=user@example.com&password=password&client_id=ring_official_android&scope=client"
-```
+## Using stored tokens
 
-### Expected Responses
+Load the current access token when constructing the client:
 
-**2FA Required (412):**
-```json
-{"next_time_in_secs":60,"phone":"+1xxxxxxxx66","tsv_state":"sms"}
-```
-
-**Success (200):**
-```json
-{
-  "access_token": "eyJhbGciOiJSUzI1NiIs...",
-  "refresh_token": "eyJhbGciOiJSUzI1NiIs...",
-  "expires_in": 14400,
-  "token_type": "Bearer",
-  "scope": "client"
+```go
+client, err := ring.NewClientWithToken(tokens.AccessToken)
+if err != nil {
+	return err
 }
+defer client.Close()
+
+devices, err := client.ListDevices(ctx)
 ```
 
-## Best Practices
+Before device discovery or RTC signaling, the client:
 
-1. **Always use backend proxy**: Never attempt direct browser-based authentication
-2. **Store hardware ID**: Generate once and reuse for better session continuity
-3. **Handle 2FA gracefully**: Provide clear UI for OTP entry
-4. **Implement token refresh**: Automatically refresh tokens before expiry
-5. **Secure token storage**: Encrypt tokens at rest
-6. **Error handling**: Provide user-friendly error messages
-7. **Rate limiting**: Implement on backend to prevent abuse
-8. **Logging**: Log authentication events (without sensitive data)
-9. **Monitoring**: Track authentication success/failure rates
-10. **Session management**: Properly handle token expiry and refresh
+1. Recovers and reuses the token's hardware ID.
+2. Registers `/clients_api/session` once per client instance.
+3. Fetches inventory from `/device_info/v3/devices` and maps the flat response into the library's existing doorbell, chime, camera, and other-device collections.
 
+Applications that explicitly call `RefreshToken` must persist the returned `AuthResponse`, including its rotated refresh token.
 
-## Overview
+## Refresh flow
 
-## System Context
+```go
+client, err := ring.NewClientWithToken(stored.AccessToken)
+if err != nil {
+	return err
+}
 
-## Design Decisions
+tokens, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
+	RefreshToken: stored.RefreshToken,
+})
+if err != nil {
+	return err
+}
 
-## Overview
+// Atomically replace the stored token response here.
+```
 
-TODO.
+The refresh request uses `grant_type=refresh_token`, `client_id=ring_official_android`, `scope=client`, the Android user agent, and the persistent hardware ID when available.
 
-## System Context
+## Error handling
 
-TODO.
+- `Requires2FAError`: a verification code was sent and must be submitted through the same client.
+- `AuthenticationError`: credentials, verification code, authorization state, or token were rejected.
+- `RateLimitError`: Ring rate-limited authentication or code delivery.
+- `TokenError`: no usable token exists or an expired token could not be refreshed.
+- `ConnectionError`: session registration or RTC signaling failed.
 
-## Design Decisions
+Treat all authentication errors as sensitive. Response bodies may contain account or session details and should not be written to public logs.
 
-TODO.
+## Security guidance
+
+- Keep username, password, OTP codes, access tokens, and refresh tokens out of source control and logs.
+- Prefer refresh-token authentication after the initial 2FA flow.
+- Persist each rotated refresh token before discarding the prior token.
+- Use one stable hardware ID per installation.
+- Use HTTPS exclusively.
+- Restrict token-file permissions and encrypt secrets at rest where practical.
+- Never implement this flow directly in frontend JavaScript; use a trusted backend.

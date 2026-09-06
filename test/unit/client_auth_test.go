@@ -1,7 +1,11 @@
 package unit
 
 import (
+	"bytes"
+	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +14,71 @@ import (
 	"github.com/portpowered/go-ring/pkg/ring"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
+
+type pkceMockTransport struct {
+	state    string
+	requests []*http.Request
+	bodies   []string
+}
+
+func (m *pkceMockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	var body []byte
+	if req.Body != nil {
+		body, _ = io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewReader(body))
+	}
+	m.requests = append(m.requests, req.Clone(req.Context()))
+	m.bodies = append(m.bodies, string(body))
+
+	respond := func(status int, body string, headers http.Header) *http.Response {
+		if headers == nil {
+			headers = make(http.Header)
+		}
+		return &http.Response{StatusCode: status, Status: http.StatusText(status), Header: headers, Body: io.NopCloser(strings.NewReader(body)), Request: req}
+	}
+
+	switch {
+	case req.Method == http.MethodGet && req.URL.Path == "/oauth/v2/authorize" && req.URL.Query().Get("response_type") == "code":
+		m.state = req.URL.Query().Get("state")
+		return respond(http.StatusOK, `<script id="oauth-args">{"csrf-token":"csrf-value"}</script>`, nil), nil
+	case req.Method == http.MethodPost && req.URL.Path == "/oauth/v2/signin":
+		return respond(http.StatusPreconditionFailed, `{"tsv_state":"email"}`, nil), nil
+	case req.Method == http.MethodPost && req.URL.Path == "/oauth/v2/2fa/verify":
+		return respond(http.StatusOK, `{}`, nil), nil
+	case req.Method == http.MethodGet && req.URL.Path == "/oauth/v2/authorize":
+		headers := make(http.Header)
+		headers.Set("Location", "https://ring.com/signin/callback?code=auth-code&state="+url.QueryEscape(m.state))
+		return respond(http.StatusFound, "", headers), nil
+	case req.Method == http.MethodPost && req.URL.Path == "/oauth/token":
+		if strings.Contains(string(body), "grant_type=refresh_token") {
+			return respond(http.StatusOK, `{"access_token":"pkce-access-refreshed","refresh_token":"pkce-refresh-rotated","expires_in":14400,"token_type":"Bearer"}`, nil), nil
+		}
+		return respond(http.StatusOK, `{"access_token":"pkce-access","refresh_token":"pkce-refresh","expires_in":14400,"token_type":"Bearer"}`, nil), nil
+	default:
+		return respond(http.StatusNotFound, `{}`, nil), nil
+	}
+}
+
+func TestAuthenticate_PKCEWith2FA(t *testing.T) {
+	transport := &pkceMockTransport{}
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
+	require.NoError(t, err)
+	defer client.Close()
+	ctx := newTestContext()
+
+	err = client.Request2FACode(ctx, ring.Request2FACodeRequest{Username: "testuser", Password: "testpass"})
+	require.NoError(t, err)
+	authResp, err := client.Authenticate(ctx, ring.AuthenticateRequest{Username: "testuser", Password: "testpass", OTPCode: "123456"})
+	require.NoError(t, err)
+	assert.Equal(t, "pkce-access-refreshed", authResp.AccessToken)
+	assert.Equal(t, "pkce-refresh-rotated", authResp.RefreshToken)
+	require.Len(t, transport.requests, 6)
+	assert.Equal(t, "S256", transport.requests[0].URL.Query().Get("code_challenge_method"))
+	assert.Contains(t, transport.bodies[1], "csrf-token=csrf-value")
+	assert.Contains(t, transport.bodies[2], "2fa_code=123456")
+	assert.Contains(t, transport.bodies[4], "grant_type=authorization_code")
+	assert.Contains(t, transport.bodies[5], "grant_type=refresh_token")
+}
 
 func TestAuthenticate_Success(t *testing.T) {
 	client, mockTransport := newTestClient()
@@ -34,8 +103,8 @@ func TestAuthenticate_Success(t *testing.T) {
 
 	// Verify request was made correctly
 	requests := mockTransport.GetRequests()
-	require.Len(t, requests, 1)
-	req := requests[0]
+	require.Len(t, requests, 2)
+	req := requests[1]
 	assert.Equal(t, "POST", req.Method)
 	assert.Contains(t, req.URL, "/oauth/token")
 	assert.Contains(t, req.BodyString, "grant_type=password")
@@ -60,8 +129,8 @@ func TestAuthenticate_WithOTP(t *testing.T) {
 
 	// Verify request included OTP headers
 	requests := mockTransport.GetRequests()
-	require.Len(t, requests, 1)
-	req := requests[0]
+	require.Len(t, requests, 2)
+	req := requests[1]
 	assert.Equal(t, "true", req.Headers.Get("2fa-support"))
 	assert.Equal(t, "123456", req.Headers.Get("2fa-code"))
 }
@@ -129,8 +198,8 @@ func TestRequest2FACode(t *testing.T) {
 
 	// Verify request was made
 	requests := mockTransport.GetRequests()
-	require.Len(t, requests, 1)
-	req := requests[0]
+	require.Len(t, requests, 2)
+	req := requests[1]
 	assert.Equal(t, "POST", req.Method)
 	assert.Contains(t, req.URL, "/oauth/token")
 }
