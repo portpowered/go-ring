@@ -1,13 +1,15 @@
 # go-ring
 
-A standalone Go client for Ring authentication, devices, controls, recording history, downloads, and RTC signaling. Requires Go 1.24 or newer. The client exposes vendor models and does not require a hosted service.
+Golang library for integrating against ring doorbells. 
 
-## Install
+# Install
 
 ```bash
 go get github.com/portpowered/go-ring@v0.1.0
 ```
 
+
+# Examples
 ## List devices
 
 ```go
@@ -31,31 +33,70 @@ func main() {
 }
 ```
 
-Use `Authenticate(ctx, ring.AuthenticateRequest{...})` for username/password and optional OTP, or `RefreshToken(ctx, ring.RefreshTokenRequest{...})` to refresh a session. `WithTokenGetter` lets a caller supply credentials dynamically. Callers own secure storage and account permissions. Inspect typed errors in `pkg/ringapimodels` to distinguish authentication, HTTP, network, and closed-connection failures.
+## Auth
 
-## Supported surface and evidence
+Use `Authenticate(ctx, ring.AuthenticateRequest{...})` for username/password and optional OTP, or `RefreshToken(ctx, ring.RefreshTokenRequest{...})` to refresh a session. `WithTokenGetter` lets a caller supply credentials dynamically. Callers own secure storage and account permissions.
 
-| Surface | Automated evidence | Limits |
-| --- | --- | --- |
-| Authentication, devices, controls, history and recordings | Injected HTTP transport with sanitized response fixtures and error cases | No live account validation is claimed by CI |
-| RTC signaling | Local WebSocket handshake, SDP and ICE tests | Customer supplies WebRTC media handling; see [RTC notes](docs/rtcstream.md) |
-| Generic event WebSocket | Local message, cancellation, callback and shutdown tests | Default vendor event URL is experimental and has not been verified; configure `WithEventWebSocketURL` for a verified endpoint |
+```go
 
-Close each event connection and RTC stream explicitly. Client `Close` marks the client closed; it does not own returned streams. Cancellation interrupts idle event reads. Vendor APIs may change independently of this module.
+package main
 
-## Examples
+import (
+    "context"
+    "fmt"
+    "log"
+    "os"
+    "github.com/portpowered/go-ring/pkg/ring"
+)
+
+func main() {
+    client, err := ring.NewClient()
+    err = client.Request2FACode(ctx, ring.Request2FACodeRequest{
+        Username: username,
+        Password: password,
+    })
+
+    authResp, err := client.Authenticate(ctx, ring.AuthenticateRequest{
+		Username: username,
+		Password: password,
+		OTPCode:  otpCode,
+	})
+}
+
+```
+
+From that authResp, the object looks like
+```
+
+// AuthResponse represents an authentication response
+type AuthResponse struct {
+	AccessToken  string
+	RefreshToken string
+	ExpiresIn    int
+	TokenType    string
+}
+```
+
+You then use the access token to access websites, and store them for as long as the token refresh duration lasts. 
+
+# Supported surface and evidence
+
+1. Authentication to retrieve auth tokens. Via refresh token | OTP
+2. Video connection via WebRTC
+3. device controls for volume
+
+# Examples
 
 Examples use real credentials/devices and are never run by normal CI:
 
-- `go run ./examples/token-exchange` — authentication and refresh; deliberately prints issued credentials for interactive use, so do not capture output in shared logs.
+- `go run ./examples/token-exchange` — authentication and refresh.
 - `go run ./examples/enumerate-devices` — list devices.
 - `go run ./examples/chime-sound` — trigger a device action.
 - `go run ./examples/download-recordings` — download a recording.
 - `go run ./examples/rtc-stream` — RTC signaling.
 
-Read the environment-variable checks in each example before running it. `make build-examples` compiles all examples without executing them.
 
-## Development
+# Development
 
 ```bash
 make check
@@ -65,8 +106,25 @@ make build-examples
 
 Normal tests use fixtures and local servers, with no vendor credentials. Live tests require `make test-integration` and explicit environment configuration. See [fixture provenance](test/fixtures/README.md) and [contributing](CONTRIBUTING.md).
 
-## Releases and compatibility
+## Architecture definition
 
-Maintainers run CI on supported Go versions and publish immutable semantic-version tags. Before v1, minor releases may change APIs; release notes identify compatibility changes. Consumers should pin versions. Source modules are the release artifact; examples are not distributed application binaries.
+How ring works is basically you setup an auth connection and exchange some tokens for auth. 
+You use those auth tokens to establish a websocket connection. 
+The websocket connection is used as a data channel to like make sure a connection is alive, and to send/receive messages. 
+Additioanlly, the websocket is used to send a signal to establish a video connection, via sending a webRTC SDP. 
+The SDP is then sent to establish a connection between the device and some webRTC target. 
+
+## References
+
+Implementation was based on various libraries: 
+### Python
+1. https://github.com/python-ring-doorbell/python-ring-doorbell
+### PHP
+2. https://github.com/jeroenmoors/php-ring-api
+### Javascript
+3. https://github.com/tsightler/ring-mqtt
+4. https://github.com/dgreif/ring
+
+## Releases and compatibility
 
 Licensed under Apache-2.0; see [LICENSE](LICENSE).
