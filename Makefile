@@ -2,7 +2,7 @@ GO ?= go
 GO_TEST_TIMEOUT ?= 120s
 export GOWORK := off
 .DEFAULT_GOAL := check
-.PHONY: check build build-examples test test-race test-integration fmt vet
+.PHONY: check build build-examples test test-race test-cover test-integration fmt vet
 check: build test vet
 build:
 	$(GO) build ./...
@@ -12,6 +12,8 @@ test:
 	$(GO) test ./... -timeout $(GO_TEST_TIMEOUT)
 test-race:
 	$(GO) test -race ./... -timeout $(GO_TEST_TIMEOUT)
+test-cover:
+	$(GO) test -race -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./... -timeout $(GO_TEST_TIMEOUT)
 test-integration:
 	$(GO) test -tags integration ./test/integration/... -timeout 5m
 fmt:

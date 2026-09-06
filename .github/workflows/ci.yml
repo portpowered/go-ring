@@ -42,3 +42,25 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code -- go.mod go.sum
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GOWORK: 'off'
+      GOPRIVATE: ''
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: '1.24.x'
+      - run: go test -race -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./... -timeout 120s
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.out
+          flags: unittests
+          fail_ci_if_error: false
+          use_oidc: true

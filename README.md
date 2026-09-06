@@ -5,6 +5,8 @@
 [![Go Version](https://img.shields.io/github/go-mod/go-version/portpowered/go-ring)](https://go.dev/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/portpowered/go-ring.svg)](https://pkg.go.dev/github.com/portpowered/go-ring)
 [![License](https://img.shields.io/github/license/portpowered/go-ring)](LICENSE)
+[![Coverage](https://codecov.io/gh/portpowered/go-ring/branch/main/graph/badge.svg)](https://codecov.io/gh/portpowered/go-ring)
+[![Go Report Card](https://goreportcard.com/badge/github.com/portpowered/go-ring)](https://goreportcard.com/report/github.com/portpowered/go-ring)
 ![GitHub stars](https://img.shields.io/github/stars/portpowered/go-ring?style=social)
 
 Golang library for integrating against ring doorbells. 
