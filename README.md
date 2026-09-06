@@ -1,5 +1,12 @@
 # go-ring
 
+[![CI](https://github.com/portpowered/go-ring/actions/workflows/ci.yml/badge.svg)](https://github.com/portpowered/go-ring/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/portpowered/go-ring)](https://github.com/portpowered/go-ring/releases)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/portpowered/go-ring)](https://go.dev/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/portpowered/go-ring.svg)](https://pkg.go.dev/github.com/portpowered/go-ring)
+[![License](https://img.shields.io/github/license/portpowered/go-ring)](LICENSE)
+![GitHub stars](https://img.shields.io/github/stars/portpowered/go-ring?style=social)
+
 Golang library for integrating against ring doorbells. 
 
 # Install
