@@ -58,7 +58,7 @@ jobs:
           go-version: '1.24.x'
       - run: go test -race -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./... -timeout 120s
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage.out
           flags: unittests
