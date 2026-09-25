@@ -108,3 +108,10 @@ func TestAnswerDirectionMatrix(t *testing.T) {
 		t.Fatal("accepted conflicting session directions")
 	}
 }
+
+func TestSDPRejectsMultipleMIDAttributesInOneSection(t *testing.T) {
+	raw := strings.Replace(sessionHeader, "BUNDLE a b", "BUNDLE a", 1) + audio("a", "recvonly") + "a=mid:b\r\n"
+	if _, err := ParseSDP(raw); err == nil {
+		t.Fatal("accepted ambiguous MID identity")
+	}
+}

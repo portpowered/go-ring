@@ -43,12 +43,18 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 			return nil, fmt.Errorf("SDP requires unique media IDs")
 		}
 		mids[mid] = true
-		count := 0
+		count, midCount := 0, 0
 		for _, attribute := range media.Attributes {
+			if attribute.Key == "mid" {
+				midCount++
+			}
 			switch attribute.Key {
 			case "sendrecv", "sendonly", "recvonly", "inactive":
 				count++
 			}
+		}
+		if midCount != 1 {
+			return nil, fmt.Errorf("SDP section must have exactly one media ID")
 		}
 		if count > 1 {
 			return nil, fmt.Errorf("SDP has conflicting media directions")

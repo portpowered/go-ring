@@ -262,6 +262,14 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 		if cause := context.Cause(callCtx); cause != nil {
 			return nil, cause
 		}
+		// The session may cancel the write before the call's cancellation
+		// watcher runs. Preserve its terminal cause rather than leaking the
+		// internal context.Canceled used only to interrupt the transport.
+		select {
+		case <-s.done:
+			return nil, s.Wait(context.Background())
+		default:
+		}
 		return nil, err
 	}
 	select {

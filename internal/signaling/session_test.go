@@ -397,3 +397,29 @@ func TestRPCErrorFormattingDoesNotExposePeerText(t *testing.T) {
 		t.Fatalf("unsafe error text: %s", err)
 	}
 }
+
+func TestBlockedRPCPreservesTerminalCause(t *testing.T) {
+	entered := make(chan struct{})
+	terminal := errors.New("synthetic socket failure")
+	s, err := NewSession(context.Background(), SessionConfig{DeviceID: 1, DialogID: "d", SignalID: "s", ControlID: "c", Heartbeat: time.Second, Clock: newClock(), Send: func(ctx context.Context, _ Message) error { close(entered); <-ctx.Done(); return ctx.Err() }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	result := make(chan error, 1)
+	go func() { _, err := s.Call(context.Background(), "PTZ.Pan.Step", nil); result <- err }()
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("write not entered")
+	}
+	s.Fail(terminal)
+	select {
+	case err := <-result:
+		if !errors.Is(err, terminal) {
+			t.Fatalf("lost failure cause: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("RPC did not unblock")
+	}
+}
