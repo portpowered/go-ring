@@ -1,0 +1,5 @@
+[
+  {"case":"type","request":{"method":"PUT","path":"/clients_api/doorbots/{doorbell_id}","query":{"doorbot[description]":"Fixture Device","doorbot[settings][chime_settings][type]":1}},"response":{"status":200,"body":{}}},
+  {"case":"enabled","request":{"method":"PUT","path":"/clients_api/doorbots/{doorbell_id}","query":{"doorbot[description]":"Fixture Device","doorbot[settings][chime_settings][enable]":0}},"response":{"status":200,"body":{}}},
+  {"case":"duration","request":{"method":"PUT","path":"/clients_api/doorbots/{doorbell_id}","query":{"doorbot[description]":"Fixture Device","doorbot[settings][chime_settings][duration]":5}},"response":{"status":200,"body":{}}}
+]

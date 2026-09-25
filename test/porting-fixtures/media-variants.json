@@ -1,0 +1,4 @@
+{
+  "recording": {"body_text":"synthetic-mp4-bytes","share_url":"https://example.invalid/synthetic-playback"},
+  "snapshot": {"timestamp_ms":9000000000000,"body_text":"synthetic-jpeg-bytes"}
+}

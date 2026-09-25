@@ -1,0 +1,8 @@
+[
+  {"case":"chime-volume","request":{"method":"PUT","path":"/clients_api/chimes/{chime_id}","query":[{"name":"chime[description]","value":"Fixture Device"},{"name":"chime[settings][volume]","value":"2"}],"json":true,"body":null},"response":{"status":200,"json":true,"body":{}}},
+  {"case":"doorbell-volume","request":{"method":"PUT","path":"/clients_api/doorbots/{doorbell_id}","query":[{"name":"doorbot[description]","value":"Fixture Device"},{"name":"doorbot[settings][doorbell_volume]","value":"3"}],"json":true,"body":null},"response":{"status":200,"json":true,"body":{}}},
+  {"case":"chime-test","request":{"method":"POST","path":"/clients_api/chimes/{chime_id}/play_sound","query":[{"name":"kind","value":"ding"}],"json":false,"body":null},"response":{"status":200,"json":true,"body":{}}},
+  {"case":"camera-light-on","request":{"method":"PUT","path":"/clients_api/doorbots/{camera_id}/floodlight_light_on","query":[],"json":true,"body":null},"response":{"status":200,"json":true,"body":{}}},
+  {"case":"camera-siren-off","request":{"method":"PUT","path":"/clients_api/doorbots/{camera_id}/siren_off","query":[],"json":true,"body":null},"response":{"status":200,"json":true,"body":{}}},
+  {"case":"doorbell-motion-on","request":{"method":"PATCH","path":"/devices/v1/devices/{doorbell_id}/settings","query":[],"json":true,"body":{"motion_settings":{"motion_detection_enabled":true}}},"response":{"status":200,"json":true,"body":{}}}
+]

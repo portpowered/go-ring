@@ -1,0 +1,6 @@
+[
+  {"case":"timeout","outcome":"timeout"},
+  {"case":"transport","outcome":"client-error"},
+  {"case":"unexpected","outcome":"runtime-error"},
+  {"case":"server-error","status":500}
+]

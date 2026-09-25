@@ -1,0 +1,4 @@
+{
+  "request": {"method":"POST","origin":"https://prd-api-us.prd.rings.solutions","path":"/api/v1/clap/ticket/request/signalsocket","query":[],"headers":{},"headers_mode":"required","body":null,"json":false},
+  "response": {"status":200,"headers":{"Content-Type":["application/json"]},"body":{"ticket":"synthetic-legacy-ticket"},"json":true}
+}

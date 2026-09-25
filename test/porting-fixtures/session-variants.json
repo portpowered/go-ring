@@ -1,0 +1,8 @@
+[
+  {"case":"remote-close","message":{"method":"close","dialog_id":"dialog-1","body":{"reason":{"code":"session_closed","text":"synthetic close"}}}},
+  {"case":"camera-connected","message":{"method":"notification","dialog_id":"dialog-1","body":{"text":"camera_connected"}}},
+  {"case":"unknown-notification","message":{"method":"notification","dialog_id":"dialog-1","body":{"text":"synthetic other notification"}}},
+  {"case":"camera-options","message":{"method":"camera_options","dialog_id":"dialog-1","body":{"video_enabled":true}}},
+  {"case":"unknown-method","message":{"method":"unknown_synthetic_method","dialog_id":"dialog-1","body":{}}},
+  {"case":"remote-ice","message":{"method":"ice","dialog_id":"dialog-1","body":{"ice":"candidate:01 synthetic","mlineindex":0}}}
+]
