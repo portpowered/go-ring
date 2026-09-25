@@ -35,7 +35,7 @@ components:
   schemas:
     ClientEnvelope:
       type: object
-      required: [method]
+      required: [method, dialog_id, body]
       properties:
         method:
           type: string
@@ -43,9 +43,38 @@ components:
         dialog_id: {type: string}
         riid: {type: string}
         body: {type: object}
+      allOf:
+        - if: {properties: {method: {const: rpc}}}
+          then:
+            properties:
+              body:
+                allOf:
+                  - {$ref: '#/components/schemas/SessionBody'}
+                  - type: object
+                    required: [command]
+                    properties:
+                      command:
+                        allOf:
+                          - {$ref: '#/components/schemas/PTZRPC'}
+                          - properties:
+                              method: {enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Tilt.Step, PTZ.Tilt.Continuous]}
+        - if: {properties: {method: {const: live_view}}}
+          then:
+            properties:
+              body:
+                type: object
+                required: [doorbot_id, sdp]
+                properties:
+                  doorbot_id: {type: integer}
+                  sdp: {type: string, minLength: 1}
+                  stream_options:
+                    type: object
+                    properties:
+                      audio_enabled: {type: boolean}
+                      video_enabled: {type: boolean}
     ServerEnvelope:
       type: object
-      required: [method]
+      required: [method, dialog_id, body]
       properties:
         method:
           type: string
@@ -53,6 +82,37 @@ components:
         dialog_id: {type: string}
         riid: {type: string}
         body: {type: object}
+      allOf:
+        - if: {properties: {method: {const: rpc}}}
+          then:
+            properties:
+              body:
+                allOf:
+                  - {$ref: '#/components/schemas/SessionBody'}
+                  - type: object
+                    required: [command]
+                    properties:
+                      command:
+                        oneOf:
+                          - {$ref: '#/components/schemas/RPCResult'}
+                          - {$ref: '#/components/schemas/RPCError'}
+                          - allOf:
+                              - {$ref: '#/components/schemas/PTZRPC'}
+                              - properties: {method: {const: PTZ.Pan.Halted}}
+        - if: {properties: {method: {const: sdp}}}
+          then:
+            properties:
+              body:
+                allOf:
+                  - {$ref: '#/components/schemas/SessionBody'}
+                  - type: object
+                    required: [sdp]
+                    properties:
+                      sdp: {type: string, minLength: 1}
+                      session_info:
+                        type: object
+                        properties:
+                          ping_interval: {type: integer, minimum: 1}
     PTZRPC:
       type: object
       required: [jsonrpc, id, method, params]
@@ -64,7 +124,7 @@ components:
           enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Tilt.Step, PTZ.Tilt.Continuous, PTZ.Pan.Halted]
         params:
           type: object
-          required: [sessionId, timestamp, version]
+          required: [sessionId, timestamp, version, direction]
           properties:
             sessionId: {type: string}
             timestamp: {type: number}
@@ -72,6 +132,49 @@ components:
             direction: {type: string, enum: [LEFT, RIGHT, UP, DOWN]}
             speed: {type: number}
             reason: {type: string}
+      allOf:
+        - if: {properties: {method: {enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Pan.Halted]}}}
+          then: {properties: {params: {properties: {direction: {enum: [LEFT, RIGHT]}}}}}
+        - if: {properties: {method: {enum: [PTZ.Tilt.Step, PTZ.Tilt.Continuous]}}}
+          then: {properties: {params: {properties: {direction: {enum: [UP, DOWN]}}}}}
+        - if: {properties: {method: {enum: [PTZ.Pan.Continuous, PTZ.Tilt.Continuous]}}}
+          then: {properties: {params: {required: [speed]}}}
+        - if: {properties: {method: {const: PTZ.Pan.Halted}}}
+          then: {properties: {params: {required: [reason]}}}
+    SessionBody:
+      type: object
+      required: [doorbot_id, session_id]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string, minLength: 1}
+    RPCResult:
+      type: object
+      required: [jsonrpc, id, result]
+      not: {anyOf: [{required: [method]}, {required: [error]}]}
+      properties:
+        jsonrpc: {const: '2.0'}
+        id: {type: string}
+        result:
+          type: object
+          required: [sessionId, timestamp, version]
+          properties:
+            sessionId: {type: string}
+            timestamp: {type: number}
+            version: {type: number, const: 1}
+    RPCError:
+      description: Synthetic error-handling contract; no RPC error was observed in these recordings.
+      type: object
+      required: [jsonrpc, id, error]
+      not: {anyOf: [{required: [method]}, {required: [result]}]}
+      properties:
+        jsonrpc: {const: '2.0'}
+        id: {type: string}
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: {type: integer}
+            message: {type: string}
     Heartbeat:
       description: Captured application ping from client and pong from server; timing policy is not specified here.
       type: object

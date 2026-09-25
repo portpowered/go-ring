@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -30,6 +31,11 @@ func TestRecordedHTTPMethodsAreInOpenAPI(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+	variants, e := filepath.Glob(filepath.Join("..", "recordings", "http", "variants", "*.json"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	files = append(files, variants...)
 	if len(files) == 0 {
 		t.Fatal("HTTP recordings missing")
 	}
@@ -40,7 +46,8 @@ func TestRecordedHTTPMethodsAreInOpenAPI(t *testing.T) {
 				t.Fatal(e)
 			}
 			var x struct {
-				Request struct{ Method, Path string } `json:"request"`
+				Request  struct{ Method, Path, Origin string } `json:"request"`
+				Response struct{ Status int }                  `json:"response"`
 			}
 			if e = json.Unmarshal(b, &x); e != nil {
 				t.Fatal(e)
@@ -51,6 +58,23 @@ func TestRecordedHTTPMethodsAreInOpenAPI(t *testing.T) {
 			}
 			if _, ok := p[strings.ToLower(x.Request.Method)]; !ok {
 				t.Fatalf("recorded %s %s lacks operation", x.Request.Method, x.Request.Path)
+			}
+			operation := object(p[strings.ToLower(x.Request.Method)])
+			if _, ok := object(operation["responses"])[strconv.Itoa(x.Response.Status)]; !ok {
+				t.Fatalf("recorded status %d absent", x.Response.Status)
+			}
+			servers, ok := operation["servers"].([]any)
+			if !ok {
+				servers, _ = doc["servers"].([]any)
+			}
+			found := false
+			for _, server := range servers {
+				if object(server)["url"] == x.Request.Origin {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatal("recorded origin differs from specification")
 			}
 		})
 	}
