@@ -123,6 +123,34 @@ class HTTPContracts(unittest.TestCase):
         self.assertFalse(inventory.is_valid({"devices": {}}))
         self.assertFalse(inventory.is_valid({}))
 
+    def test_captured_query_parameters_are_named_without_claiming_requiredness(self):
+        for path, row in self.rows:
+            request = row["request"]
+            if not request.get("query"):
+                continue
+            operation = self.doc["paths"][request["path"]][request["method"].lower()]
+            declared = {}
+            for item in operation.get("parameters", []):
+                parameter = self.resolve(item)
+                declared[(parameter["in"], parameter["name"])] = parameter
+            for pair in request["query"]:
+                with self.subTest(fixture=path.name, parameter=pair["name"]):
+                    parameter = declared.get(("query", pair["name"]))
+                    self.assertIsNotNone(parameter)
+                    self.assertFalse(parameter.get("required", False))
+
+    def test_typed_settings_wire_field_and_unknown_extensions(self):
+        response = validator(self.doc, {"$ref": "#/components/schemas/DeviceSettings"})
+        captured = next(row["response"]["body"] for path, row in self.rows
+                        if path.name == "device-settings-get.json")
+        self.assertTrue(response.is_valid(captured))
+        extended = copy.deepcopy(captured)
+        extended["motion_settings"]["future_vendor_field"] = {"opaque": [1, "x"]}
+        self.assertTrue(response.is_valid(extended))
+        invalid = copy.deepcopy(captured)
+        invalid["motion_settings"]["motion_detection_enabled"] = "yes"
+        self.assertFalse(response.is_valid(invalid))
+
 
 if __name__ == "__main__":
     unittest.main()

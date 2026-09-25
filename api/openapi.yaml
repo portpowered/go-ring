@@ -3,33 +3,95 @@ info:
   title: Ring captured HTTP surface
   version: 0.1.0
   description: >-
-    Narrow contract for the HTTP operations currently represented by sanitized
-    recordings. Schemas intentionally describe captured envelope and operation
-    shapes; they do not claim complete coverage of Ring's evolving API.
+    Narrow contract for HTTP operations represented by sanitized recordings or
+    explicitly documented existing client behavior. It does not claim complete
+    coverage of Ring's evolving API. Query parameters are optional unless a
+    capture or implementation establishes otherwise; one sample does not prove
+    server-side requiredness.
 servers:
   - url: https://api.ring.com
     description: Captured Ring API origin
+security:
+  - RingAccessToken: []
 paths:
   /device_info/v3/devices:
-    get: {operationId: listDevices, responses: {'200': {$ref: '#/components/responses/DeviceList'}}}
+    get:
+      operationId: listDevices
+      responses: {'200': {$ref: '#/components/responses/DeviceList'}}
   /device_info/v3/devices/{device_id}:
-    get: {operationId: getDevice, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/DeviceDetail'}}}
+    get:
+      operationId: getDevice
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      responses: {'200': {$ref: '#/components/responses/DeviceDetail'}}
   /devices/v1/devices/{device_id}/settings:
-    get: {operationId: getDeviceSettings, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
-    patch: {operationId: patchDeviceSettings, parameters: [{$ref: '#/components/parameters/device_id'}], requestBody: {$ref: '#/components/requestBodies/Json'}, responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get:
+      operationId: getDeviceSettings
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      description: Captured response is extensible; typed Go API exposes motion_detection_enabled only.
+      responses: {'200': {$ref: '#/components/responses/DeviceSettings'}}
+    patch:
+      operationId: patchDeviceSettings
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      description: >-
+        The wire schema accepts all captured settings patches. The typed Go
+        API currently sends only motion_settings.motion_detection_enabled.
+      requestBody: {$ref: '#/components/requestBodies/DeviceSettingsPatch'}
+      responses: {'200': {$ref: '#/components/responses/DeviceSettings'}}
   /evm/v2/timeline/devices/{device_id}:
-    get: {operationId: getDeviceTimeline, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get:
+      operationId: getDeviceTimeline
+      parameters:
+        - {$ref: '#/components/parameters/device_id'}
+        - {$ref: '#/components/parameters/start_time'}
+        - {$ref: '#/components/parameters/end_time'}
+        - {$ref: '#/components/parameters/order'}
+        - {$ref: '#/components/parameters/limit'}
+        - {$ref: '#/components/parameters/capabilities'}
+      responses: {'200': {$ref: '#/components/responses/Json'}}
   /evm/v3/history/devices:
-    get: {operationId: getHistoryDevices, responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get:
+      operationId: getHistoryDevices
+      parameters:
+        - {$ref: '#/components/parameters/source_ids'}
+        - {$ref: '#/components/parameters/capabilities'}
+      responses: {'200': {$ref: '#/components/responses/Json'}}
   /clients_api/doorbots/{device_id}/siren_on:
-    put: {operationId: turnSirenOn, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+    put:
+      operationId: turnSirenOn
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      description: No duration query or request body is present in the capture.
+      responses: {'200': {$ref: '#/components/responses/SirenOn'}}
   /clients_api/doorbots/{device_id}/siren_off:
-    put: {operationId: turnSirenOff, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {description: Siren stopped; empty captured response}}}
+    put:
+      operationId: turnSirenOff
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      responses: {'200': {description: Siren stopped; empty captured response}}
   /api/v1/clap/tickets:
     get:
-      operationId: requestLocationTickets
-      description: Captured location ticket request. Its relationship to the separate signaling ticket bootstrap is not established.
+      operationId: getCapturedLocationTickets
+      description: >-
+        Captured GET route. Its relationship to the existing POST signaling
+        bootstrap below is not established.
       servers: [{url: https://prd-api-us.prd.rings.solutions}]
+      parameters:
+        - {$ref: '#/components/parameters/allowUserOnly'}
+        - {$ref: '#/components/parameters/locationID'}
+        - {$ref: '#/components/parameters/locationSubscription'}
+        - {$ref: '#/components/parameters/enableExtendedEmergencyCellUsage'}
+        - {$ref: '#/components/parameters/requestedTransport'}
+      responses: {'200': {$ref: '#/components/responses/Json'}}
+  /api/v1/clap/ticket/request/signalsocket:
+    post:
+      operationId: requestLegacySignalingTicket
+      description: >-
+        Existing Go signaling bootstrap. This POST route is implemented and
+        covered by local tests, but was not found in the C1 HTTP recordings.
+        It is distinct from the captured GET /api/v1/clap/tickets operation.
+      servers: [{url: https://prd-api-us.prd.rings.solutions}]
+      x-evidence:
+        - ../pkg/ring/signaling_connection.go
+        - ../pkg/ring/client_rtc.go
+        - ../test/unit/client_rtc_test.go
       responses: {'200': {$ref: '#/components/responses/Json'}}
   /commands/v1/devices/{device_id}:
     patch:
@@ -62,24 +124,74 @@ paths:
                   properties: {live_view_enabled: {type: boolean}}
       responses: {'204': {description: Setting accepted; empty response}}
   /groups/v1/locations/{location_id}/devices:
-    get: {operationId: listLocationDevices, parameters: [{$ref: '#/components/parameters/location_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get:
+      operationId: listLocationDevices
+      parameters: [{$ref: '#/components/parameters/location_id'}]
+      responses: {'200': {$ref: '#/components/responses/Json'}}
   /groups/v1/locations/{location_id}/groups:
-    get: {operationId: listLocationGroups, parameters: [{$ref: '#/components/parameters/location_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get:
+      operationId: listLocationGroups
+      parameters: [{$ref: '#/components/parameters/location_id'}]
+      responses: {'200': {$ref: '#/components/responses/Json'}}
   /location_info/v3/locations:
-    get: {operationId: listLocations, responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get:
+      operationId: listLocations
+      responses: {'200': {$ref: '#/components/responses/Json'}}
   /location_info/v4/locations/{location_id}:
-    get: {operationId: getLocation, parameters: [{$ref: '#/components/parameters/location_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get:
+      operationId: getLocation
+      parameters:
+        - {$ref: '#/components/parameters/location_id'}
+        - {$ref: '#/components/parameters/include'}
+      responses: {'200': {$ref: '#/components/responses/Json'}}
   /clients_api/dings/{recording_id}:
-    delete: {operationId: deleteRecording, parameters: [{$ref: '#/components/parameters/recording_id'}], responses: {'204': {description: Recording deleted; empty response}}}
+    delete:
+      operationId: deleteRecording
+      parameters:
+        - {$ref: '#/components/parameters/recording_id'}
+        - {$ref: '#/components/parameters/confirm_delete_favorite'}
+      responses: {'204': {description: Recording deleted; empty response}}
   /clients_api/dings/{recording_id}/favorite:
-    put: {operationId: favoriteRecording, parameters: [{$ref: '#/components/parameters/recording_id'}], responses: {'201': {description: Recording favorited; empty captured response}}}
+    put:
+      operationId: favoriteRecording
+      parameters: [{$ref: '#/components/parameters/recording_id'}]
+      responses: {'201': {description: Recording favorited; empty captured response}}
 components:
+  securitySchemes:
+    RingAccessToken:
+      type: http
+      scheme: bearer
+      bearerFormat: OAuth access token
+      description: >-
+        Existing Go HTTP calls send Authorization: Bearer using the configured
+        access token or token getter. The library also retains its existing
+        username/password and refresh-token authentication flows. These
+        recordings do not capture OAuth token exchange, so no grant flow or
+        token lifetime is specified here.
   parameters:
     device_id: {name: device_id, in: path, required: true, schema: {type: string}}
     location_id: {name: location_id, in: path, required: true, schema: {type: string}}
     recording_id: {name: recording_id, in: path, required: true, schema: {type: string}}
+    start_time: {name: start_time, in: query, required: false, description: Observed query name; requiredness is not established., schema: {type: string}}
+    end_time: {name: end_time, in: query, required: false, description: Observed query name; requiredness is not established., schema: {type: string}}
+    order: {name: order, in: query, required: false, description: Observed query name; value shown is desc., schema: {type: string}}
+    limit: {name: limit, in: query, required: false, description: Observed query name; value shown is 20., schema: {type: string}}
+    capabilities: {name: capabilities, in: query, required: false, description: Observed on timeline and history-device requests; cardinality is not established., schema: {type: string}}
+    source_ids: {name: source_ids, in: query, required: false, description: Observed query name; value is sanitized in the capture., schema: {type: string}}
+    allowUserOnly: {name: allowUserOnly, in: query, required: false, schema: {type: string}}
+    locationID: {name: locationID, in: query, required: false, schema: {type: string}}
+    locationSubscription: {name: locationSubscription, in: query, required: false, schema: {type: string}}
+    enableExtendedEmergencyCellUsage: {name: enableExtendedEmergencyCellUsage, in: query, required: false, schema: {type: string}}
+    requestedTransport: {name: requestedTransport, in: query, required: false, schema: {type: string}}
+    include: {name: include, in: query, required: false, description: Observed comma-separated value; accepted values are not exhaustively established., schema: {type: string}}
+    confirm_delete_favorite: {name: confirm_delete_favorite, in: query, required: false, description: Observed value is false; server-side requiredness is not established., schema: {type: string}}
   requestBodies:
     Json: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
+    DeviceSettingsPatch:
+      required: true
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceSettingsPatch'}
   responses:
     DeviceList:
       description: Captured v3 inventory; device-specific fields remain extensible
@@ -91,6 +203,16 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/DeviceDetail'}
+    DeviceSettings:
+      description: Captured settings object; unclassified fields are preserved as extensible JSON values
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceSettings'}
+    SirenOn:
+      description: Captured server status; the request does not set its duration
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/SirenStatus'}
     Json: {description: Captured JSON response, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
   schemas:
     DeviceList:
@@ -99,10 +221,62 @@ components:
       properties:
         devices: {type: array, items: {type: object}}
         device_operation_sets: {type: object}
+      additionalProperties: true
     DeviceDetail:
       type: object
       required: [device]
       properties:
         device: {type: object}
         device_operation_set: {type: object}
-    JsonValue: {description: Operation-specific captured JSON; see the corresponding sanitized recording, oneOf: [{type: object}, {type: array}, {type: string}, {type: number}, {type: boolean}, {type: 'null'}]}
+      additionalProperties: true
+    DeviceSettings:
+      type: object
+      required: [motion_settings]
+      properties:
+        motion_settings: {$ref: '#/components/schemas/MotionSettings'}
+      additionalProperties: {$ref: '#/components/schemas/JsonValue'}
+    MotionSettings:
+      type: object
+      required: [motion_detection_enabled]
+      properties:
+        motion_detection_enabled: {type: boolean}
+      additionalProperties: {$ref: '#/components/schemas/JsonValue'}
+    DeviceSettingsPatch:
+      type: object
+      minProperties: 1
+      description: >-
+        Extensible wire patch. Captured variants include motion_settings,
+        video_settings, general_settings, and volume_settings. The public typed
+        Go method currently emits motion_settings only.
+      properties:
+        motion_settings: {$ref: '#/components/schemas/MotionSettingsPatch'}
+        video_settings: {$ref: '#/components/schemas/SettingsObject'}
+        general_settings: {$ref: '#/components/schemas/SettingsObject'}
+        volume_settings: {$ref: '#/components/schemas/SettingsObject'}
+      additionalProperties: {$ref: '#/components/schemas/SettingsObject'}
+    MotionSettingsPatch:
+      type: object
+      properties:
+        motion_detection_enabled: {type: boolean}
+      additionalProperties: {$ref: '#/components/schemas/JsonValue'}
+    SettingsObject:
+      type: object
+      additionalProperties: {$ref: '#/components/schemas/JsonValue'}
+    SirenStatus:
+      type: object
+      required: [started_at, ends_at, duration, seconds_remaining]
+      properties:
+        started_at: {type: string, format: date-time}
+        ends_at: {type: string, format: date-time}
+        duration: {type: integer}
+        seconds_remaining: {type: integer}
+      additionalProperties: true
+    JsonValue:
+      description: Operation-specific captured JSON; see its sanitized recording
+      oneOf:
+        - {type: object}
+        - {type: array}
+        - {type: string}
+        - {type: number}
+        - {type: boolean}
+        - {type: 'null'}
