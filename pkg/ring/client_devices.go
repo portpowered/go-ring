@@ -3,7 +3,6 @@ package ring
 import (
 	"context"
 	"strconv"
-	"strings"
 
 	"github.com/portpowered/go-ring/pkg/dependencymodels"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
@@ -45,13 +44,11 @@ func (c *Client) ListDevices(ctx context.Context) (*ringapimodels.DevicesRespons
 		response.StickUpCams = append(response.StickUpCams, stickupCam)
 	}
 
-	// Convert other devices (filter to only intercom types)
+	// Preserve unrecognized device kinds as generic devices so callers can
+	// inspect their identifiers and raw family/kind metadata without guessed
+	// capabilities.
 	for _, raw := range rawResponse.Other {
-		// Filter to only include intercom devices (based on Python ring-doorbell library)
-		if isIntercomDevice(raw.Kind) {
-			other := convertToOther(raw)
-			response.Other = append(response.Other, other)
-		}
+		response.Other = append(response.Other, convertToOther(raw))
 	}
 
 	return response, nil
@@ -105,11 +102,6 @@ func getDeviceTimezone(raw dependencymodels.RingDevice) string {
 		return raw.Timezone
 	}
 	return raw.TimeZone
-}
-
-// isIntercomDevice checks if the device kind indicates it's an intercom device
-func isIntercomDevice(kind string) bool {
-	return strings.HasPrefix(kind, "intercom_")
 }
 
 // convertToDoorbell converts a raw device to a Doorbell

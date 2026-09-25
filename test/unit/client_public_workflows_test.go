@@ -3,6 +3,7 @@ package unit
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/url"
@@ -194,10 +195,10 @@ func TestGetAllDevicesUniformMetadataAndDefaultsAcrossFamilies(t *testing.T) {
 	require.Len(t, devices.Doorbells, 2, "owned and shared doorbells are both exposed")
 	require.Len(t, devices.Chimes, 1)
 	require.Len(t, devices.StickUpCams, 1)
-	require.Len(t, devices.Other, 1, "unknown family is omitted while intercom remains supported")
+	require.Len(t, devices.Other, 2, "intercom and unfamiliar kinds remain available as generic devices")
 
 	all := devices.GetAllDevices()
-	require.Len(t, all, 5)
+	require.Len(t, all, 6)
 	for _, device := range all {
 		require.NotEmpty(t, device.GetID())
 		require.NotEmpty(t, device.GetFamily())
@@ -216,6 +217,11 @@ func TestGetAllDevicesUniformMetadataAndDefaultsAcrossFamilies(t *testing.T) {
 	require.Equal(t, "America/Phoenix", devices.StickUpCams[0].GetTimezone())
 	require.Equal(t, "Lobby Intercom", devices.Other[0].GetName())
 	require.Equal(t, ringapimodels.DeviceFamilyOther, devices.Other[0].GetFamily())
+	require.Equal(t, "future_device_kind", devices.Other[1].Kind)
+	require.Equal(t, "future_family", devices.Other[1].Family)
+	require.Equal(t, "Unknown", devices.Other[1].GetName())
+	require.Equal(t, "", devices.Other[1].GetAddress())
+	require.Equal(t, "", devices.Other[1].GetTimezone())
 	if health := devices.Doorbells[0].Health; health != nil {
 		require.NotNil(t, health.SignalStrength)
 		require.Equal(t, -58, *health.SignalStrength)
@@ -248,4 +254,101 @@ func TestGetDeviceSettingsDistinguishesUnknownFromCapturedFalse(t *testing.T) {
 			}
 		})
 	}
+}
+
+// The auth guide documents best-effort JWT claim recovery and explicit hardware
+// ID option precedence. Verify both through the session request header.
+func TestNewClientWithTokenClaimHandlingAndHardwareIDPrecedence(t *testing.T) {
+	validPayload := base64.RawURLEncoding.EncodeToString([]byte(`{"hardware_id":"jwt-hardware"}`))
+	missingPayload := base64.RawURLEncoding.EncodeToString([]byte(`{"sub":"account"}`))
+	malformedJSON := base64.RawURLEncoding.EncodeToString([]byte(`{"hardware_id":`))
+	for _, tc := range []struct {
+		name               string
+		token              string
+		explicitHardwareID string
+		wantHardwareID     string
+	}{
+		{name: "valid claim", token: "header." + validPayload + ".signature", wantHardwareID: "jwt-hardware"},
+		{name: "explicit option wins", token: "header." + validPayload + ".signature", explicitHardwareID: "explicit-hardware", wantHardwareID: "explicit-hardware"},
+		{name: "missing claim", token: "header." + missingPayload + ".signature"},
+		{name: "bad base64 claim", token: "header.%%%.signature"},
+		{name: "bad JSON claim", token: "header." + malformedJSON + ".signature"},
+		{name: "malformed token", token: "not-a-jwt"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			transport := &captureRoundTripper{responseBody: `{"devices":[]}`}
+			options := []ring.Option{
+				ring.WithHTTPClient(&http.Client{Transport: transport}),
+				ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://api.token-claims.example"}),
+			}
+			if tc.explicitHardwareID != "" {
+				options = append(options, ring.WithHardwareID(tc.explicitHardwareID))
+			}
+			client, err := ring.NewClientWithToken(tc.token, options...)
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = client.Close() })
+			_, err = client.ListDevices(context.Background())
+			require.NoError(t, err)
+
+			if tc.wantHardwareID == "" {
+				require.Len(t, transport.requests, 1, "without a claim there is no hardware session registration")
+				require.Equal(t, http.MethodGet, transport.requests[0].Method)
+				return
+			}
+			require.Len(t, transport.requests, 2)
+			require.Equal(t, http.MethodPost, transport.requests[0].Method)
+			require.Equal(t, "/clients_api/session", transport.requests[0].URL.Path)
+			require.Equal(t, tc.wantHardwareID, transport.requests[0].Header.Get("hardware_id"))
+			require.Equal(t, "Bearer "+tc.token, transport.requests[0].Header.Get("Authorization"))
+		})
+	}
+}
+
+// Input and cancellation guards are synthetic robustness tests, not captured
+// Ring errors. They ensure malformed public requests never reach HTTP transport.
+func TestInvalidPublicDeviceRequestsDoNotReachHTTP(t *testing.T) {
+	transport := &captureRoundTripper{responseBody: `{"devices":[]}`}
+	client, err := ring.NewClient(
+		ring.WithAccessToken("validation-token"),
+		ring.WithHTTPClient(&http.Client{Transport: transport}),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = client.Close() })
+	ctx := context.Background()
+	volume := []ring.SetVolumeRequest{
+		{DeviceID: "not-a-number", Volume: 4},
+		{DeviceID: "100", Volume: -1},
+		{DeviceID: "100", Volume: 12},
+	}
+	for _, req := range volume {
+		require.Error(t, client.SetVolume(ctx, req))
+	}
+	require.Error(t, client.SetLights(ctx, ring.SetLightsRequest{DeviceID: "100", State: "blink"}))
+	require.Error(t, client.SetLights(ctx, ring.SetLightsRequest{DeviceID: "bad", State: "on"}))
+	require.Error(t, client.SetMotionDetection(ctx, ring.SetMotionDetectionRequest{DeviceID: "bad"}))
+	require.Error(t, client.TestSound(ctx, ring.TestSoundRequest{DeviceID: "100", Kind: "alarm"}))
+	require.Error(t, client.SetInHomeChime(ctx, ring.SetInHomeChimeRequest{DeviceID: "bad"}))
+	_, err = client.UpdateDeviceHealth(ctx, ring.UpdateDeviceHealthRequest{DeviceID: "bad"})
+	require.Error(t, err)
+	_, err = client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{DeviceID: "bad"})
+	require.Error(t, err)
+	_, err = client.GetLastRecordingID(ctx, ring.GetLastRecordingIDRequest{DeviceID: "bad"})
+	require.Error(t, err)
+	_, err = client.GetDeviceSettings(ctx, ring.GetDeviceSettingsRequest{DeviceID: "0"})
+	require.Error(t, err)
+	require.Error(t, client.PatchDeviceSettings(ctx, ring.PatchDeviceSettingsRequest{DeviceID: "100"}))
+	require.Error(t, client.SetSiren(ctx, ring.SetSirenRequest{DeviceID: "-3"}))
+	require.Empty(t, transport.requests)
+}
+
+func TestCanceledPublicControlDoesNotReachHTTP(t *testing.T) {
+	transport := &captureRoundTripper{responseBody: `{}`}
+	client, err := ring.NewClient(ring.WithAccessToken("cancel-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = client.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err = client.SetVolume(ctx, ring.SetVolumeRequest{DeviceID: "100", Volume: 5})
+	require.Error(t, err)
+	require.Empty(t, transport.requests)
 }

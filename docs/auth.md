@@ -73,7 +73,7 @@ Authentication and refresh return the same structure:
 - Access tokens normally last four hours.
 - Refresh tokens are rotated. Persist the complete response after every successful authentication or refresh; continuing to store the previous refresh token can force another 2FA login.
 - Store token files with owner-only permissions such as `0600` and never log token contents.
-- The access-token JWT includes the hardware ID. `NewClientWithToken` recovers it automatically so subsequent session registration uses the same identity.
+- The access-token JWT may include the hardware ID. `NewClientWithToken` recovers it when the token has a decodable claim; malformed or missing claims are ignored. An explicit `WithHardwareID` option takes precedence and determines subsequent session registration identity.
 
 The token-exchange example writes the complete response without printing either token:
 

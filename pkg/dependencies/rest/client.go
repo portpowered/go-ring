@@ -116,6 +116,9 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 
 // doRequest performs an HTTP request with retry logic
 func (c *Client) doRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	var bodyReader io.Reader
 	if body != nil {
 		bodyBytes, err := json.Marshal(body)
