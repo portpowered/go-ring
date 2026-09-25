@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/internal/testkit/replay"
-	"github.com/portpowered/go-ring/pkg/generatedapi"
 )
 
 func capturedFrame(t *testing.T, method, direction string) signaling.Message {
@@ -132,9 +132,11 @@ func TestCapturedPlaybackNegotiationICEAndTermination(t *testing.T) {
 	if err != nil || event.Method != "ice" {
 		t.Fatalf("ICE event=%+v err=%v", event, err)
 	}
-	replayReply(t,c,request,"notification")
-	event,err=s.Receive(ctx)
-	if err!=nil||event.Method!="notification"{t.Fatalf("playback notification=%+v err=%v",event,err)}
+	replayReply(t, c, request, "notification")
+	event, err = s.Receive(ctx)
+	if err != nil || event.Method != "notification" {
+		t.Fatalf("playback notification=%+v err=%v", event, err)
+	}
 	if err := s.SendICE(ctx, ICECandidateRequest{Candidate: "candidate:synthetic", MLineIndex: 0}); err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +280,7 @@ func TestPlaybackReplayReceiveCancellation(t *testing.T) {
 
 func TestSignalingExtraValidationBeforeWire(t *testing.T) {
 	c, writes := replayConnection(t)
-	if err := c.sendTyped(context.Background(), generatedapi.ClientNotification, "dialog", "", make(chan int)); err == nil {
+	if err := c.sendTyped(context.Background(), protocol.MethodNotification, "dialog", "", make(chan int)); err == nil {
 		t.Fatal("unmarshalable body accepted")
 	}
 	ctx, cancel := context.WithCancel(context.Background())

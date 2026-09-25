@@ -55,12 +55,14 @@ func (w withEndpoints) Apply(c *Client) error {
 	return c.applyEndpointConfiguration()
 }
 
+type endpointValidation struct {
+	name, raw string
+	schemes   []string
+	queryOK   bool
+}
+
 func validateEndpoints(e Endpoints) error {
-	for _, endpoint := range []struct {
-		name, raw string
-		schemes   []string
-		queryOK   bool
-	}{
+	for _, endpoint := range []endpointValidation{
 		{"OAuthBaseURL", e.OAuthBaseURL, []string{"http", "https"}, false},
 		{"APIBaseURL", e.APIBaseURL, []string{"http", "https"}, false},
 		{"SolutionsBaseURL", e.SolutionsBaseURL, []string{"http", "https"}, false},

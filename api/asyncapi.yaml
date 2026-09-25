@@ -12,27 +12,428 @@ servers:
     protocol: wss
     description: Captured signaling host; tests use a local peer.
 channels:
-  signaling:
+  pushSubscribe:
     address: /ws
     messages:
-      clientMessage: {$ref: '#/components/messages/ClientMessage'}
-      serverMessage: {$ref: '#/components/messages/ServerMessage'}
+      pushSubscribe:
+        $ref: '#/components/messages/PushSubscribe'
+  pushEvent:
+    address: /ws
+    messages:
+      pushEvent:
+        $ref: '#/components/messages/PushEvent'
+  pushSubscriptionAck:
+    address: /ws
+    messages:
+      pushSubscriptionAck:
+        $ref: '#/components/messages/PushSubscriptionAck'
+  pushHeartbeat:
+    address: /ws
+    messages:
+      pushHeartbeat:
+        $ref: '#/components/messages/PushHeartbeat'
+  pushUnsubscribe:
+    address: /ws
+    messages:
+      pushUnsubscribe:
+        $ref: '#/components/messages/PushUnsubscribe'
+  playbackOffer:
+    address: /ws
+    messages:
+      playbackOffer:
+        $ref: '#/components/messages/PlaybackOffer'
+  playbackAnswer:
+    address: /ws
+    messages:
+      playbackAnswer:
+        $ref: '#/components/messages/PlaybackAnswer'
+  iCECandidate:
+    address: /ws
+    messages:
+      iCECandidate:
+        $ref: '#/components/messages/ICECandidate'
+  sessionNotification:
+    address: /ws
+    messages:
+      sessionNotification:
+        $ref: '#/components/messages/SessionNotification'
+  sessionPing:
+    address: /ws
+    messages:
+      sessionPing:
+        $ref: '#/components/messages/SessionPing'
+  sessionPong:
+    address: /ws
+    messages:
+      sessionPong:
+        $ref: '#/components/messages/SessionPong'
+  liveView:
+    address: /ws
+    messages:
+      liveView:
+        $ref: '#/components/messages/LiveView'
+  sessionCreated:
+    address: /ws
+    messages:
+      sessionCreated:
+        $ref: '#/components/messages/SessionCreated'
+  liveICE:
+    address: /ws
+    messages:
+      liveICE:
+        $ref: '#/components/messages/LiveICE'
+  pTZCommand:
+    address: /ws
+    messages:
+      pTZCommand:
+        $ref: '#/components/messages/PTZCommand'
 operations:
-  sendMessage:
+  sendPushSubscribe:
     action: send
-    channel: {$ref: '#/channels/signaling'}
-    messages: [{$ref: '#/channels/signaling/messages/clientMessage'}]
-  receiveMessage:
+    channel:
+      $ref: '#/channels/pushSubscribe'
+  receivePushEvent:
     action: receive
-    channel: {$ref: '#/channels/signaling'}
-    messages: [{$ref: '#/channels/signaling/messages/serverMessage'}]
+    channel:
+      $ref: '#/channels/pushEvent'
+  receivePushSubscriptionAck:
+    action: receive
+    channel:
+      $ref: '#/channels/pushSubscriptionAck'
+  sendPushHeartbeat:
+    action: send
+    channel:
+      $ref: '#/channels/pushHeartbeat'
+  sendPushUnsubscribe:
+    action: send
+    channel:
+      $ref: '#/channels/pushUnsubscribe'
+  sendPlaybackOffer:
+    action: send
+    channel:
+      $ref: '#/channels/playbackOffer'
+  receivePlaybackAnswer:
+    action: receive
+    channel:
+      $ref: '#/channels/playbackAnswer'
+  sendICECandidate:
+    action: send
+    channel:
+      $ref: '#/channels/iCECandidate'
+  receiveSessionNotification:
+    action: receive
+    channel:
+      $ref: '#/channels/sessionNotification'
+  sendSessionPing:
+    action: send
+    channel:
+      $ref: '#/channels/sessionPing'
+  receiveSessionPong:
+    action: receive
+    channel:
+      $ref: '#/channels/sessionPong'
+  sendLiveView:
+    action: send
+    channel:
+      $ref: '#/channels/liveView'
+  receiveSessionCreated:
+    action: receive
+    channel:
+      $ref: '#/channels/sessionCreated'
+  sendLiveICE:
+    action: send
+    channel:
+      $ref: '#/channels/liveICE'
+  sendPTZCommand:
+    action: send
+    channel:
+      $ref: '#/channels/pTZCommand'
 components:
   messages:
     ClientMessage:
       payload: {$ref: '#/components/schemas/ClientEnvelope'}
     ServerMessage:
       payload: {$ref: '#/components/schemas/ServerEnvelope'}
+    PushSubscribe:
+      payload: {$ref: '#/components/schemas/PushSubscribeFrame'}
+    PushEvent:
+      payload: {$ref: '#/components/schemas/PushEventFrame'}
+    PushSubscriptionAck:
+      payload: {$ref: '#/components/schemas/PushSubscriptionAckFrame'}
+    PushHeartbeat:
+      payload: {$ref: '#/components/schemas/PushHeartbeatFrame'}
+    PushUnsubscribe:
+      payload: {$ref: '#/components/schemas/PushUnsubscribeFrame'}
+    PlaybackOffer:
+      payload: {$ref: '#/components/schemas/PlaybackOfferFrame'}
+    PlaybackAnswer:
+      payload: {$ref: '#/components/schemas/PlaybackAnswerFrame'}
+    ICECandidate:
+      payload: {$ref: '#/components/schemas/ICECandidateFrame'}
+    SessionNotification:
+      payload: {$ref: '#/components/schemas/SessionNotificationFrame'}
+    SessionPing:
+      payload: {$ref: '#/components/schemas/SessionPingFrame'}
+    SessionPong:
+      payload: {$ref: '#/components/schemas/SessionPongFrame'}
+    LiveView:
+      payload: {$ref: '#/components/schemas/LiveViewFrame'}
+    SessionCreated:
+      payload: {$ref: '#/components/schemas/SessionCreatedFrame'}
+    LiveICE:
+      payload: {$ref: '#/components/schemas/LiveICEFrame'}
+    PTZCommand:
+      payload: {$ref: '#/components/schemas/PTZCommandFrame'}
   schemas:
+    LiveViewFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: live_view}
+        dialog_id: {type: string}
+        body: {$ref: '#/components/schemas/LiveViewBody'}
+    LiveViewBody:
+      type: object
+      required: [doorbot_id, sdp, stream_options, type]
+      properties:
+        doorbot_id: {type: integer}
+        sdp: {type: string, minLength: 1}
+        stream_options: {$ref: '#/components/schemas/LiveStreamOptions'}
+        type: {type: string, const: offer}
+    LiveStreamOptions:
+      type: object
+      properties:
+        audio_enabled: {type: boolean}
+        video_enabled: {type: boolean}
+    SessionCreatedFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: session_created}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionCreatedBody'}
+    SessionCreatedBody:
+      type: object
+      required: [doorbot_id, session_id]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string, minLength: 1}
+    LiveICEFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: ice}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/LiveICEBody'}
+    LiveICEBody:
+      type: object
+      required: [doorbot_id, ice, mid, mlineindex]
+      properties:
+        doorbot_id: {type: integer}
+        ice: {type: string}
+        mid: {type: string}
+        mlineindex: {type: integer, minimum: 0}
+    PTZCommandFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: rpc}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PTZCommandBody'}
+    PTZCommandBody:
+      type: object
+      required: [doorbot_id, session_id, command]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        command: {$ref: '#/components/schemas/PTZWireCommand'}
+    PTZWireCommand:
+      description: Named wire fields for Go generation; PTZRPC adds method-specific validation constraints.
+      type: object
+      required: [jsonrpc, id, method, params]
+      properties:
+        jsonrpc: {type: string, const: '2.0'}
+        id: {type: string}
+        method: {type: string}
+        params: {$ref: '#/components/schemas/PTZWireParams'}
+    PTZWireParams:
+      type: object
+      required: [sessionId, timestamp, version, direction]
+      properties:
+        sessionId: {type: string}
+        timestamp: {type: number}
+        version: {type: number, const: 1}
+        direction: {type: string}
+        speed: {type: number}
+        reason: {type: string}
+    PushSubscriptionAckFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: push_subscription_ack}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PushSubscriptionAckBody'}
+    PushSubscriptionAckBody:
+      type: object
+      required: [status, subscription_id]
+      properties:
+        status: {type: string}
+        subscription_id: {type: string}
+    PushHeartbeatFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: push_heartbeat}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PushSubscriptionBody'}
+    PushUnsubscribeFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: push_unsubscribe}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PushSubscriptionBody'}
+    PushSubscriptionBody:
+      type: object
+      required: [subscription_id]
+      properties:
+        subscription_id: {type: string}
+    ICECandidateFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: ice}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/ICECandidateBody'}
+    ICECandidateBody:
+      type: object
+      required: [doorbot_id, session_id, ice, mlineindex]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        ice: {type: string}
+        mlineindex: {type: integer, minimum: 0}
+      additionalProperties: true
+    SessionNotificationFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: notification}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionNotificationBody'}
+    SessionNotificationBody:
+      type: object
+      required: [doorbot_id, session_id, is_ok, text]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        is_ok: {type: boolean}
+        text: {type: string}
+      additionalProperties: true
+    SessionPingFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: ping}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionBody'}
+    SessionPongFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: pong}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionBody'}
+    PushSubscribeFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: push_subscribe}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PushSubscribeBody'}
+    PushSubscribeBody:
+      type: object
+      required: [requested_notifications]
+      properties:
+        requested_notifications: {type: array, minItems: 1, items: {$ref: '#/components/schemas/PushFilter'}}
+    PushEventFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: push_event}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PushEventBody'}
+    PushEventBody:
+      type: object
+      required: [notification_scope, notification_type, payload, subscription_id]
+      properties:
+        filter_identifiers: {type: array, items: {type: string}}
+        ingestion_time_ms: {type: integer}
+        notification_scope: {type: string}
+        notification_type: {type: string}
+        payload: {$ref: '#/components/schemas/PushEventPayload'}
+        subscription_id: {type: string}
+    PushEventPayload:
+      description: Captured shoulder-tap event payload; other notification types may extend it.
+      type: object
+      properties:
+        device_id: {type: string}
+        location_id: {type: string}
+        start_time: {type: string, format: date-time}
+        end_time: {type: string, format: date-time}
+      additionalProperties: true
+    PlaybackOfferFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: playback}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PlaybackOfferBody'}
+    PlaybackOfferBody:
+      type: object
+      required: [doorbot_id, entry_point, sdp, type]
+      properties:
+        doorbot_id: {type: integer}
+        entry_point: {type: string}
+        sdp: {type: string, minLength: 1}
+        type: {type: string, const: cloud}
+    PlaybackAnswerFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: sdp}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PlaybackAnswerBody'}
+    PlaybackAnswerBody:
+      type: object
+      required: [doorbot_id, session_id, type, sdp]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        type: {type: string, const: answer}
+        sdp: {type: string, minLength: 1}
+        session_info: {$ref: '#/components/schemas/PlaybackSessionInfo'}
+      additionalProperties: true
+    PlaybackSessionInfo:
+      type: object
+      properties:
+        ping_interval: {type: integer, minimum: 1}
+        region: {type: string}
+      additionalProperties: true
     ClientEnvelope:
       type: object
       required: [method, dialog_id, body]
@@ -170,12 +571,13 @@ components:
       required: [filter_identifier, filters, notification_scope, notification_type]
       properties:
         filter_identifier: {type: string}
-        filters:
-          type: object
-          properties:
-            doorbot_ids: {type: array, items: {type: integer}}
+        filters: {$ref: '#/components/schemas/PushFilters'}
         notification_scope: {type: string}
         notification_type: {type: string}
+    PushFilters:
+      type: object
+      properties:
+        doorbot_ids: {type: array, items: {type: integer}}
     PTZRPC:
       type: object
       required: [jsonrpc, id, method, params]

@@ -1,0 +1,7 @@
+package: generatedhttp
+generate:
+  models: true
+  client: true
+output: pkg/generatedhttp/client.gen.go
+output-options:
+  generate-types-for-anonymous-schemas: true

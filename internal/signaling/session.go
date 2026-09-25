@@ -46,6 +46,24 @@ type rpcReply struct {
 	err    error
 }
 
+type sessionMessageBody struct {
+	DeviceID int64           `json:"doorbot_id"`
+	SignalID string          `json:"session_id"`
+	Command  json.RawMessage `json:"command"`
+}
+
+type rpcCommandReply struct {
+	ID      string          `json:"id"`
+	Version string          `json:"jsonrpc"`
+	Method  string          `json:"method"`
+	Result  json.RawMessage `json:"result"`
+	Error   *RPCError       `json:"error"`
+}
+
+type rpcResultIdentity struct {
+	SessionID string `json:"sessionId"`
+}
+
 // Session owns an activated device's routing and RPC state. Negotiation and the
 // single socket reader belong to the connection. Send must honor its context.
 type Session struct {
@@ -241,7 +259,8 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 	s.pending[id] = ch
 	s.mu.Unlock()
 	defer func() { s.mu.Lock(); delete(s.pending, id); s.mu.Unlock() }()
-	p := make(map[string]any, len(params)+3)
+	const rpcIdentityFields = 3
+	p := make(map[string]any, len(params)+rpcIdentityFields)
 	for k, v := range params {
 		p[k] = v
 	}
@@ -279,11 +298,7 @@ func (s *Session) Handle(m Message) error {
 	if m.DialogID != s.dialogID {
 		return nil
 	}
-	var body struct {
-		DeviceID int64           `json:"doorbot_id"`
-		SignalID string          `json:"session_id"`
-		Command  json.RawMessage `json:"command"`
-	}
+	var body sessionMessageBody
 	if err := json.Unmarshal(m.Body, &body); err != nil {
 		return fmt.Errorf("invalid session body")
 	}
@@ -300,13 +315,7 @@ func (s *Session) Handle(m Message) error {
 		return nil
 	}
 	if m.Method == protocol.MethodRPC {
-		var command struct {
-			ID      string          `json:"id"`
-			Version string          `json:"jsonrpc"`
-			Method  string          `json:"method"`
-			Result  json.RawMessage `json:"result"`
-			Error   *RPCError       `json:"error"`
-		}
+		var command rpcCommandReply
 		if err := json.Unmarshal(body.Command, &command); err != nil || command.Version != protocol.JSONRPCVersion {
 			return fmt.Errorf("invalid RPC envelope")
 		}
@@ -315,9 +324,7 @@ func (s *Session) Handle(m Message) error {
 				return fmt.Errorf("RPC reply must have exactly one result or error")
 			}
 			if command.Error == nil {
-				var result struct {
-					SessionID string `json:"sessionId"`
-				}
+				var result rpcResultIdentity
 				if err := json.Unmarshal(command.Result, &result); err != nil || result.SessionID == "" {
 					return fmt.Errorf("invalid RPC result identity")
 				}

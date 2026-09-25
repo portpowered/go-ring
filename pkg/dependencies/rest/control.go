@@ -9,31 +9,26 @@ import (
 	"strings"
 
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/pkg/generatedhttp"
 )
 
 // GetMotionDetectionEnabled reads the one settings field supported by the current
 // typed public settings API. Other response fields are intentionally ignored.
 func (c *Client) GetMotionDetectionEnabled(ctx context.Context, deviceID int64) (*bool, error) {
-	var response struct {
-		MotionSettings struct {
-			MotionDetectionEnabled *bool `json:"motion_detection_enabled"`
-		} `json:"motion_settings"`
-	}
+	var response generatedhttp.DeviceSettings
 	path := settingsPath(deviceID)
 	if err := c.doJSONRequest(ctx, "GET", path, nil, &response); err != nil {
 		return nil, err
+	}
+	if response.MotionSettings == nil {
+		return nil, nil
 	}
 	return response.MotionSettings.MotionDetectionEnabled, nil
 }
 
 // PatchMotionDetectionEnabled changes only the captured motion detection field.
 func (c *Client) PatchMotionDetectionEnabled(ctx context.Context, deviceID int64, enabled bool) error {
-	body := struct {
-		MotionSettings struct {
-			MotionDetectionEnabled bool `json:"motion_detection_enabled"`
-		} `json:"motion_settings"`
-	}{}
-	body.MotionSettings.MotionDetectionEnabled = enabled
+	body := generatedhttp.DeviceSettingsPatch{MotionSettings: &generatedhttp.MotionSettingsPatch{MotionDetectionEnabled: &enabled}}
 	var response json.RawMessage
 	return c.doJSONRequest(ctx, "PATCH", settingsPath(deviceID), body, &response)
 }

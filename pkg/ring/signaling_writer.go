@@ -155,6 +155,19 @@ func (w *signalingWriter) drain() {
 	}
 }
 
+type priorityRPCParams struct {
+	Speed *float64 `json:"speed"`
+}
+
+type priorityRPCCommand struct {
+	Method string            `json:"method"`
+	Params priorityRPCParams `json:"params"`
+}
+
+type priorityRPCBody struct {
+	Command priorityRPCCommand `json:"command"`
+}
+
 func prioritySignalingMessage(message signaling.Message) bool {
 	if message.Method == protocol.MethodClose || message.Method == protocol.MethodPing || message.Method == protocol.MethodPong {
 		return true
@@ -162,14 +175,7 @@ func prioritySignalingMessage(message signaling.Message) bool {
 	if message.Method != protocol.MethodRPC {
 		return false
 	}
-	var body struct {
-		Command struct {
-			Method string `json:"method"`
-			Params struct {
-				Speed *float64 `json:"speed"`
-			} `json:"params"`
-		} `json:"command"`
-	}
+	var body priorityRPCBody
 	if json.Unmarshal(message.Body, &body) != nil || body.Command.Params.Speed == nil || *body.Command.Params.Speed != 0 {
 		return false
 	}

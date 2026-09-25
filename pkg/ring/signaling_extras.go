@@ -11,19 +11,22 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
-	"github.com/portpowered/go-ring/pkg/generatedapi"
+	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
 
 // PushFilter is the captured subscription filter. Identifiers are caller
 // supplied so one subscriber can distinguish multiple requested filters.
 type PushFilter struct {
-	FilterIdentifier string `json:"filter_identifier"`
-	Filters          struct {
-		DoorbotIDs []int64 `json:"doorbot_ids"`
-	} `json:"filters"`
-	NotificationScope string `json:"notification_scope"`
-	NotificationType  string `json:"notification_type"`
+	FilterIdentifier  string      `json:"filter_identifier"`
+	Filters           PushFilters `json:"filters"`
+	NotificationScope string      `json:"notification_scope"`
+	NotificationType  string      `json:"notification_type"`
+}
+
+type PushFilters struct {
+	DoorbotIDs []int64 `json:"doorbot_ids"`
 }
 
 type PushEvent struct {
@@ -60,7 +63,7 @@ func (c *SignalingConnection) removeChannel(name string) {
 	delete(c.channels, name)
 	c.mu.Unlock()
 }
-func (c *SignalingConnection) sendTyped(ctx context.Context, method generatedapi.ClientMethod, dialog, riid string, body any) error {
+func (c *SignalingConnection) sendTyped(ctx context.Context, method string, dialog, riid string, body any) error {
 	if riid == "" {
 		riid = uuid.NewString()
 	}
@@ -68,7 +71,7 @@ func (c *SignalingConnection) sendTyped(ctx context.Context, method generatedapi
 	if err != nil {
 		return err
 	}
-	return c.send(ctx, signaling.Message{Method: string(method), DialogID: dialog, RIID: riid, Body: raw})
+	return c.send(ctx, signaling.Message{Method: method, DialogID: dialog, RIID: riid, Body: raw})
 }
 
 // SubscribePush registers captured shoulder-tap style notification filters.
@@ -81,7 +84,15 @@ func (c *SignalingConnection) SubscribePush(ctx context.Context, filters []PushF
 	if err != nil {
 		return nil, err
 	}
-	if err = c.sendTyped(ctx, generatedapi.ClientPushSubscribe, dialog, "", map[string]any{"requested_notifications": filters}); err != nil {
+	wireFilters := make([]generatedsignaling.PushFilter, 0, len(filters))
+	for _, filter := range filters {
+		ids := make([]int, len(filter.Filters.DoorbotIDs))
+		for i, id := range filter.Filters.DoorbotIDs {
+			ids[i] = int(id)
+		}
+		wireFilters = append(wireFilters, generatedsignaling.PushFilter{FilterIdentifier: filter.FilterIdentifier, Filters: &generatedsignaling.PushFilters{DoorbotIds: ids}, NotificationScope: filter.NotificationScope, NotificationType: filter.NotificationType})
+	}
+	if err = c.sendTyped(ctx, protocol.MethodPushSubscribe, dialog, "", generatedsignaling.PushSubscribeBody{RequestedNotifications: wireFilters}); err != nil {
 		c.removeChannel(dialog)
 		return nil, err
 	}
@@ -94,25 +105,23 @@ func (c *SignalingConnection) SubscribePush(ctx context.Context, filters []PushF
 			c.removeChannel(dialog)
 			return nil, c.Err()
 		case m := <-events:
-			if m.Method != string(generatedapi.ServerPushSubscriptionAck) {
+			if m.Method != protocol.MethodPushSubscriptionAck {
 				continue
 			}
-			var ack struct {
-				Status         string `json:"status"`
-				SubscriptionID string `json:"subscription_id"`
-			}
-			if json.Unmarshal(m.Body, &ack) != nil || ack.Status != "ok" || ack.SubscriptionID == "" {
+			var ack generatedsignaling.PushSubscriptionAckBody
+			if json.Unmarshal(m.Body, &ack) != nil || ack.Status != "ok" || ack.SubscriptionId == "" {
 				c.removeChannel(dialog)
 				return nil, fmt.Errorf("push subscription rejected: %s", m.Body)
 			}
-			s := &PushSubscription{connection: c, dialog: dialog, id: ack.SubscriptionID, events: events, done: make(chan struct{})}
+			s := &PushSubscription{connection: c, dialog: dialog, id: ack.SubscriptionId, events: events, done: make(chan struct{})}
 			go s.heartbeat()
 			return s, nil
 		}
 	}
 }
 func (s *PushSubscription) heartbeat() {
-	s.heartbeatAt(30 * time.Second)
+	const pushHeartbeatInterval = 30 * time.Second
+	s.heartbeatAt(pushHeartbeatInterval)
 }
 func (s *PushSubscription) heartbeatAt(interval time.Duration) {
 	t := time.NewTicker(interval)
@@ -125,7 +134,7 @@ func (s *PushSubscription) heartbeatAt(interval time.Duration) {
 			return
 		case <-t.C:
 			ctx, cancel := context.WithTimeout(s.connection.ctx, signaling.SendTimeout)
-			_ = s.connection.sendTyped(ctx, generatedapi.ClientPushHeartbeat, s.dialog, "", map[string]string{"subscription_id": s.id})
+			_ = s.connection.sendTyped(ctx, protocol.MethodPushHeartbeat, s.dialog, "", generatedsignaling.PushSubscriptionBody{SubscriptionId: s.id})
 			cancel()
 		}
 	}
@@ -140,7 +149,7 @@ func (s *PushSubscription) Receive(ctx context.Context) (PushEvent, error) {
 		case <-s.connection.done:
 			return PushEvent{}, s.connection.Err()
 		case m := <-s.events:
-			if m.Method != string(generatedapi.ServerPushEvent) {
+			if m.Method != protocol.MethodPushEvent {
 				continue
 			}
 			var event PushEvent
@@ -161,7 +170,7 @@ func (s *PushSubscription) Close() error {
 		s.connection.removeChannel(s.dialog)
 		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 		defer cancel()
-		err = s.connection.sendTyped(ctx, generatedapi.ClientPushUnsubscribe, s.dialog, "", map[string]string{"subscription_id": s.id})
+		err = s.connection.sendTyped(ctx, protocol.MethodPushUnsubscribe, s.dialog, "", generatedsignaling.PushSubscriptionBody{SubscriptionId: s.id})
 	})
 	return err
 }
@@ -170,6 +179,15 @@ type StartPlaybackRequest struct {
 	DeviceID   string
 	Offer      SessionDescription
 	EntryPoint string
+}
+type playbackCloseReason struct {
+	Code int    `json:"code"`
+	Text string `json:"text"`
+}
+type playbackCloseBody struct {
+	DoorbotID int64               `json:"doorbot_id"`
+	SessionID string              `json:"session_id"`
+	Reason    playbackCloseReason `json:"reason"`
 }
 
 // PlaybackSession is a cloud playback negotiation on a signaling connection.
@@ -206,7 +224,7 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 	if err != nil {
 		return nil, err
 	}
-	if err = c.sendTyped(ctx, generatedapi.ClientPlayback, dialog, "", map[string]any{"doorbot_id": id, "entry_point": entry, "sdp": req.Offer.SDP, "type": "cloud"}); err != nil {
+	if err = c.sendTyped(ctx, protocol.MethodPlayback, dialog, "", generatedsignaling.PlaybackOfferBody{DoorbotId: int(id), EntryPoint: entry, Sdp: req.Offer.SDP, ReservedType: "cloud"}); err != nil {
 		c.removeChannel(dialog)
 		return nil, err
 	}
@@ -221,28 +239,23 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 			c.removeChannel(dialog)
 			return nil, c.Err()
 		case m := <-events:
-			if m.Method != string(generatedapi.ServerSdp) {
+			if m.Method != protocol.MethodSDP {
 				continue
 			}
-			var body struct {
-				DeviceID    int64  `json:"doorbot_id"`
-				SessionID   string `json:"session_id"`
-				SDP         string `json:"sdp"`
-				Type        string `json:"type"`
-				SessionInfo struct {
-					PingInterval int `json:"ping_interval"`
-				} `json:"session_info"`
-			}
-			if json.Unmarshal(m.Body, &body) != nil || body.DeviceID != id || body.SessionID == "" || body.Type != "answer" || body.SDP == "" {
+			var body generatedsignaling.PlaybackAnswerBody
+			if json.Unmarshal(m.Body, &body) != nil || int64(body.DoorbotId) != id || body.SessionId == "" || body.ReservedType != "answer" || body.Sdp == "" {
 				c.removeChannel(dialog)
 				return nil, errors.New("invalid playback SDP answer")
 			}
-			s := &PlaybackSession{connection: c, dialog: dialog, riid: m.RIID, id: body.SessionID, deviceID: id, answer: SessionDescription{Type: "answer", SDP: body.SDP}, events: events, done: make(chan struct{})}
+			s := &PlaybackSession{connection: c, dialog: dialog, riid: m.RIID, id: body.SessionId, deviceID: id, answer: SessionDescription{Type: "answer", SDP: body.Sdp}, events: events, done: make(chan struct{})}
 			s.lastPong.Store(time.Now().UnixNano())
 			c.mu.Lock()
 			c.playbacks[dialog] = s
 			c.mu.Unlock()
-			interval := time.Duration(body.SessionInfo.PingInterval) * time.Second
+			interval := signaling.DefaultHeartbeatInterval
+			if body.SessionInfo != nil {
+				interval = time.Duration(body.SessionInfo.PingInterval) * time.Second
+			}
 			if interval <= 0 || interval > signaling.MaxHeartbeatInterval {
 				interval = signaling.DefaultHeartbeatInterval
 			}
@@ -253,17 +266,14 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 }
 func (s *PlaybackSession) Answer() SessionDescription { return s.answer }
 func (s *PlaybackSession) handle(m signaling.Message) {
-	if m.Method == string(generatedapi.ServerPong) {
-		var body struct {
-			DeviceID  int64  `json:"doorbot_id"`
-			SessionID string `json:"session_id"`
-		}
-		if json.Unmarshal(m.Body, &body) == nil && body.DeviceID == s.deviceID && body.SessionID == s.id {
+	if m.Method == protocol.MethodPong {
+		var body generatedsignaling.SessionBody
+		if json.Unmarshal(m.Body, &body) == nil && int64(body.DoorbotId) == s.deviceID && body.SessionId == s.id {
 			s.lastPong.Store(time.Now().UnixNano())
 		}
 		return
 	}
-	if m.Method == string(generatedapi.ServerClose) {
+	if m.Method == protocol.MethodClose {
 		s.terminate()
 		return
 	}
@@ -302,13 +312,13 @@ func (s *PlaybackSession) keepalive(interval time.Duration) {
 				return
 			}
 			ctx, cancel := context.WithTimeout(s.connection.ctx, signaling.SendTimeout)
-			_ = s.connection.sendTyped(ctx, generatedapi.ClientPing, s.dialog, s.riid, map[string]any{"doorbot_id": s.deviceID, "session_id": s.id})
+			_ = s.connection.sendTyped(ctx, protocol.MethodPing, s.dialog, s.riid, generatedsignaling.SessionBody{DoorbotId: int(s.deviceID), SessionId: s.id})
 			cancel()
 		}
 	}
 }
 func (s *PlaybackSession) SendICE(ctx context.Context, candidate ICECandidateRequest) error {
-	return s.connection.sendTyped(ctx, generatedapi.ClientIce, s.dialog, s.riid, map[string]any{"doorbot_id": s.deviceID, "session_id": s.id, "ice": candidate.Candidate, "mlineindex": candidate.MLineIndex})
+	return s.connection.sendTyped(ctx, protocol.MethodICE, s.dialog, s.riid, generatedsignaling.IceCandidateBody{DoorbotId: int(s.deviceID), SessionId: s.id, Ice: candidate.Candidate, Mlineindex: candidate.MLineIndex})
 }
 func (s *PlaybackSession) Receive(ctx context.Context) (SessionEvent, error) {
 	select {
@@ -332,7 +342,7 @@ func (s *PlaybackSession) Close() error {
 		s.connection.mu.Unlock()
 		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 		defer cancel()
-		err = s.connection.sendTyped(ctx, generatedapi.ClientClose, s.dialog, s.riid, map[string]any{"doorbot_id": s.deviceID, "session_id": s.id, "reason": map[string]any{"code": 0, "text": "client_closed"}})
+		err = s.connection.sendTyped(ctx, protocol.MethodClose, s.dialog, s.riid, playbackCloseBody{DoorbotID: s.deviceID, SessionID: s.id, Reason: playbackCloseReason{Code: 0, Text: "client_closed"}})
 	})
 	return err
 }

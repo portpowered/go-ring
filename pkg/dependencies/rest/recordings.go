@@ -9,6 +9,7 @@ import (
 
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/dependencymodels"
+	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -16,16 +17,14 @@ import (
 // The C1 recording does not establish this route's response.
 func (c *Client) GetRecordingShareURL(ctx context.Context, recordingID int64) (string, error) {
 	path := strings.Replace(protocol.RecordingSharePath, "{id}", strconv.FormatInt(recordingID, 10), 1)
-	var response struct {
-		URL string `json:"url"`
-	}
+	var response generatedhttp.RecordingShare
 	if err := c.doJSONRequest(ctx, http.MethodGet, path, nil, &response); err != nil {
 		return "", err
 	}
-	if response.URL == "" {
+	if response.Url == "" {
 		return "", ringapimodels.NewBadRequestError("recording share response lacks URL", nil)
 	}
-	return response.URL, nil
+	return response.Url, nil
 }
 
 // GetDeviceHistory retrieves the history of recordings for a device

@@ -10,11 +10,13 @@ import (
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
+type deviceListResponse struct {
+	Devices []dependencymodels.RingDevice `json:"devices"`
+}
+
 // GetDevices retrieves all devices from the Ring API
 func (c *Client) GetDevices(ctx context.Context) (*dependencymodels.RingDevicesResponse, error) {
-	var raw struct {
-		Devices []dependencymodels.RingDevice `json:"devices"`
-	}
+	var raw deviceListResponse
 	if err := c.doJSONRequest(ctx, "GET", ringapimodels.RingDevicesV3Endpoint, nil, &raw); err != nil {
 		return nil, err
 	}

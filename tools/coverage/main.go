@@ -28,7 +28,8 @@ func main() {
 	}
 	var packages []string
 	for _, name := range strings.Fields(string(output)) {
-		if !strings.Contains(name, "/internal/testkit/") && !strings.HasSuffix(name, "/internal/testkit") {
+		if !strings.Contains(name, "/internal/testkit/") && !strings.HasSuffix(name, "/internal/testkit") &&
+			!strings.HasSuffix(name, "/pkg/generatedhttp") && !strings.HasSuffix(name, "/pkg/generatedsignaling") {
 			packages = append(packages, name)
 		}
 	}
@@ -64,7 +65,7 @@ func main() {
 	}
 	percent := 100 * float64(covered) / float64(total)
 	fmt.Printf("Maintained library coverage: %.2f%% (%d/%d statements); required %.2f%%\n", percent, covered, total, *minimum)
-	fmt.Println("Includes pkg and internal; excludes internal/testkit, examples, test, and tools.")
+	fmt.Println("Includes maintained pkg and internal; excludes generated wire code, testkit, examples, test, and tools.")
 	if percent < *minimum {
 		fail(fmt.Errorf("library coverage target not met"))
 	}

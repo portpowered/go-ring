@@ -1,0 +1,45 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - mnd
+    - cyclop
+  settings:
+    cyclop:
+      max-complexity: 25
+    mnd:
+      checks: [argument]
+      ignored-numbers: ['0', '1', '2', '10', '64', '100']
+    revive:
+      rules:
+        - name: nested-structs
+        - name: function-length
+          arguments: [120, 200]
+        - name: file-length-limit
+          arguments:
+            - max: 650
+              skip-comments: true
+              skip-blank-lines: true
+  exclusions:
+    rules:
+      - path: '(^|/)(pkg/generatedhttp|pkg/generatedsignaling)/'
+        linters: [revive, govet, unused, staticcheck, mnd, cyclop]
+      - path: '_test\.go$'
+        linters: [revive, mnd, cyclop]
+      - path: '(^|/)(test|tools|internal/testkit)/'
+        linters: [revive, mnd, unused, staticcheck, cyclop]
+      - path: '(^|/)examples/'
+        linters: [mnd, cyclop]
+
+formatters:
+  enable:
+    - gofmt

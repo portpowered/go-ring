@@ -242,6 +242,10 @@ func NewClientWithToken(accessToken string, opts ...Option) (*Client, error) {
 	return NewClient(opts...)
 }
 
+type accessTokenClaims struct {
+	HardwareID string `json:"hardware_id"`
+}
+
 func hardwareIDFromAccessToken(accessToken string) string {
 	parts := strings.Split(accessToken, ".")
 	if len(parts) != 3 {
@@ -251,9 +255,7 @@ func hardwareIDFromAccessToken(accessToken string) string {
 	if err != nil {
 		return ""
 	}
-	var claims struct {
-		HardwareID string `json:"hardware_id"`
-	}
+	var claims accessTokenClaims
 	if json.Unmarshal(payload, &claims) != nil {
 		return ""
 	}

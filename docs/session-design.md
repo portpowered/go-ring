@@ -143,10 +143,11 @@ the connection remains open. This interval is SDK policy, pending live cadence
 confirmation; the captures preserve message order but not reliable timing.
 These handles do not imply reconnect/resume behavior after socket failure.
 
-The Go wire definitions in `pkg/generatedapi/contracts.gen.go` come from
-`api/openapi.yaml` and `api/asyncapi.yaml`. Regenerate with
-`go generate ./pkg/generatedapi` when a schema changes; keep the domain
-session types in `pkg/ring`.
+The Go HTTP client in `pkg/generatedhttp` and signaling models in
+`pkg/generatedsignaling` come from `api/openapi.yaml` and `api/asyncapi.yaml`.
+Regenerate with `make generate-api` when a schema changes; the command invokes
+the pinned `oapi-codegen` and Modelina CLIs directly. Keep the domain session
+types in `pkg/ring`.
 
 Replace StartRTCStream/RTCStream with OpenSignaling -> StartDeviceSession/DeviceSession. StopRTCStream is removed; new code closes the session handle. Replace OnICECandidate/GetSDPAnswer with SendICE/Answer. Use SubscribePush for captured signaling push events. The experimental ConnectEvents path remains a separate protocol. Remove the giant ClientInterface from the new API in favor of concrete types and small consumer-defined interfaces.
 

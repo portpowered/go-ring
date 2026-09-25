@@ -137,8 +137,10 @@ func (c *Client) Request2FACode(ctx context.Context, username, password, hardwar
 }
 
 func (c *Client) initiatePKCE(ctx context.Context, hardwareID string) error {
-	verifierBytes := make([]byte, 32)
-	stateBytes := make([]byte, 16)
+	const verifierBytesCount = 32
+	const stateBytesCount = 16
+	verifierBytes := make([]byte, verifierBytesCount)
+	stateBytes := make([]byte, stateBytesCount)
 	if _, err := rand.Read(verifierBytes); err != nil {
 		return ringapimodels.NewInternalServerError("failed to generate PKCE verifier", err)
 	}
@@ -222,6 +224,11 @@ func (c *Client) initiatePKCE(ctx context.Context, hardwareID string) error {
 	return nil
 }
 
+type signInPayload struct {
+	TSVState       string `json:"tsv_state"`
+	NextTimeInSecs *int   `json:"next_time_in_secs"`
+}
+
 func (c *Client) submitCredentials(ctx context.Context, username, password string) (bool, error) {
 	pending := c.pendingPKCE
 	form := url.Values{"username": {username}, "password": {password}, "csrf-token": {pending.csrfToken}}
@@ -229,10 +236,7 @@ func (c *Client) submitCredentials(ctx context.Context, username, password strin
 	if err != nil {
 		return false, err
 	}
-	var payload struct {
-		TSVState       string `json:"tsv_state"`
-		NextTimeInSecs *int   `json:"next_time_in_secs"`
-	}
+	var payload signInPayload
 	_ = json.Unmarshal(body, &payload)
 	location := resp.Header.Get("Location")
 	requires2FA := resp.StatusCode == http.StatusPreconditionFailed || payload.TSVState != "" || payload.NextTimeInSecs != nil || strings.Contains(location, "/2fa")

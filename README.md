@@ -137,7 +137,7 @@ unknown, not be treated as unsupported.
 - [Architecture and ownership](docs/architecture.md)
 - [Overall implementation plan](docs/library-improvement-plan.md) and [porting process](docs/internal/process-of-reverse-engineering.md)
 - [OpenAPI HTTP contracts](api/openapi.yaml) and [AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
-- [Generated Go wire contracts](pkg/generatedapi/contracts.gen.go): run `go generate ./pkg/generatedapi` after editing either schema. `Client.CallHTTP` uses the generated HTTP routes; signaling sends use the generated message-method constants. The generated interfaces are transport-level contracts; the public domain API remains `Client`, `SignalingConnection`, `DeviceSession`, `PlaybackSession`, and `PushSubscription`.
+- [Generated HTTP client](pkg/generatedhttp/client.gen.go) and [generated signaling models](pkg/generatedsignaling): run `make generate-api` after editing the schemas. This invokes pinned `oapi-codegen` and Modelina CLIs directly (Go 1.25+ for generation, Node 22; consumers still build with Go 1.24). The generated HTTP client handles the signaling-ticket request and generated models shape settings, snapshots, and share responses; generated signaling bodies cover live view, ICE, push, playback, and keepalive. The public domain API remains `Client`, `SignalingConnection`, `DeviceSession`, `PlaybackSession`, and `PushSubscription`. Generated wire code is excluded from the maintained-code coverage budget and is checked through recorded replay tests.
 - [Recording formats and verification order](docs/replay-format.md)
 - [Python fixture replay and original-test migration index](docs/python-replay-harness.md)
 - [Remaining migration scope](docs/migration-scope.md)
@@ -148,6 +148,7 @@ unknown, not be treated as unsupported.
 go test -race ./... -timeout 120s
 go vet ./...
 go build ./examples/...
+make lint
 ```
 
 Set `GOWORK=off` when testing this module independently of a surrounding workspace.

@@ -2,6 +2,7 @@
   "name": "go-ring-protocol-document-validation",
   "private": true,
   "devDependencies": {
+    "@asyncapi/modelina-cli": "5.10.1",
     "@asyncapi/parser": "3.6.3"
   }
 }

@@ -8,7 +8,7 @@ commit containing them; no released-version support is implied.
 | `StartRTCStream` returns a legacy RTC handle | Removed. Use `OpenSignaling` → `StartDeviceSession`; the caller supplies SDP and owns its WebRTC media stack. |
 | `StopRTCStream` ignored its ID | Removed. Close the `DeviceSession` handle, then the shared `SignalingConnection` when finished. |
 | `Client.Close` only set a flag | Closes owned signaling connections and live device sessions. |
-| Handwritten `ClientInterface` | Removed. Wire operation/message interfaces and constants are generated in `pkg/generatedapi` from OpenAPI and AsyncAPI. Define a small interface at the call site for domain-level mocking. |
+| Handwritten `ClientInterface` | Removed. HTTP operations and models are generated in `pkg/generatedhttp` by `oapi-codegen`; signaling models are generated in `pkg/generatedsignaling` by Modelina. Define a small interface at the call site for domain-level mocking. |
 | `WithRTCWebSocketURL` | Renamed to `WithSignalingWebSocketURL`; it configures the shared signaling transport used by live view, playback, and push. |
 | HTTP transport/server errors retried mutations | Automatic retries are restricted to GET/HEAD. A mutation can have succeeded even if its reply was lost; callers decide whether retrying is appropriate. |
 | Error helper classification required the outermost concrete type | `ringapimodels.Is...Error` and `IsHTTPStatusCode` inspect wrapped errors. `errors.Is` / `errors.As` remain available. |

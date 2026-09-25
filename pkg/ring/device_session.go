@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
+	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
 
 type SessionState string
@@ -124,31 +125,131 @@ type DeviceSession struct {
 	doneOnce   sync.Once
 }
 
-func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartDeviceSessionRequest) (*DeviceSession, error) {
-	started := time.Now()
-	if err := ctx.Err(); err != nil {
-		return nil, err
+type liveAnswerInfo struct {
+	PingInterval json.RawMessage `json:"ping_interval"`
+	SessionID    string          `json:"session_id"`
+}
+
+type liveAnswerBody struct {
+	DeviceID  int64          `json:"doorbot_id"`
+	SessionID string         `json:"session_id"`
+	SDP       string         `json:"sdp"`
+	Info      liveAnswerInfo `json:"session_info"`
+	Type      string         `json:"type"`
+}
+
+type liveNegotiation struct {
+	signalID  string
+	riid      string
+	answerSDP string
+	controlID string
+	heartbeat time.Duration
+}
+
+func (c *SignalingConnection) waitForLiveAnswer(ctx context.Context, events <-chan signaling.Message, id int64, deadlineError func() error) (liveNegotiation, error) {
+	state := liveNegotiation{heartbeat: signaling.DefaultHeartbeatInterval}
+	for state.answerSDP == "" || state.signalID == "" {
+		select {
+		case m := <-events:
+			switch m.Method {
+			case protocol.MethodSessionCreated:
+				var body generatedsignaling.SessionCreatedBody
+				if json.Unmarshal(m.Body, &body) != nil || int64(body.DoorbotId) != id || body.SessionId == "" {
+					return state, fmt.Errorf("invalid session_created response")
+				}
+				state.signalID, state.riid = body.SessionId, m.RIID
+			case protocol.MethodSDP:
+				var body liveAnswerBody
+				if json.Unmarshal(m.Body, &body) != nil || body.DeviceID != id || body.Type != "answer" || body.SDP == "" {
+					return state, fmt.Errorf("invalid SDP answer")
+				}
+				if state.signalID != "" && body.SessionID != state.signalID {
+					return state, fmt.Errorf("SDP signaling session mismatch")
+				}
+				state.signalID, state.answerSDP, state.controlID = body.SessionID, body.SDP, body.Info.SessionID
+				if len(body.Info.PingInterval) > 0 {
+					var seconds int
+					if json.Unmarshal(body.Info.PingInterval, &seconds) != nil || seconds <= 0 || seconds > int(signaling.MaxHeartbeatInterval/time.Second) {
+						return state, fmt.Errorf("invalid negotiated heartbeat interval")
+					}
+					state.heartbeat = time.Duration(seconds) * time.Second
+				}
+				if m.RIID != "" {
+					state.riid = m.RIID
+				}
+			case protocol.MethodClose:
+				return state, fmt.Errorf("signaling peer closed during negotiation")
+			}
+		case <-ctx.Done():
+			return state, fmt.Errorf("signaling negotiation failed: %w", deadlineError())
+		case <-c.done:
+			return state, c.Err()
+		}
 	}
+	return state, nil
+}
+
+func (c *SignalingConnection) waitForCameraStarted(ctx, negotiationCtx context.Context, events <-chan signaling.Message, session *DeviceSession, deadlineError func() error) error {
+	for {
+		select {
+		case message := <-events:
+			if message.Method == protocol.MethodSessionCreated || message.Method == protocol.MethodSDP {
+				continue
+			}
+			if err := session.core.Handle(message); err != nil {
+				return err
+			}
+			if message.Method == protocol.MethodClose && session.matches(message) {
+				return signaling.ErrClosed
+			}
+			if message.Method == protocol.MethodCameraStarted && session.matches(message) {
+				close(session.ready)
+				return nil
+			}
+		case <-negotiationCtx.Done():
+			return fmt.Errorf("session activation failed: %w", deadlineError())
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-c.done:
+			return c.Err()
+		case <-session.done:
+			return session.Wait(context.Background())
+		}
+	}
+}
+
+func validateSessionRequest(req StartDeviceSessionRequest) (int64, time.Duration, error) {
 	id, err := strconv.ParseInt(req.DeviceID, 10, 64)
 	if err != nil || id <= 0 {
-		return nil, fmt.Errorf("device ID must be a positive integer")
+		return 0, 0, fmt.Errorf("device ID must be a positive integer")
 	}
 	if req.Offer.Type != "offer" || req.Offer.SDP == "" {
-		return nil, fmt.Errorf("offer must contain type offer and SDP")
+		return 0, 0, fmt.Errorf("offer must contain type offer and SDP")
 	}
 	if req.ICEMode != "" && req.ICEMode != ICETrickle && req.ICEMode != ICENonTrickle {
-		return nil, fmt.Errorf("unsupported ICE candidate mode %q", req.ICEMode)
+		return 0, 0, fmt.Errorf("unsupported ICE candidate mode %q", req.ICEMode)
 	}
-	_, err = signaling.ParseSDP(req.Offer.SDP)
-	if err != nil {
-		return nil, fmt.Errorf("invalid SDP offer: %w", err)
+	if _, err = signaling.ParseSDP(req.Offer.SDP); err != nil {
+		return 0, 0, fmt.Errorf("invalid SDP offer: %w", err)
 	}
 	maxAge := req.MaxAge
 	if maxAge == 0 {
 		maxAge = signaling.MaxSessionAge
 	}
 	if maxAge <= 0 || maxAge > signaling.MaxSessionAge {
-		return nil, fmt.Errorf("maximum session age must be between zero and sixty minutes")
+		return 0, 0, fmt.Errorf("maximum session age must be between zero and sixty minutes")
+	}
+	return id, maxAge, nil
+}
+
+func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartDeviceSessionRequest) (*DeviceSession, error) {
+	started := time.Now()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	id, maxAge, err := validateSessionRequest(req)
+	if err != nil {
+		return nil, err
 	}
 	negotiationBudget := min(maxAge, signaling.NegotiationTimeout)
 	negotiationCtx, cancel := context.WithDeadline(ctx, started.Add(negotiationBudget))
@@ -169,14 +270,13 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	c.pending[dialog] = events
 	c.mu.Unlock()
 	cleanup := func() { c.mu.Lock(); delete(c.pending, dialog); c.mu.Unlock() }
-	streamOptions := map[string]bool{"audio_enabled": req.AudioEnabled, "video_enabled": req.VideoEnabled}
-	body := map[string]any{"doorbot_id": id, "stream_options": streamOptions, "sdp": req.Offer.SDP, "type": "offer"}
+	body := generatedsignaling.LiveViewBody{DoorbotId: int(id), StreamOptions: &generatedsignaling.LiveStreamOptions{AudioEnabled: req.AudioEnabled, VideoEnabled: req.VideoEnabled}, Sdp: req.Offer.SDP, ReservedType: "offer"}
 	raw, _ := json.Marshal(body)
 	if err = c.send(negotiationCtx, signaling.Message{Method: "live_view", DialogID: dialog, Body: raw}); err != nil {
 		cleanup()
 		return nil, err
 	}
-	var signalID, riid, answerSDP, controlID string
+	var signalID, riid string
 	startedSuccessfully := false
 	defer func() {
 		if !startedSuccessfully && signalID != "" {
@@ -185,66 +285,13 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 			cancel()
 		}
 	}()
-	heartbeat := signaling.DefaultHeartbeatInterval
-	for answerSDP == "" || signalID == "" {
-		select {
-		case m := <-events:
-			if m.Method == "session_created" {
-				var v struct {
-					DeviceID  int64  `json:"doorbot_id"`
-					SessionID string `json:"session_id"`
-				}
-				if json.Unmarshal(m.Body, &v) != nil || v.DeviceID != id || v.SessionID == "" {
-					cleanup()
-					return nil, fmt.Errorf("invalid session_created response")
-				}
-				signalID = v.SessionID
-				riid = m.RIID
-			} else if m.Method == "sdp" {
-				var v struct {
-					DeviceID  int64  `json:"doorbot_id"`
-					SessionID string `json:"session_id"`
-					SDP       string `json:"sdp"`
-					Info      struct {
-						PingInterval json.RawMessage `json:"ping_interval"`
-						SessionID    string          `json:"session_id"`
-					} `json:"session_info"`
-					Type string `json:"type"`
-				}
-				if json.Unmarshal(m.Body, &v) != nil || v.DeviceID != id || v.Type != "answer" || v.SDP == "" {
-					cleanup()
-					return nil, fmt.Errorf("invalid SDP answer")
-				}
-				if signalID != "" && v.SessionID != signalID {
-					cleanup()
-					return nil, fmt.Errorf("SDP signaling session mismatch")
-				}
-				signalID = v.SessionID
-				answerSDP = v.SDP
-				controlID = v.Info.SessionID
-				if len(v.Info.PingInterval) > 0 {
-					var seconds int
-					if json.Unmarshal(v.Info.PingInterval, &seconds) != nil || seconds <= 0 || seconds > int(signaling.MaxHeartbeatInterval/time.Second) {
-						cleanup()
-						return nil, fmt.Errorf("invalid negotiated heartbeat interval")
-					}
-					heartbeat = time.Duration(seconds) * time.Second
-				}
-				if m.RIID != "" {
-					riid = m.RIID
-				}
-			} else if m.Method == "close" {
-				cleanup()
-				return nil, fmt.Errorf("signaling peer closed during negotiation")
-			}
-		case <-negotiationCtx.Done():
-			cleanup()
-			return nil, fmt.Errorf("signaling negotiation failed: %w", negotiationError())
-		case <-c.done:
-			cleanup()
-			return nil, c.Err()
-		}
+	negotiated, err := c.waitForLiveAnswer(negotiationCtx, events, id, negotiationError)
+	signalID, riid = negotiated.signalID, negotiated.riid
+	if err != nil {
+		cleanup()
+		return nil, err
 	}
+	answerSDP, controlID, heartbeat := negotiated.answerSDP, negotiated.controlID, negotiated.heartbeat
 	if controlID == "" || controlID == signalID {
 		cleanup()
 		return nil, fmt.Errorf("answer is missing an independent PTZ session identity")
@@ -294,44 +341,11 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 		cleanup()
 		return nil, err
 	}
-	for {
-		select {
-		case m := <-events:
-			if m.Method == "session_created" || m.Method == "sdp" {
-				continue
-			}
-			if e := created.core.Handle(m); e != nil {
-				created.terminate(e)
-				cleanup()
-				return nil, e
-			}
-			if m.Method == "close" && created.matches(m) {
-				created.terminate(signaling.ErrClosed)
-				cleanup()
-				return nil, signaling.ErrClosed
-			}
-			if m.Method == "camera_started" && created.matches(m) {
-				close(created.ready)
-				goto activated
-			}
-		case <-negotiationCtx.Done():
-			created.terminate(negotiationError())
-			cleanup()
-			return nil, fmt.Errorf("session activation failed: %w", negotiationError())
-		case <-ctx.Done():
-			created.terminate(ctx.Err())
-			cleanup()
-			return nil, ctx.Err()
-		case <-c.done:
-			created.terminate(c.Err())
-			cleanup()
-			return nil, c.Err()
-		case <-created.done:
-			cleanup()
-			return nil, created.Wait(context.Background())
-		}
+	if err = c.waitForCameraStarted(ctx, negotiationCtx, events, created, negotiationError); err != nil {
+		created.terminate(err)
+		cleanup()
+		return nil, err
 	}
-activated:
 	c.mu.Lock()
 	delete(c.pending, dialog)
 	if c.closed {
@@ -372,11 +386,8 @@ func (s *DeviceSession) watch() {
 	s.connection.removeSession(s.dialogID)
 }
 func (s *DeviceSession) matches(m signaling.Message) bool {
-	var body struct {
-		DeviceID  int64  `json:"doorbot_id"`
-		SessionID string `json:"session_id"`
-	}
-	return m.DialogID == s.dialogID && json.Unmarshal(m.Body, &body) == nil && body.DeviceID == s.deviceID && body.SessionID == s.signalID
+	var body generatedsignaling.SessionBody
+	return m.DialogID == s.dialogID && json.Unmarshal(m.Body, &body) == nil && int64(body.DoorbotId) == s.deviceID && body.SessionId == s.signalID
 }
 func (s *DeviceSession) handle(m signaling.Message) {
 	if err := s.core.Handle(m); err != nil {
@@ -449,7 +460,8 @@ func (s *DeviceSession) SendICE(ctx context.Context, req ICECandidateRequest) er
 	if req.Candidate == "" {
 		return fmt.Errorf("ICE candidate must not be empty")
 	}
-	return s.connection.send(ctx, signaling.Message{Method: "ice", DialogID: s.dialogID, RIID: s.riid, Body: mustJSON(map[string]any{"doorbot_id": s.deviceID, "ice": req.Candidate, "mid": req.MID, "mlineindex": req.MLineIndex})})
+	body := generatedsignaling.LiveIceBody{DoorbotId: int(s.deviceID), Ice: req.Candidate, Mid: req.MID, Mlineindex: req.MLineIndex}
+	return s.connection.send(ctx, signaling.Message{Method: protocol.MethodICE, DialogID: s.dialogID, RIID: s.riid, Body: mustJSON(body)})
 }
 
 func (s *DeviceSession) call(ctx context.Context, method string, params map[string]any) (*PTZResult, error) {

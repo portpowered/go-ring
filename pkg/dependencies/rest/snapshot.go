@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -17,19 +18,15 @@ const maxSnapshotBytes = 16 << 20
 // RefreshSnapshotTimestamp uses the pinned Python legacy profile. The first
 // response may have no timestamp; callers trigger once, then poll for freshness.
 func (c *Client) RefreshSnapshotTimestamp(ctx context.Context, deviceID int64) (int64, error) {
-	var response struct {
-		Timestamps []struct {
-			Timestamp int64 `json:"timestamp"`
-		} `json:"timestamps"`
-	}
-	err := c.doJSONRequest(ctx, http.MethodPost, protocol.LegacySnapshotTimestampPath, map[string]any{"doorbot_ids": []int64{deviceID}}, &response)
+	var response generatedhttp.SnapshotTimestampResponse
+	err := c.doJSONRequest(ctx, http.MethodPost, protocol.LegacySnapshotTimestampPath, generatedhttp.SnapshotTimestampRequest{DoorbotIds: []int{int(deviceID)}}, &response)
 	if err != nil {
 		return 0, err
 	}
-	if len(response.Timestamps) == 0 {
+	if response.Timestamps == nil || len(*response.Timestamps) == 0 {
 		return 0, nil
 	}
-	return response.Timestamps[0].Timestamp, nil
+	return (*response.Timestamps)[0].Timestamp, nil
 }
 
 // GetSnapshotImage buffers one bounded JPEG response so the caller owns plain

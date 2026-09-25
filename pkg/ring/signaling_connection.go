@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/portpowered/go-ring/internal/signaling"
-	"github.com/portpowered/go-ring/pkg/generatedapi"
+	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -84,13 +84,15 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	if c.hardwareID != "" {
 		h.Set("hardware_id", c.hardwareID)
 	}
-	resp, err := c.CallHTTP(ctx, generatedapi.OperationRequestLegacySignalingTicket, generatedapi.HTTPRequest{Headers: h})
+	wire, err := generatedhttp.NewClient(c.endpoints.SolutionsBaseURL, generatedhttp.WithHTTPClient(c.restClient.HTTPClient()))
+	if err != nil {
+		return nil, ringapimodels.NewNetworkError("failed to configure signaling ticket client", err)
+	}
+	resp, err := wire.RequestLegacySignalingTicket(ctx, func(_ context.Context, req *http.Request) error { req.Header = h.Clone(); return nil })
 	if err != nil {
 		return nil, ringapimodels.NewNetworkError("failed to request signaling ticket", err)
 	}
-	var ticket struct {
-		Ticket string `json:"ticket"`
-	}
+	var ticket generatedhttp.LegacySignalingTicket
 	b, readErr := io.ReadAll(io.LimitReader(resp.Body, signaling.MaxTicketResponseBytes+1))
 	resp.Body.Close()
 	if readErr != nil {

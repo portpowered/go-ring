@@ -61,13 +61,7 @@ paths:
         required: true
         content:
           application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required: [username, password, csrf-token]
-              properties:
-                username: {type: string}
-                password: {type: string, format: password}
-                csrf-token: {type: string}
+            schema: {$ref: '#/components/schemas/SignInForm'}
       responses:
         '200': {$ref: '#/components/responses/Json'}
         '302': {$ref: '#/components/responses/OAuthRedirect'}
@@ -83,13 +77,7 @@ paths:
         required: true
         content:
           application/x-www-form-urlencoded:
-            schema:
-              type: object
-              required: [2fa_code, csrf-token, remember_me]
-              properties:
-                2fa_code: {type: string}
-                csrf-token: {type: string}
-                remember_me: {type: string, enum: ['false']}
+            schema: {$ref: '#/components/schemas/TwoFactorForm'}
       responses:
         '200': {$ref: '#/components/responses/Json'}
         '201': {$ref: '#/components/responses/Json'}
@@ -242,10 +230,7 @@ paths:
           description: Playback share URL
           content:
             application/json:
-              schema:
-                type: object
-                required: [url]
-                properties: {url: {type: string, format: uri}}
+              schema: {$ref: '#/components/schemas/RecordingShare'}
         default: {$ref: '#/components/responses/HTTPFailure'}
   /device_info/v3/devices:
     get:
@@ -280,14 +265,14 @@ paths:
         - {$ref: '#/components/parameters/order'}
         - {$ref: '#/components/parameters/limit'}
         - {$ref: '#/components/parameters/capabilities'}
-      responses: {'200': {$ref: '#/components/responses/Json'}}
+      responses: {'200': {$ref: '#/components/responses/DeviceTimeline'}}
   /evm/v3/history/devices:
     get:
       operationId: getHistoryDevices
       parameters:
         - {$ref: '#/components/parameters/source_ids'}
         - {$ref: '#/components/parameters/capabilities'}
-      responses: {'200': {$ref: '#/components/responses/Json'}}
+      responses: {'200': {$ref: '#/components/responses/HistoryDevices'}}
   /clients_api/doorbots/{device_id}/siren_on:
     put:
       operationId: turnSirenOn
@@ -310,25 +295,13 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [doorbot_ids]
-              properties:
-                doorbot_ids: {type: array, minItems: 1, items: {type: integer, minimum: 1}}
+            schema: {$ref: '#/components/schemas/SnapshotTimestampRequest'}
       responses:
         '200':
           description: Optional timestamp for the requested snapshot
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  timestamps:
-                    type: array
-                    items:
-                      type: object
-                      required: [timestamp]
-                      properties: {timestamp: {type: integer, format: int64}}
+              schema: {$ref: '#/components/schemas/SnapshotTimestampResponse'}
         default: {$ref: '#/components/responses/HTTPFailure'}
   /clients_api/snapshots/image/{device_id}:
     get:
@@ -354,7 +327,7 @@ paths:
         - {$ref: '#/components/parameters/locationSubscription'}
         - {$ref: '#/components/parameters/enableExtendedEmergencyCellUsage'}
         - {$ref: '#/components/parameters/requestedTransport'}
-      responses: {'200': {$ref: '#/components/responses/Json'}}
+      responses: {'200': {$ref: '#/components/responses/CapturedTickets'}}
   /api/v1/clap/ticket/request/signalsocket:
     post:
       operationId: requestLegacySignalingTicket
@@ -363,7 +336,7 @@ paths:
         covered by local tests, but was not found in the C1 HTTP recordings.
         It is distinct from the captured GET /api/v1/clap/tickets operation.
       servers: [{url: https://prd-api-us.prd.rings.solutions}]
-      responses: {'200': {$ref: '#/components/responses/Json'}}
+      responses: {'200': {$ref: '#/components/responses/LegacySignalingTicket'}}
   /commands/v1/devices/{device_id}:
     patch:
       operationId: sendDeviceCommand
@@ -372,10 +345,7 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [command_name]
-              properties: {command_name: {type: string, enum: [reboot]}}
+            schema: {$ref: '#/components/schemas/DeviceCommand'}
       responses: {'204': {description: Command accepted; empty response}}
   /duos/v1/devices/{device_id}/update:
     put:
@@ -385,36 +355,29 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [entity]
-              properties:
-                entity:
-                  type: object
-                  required: [live_view_enabled]
-                  properties: {live_view_enabled: {type: boolean}}
+            schema: {$ref: '#/components/schemas/LiveViewSettingRequest'}
       responses: {'204': {description: Setting accepted; empty response}}
   /groups/v1/locations/{location_id}/devices:
     get:
       operationId: listLocationDevices
       parameters: [{$ref: '#/components/parameters/location_id'}]
-      responses: {'200': {$ref: '#/components/responses/Json'}}
+      responses: {'200': {$ref: '#/components/responses/LocationGroupDevices'}}
   /groups/v1/locations/{location_id}/groups:
     get:
       operationId: listLocationGroups
       parameters: [{$ref: '#/components/parameters/location_id'}]
-      responses: {'200': {$ref: '#/components/responses/Json'}}
+      responses: {'200': {$ref: '#/components/responses/LocationGroups'}}
   /location_info/v3/locations:
     get:
       operationId: listLocations
-      responses: {'200': {$ref: '#/components/responses/Json'}}
+      responses: {'200': {$ref: '#/components/responses/LocationList'}}
   /location_info/v4/locations/{location_id}:
     get:
       operationId: getLocation
       parameters:
         - {$ref: '#/components/parameters/location_id'}
         - {$ref: '#/components/parameters/include'}
-      responses: {'200': {$ref: '#/components/responses/Json'}}
+      responses: {'200': {$ref: '#/components/responses/LocationDetail'}}
   /clients_api/dings/{recording_id}:
     delete:
       operationId: deleteRecording
@@ -486,6 +449,14 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/DeviceSettings'}
+    DeviceTimeline: {description: Captured device timeline, content: {application/json: {schema: {$ref: '#/components/schemas/DeviceTimeline'}}}}
+    HistoryDevices: {description: Captured account history, content: {application/json: {schema: {$ref: '#/components/schemas/HistoryDevices'}}}}
+    CapturedTickets: {description: Captured GET ticket profile, content: {application/json: {schema: {$ref: '#/components/schemas/CapturedTickets'}}}}
+    LegacySignalingTicket: {description: Legacy POST signaling ticket, content: {application/json: {schema: {$ref: '#/components/schemas/LegacySignalingTicket'}}}}
+    LocationGroupDevices: {description: Captured group-device envelope, content: {application/json: {schema: {$ref: '#/components/schemas/LocationGroupDevices'}}}}
+    LocationGroups: {description: Captured location groups, content: {application/json: {schema: {$ref: '#/components/schemas/LocationGroups'}}}}
+    LocationList: {description: Captured locations, content: {application/json: {schema: {$ref: '#/components/schemas/LocationList'}}}}
+    LocationDetail: {description: Captured location detail, content: {application/json: {schema: {$ref: '#/components/schemas/LocationDetail'}}}}
     SirenOn:
       description: Captured server status; the request does not set its duration
       content:
@@ -529,6 +500,54 @@ components:
             items: {$ref: '#/components/schemas/Recording'}
     Json: {description: Captured JSON response, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
   schemas:
+    SignInForm:
+      type: object
+      required: [username, password, csrf-token]
+      properties:
+        username: {type: string}
+        password: {type: string, format: password}
+        csrf-token: {type: string}
+    TwoFactorForm:
+      type: object
+      required: [2fa_code, csrf-token, remember_me]
+      properties:
+        2fa_code: {type: string}
+        csrf-token: {type: string}
+        remember_me: {type: string, enum: ['false']}
+    RecordingShare:
+      type: object
+      required: [url]
+      properties:
+        url: {type: string, format: uri}
+    SnapshotTimestampRequest:
+      type: object
+      required: [doorbot_ids]
+      properties:
+        doorbot_ids: {type: array, minItems: 1, items: {type: integer, minimum: 1}}
+    SnapshotTimestampResponse:
+      type: object
+      properties:
+        timestamps: {type: array, items: {$ref: '#/components/schemas/SnapshotTimestamp'}}
+    SnapshotTimestamp:
+      type: object
+      required: [timestamp]
+      properties:
+        timestamp: {type: integer, format: int64}
+    DeviceCommand:
+      type: object
+      required: [command_name]
+      properties:
+        command_name: {type: string, enum: [reboot]}
+    LiveViewSettingRequest:
+      type: object
+      required: [entity]
+      properties:
+        entity: {$ref: '#/components/schemas/LiveViewSetting'}
+    LiveViewSetting:
+      type: object
+      required: [live_view_enabled]
+      properties:
+        live_view_enabled: {type: boolean}
     OAuthTokenGrant:
       description: >-
         Form variants currently used by Go: authorization-code PKCE, explicit
@@ -616,16 +635,104 @@ components:
       type: object
       required: [devices]
       properties:
-        devices: {type: array, items: {type: object}}
-        device_operation_sets: {type: object}
+        devices: {type: array, items: {$ref: '#/components/schemas/Device'}}
+        device_operation_sets:
+          type: object
+          additionalProperties: {$ref: '#/components/schemas/DeviceOperationSet'}
       additionalProperties: true
     DeviceDetail:
       type: object
       required: [device]
       properties:
-        device: {type: object}
-        device_operation_set: {type: object}
+        device: {$ref: '#/components/schemas/Device'}
+        device_operation_set:
+          type: object
+          additionalProperties: {$ref: '#/components/schemas/DeviceOperationSet'}
       additionalProperties: true
+    Device:
+      description: Shared captured inventory/detail shape; unknown hardware fields remain open.
+      type: object
+      required: [id, kind, description]
+      properties:
+        id: {type: integer, format: int64}
+        device_id: {type: string}
+        kind: {type: string}
+        description: {type: string}
+        location_id: {type: string}
+        family: {type: string, description: Python legacy devices may include family; absent in the v3 capture.}
+        owned: {type: boolean}
+        created_at: {type: string, format: date-time}
+        deactivated_at: {type: [string, 'null'], format: date-time}
+        operation_set: {type: string}
+        owner: {$ref: '#/components/schemas/DeviceOwner'}
+        health: {$ref: '#/components/schemas/DeviceHealth'}
+        features: {$ref: '#/components/schemas/DeviceFeatures'}
+        settings: {$ref: '#/components/schemas/DeviceLegacySettings'}
+      additionalProperties: true
+    DeviceOwner:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        first_name: {type: string}
+        last_name: {type: string}
+        email: {type: string}
+      additionalProperties: true
+    DeviceHealth:
+      type: object
+      properties:
+        connected: {type: boolean}
+        rssi: {type: number}
+        ptz_connected: {type: [string, 'null']}
+        supported_rpc_commands: {type: array, items: {type: string}}
+        firmware_version: {type: string}
+        battery_percentage_category: {type: string}
+      additionalProperties: true
+    DeviceFeatures:
+      type: object
+      properties:
+        auto_track: {$ref: '#/components/schemas/FeatureAvailability'}
+        auto_zoom_track:
+          anyOf:
+            - {$ref: '#/components/schemas/FeatureAvailability'}
+            - {type: 'null'}
+        video_rendering: {$ref: '#/components/schemas/VideoRenderingFeature'}
+        motions_enabled: {type: boolean}
+      additionalProperties: true
+    FeatureAvailability:
+      type: object
+      properties:
+        eligibility: {$ref: '#/components/schemas/FeatureEligibility'}
+        enablement: {$ref: '#/components/schemas/FeatureEnablement'}
+      additionalProperties: true
+    FeatureEligibility:
+      type: object
+      properties:
+        eligible: {type: boolean}
+        ineligibility_reasons: {type: array, items: {type: string}}
+      additionalProperties: true
+    FeatureEnablement:
+      type: object
+      properties:
+        allowed: {type: boolean}
+        enabled: {type: boolean}
+        disallow_reasons: {type: array, items: {type: string}}
+      additionalProperties: true
+    VideoRenderingFeature:
+      type: object
+      properties:
+        max_digital_zoom_level: {type: number}
+      additionalProperties: true
+    DeviceLegacySettings:
+      type: object
+      properties:
+        motion_detection_enabled: {type: boolean}
+        doorbell_volume: {type: integer}
+        live_view_disabled: {type: boolean}
+      additionalProperties: true
+    DeviceOperationSet:
+      description: Operation names are dynamic; captured entries are empty capability descriptors.
+      type: object
+      additionalProperties: {type: object, additionalProperties: true}
     DeviceSettings:
       type: object
       properties:
@@ -633,12 +740,73 @@ components:
           anyOf:
             - {$ref: '#/components/schemas/MotionSettings'}
             - {type: 'null'}
+        ptz_settings: {$ref: '#/components/schemas/PTZSettings'}
+        video_settings: {$ref: '#/components/schemas/VideoSettings'}
+        volume_settings: {$ref: '#/components/schemas/VolumeSettings'}
+        chime_settings: {$ref: '#/components/schemas/ChimeSettings'}
       additionalProperties: {$ref: '#/components/schemas/JsonValue'}
     MotionSettings:
       type: object
       properties:
         motion_detection_enabled: {type: [boolean, 'null']}
       additionalProperties: {$ref: '#/components/schemas/JsonValue'}
+    PTZSettings:
+      type: object
+      properties:
+        mode: {type: string}
+        auto_scan: {$ref: '#/components/schemas/PTZAutoScan'}
+        pan_settings: {$ref: '#/components/schemas/PTZAxisSettings'}
+        tilt_settings: {$ref: '#/components/schemas/PTZAxisSettings'}
+      additionalProperties: true
+    PTZAutoScan:
+      type: object
+      properties:
+        pause_ms: {type: integer}
+        step_size: {type: number}
+      additionalProperties: true
+    PTZAxisSettings:
+      type: object
+      properties:
+        movement: {$ref: '#/components/schemas/PTZMovement'}
+        positions: {$ref: '#/components/schemas/PTZPositions'}
+      additionalProperties: true
+    PTZMovement:
+      type: object
+      properties:
+        max_acceleration: {type: number}
+        max_speed: {type: number}
+        step_size: {type: number}
+      additionalProperties: true
+    PTZPositions:
+      type: object
+      properties:
+        default: {type: number}
+        max: {type: number}
+        min: {type: number}
+      additionalProperties: true
+    VideoSettings:
+      type: object
+      properties:
+        hdr_enable: {type: boolean}
+        hevc_enabled: {type: boolean}
+        brightness: {type: integer}
+        clip_length_max: {type: integer}
+        clip_length_min: {type: integer}
+      additionalProperties: true
+    VolumeSettings:
+      type: object
+      properties:
+        doorbell_volume: {type: integer}
+        mic_volume: {type: integer}
+        voice_volume: {type: integer}
+      additionalProperties: true
+    ChimeSettings:
+      type: object
+      properties:
+        duration: {type: integer}
+        enable: {type: boolean}
+        type: {type: integer}
+      additionalProperties: true
     DeviceSettingsPatch:
       type: object
       minProperties: 1
@@ -669,12 +837,154 @@ components:
         duration: {type: integer}
         seconds_remaining: {type: integer}
       additionalProperties: true
+    LegacySignalingTicket:
+      type: object
+      required: [ticket]
+      properties:
+        ticket: {type: string, minLength: 1}
+      additionalProperties: true
+    CapturedTickets:
+      type: object
+      required: [host, ticket]
+      properties:
+        host: {type: string}
+        ticket: {type: string}
+        subscriptionTopics: {type: array, items: {type: string}}
+        assets: {type: array, items: {$ref: '#/components/schemas/JsonValue'}}
+      additionalProperties: true
+    TimelineEvent:
+      type: object
+      required: [event_id, start_time, event_type]
+      properties:
+        schema: {type: string}
+        source_id: {type: string}
+        event_id: {type: string}
+        start_time: {type: string, format: date-time}
+        end_time: {type: [string, 'null'], format: date-time}
+        event_type: {type: string}
+        state: {type: string}
+        duration_ms: {type: integer}
+        is_favorite: {type: boolean}
+        recording_status: {type: string}
+        device: {$ref: '#/components/schemas/TimelineDevice'}
+      additionalProperties: true
+    TimelineDevice:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        description: {type: string}
+        type: {type: string}
+      additionalProperties: true
+    DeviceTimeline:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/TimelineEvent'}}
+        pagination_key: {type: [string, 'null']}
+      additionalProperties: true
+    HistoryDevices:
+      type: object
+      required: [events]
+      properties:
+        schema: {type: string}
+        events: {type: array, items: {$ref: '#/components/schemas/TimelineEvent'}}
+        feed: {type: array, items: {$ref: '#/components/schemas/HistoryFeedItem'}}
+        pagination_key: {type: [string, 'null']}
+      additionalProperties: true
+    HistoryFeedItem:
+      type: object
+      properties:
+        id: {type: string}
+        type: {type: string}
+      additionalProperties: true
+    LocationGroupDevices:
+      type: object
+      required: [groups]
+      properties:
+        groups: {type: array, items: {$ref: '#/components/schemas/LocationGroup'}}
+      additionalProperties: true
+    LocationGroups:
+      type: object
+      properties:
+        device_groups: {type: [array, 'null'], items: {$ref: '#/components/schemas/LocationGroup'}}
+        is_owner: {type: boolean}
+      additionalProperties: true
+    LocationGroup:
+      description: Group entries were empty or null in the capture; identity fields follow the Python group baseline.
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+      additionalProperties: true
+    LocationList:
+      type: object
+      required: [user_locations]
+      properties:
+        user_locations: {type: array, items: {$ref: '#/components/schemas/LocationSummary'}}
+        location_operation_sets:
+          type: object
+          additionalProperties: {$ref: '#/components/schemas/DeviceOperationSet'}
+      additionalProperties: true
+    LocationSummary:
+      type: object
+      required: [location_id, name]
+      properties:
+        location_id: {type: string}
+        owner_id: {type: integer, format: int64}
+        name: {type: string}
+        geo_coordinates: {$ref: '#/components/schemas/GeoCoordinates'}
+        address: {$ref: '#/components/schemas/LocationAddress'}
+        is_owner: {type: boolean}
+        location_type: {type: string}
+      additionalProperties: true
+    GeoCoordinates:
+      type: object
+      properties:
+        latitude: {type: number}
+        longitude: {type: number}
+      additionalProperties: true
+    LocationAddress:
+      type: object
+      properties:
+        address1: {type: string}
+        address2: {type: string}
+        city: {type: string}
+        state: {type: string}
+        zip_code: {type: string}
+        country: {type: string}
+        timezone: {type: string}
+      additionalProperties: true
+    LocationDetail:
+      type: object
+      required: [data]
+      properties:
+        meta: {$ref: '#/components/schemas/LocationMeta'}
+        data: {$ref: '#/components/schemas/LocationResource'}
+        included: {type: array, items: {$ref: '#/components/schemas/LocationResource'}}
+      additionalProperties: true
+    LocationMeta:
+      type: object
+      properties:
+        time: {type: string, format: date-time}
+      additionalProperties: true
+    LocationResource:
+      type: object
+      required: [type, id]
+      properties:
+        type: {type: string}
+        id: {type: string}
+        attributes: {$ref: '#/components/schemas/LocationAttributes'}
+      additionalProperties: true
+    LocationAttributes:
+      type: object
+      properties:
+        name: {type: string}
+        city: {type: string}
+        country: {type: string}
+        state: {type: string}
+        latitude: {type: number}
+        longitude: {type: number}
+        time_zone: {type: string}
+      additionalProperties: true
     JsonValue:
-      description: Operation-specific captured JSON; see its sanitized recording
-      oneOf:
-        - {type: object}
-        - {type: array}
-        - {type: string}
-        - {type: number}
-        - {type: boolean}
-        - {type: 'null'}
+      description: Explicit escape hatch for fields without observed structure or typed error responses.
