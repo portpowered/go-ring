@@ -150,7 +150,10 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	// Retry logic
-	maxRetries := 3
+	maxRetries := 1
+	if method == http.MethodGet || method == http.MethodHead {
+		maxRetries = 3
+	}
 	var resp *http.Response
 	for i := 0; i < maxRetries; i++ {
 		attemptReq := req

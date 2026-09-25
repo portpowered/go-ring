@@ -56,7 +56,7 @@ func TestDoRequestRetryRewindsJSONBodyAndClosesDiscardedResponse(t *testing.T) {
 			return nil, err
 		}
 		bodies = append(bodies, string(body))
-		if req.URL.String() != "https://api.example.test/v3/devices" || req.Method != http.MethodPatch {
+		if req.URL.String() != "https://api.example.test/v3/devices" || req.Method != http.MethodGet {
 			t.Errorf("unexpected request target: %s %s", req.Method, req.URL)
 		}
 		if calls == 1 {
@@ -77,7 +77,7 @@ func TestDoRequestRetryRewindsJSONBodyAndClosesDiscardedResponse(t *testing.T) {
 			return "test-access-token", nil
 		}),
 	)
-	resp, err := client.doRequest(context.Background(), http.MethodPatch, "/v3/devices", map[string]any{"enabled": false, "name": "lamp"})
+	resp, err := client.doRequest(context.Background(), http.MethodGet, "/v3/devices", map[string]any{"enabled": false, "name": "lamp"})
 	if err != nil {
 		t.Fatalf("doRequest() error = %v", err)
 	}
@@ -94,6 +94,37 @@ func TestDoRequestRetryRewindsJSONBodyAndClosesDiscardedResponse(t *testing.T) {
 	if client.HTTPClient() != httpClient {
 		t.Fatal("custom HTTP client was not retained")
 	}
+}
+
+func TestDoRequestDoesNotRetryMutation(t *testing.T) {
+	t.Run("server error", func(t *testing.T) {
+		calls := 0
+		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			calls++
+			return testResponse(req, http.StatusInternalServerError, io.NopCloser(strings.NewReader("busy"))), nil
+		})}))
+		resp, err := client.doRequest(context.Background(), http.MethodPatch, "/device", map[string]bool{"enabled": false})
+		if err != nil {
+			t.Fatalf("doRequest() error = %v", err)
+		}
+		_ = resp.Body.Close()
+		if calls != 1 {
+			t.Fatalf("PATCH attempts = %d, want 1", calls)
+		}
+	})
+
+	t.Run("transport failure", func(t *testing.T) {
+		calls := 0
+		transportErr := errors.New("connection lost")
+		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			calls++
+			return nil, transportErr
+		})}))
+		_, err := client.doRequest(context.Background(), http.MethodPost, "/command", map[string]string{"command": "reboot"})
+		if !ringapimodels.IsNetworkError(err) || !errors.Is(err, transportErr) || calls != 1 {
+			t.Fatalf("POST error = %v, attempts = %d; want wrapped transport error and one attempt", err, calls)
+		}
+	})
 }
 
 func TestDoRequestCancellationDuringRetryBackoff(t *testing.T) {
