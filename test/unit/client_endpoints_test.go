@@ -50,3 +50,25 @@ func TestEndpointRegionsAndOverridesArePerClient(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(defaultTransport.urls[0], "https://api.ring.com/"))
 }
+
+func TestEndpointOverridesRejectWrongSchemesAndUserInfo(t *testing.T) {
+	invalid := []ring.Endpoints{
+		{OAuthBaseURL: "wss://oauth.example"},
+		{APIBaseURL: "ws://api.example"},
+		{SolutionsBaseURL: "ftp://solutions.example"},
+		{SignalingURL: "https://signal.example/ws"},
+		{OAuthBaseURL: "https://user:pass@oauth.example"},
+		{APIBaseURL: "https://api-user@api.example"},
+		{SolutionsBaseURL: "https://solutions.example@evil.test"},
+		{SignalingURL: "wss://user:pass@signal.example/ws"},
+	}
+	for _, endpoints := range invalid {
+		_, err := ring.NewClient(ring.WithEndpoints(endpoints))
+		require.Error(t, err, "%+v", endpoints)
+	}
+}
+
+func TestNilHTTPClientRejected(t *testing.T) {
+	_, err := ring.NewClient(ring.WithHTTPClient(nil))
+	require.Error(t, err)
+}

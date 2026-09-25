@@ -56,12 +56,26 @@ func (w withEndpoints) Apply(c *Client) error {
 }
 
 func validateEndpoints(e Endpoints) error {
-	for name, raw := range map[string]string{"OAuthBaseURL": e.OAuthBaseURL, "APIBaseURL": e.APIBaseURL, "SolutionsBaseURL": e.SolutionsBaseURL, "SignalingURL": e.SignalingURL} {
+	for _, endpoint := range []struct {
+		name, raw string
+		schemes   []string
+		queryOK   bool
+	}{
+		{"OAuthBaseURL", e.OAuthBaseURL, []string{"http", "https"}, false},
+		{"APIBaseURL", e.APIBaseURL, []string{"http", "https"}, false},
+		{"SolutionsBaseURL", e.SolutionsBaseURL, []string{"http", "https"}, false},
+		{"SignalingURL", e.SignalingURL, []string{"ws", "wss"}, true},
+	} {
+		name, raw := endpoint.name, endpoint.raw
 		if raw == "" {
 			continue
 		}
 		u, err := url.Parse(raw)
-		if err != nil || u.Host == "" || u.RawQuery != "" || u.Fragment != "" || (u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "ws" && u.Scheme != "wss") {
+		validScheme := false
+		for _, scheme := range endpoint.schemes {
+			validScheme = validScheme || (u != nil && u.Scheme == scheme)
+		}
+		if err != nil || u == nil || u.Host == "" || u.User != nil || (!endpoint.queryOK && u.RawQuery != "") || u.Fragment != "" || u.Opaque != "" || !validScheme {
 			return fmt.Errorf("invalid %s URL %q", name, raw)
 		}
 	}
@@ -83,6 +97,9 @@ func (c *Client) applyEndpointConfiguration() error {
 	}
 	if o.SignalingURL != "" {
 		e.SignalingURL = o.SignalingURL
+	}
+	if c.rtcWebSocketOverride != "" {
+		e.SignalingURL = c.rtcWebSocketOverride
 	}
 	c.endpoints = e
 	c.rtcWebSocketURL = e.SignalingURL

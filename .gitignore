@@ -1,5 +1,8 @@
 /bin/
 /coverage.*
+# Local environment for the vendored Python reference test suite.
+/.venv-reference/
+__pycache__/
 .env
 tokens.json
 .DS_Store

@@ -2,6 +2,8 @@ package system
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -23,13 +25,32 @@ func deviceListExchange(t *testing.T, origin string) replay.Exchange {
 	return x
 }
 
+func recordedDeviceValues(t *testing.T, exchange replay.Exchange) (int64, string, string, string, string) {
+	t.Helper()
+	var body struct {
+		Devices []struct {
+			ID          int64  `json:"id"`
+			Kind        string `json:"kind"`
+			Description string `json:"description"`
+			Address     string `json:"address"`
+			TimeZone    string `json:"time_zone"`
+		} `json:"devices"`
+	}
+	require.NoError(t, json.Unmarshal(exchange.Response.Body, &body))
+	require.NotEmpty(t, body.Devices)
+	d := body.Devices[0]
+	return d.ID, d.Description, d.Kind, d.Address, d.TimeZone
+}
+
 // Mirrors Python test_ring.py::test_basic_attributes and
 // test_ring.py::test_stickup_cam_attributes against the sanitized C1 device
 // inventory response. Current capture contains one stickup camera.
 func TestRecordedDeviceListAndGetDevice(t *testing.T) {
 	const origin = "https://api.ring.com"
 	for _, lookup := range []bool{false, true} {
-		transport := replay.NewTransport(deviceListExchange(t, origin))
+		exchange := deviceListExchange(t, origin)
+		id, name, kind, address, timezone := recordedDeviceValues(t, exchange)
+		transport := replay.NewTransport(exchange)
 		client, err := ring.NewClient(
 			ring.WithAccessToken("recorded-test-token"),
 			ring.WithHTTPClient(&http.Client{Transport: transport}),
@@ -38,7 +59,7 @@ func TestRecordedDeviceListAndGetDevice(t *testing.T) {
 		ctx := context.Background()
 		var cams []*ringapimodels.StickUpCam
 		if lookup {
-			device, getErr := client.GetDevice(ctx, ring.GetDeviceRequest{DeviceID: "1000"})
+			device, getErr := client.GetDevice(ctx, ring.GetDeviceRequest{DeviceID: fmt.Sprint(id)})
 			require.NoError(t, getErr)
 			cam, ok := device.(*ringapimodels.StickUpCam)
 			require.True(t, ok)
@@ -50,11 +71,12 @@ func TestRecordedDeviceListAndGetDevice(t *testing.T) {
 			cams = devices.StickUpCams
 		}
 		require.Len(t, cams, 1)
-		require.Equal(t, "1000", cams[0].GetID())
-		require.Equal(t, "opaque-2", cams[0].GetName())
+		require.Equal(t, fmt.Sprint(id), cams[0].GetID())
+		require.Equal(t, name, cams[0].GetName())
+		require.Equal(t, kind, cams[0].Description)
 		require.Equal(t, ringapimodels.DeviceFamilyStickUpCam, cams[0].GetFamily())
-		require.Equal(t, "opaque-5", cams[0].GetAddress())
-		require.Equal(t, "America/Los_Angeles", cams[0].GetTimezone())
+		require.Equal(t, address, cams[0].GetAddress())
+		require.Equal(t, timezone, cams[0].GetTimezone())
 		require.NoError(t, transport.AssertConsumed())
 	}
 }

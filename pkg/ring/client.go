@@ -6,34 +6,39 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"sync"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 // Client is the main client for interacting with Ring services
 type Client struct {
-	restClient        *rest.Client
-	accessToken       string
-	refreshToken      string
-	username          string
-	password          string
-	hardwareID        string
-	userAgent         string
-	region            Region
-	endpointOverrides Endpoints
-	endpoints         Endpoints
+	restClient           *rest.Client
+	accessToken          string
+	refreshToken         string
+	username             string
+	password             string
+	hardwareID           string
+	userAgent            string
+	region               Region
+	endpointOverrides    Endpoints
+	endpoints            Endpoints
+	rtcWebSocketOverride string
+	signalingDialer      WebSocketDialer
 
-	tokenGetter       func(ctx context.Context) (string, error)
-	rtcWebSocketURL   string
-	eventWebSocketURL string
-	mu                sync.RWMutex
-	sessionMu         sync.Mutex
-	sessionRegistered bool
-	closed            bool
+	tokenGetter          func(ctx context.Context) (string, error)
+	rtcWebSocketURL      string
+	eventWebSocketURL    string
+	mu                   sync.RWMutex
+	sessionMu            sync.Mutex
+	sessionRegistered    bool
+	closed               bool
+	signalingConnections map[*SignalingConnection]struct{}
 }
 
 // Option is a function that configures a Client
@@ -54,10 +59,11 @@ func (c *Client) Apply(opts ...Option) error {
 // NewClient creates a new Ring client
 func NewClient(opts ...Option) (*Client, error) {
 	client := &Client{
-		restClient:        rest.NewClient(),
-		userAgent:         ringapimodels.DefaultUserAgent,
-		region:            RegionUS,
-		eventWebSocketURL: "wss://api.ring.com/clients_api/ws",
+		restClient:           rest.NewClient(),
+		userAgent:            ringapimodels.DefaultUserAgent,
+		region:               RegionUS,
+		eventWebSocketURL:    protocol.ExperimentalEventWebSocketURL,
+		signalingConnections: make(map[*SignalingConnection]struct{}),
 	}
 	if err := client.applyEndpointConfiguration(); err != nil {
 		return nil, err
@@ -153,6 +159,9 @@ type withHTTPClient struct {
 }
 
 func (w withHTTPClient) Apply(c *Client) error {
+	if w.httpClient == nil {
+		return errors.New("HTTP client must not be nil")
+	}
 	c.restClient.Apply(rest.WithHTTPClient(w.httpClient))
 	return nil
 }
@@ -190,7 +199,9 @@ func (w withTokenGetter) Apply(c *Client) error {
 	return nil
 }
 
-// WithRTCWebSocketURL sets a custom websocket URL for RTC streams (useful for testing)
+// WithRTCWebSocketURL explicitly overrides the configured signaling URL. It
+// takes precedence over WithEndpoints and the selected region, regardless of
+// option order.
 func WithRTCWebSocketURL(url string) Option {
 	return withRTCWebSocketURL(url)
 }
@@ -198,7 +209,11 @@ func WithRTCWebSocketURL(url string) Option {
 type withRTCWebSocketURL string
 
 func (w withRTCWebSocketURL) Apply(c *Client) error {
+	if err := validateEndpoints(Endpoints{SignalingURL: string(w)}); err != nil {
+		return err
+	}
 	c.rtcWebSocketURL = string(w)
+	c.rtcWebSocketOverride = string(w)
 	return nil
 }
 
@@ -275,12 +290,18 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 // Close closes the client and all connections
 func (c *Client) Close() error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if c.closed {
+		c.mu.Unlock()
 		return nil
 	}
-
 	c.closed = true
+	connections := make([]*SignalingConnection, 0, len(c.signalingConnections))
+	for conn := range c.signalingConnections {
+		connections = append(connections, conn)
+	}
+	c.mu.Unlock()
+	for _, conn := range connections {
+		_ = conn.Close()
+	}
 	return nil
 }
