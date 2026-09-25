@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -20,8 +21,13 @@ type WSStep struct {
 
 // WebSocketServer serves one scripted connection on a loopback httptest server.
 type WebSocketServer struct {
-	Server *httptest.Server
-	done   chan error
+	Server   *httptest.Server
+	done     chan error
+	mu       sync.Mutex
+	accepted bool
+	active   *websocket.Conn
+	result   error
+	once     sync.Once
 }
 
 // NewWebSocketServer starts a strict scripted WebSocket peer. Each read has a bounded deadline.
@@ -32,44 +38,59 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration) *WebSocketServer 
 	w := &WebSocketServer{done: make(chan error, 1)}
 	up := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
 	w.Server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		c, e := up.Upgrade(rw, r, nil)
-		if e != nil {
-			w.done <- e
+		w.mu.Lock()
+		if w.accepted {
+			w.mu.Unlock()
+			http.Error(rw, "script supports one connection", http.StatusConflict)
 			return
 		}
+		w.accepted = true
+		w.mu.Unlock()
+		c, e := up.Upgrade(rw, r, nil)
+		if e != nil {
+			w.finish(e)
+			return
+		}
+		w.mu.Lock()
+		w.active = c
+		w.mu.Unlock()
 		defer c.Close()
+		defer func() { w.mu.Lock(); w.active = nil; w.mu.Unlock() }()
 		for i, s := range steps {
 			_ = c.SetReadDeadline(time.Now().Add(timeout))
 			if s.Kind == "expect" {
 				mt, b, e := c.ReadMessage()
 				if e != nil {
-					w.done <- fmt.Errorf("step %d read: %w", i, e)
+					w.finish(fmt.Errorf("step %d read: %w", i, e))
 					return
 				}
 				want := messageType(s.Frame)
 				if mt != want || !frameEqual(want, s.Body, b) {
-					w.done <- fmt.Errorf("step %d expected %s frame %s, got %s frame %s", i, s.Frame, s.Body, string(frameName(mt)), b)
+					w.finish(fmt.Errorf("step %d expected %s frame %s, got %s frame %s", i, s.Frame, s.Body, string(frameName(mt)), b))
 					return
 				}
 			} else if s.Kind == "send" {
 				mt := messageType(s.Frame)
 				if mt == 0 {
-					w.done <- fmt.Errorf("step %d: unsupported frame %q", i, s.Frame)
+					w.finish(fmt.Errorf("step %d: unsupported frame %q", i, s.Frame))
 					return
 				}
 				_ = c.SetWriteDeadline(time.Now().Add(timeout))
 				if e := c.WriteMessage(mt, s.Body); e != nil {
-					w.done <- fmt.Errorf("step %d write: %w", i, e)
+					w.finish(fmt.Errorf("step %d write: %w", i, e))
 					return
 				}
 			} else {
-				w.done <- fmt.Errorf("step %d: invalid kind %q", i, s.Kind)
+				w.finish(fmt.Errorf("step %d: invalid kind %q", i, s.Kind))
 				return
 			}
 		}
-		w.done <- nil
+		w.finish(nil)
 	}))
 	return w
+}
+func (w *WebSocketServer) finish(err error) {
+	w.once.Do(func() { w.mu.Lock(); w.result = err; w.mu.Unlock(); close(w.done) })
 }
 func messageType(s string) int {
 	switch s {
@@ -106,11 +127,24 @@ func (w *WebSocketServer) AssertComplete(timeout time.Duration) error {
 		timeout = 3 * time.Second
 	}
 	select {
-	case e := <-w.done:
-		return e
+	case <-w.done:
+		w.mu.Lock()
+		defer w.mu.Unlock()
+		return w.result
 	case <-time.After(timeout):
 		return fmt.Errorf("websocket replay: script did not complete before deadline")
 	}
+}
+
+// Close stops the server and closes an active client connection so shutdown remains bounded.
+func (w *WebSocketServer) Close() {
+	w.mu.Lock()
+	c := w.active
+	w.mu.Unlock()
+	if c != nil {
+		_ = c.Close()
+	}
+	w.Server.Close()
 }
 
 // SemanticEqual compares JSON structure while retaining exact decimal number values.

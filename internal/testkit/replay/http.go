@@ -4,6 +4,7 @@ package replay
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -64,7 +65,15 @@ func NewTransport(xs ...Exchange) *Transport {
 	return &Transport{exchanges: append([]Exchange(nil), xs...), used: make([]bool, len(xs))}
 }
 func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
-	b, e := io.ReadAll(r.Body)
+	if err := r.Context().Err(); err != nil {
+		return nil, err
+	}
+	var b []byte
+	var e error
+	var err error
+	if r.Body != nil {
+		b, e = io.ReadAll(r.Body)
+	}
 	if e != nil {
 		return nil, e
 	}
@@ -72,6 +81,9 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		r.Body = io.NopCloser(bytes.NewReader(b))
 	}
 	for i, x := range t.exchanges {
+		if err := r.Context().Err(); err != nil {
+			return nil, err
+		}
 		t.mu.Lock()
 		if t.used[i] {
 			t.mu.Unlock()
@@ -90,7 +102,11 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		}
 		t.mu.Unlock()
 	}
-	return nil, fmt.Errorf("replay: no unused exchange matches %s %s", r.Method, r.URL)
+	err = fmt.Errorf("replay: no unused exchange matches %s %s", r.Method, r.URL)
+	t.mu.Lock()
+	t.err = errors.Join(t.err, err)
+	t.mu.Unlock()
+	return nil, err
 }
 func (t *Transport) AssertConsumed() error {
 	t.mu.Lock()
@@ -101,10 +117,14 @@ func (t *Transport) AssertConsumed() error {
 			left = append(left, x.Request.Method+" "+x.Request.Origin+x.Request.Path)
 		}
 	}
+	var errs []error
 	if len(left) > 0 {
-		return fmt.Errorf("replay: unconsumed exchanges: %s", strings.Join(left, ", "))
+		errs = append(errs, fmt.Errorf("replay: unconsumed exchanges: %s", strings.Join(left, ", ")))
 	}
-	return t.err
+	if t.err != nil {
+		errs = append(errs, t.err)
+	}
+	return errors.Join(errs...)
 }
 func matches(x Request, r *http.Request, b []byte) (bool, string) {
 	u := r.URL
@@ -128,11 +148,14 @@ func matches(x Request, r *http.Request, b []byte) (bool, string) {
 	return true, ""
 }
 func decodeBody(v json.RawMessage, isJSON bool) []byte {
-	if len(v) == 0 || string(v) == "null" {
+	if len(v) == 0 {
 		return nil
 	}
 	if isJSON {
 		return append([]byte(nil), v...)
+	}
+	if string(v) == "null" {
+		return nil
 	}
 	var s string
 	if json.Unmarshal(v, &s) == nil {
@@ -164,8 +187,10 @@ func canonicalHeaders(h http.Header) map[string][]string {
 	for k, v := range h {
 		key := strings.ToLower(k)
 		z := append([]string(nil), v...)
-		sort.Strings(z)
-		m[key] = z
+		m[key] = append(m[key], z...)
+	}
+	for key := range m {
+		sort.Strings(m[key])
 	}
 	return m
 }
@@ -175,7 +200,14 @@ func semanticJSONEqual(a, b []byte) bool {
 		d.UseNumber()
 		var x any
 		e := d.Decode(&x)
-		return normalizeNumbers(x), e
+		if e != nil {
+			return nil, e
+		}
+		var extra any
+		if e = d.Decode(&extra); e != io.EOF {
+			return nil, fmt.Errorf("multiple JSON values")
+		}
+		return normalizeNumbers(x), nil
 	}
 	x, e := decode(a)
 	if e != nil {
@@ -189,9 +221,9 @@ func normalizeNumbers(v any) any {
 	case json.Number:
 		r, ok := new(big.Rat).SetString(string(x))
 		if ok {
-			return r.RatString()
+			return struct{ JSONNumber string }{r.RatString()}
 		}
-		return string(x)
+		return struct{ JSONNumber string }{string(x)}
 	case []any:
 		for i := range x {
 			x[i] = normalizeNumbers(x[i])
