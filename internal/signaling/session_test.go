@@ -215,3 +215,43 @@ func TestEventsBackpressureAndClose(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRPCDefaultDeadlineAndProtocolError(t *testing.T) {
+	s, c, out := setupSession(t)
+	done := make(chan error, 1)
+	go func() {
+		_, err := s.Call(context.Background(), "PTZ.Tilt.Step", map[string]any{"direction": "UP"})
+		done <- err
+	}()
+	m := nextMessage(t, out)
+	var body map[string]any
+	if err := json.Unmarshal(m.Body, &body); err != nil {
+		t.Fatal(err)
+	}
+	command := body["command"].(map[string]any)
+	delete(command, "method")
+	delete(command, "params")
+	command["error"] = map[string]any{"code": -32602, "message": "invalid direction"}
+	encoded, _ := json.Marshal(body)
+	if err := s.Handle(Message{Method: "rpc", DialogID: "dialog", Body: encoded}); err != nil {
+		t.Fatal(err)
+	}
+	var rpcError *RPCError
+	if err := <-done; !errors.As(err, &rpcError) || rpcError.Code != -32602 {
+		t.Fatal("lost RPC error", err)
+	}
+	go func() { _, err := s.Call(context.Background(), "PTZ.Tilt.Step", nil); done <- err }()
+	nextMessage(t, out)
+	c.advance(10 * time.Second)
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("RPC default deadline not enforced")
+	}
+	if s.Pending() != 0 {
+		t.Fatal("RPC timeout leaked pending entry")
+	}
+}

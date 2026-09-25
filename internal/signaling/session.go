@@ -163,6 +163,14 @@ func (s *Session) Wait(ctx context.Context) error {
 	}
 }
 func (s *Session) Close() error { s.finish(ErrClosed); s.workers.Wait(); return nil }
+
+// Fail terminates from the connection reader without joining any worker.
+func (s *Session) Fail(err error) {
+	if err == nil {
+		err = ErrClosed
+	}
+	s.finish(err)
+}
 func (s *Session) Pending() int { s.mu.Lock(); defer s.mu.Unlock(); return len(s.pending) }
 
 func (s *Session) Send(ctx context.Context, method string, fields map[string]any) error {
