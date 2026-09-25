@@ -84,7 +84,7 @@ func reply(t *testing.T, s *Session, out Message, signal string) {
 	if body.Command.Params["sessionId"] != "control" {
 		t.Fatal("control identity overwritten")
 	}
-	raw, _ := json.Marshal(map[string]any{"doorbot_id": 1001, "session_id": signal, "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": map[string]any{"ok": true}}})
+	raw, _ := json.Marshal(map[string]any{"doorbot_id": 1001, "session_id": signal, "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": map[string]any{"sessionId": "control", "timestamp": 1700000000000, "version": 1}}})
 	if err := s.Handle(Message{Method: "rpc", DialogID: "dialog", Body: raw}); err != nil {
 		t.Fatal(err)
 	}
@@ -253,5 +253,70 @@ func TestRPCDefaultDeadlineAndProtocolError(t *testing.T) {
 	}
 	if s.Pending() != 0 {
 		t.Fatal("RPC timeout leaked pending entry")
+	}
+}
+
+func TestRPCResultRequiresControlSessionIdentity(t *testing.T) {
+	s, _, out := setupSession(t)
+	result := make(chan error, 1)
+	go func() {
+		_, err := s.Call(context.Background(), "PTZ.Pan.Step", map[string]any{"direction": "LEFT"})
+		result <- err
+	}()
+	sent := nextMessage(t, out)
+	var body struct {
+		Command struct {
+			ID string `json:"id"`
+		} `json:"command"`
+	}
+	if err := json.Unmarshal(sent.Body, &body); err != nil {
+		t.Fatal(err)
+	}
+	message := func(value any) Message {
+		raw, _ := json.Marshal(map[string]any{"doorbot_id": 1001, "session_id": "signal", "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": value}})
+		return Message{Method: "rpc", DialogID: "dialog", Body: raw}
+	}
+	if err := s.Handle(message(map[string]any{"sessionId": "another-control"})); err != nil {
+		t.Fatal(err)
+	}
+	if s.Pending() != 1 {
+		t.Fatal("cross-control result resolved the command")
+	}
+	for _, malformed := range []any{nil, "not an object", map[string]any{"sessionId": 42}, map[string]any{}} {
+		if err := s.Handle(message(malformed)); err == nil {
+			t.Fatalf("accepted malformed result %v", malformed)
+		}
+	}
+	if s.Pending() != 1 {
+		t.Fatal("malformed result resolved the command")
+	}
+	reply(t, s, sent, "signal")
+	select {
+	case err := <-result:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("valid reply did not resolve command")
+	}
+}
+
+func TestSendRejectsExpiredSessionBeforeTimerDelivery(t *testing.T) {
+	s, clock, out := setupSession(t)
+	// A clock may advance before the scheduler delivers its timers. Enforce the
+	// absolute lifetime at the send boundary, independently of worker scheduling.
+	clock.mu.Lock()
+	clock.now = clock.now.Add(MaxSessionAge)
+	clock.mu.Unlock()
+	if err := s.Send(context.Background(), "mic_enable", map[string]any{"enabled": true}); !errors.Is(err, ErrExpired) {
+		t.Fatalf("send = %v", err)
+	}
+	select {
+	case m := <-out:
+		t.Fatalf("sent after expiry: %s", m.Method)
+	default:
+	}
+	if err := s.Wait(context.Background()); !errors.Is(err, ErrExpired) {
+		t.Fatalf("terminal = %v", err)
 	}
 }

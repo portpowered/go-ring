@@ -60,6 +60,7 @@ type Session struct {
 	deviceID                      int64
 	dialogID, signalID, controlID string
 	lastPong                      time.Time
+	expiresAt                     time.Time
 	terminal                      error
 	closed                        bool
 	sequence                      uint64
@@ -96,7 +97,7 @@ func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
 		c.Clock = RealClock{}
 	}
 	child, cancel := context.WithCancel(ctx)
-	s := &Session{ctx: child, cancel: cancel, done: make(chan struct{}), clock: c.Clock, send: c.Send, deviceID: c.DeviceID, dialogID: c.DialogID, signalID: c.SignalID, controlID: c.ControlID, lastPong: c.Clock.Now(), pending: make(map[string]chan rpcReply), events: make(chan Message, 32), writeGate: make(chan struct{}, 1)}
+	s := &Session{ctx: child, cancel: cancel, done: make(chan struct{}), clock: c.Clock, send: c.Send, deviceID: c.DeviceID, dialogID: c.DialogID, signalID: c.SignalID, controlID: c.ControlID, lastPong: c.Clock.Now(), expiresAt: c.Clock.Now().Add(c.MaxAge), pending: make(map[string]chan rpcReply), events: make(chan Message, 32), writeGate: make(chan struct{}, 1)}
 	// Create timers before returning so fake-clock advances cannot race startup.
 	expiry := c.Clock.After(c.MaxAge)
 	tick := c.Clock.After(c.Heartbeat)
@@ -191,6 +192,10 @@ func (s *Session) Send(ctx context.Context, method string, fields map[string]any
 	s.mu.Unlock()
 	if closed {
 		return terminal
+	}
+	if !s.clock.Now().Before(s.expiresAt) {
+		s.finish(ErrExpired)
+		return ErrExpired
 	}
 	body := make(map[string]any, len(fields)+2)
 	for k, v := range fields {
@@ -310,6 +315,17 @@ func (s *Session) Handle(m Message) error {
 		if command.Method == "" {
 			if (len(command.Result) == 0) == (command.Error == nil) {
 				return fmt.Errorf("RPC reply must have exactly one result or error")
+			}
+			if command.Error == nil {
+				var result struct {
+					SessionID string `json:"sessionId"`
+				}
+				if err := json.Unmarshal(command.Result, &result); err != nil || result.SessionID == "" {
+					return fmt.Errorf("invalid RPC result identity")
+				}
+				if result.SessionID != s.controlID {
+					return nil
+				}
 			}
 			if ch, ok := s.pending[command.ID]; ok {
 				reply := rpcReply{result: command.Result}
