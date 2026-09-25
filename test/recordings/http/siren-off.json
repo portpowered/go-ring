@@ -1,0 +1,22 @@
+{
+  "request": {
+    "method": "PUT",
+    "origin": "https://api.ring.com",
+    "path": "/clients_api/doorbots/{device_id}/siren_off",
+    "query": [],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {},
+    "body": null,
+    "json": false
+  }
+}

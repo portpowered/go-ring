@@ -1,0 +1,404 @@
+{
+  "request": {
+    "method": "GET",
+    "origin": "https://api.ring.com",
+    "path": "/evm/v3/history/devices",
+    "query": [
+      {
+        "name": "source_ids",
+        "value": "sanitized-text"
+      },
+      {
+        "name": "capabilities",
+        "value": "offline_event"
+      }
+    ],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": [
+        "application/json"
+      ]
+    },
+    "body": {
+      "schema": "GroupedFeedResponse",
+      "events": [
+        {
+          "schema": "Event",
+          "source_id": "opaque-11",
+          "event_id": "opaque-12",
+          "start_time": "2026-01-01T00:00:00Z",
+          "end_time": "2026-01-01T00:00:00Z",
+          "event_type": "on_demand",
+          "source_type": null,
+          "duration_ms": 29000,
+          "session_duration": 29000,
+          "state": "completed",
+          "had_subscription": false,
+          "is_favorite": false,
+          "recording_status": "ready",
+          "cv": {
+            "person_detected": null,
+            "stream_broken": false,
+            "detection_type": null,
+            "detection_types": null,
+            "security_alerts": null,
+            "profiles": null,
+            "full_description": null,
+            "short_description": null,
+            "similarity": null,
+            "anomaly": null,
+            "detection_details": null,
+            "tags": null
+          },
+          "properties": {
+            "is_alexa": false,
+            "is_sidewalk": false,
+            "is_autoreply": false,
+            "stark_reviewed": false
+          },
+          "origin": null,
+          "origin_display_name": null,
+          "error_message": null,
+          "updated_at": null,
+          "visualizations": {
+            "cloud_media_visualization": {
+              "schema": "CloudMediaVisualization",
+              "media": []
+            },
+            "local_media_visualization": {
+              "schema": "LocalMediaVisualization",
+              "media": []
+            },
+            "radar_visualization": null,
+            "map_visualization": null,
+            "potential_gap_visualization": null
+          },
+          "device": {
+            "id": 1001,
+            "description": "opaque-1",
+            "type": "stickup_cam_mini_ptz_v1"
+          },
+          "owner_id": "opaque-13",
+          "delete_in_progress": false,
+          "low_confidence": null,
+          "similarity": null,
+          "riid": "route-1",
+          "user_specified_recording_disabled": null,
+          "is_watched": false,
+          "is_property_view_enabled": null,
+          "cek_transfer_recipient_response": null,
+          "is_active": false,
+          "user_action_disabled": false
+        },
+        {
+          "schema": "Event",
+          "source_id": "opaque-11",
+          "event_id": "opaque-14",
+          "start_time": "2026-01-01T00:00:00Z",
+          "end_time": "2026-01-01T00:00:00Z",
+          "event_type": "on_demand",
+          "source_type": null,
+          "duration_ms": 19000,
+          "session_duration": 19000,
+          "state": "completed",
+          "had_subscription": false,
+          "is_favorite": false,
+          "recording_status": "ready",
+          "cv": {
+            "person_detected": null,
+            "stream_broken": false,
+            "detection_type": null,
+            "detection_types": null,
+            "security_alerts": null,
+            "profiles": null,
+            "full_description": null,
+            "short_description": null,
+            "similarity": null,
+            "anomaly": null,
+            "detection_details": null,
+            "tags": null
+          },
+          "properties": {
+            "is_alexa": false,
+            "is_sidewalk": false,
+            "is_autoreply": false,
+            "stark_reviewed": false
+          },
+          "origin": null,
+          "origin_display_name": null,
+          "error_message": null,
+          "updated_at": null,
+          "visualizations": {
+            "cloud_media_visualization": {
+              "schema": "CloudMediaVisualization",
+              "media": []
+            },
+            "local_media_visualization": {
+              "schema": "LocalMediaVisualization",
+              "media": []
+            },
+            "radar_visualization": null,
+            "map_visualization": null,
+            "potential_gap_visualization": null
+          },
+          "device": {
+            "id": 1001,
+            "description": "opaque-1",
+            "type": "stickup_cam_mini_ptz_v1"
+          },
+          "owner_id": "opaque-13",
+          "delete_in_progress": false,
+          "low_confidence": null,
+          "similarity": null,
+          "riid": "route-2",
+          "user_specified_recording_disabled": null,
+          "is_watched": false,
+          "is_property_view_enabled": null,
+          "cek_transfer_recipient_response": null,
+          "is_active": false,
+          "user_action_disabled": false
+        },
+        {
+          "schema": "Event",
+          "source_id": "opaque-11",
+          "event_id": "opaque-15",
+          "start_time": "2026-01-01T00:00:00Z",
+          "end_time": "2026-01-01T00:00:00Z",
+          "event_type": "on_demand",
+          "source_type": null,
+          "duration_ms": 1000,
+          "session_duration": 1000,
+          "state": "completed",
+          "had_subscription": false,
+          "is_favorite": false,
+          "recording_status": "ready",
+          "cv": {
+            "person_detected": null,
+            "stream_broken": false,
+            "detection_type": null,
+            "detection_types": null,
+            "security_alerts": null,
+            "profiles": null,
+            "full_description": null,
+            "short_description": null,
+            "similarity": null,
+            "anomaly": null,
+            "detection_details": null,
+            "tags": null
+          },
+          "properties": {
+            "is_alexa": false,
+            "is_sidewalk": false,
+            "is_autoreply": false,
+            "stark_reviewed": false
+          },
+          "origin": null,
+          "origin_display_name": null,
+          "error_message": null,
+          "updated_at": null,
+          "visualizations": {
+            "cloud_media_visualization": {
+              "schema": "CloudMediaVisualization",
+              "media": []
+            },
+            "local_media_visualization": {
+              "schema": "LocalMediaVisualization",
+              "media": []
+            },
+            "radar_visualization": null,
+            "map_visualization": null,
+            "potential_gap_visualization": null
+          },
+          "device": {
+            "id": 1001,
+            "description": "opaque-1",
+            "type": "stickup_cam_mini_ptz_v1"
+          },
+          "owner_id": "opaque-13",
+          "delete_in_progress": false,
+          "low_confidence": null,
+          "similarity": null,
+          "riid": "route-3",
+          "user_specified_recording_disabled": null,
+          "is_watched": false,
+          "is_property_view_enabled": null,
+          "cek_transfer_recipient_response": null,
+          "is_active": false,
+          "user_action_disabled": false
+        },
+        {
+          "schema": "Event",
+          "source_id": "opaque-11",
+          "event_id": "opaque-16",
+          "start_time": "2026-01-01T00:00:00Z",
+          "end_time": "2026-01-01T00:00:00Z",
+          "event_type": "on_demand",
+          "source_type": null,
+          "duration_ms": 5000,
+          "session_duration": 5000,
+          "state": "completed",
+          "had_subscription": false,
+          "is_favorite": false,
+          "recording_status": "ready",
+          "cv": {
+            "person_detected": null,
+            "stream_broken": false,
+            "detection_type": null,
+            "detection_types": null,
+            "security_alerts": null,
+            "profiles": null,
+            "full_description": null,
+            "short_description": null,
+            "similarity": null,
+            "anomaly": null,
+            "detection_details": null,
+            "tags": null
+          },
+          "properties": {
+            "is_alexa": false,
+            "is_sidewalk": false,
+            "is_autoreply": false,
+            "stark_reviewed": false
+          },
+          "origin": null,
+          "origin_display_name": null,
+          "error_message": null,
+          "updated_at": null,
+          "visualizations": {
+            "cloud_media_visualization": {
+              "schema": "CloudMediaVisualization",
+              "media": []
+            },
+            "local_media_visualization": {
+              "schema": "LocalMediaVisualization",
+              "media": []
+            },
+            "radar_visualization": null,
+            "map_visualization": null,
+            "potential_gap_visualization": null
+          },
+          "device": {
+            "id": 1001,
+            "description": "opaque-1",
+            "type": "stickup_cam_mini_ptz_v1"
+          },
+          "owner_id": "opaque-13",
+          "delete_in_progress": false,
+          "low_confidence": null,
+          "similarity": null,
+          "riid": "route-4",
+          "user_specified_recording_disabled": null,
+          "is_watched": false,
+          "is_property_view_enabled": null,
+          "cek_transfer_recipient_response": null,
+          "is_active": false,
+          "user_action_disabled": false
+        },
+        {
+          "schema": "Event",
+          "source_id": "opaque-11",
+          "event_id": "opaque-17",
+          "start_time": "2026-01-01T00:00:00Z",
+          "end_time": "2026-01-01T00:00:00Z",
+          "event_type": "on_demand",
+          "source_type": null,
+          "duration_ms": 59000,
+          "session_duration": 59000,
+          "state": "completed",
+          "had_subscription": false,
+          "is_favorite": false,
+          "recording_status": "ready",
+          "cv": {
+            "person_detected": null,
+            "stream_broken": false,
+            "detection_type": null,
+            "detection_types": null,
+            "security_alerts": null,
+            "profiles": null,
+            "full_description": null,
+            "short_description": null,
+            "similarity": null,
+            "anomaly": null,
+            "detection_details": null,
+            "tags": null
+          },
+          "properties": {
+            "is_alexa": false,
+            "is_sidewalk": false,
+            "is_autoreply": false,
+            "stark_reviewed": false
+          },
+          "origin": null,
+          "origin_display_name": null,
+          "error_message": null,
+          "updated_at": null,
+          "visualizations": {
+            "cloud_media_visualization": {
+              "schema": "CloudMediaVisualization",
+              "media": []
+            },
+            "local_media_visualization": {
+              "schema": "LocalMediaVisualization",
+              "media": []
+            },
+            "radar_visualization": null,
+            "map_visualization": null,
+            "potential_gap_visualization": null
+          },
+          "device": {
+            "id": 1001,
+            "description": "opaque-1",
+            "type": "stickup_cam_mini_ptz_v1"
+          },
+          "owner_id": "opaque-13",
+          "delete_in_progress": false,
+          "low_confidence": null,
+          "similarity": null,
+          "riid": null,
+          "user_specified_recording_disabled": null,
+          "is_watched": false,
+          "is_property_view_enabled": null,
+          "cek_transfer_recipient_response": null,
+          "is_active": false,
+          "user_action_disabled": false
+        }
+      ],
+      "groups": null,
+      "feed": [
+        {
+          "id": "command-2",
+          "type": "EVENT"
+        },
+        {
+          "id": "command-3",
+          "type": "EVENT"
+        },
+        {
+          "id": "command-4",
+          "type": "EVENT"
+        },
+        {
+          "id": "command-5",
+          "type": "EVENT"
+        },
+        {
+          "id": "command-6",
+          "type": "EVENT"
+        }
+      ],
+      "pagination_key": null,
+      "cek_transfer_recipient_response": null
+    },
+    "json": true
+  }
+}

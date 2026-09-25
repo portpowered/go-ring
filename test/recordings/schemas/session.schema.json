@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recorded WebSocket session conversation",
+  "type": "object",
+  "required": ["messages"],
+  "additionalProperties": false,
+  "properties": {
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["direction", "frame", "payload"],
+        "additionalProperties": false,
+        "properties": {
+          "direction": {"enum": ["client_to_server", "server_to_client"]},
+          "frame": {"enum": ["text", "binary"]},
+          "payload": {}
+        }
+      }
+    }
+  }
+}

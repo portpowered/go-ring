@@ -1,0 +1,55 @@
+{
+  "request": {
+    "method": "GET",
+    "origin": "https://prd-api-us.prd.rings.solutions",
+    "path": "/api/v1/clap/tickets",
+    "query": [
+      {
+        "name": "allowUserOnly",
+        "value": "false"
+      },
+      {
+        "name": "locationID",
+        "value": "location-1"
+      },
+      {
+        "name": "locationSubscription",
+        "value": "true"
+      },
+      {
+        "name": "enableExtendedEmergencyCellUsage",
+        "value": "true"
+      },
+      {
+        "name": "requestedTransport",
+        "value": "ws"
+      }
+    ],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": [
+        "application/json"
+      ]
+    },
+    "body": {
+      "host": "opaque-10",
+      "ticket": "ticket-1",
+      "subscriptionTopics": [
+        "sanitized-text",
+        "sanitized-text"
+      ],
+      "assets": []
+    },
+    "json": true
+  }
+}

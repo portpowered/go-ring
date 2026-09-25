@@ -1,0 +1,31 @@
+{
+  "request": {
+    "method": "PUT",
+    "origin": "https://api.ring.com",
+    "path": "/clients_api/doorbots/{device_id}/siren_on",
+    "query": [],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": [
+        "application/json"
+      ]
+    },
+    "body": {
+      "started_at": "2026-01-01T00:00:00Z",
+      "ends_at": "2026-01-01T00:00:00Z",
+      "duration": 30,
+      "seconds_remaining": 30
+    },
+    "json": true
+  }
+}

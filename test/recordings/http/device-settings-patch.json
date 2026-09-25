@@ -1,0 +1,713 @@
+{
+  "request": {
+    "method": "PATCH",
+    "origin": "https://api.ring.com",
+    "path": "/devices/{device_id}/devices/{device_id}/settings",
+    "query": [],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": {
+      "motion_settings": {
+        "motion_detection_enabled": true
+      }
+    },
+    "json": true
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": [
+        "application/json"
+      ]
+    },
+    "body": {
+      "advanced_motion_settings": {
+        "active_motion_filter": 1,
+        "advanced_object_settings": {
+          "human_detection_confidence": {
+            "day": 0.8,
+            "night": 0.8
+          },
+          "motion_zone_overlap": {
+            "day": 0.2,
+            "night": 0.3
+          },
+          "object_size_maximum": {
+            "day": 0.7,
+            "night": 0.7
+          },
+          "object_size_minimum": {
+            "day": 0.04,
+            "night": 0.07
+          },
+          "object_time_overlap": {
+            "day": 0.2,
+            "night": 1.2
+          }
+        },
+        "sensitivity": 5,
+        "zone_1": {
+          "name": "opaque-7",
+          "state": 2,
+          "vertex1": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex2": {
+            "x": 0.5,
+            "y": 0
+          },
+          "vertex3": {
+            "x": 1,
+            "y": 0
+          },
+          "vertex4": {
+            "x": 1,
+            "y": 0.6
+          },
+          "vertex5": {
+            "x": 1,
+            "y": 1
+          },
+          "vertex6": {
+            "x": 0.5,
+            "y": 1
+          },
+          "vertex7": {
+            "x": 0,
+            "y": 1
+          },
+          "vertex8": {
+            "x": 0,
+            "y": 0.6
+          }
+        },
+        "zone_2": {
+          "name": "opaque-8",
+          "state": 0,
+          "vertex1": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex2": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex3": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex4": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex5": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex6": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex7": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex8": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "zone_3": {
+          "name": "opaque-9",
+          "state": 0,
+          "vertex1": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex2": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex3": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex4": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex5": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex6": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex7": {
+            "x": 0,
+            "y": 0
+          },
+          "vertex8": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      "attestation_settings": {
+        "rda_enabled": true
+      },
+      "audio_settings": {
+        "enable_live_view_audio_override": false,
+        "enable_live_view_audio_override_24x7": true
+      },
+      "auth_settings": {
+        "fallback_enabled": true,
+        "protocol": "oauth",
+        "retry_interval": 21600
+      },
+      "backend_settings": {
+        "enable_rich_notifications": true,
+        "flick_elim_recommended_mode": 1,
+        "live_view_preset_profile": "middle",
+        "motion_snooze_preset_profile": "low",
+        "motion_warning_enabled": false,
+        "paid_features": {
+          "ai_alexa_plus_greetings": false,
+          "ai_automated_warnings": false,
+          "alarm_triggered_recording": false,
+          "alexa_concierge": false,
+          "animal": false,
+          "appstore": false,
+          "baby_cry": false,
+          "car_alarm": false,
+          "closed_caption": false,
+          "co2_smoke_alarm": false,
+          "critical_alerts": false,
+          "cv_triggers": false,
+          "daily_digest": false,
+          "ding_call": false,
+          "dog_bark": false,
+          "extended_live_view": false,
+          "general_sound": false,
+          "glass_break": false,
+          "human": false,
+          "live_speak": false,
+          "loitering": false,
+          "motion": false,
+          "motion_awareness": false,
+          "motion_stop": false,
+          "multicam_live_view": false,
+          "natural_language_search": false,
+          "other_motion": false,
+          "package_delivery": false,
+          "package_pickup": false,
+          "package_protection": false,
+          "person_identification": false,
+          "recording_24x7": false,
+          "retinal_tuning": false,
+          "rogers_vqa": false,
+          "sheila_cv": false,
+          "sheila_recording": false,
+          "smart_media_descriptions": false,
+          "snapshot_capture_plus": false,
+          "system_level_pip": false,
+          "unverified_motion": false,
+          "vehicle": false
+        },
+        "terms_of_service_accepted": {
+          "autoreply": false,
+          "concierge": false
+        },
+        "user_specified_footage_hours_ttl": 168,
+        "user_specified_recording_24x7_ttl": 14,
+        "user_specified_recording_ttl": 60
+      },
+      "chime_settings": {
+        "duration": 10,
+        "enable": true,
+        "type": 2
+      },
+      "client_device_settings": {
+        "advanced_motion_enabled": false,
+        "animal_detection_eligible": false,
+        "cfes_eligible": true,
+        "dynamic_network_switching_eligible": false,
+        "light_schedule_enabled": false,
+        "local_playback_enabled": false,
+        "motion_message_enabled": true,
+        "motion_stop_edge_eligible": true,
+        "motion_zone_recommendation": false,
+        "night_vision_enabled": false,
+        "people_only_enabled": false,
+        "person_identity_eligible": true,
+        "ptz_setup_complete": true,
+        "recording_24x7_eligible": true,
+        "rich_notifications_eligible": true,
+        "ringtones_enabled": false,
+        "shadow_correction_enabled": false,
+        "sheila_camera_eligible": true,
+        "sheila_camera_processing_eligible": true,
+        "show_24x7_lite": true,
+        "show_offline_motion_events": false,
+        "show_radar_data": false,
+        "vehicle_detection_eligible": true
+      },
+      "concierge_settings": {
+        "alexa_settings": {
+          "delay_ms": 10000
+        },
+        "autoreply_settings": {
+          "delay_ms": 10000
+        },
+        "mode": "disabled"
+      },
+      "cv_settings": {
+        "detection_types": {
+          "animal": {
+            "action": "none",
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "baby_cry": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "car_alarm": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "co2_smoke_alarm": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "dog_bark": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "general_sound": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "glass_break": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "human": {
+            "enabled": true,
+            "mode": "none",
+            "notification": false
+          },
+          "loitering": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "motion": {
+            "enabled": true,
+            "mode": "edge",
+            "notification": true
+          },
+          "motion_stop": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "moving_vehicle": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "nearby_pom": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "other_motion": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "package_delivery": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "package_pickup": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "person_identification": {
+            "enabled": false,
+            "mode": "none",
+            "notification": true
+          },
+          "unverified_motion": {
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          },
+          "vehicle": {
+            "action": "none",
+            "enabled": false,
+            "mode": "none",
+            "notification": false
+          }
+        },
+        "motion_awareness": {
+          "enabled": false
+        },
+        "protocol_types": {
+          "hybrid": {
+            "enabled": false,
+            "observation_period_ms": 4000
+          }
+        },
+        "search_types": {
+          "natural_language_search": {
+            "enabled": false,
+            "mode": "none"
+          }
+        },
+        "threshold": {
+          "baby_cry": 2,
+          "car_alarm": 2,
+          "co2_smoke_alarm": 2,
+          "dog_bark": 2,
+          "general_sound": 2,
+          "glass_break": 2,
+          "loitering": 10,
+          "package_delivery": 2,
+          "unverified_motion": 0
+        }
+      },
+      "event_settings": {
+        "alarm": {
+          "battery_powered_duration_s": 60,
+          "line_powered_duration_s": 60
+        },
+        "key_access": {
+          "max_duration_s": 720
+        },
+        "motion": {
+          "battery_powered_max_duration_s": 120,
+          "line_powered_max_duration_s": 120,
+          "min_duration_s": 20
+        },
+        "on_demand": {
+          "max_duration_s": 720
+        },
+        "on_demand_linked": {
+          "battery_powered_duration_s": 60,
+          "line_powered_duration_s": 60
+        }
+      },
+      "floodlight_settings": {
+        "always_on": false,
+        "always_on_duration": "1m0s",
+        "brightness": 60,
+        "duration": "30s",
+        "enable_relay": false,
+        "priority": 0,
+        "scheduled_end_time": 1700000005,
+        "scheduled_start_time": 1700000005
+      },
+      "general_settings": {
+        "auto_power_enabled": false,
+        "country_code": "US",
+        "country_code_enabled": true,
+        "data_collection_enabled": false,
+        "enable_audio_recording": true,
+        "firmwares_locked": false,
+        "lite_24x7_enabled": true,
+        "lite_24x7_subscribed": false,
+        "log_selected_sink": 0,
+        "offline_motion_event_enabled": false,
+        "offline_motion_event_subscribed": false,
+        "power_mode": "wired",
+        "theft_alarm_enable": false,
+        "use_wrapup_domain": true,
+        "utc_offset": "-07:00",
+        "wrapup_domain": "wu.ring.com"
+      },
+      "keep_alive_settings": {
+        "keep_alive": 60,
+        "keep_alive_auto": 45,
+        "sheila": {
+          "host": "opaque-3",
+          "security_fqdn": ""
+        }
+      },
+      "light_snooze_settings": {
+        "duration": 0
+      },
+      "lite_24x7": {
+        "mode": "cloud",
+        "mode_properties": {
+          "sheila": {
+            "host": "opaque-3",
+            "security_fqdn": ""
+          }
+        }
+      },
+      "motion_settings": {
+        "advanced_motion_detection_enabled": true,
+        "advanced_motion_detection_human_only_mode": true,
+        "advanced_motion_detection_loitering_mode": false,
+        "advanced_motion_detection_mode": "edge",
+        "advanced_motion_glance_enabled": false,
+        "advanced_motion_recording_human_mode": false,
+        "advanced_motion_zones_enabled": false,
+        "advanced_motion_zones_type": "8vertices",
+        "advanced_pir_motion_zones": {
+          "zone1_sensitivity": 5,
+          "zone2_sensitivity": 5,
+          "zone3_sensitivity": 5,
+          "zone4_sensitivity": 5,
+          "zone5_sensitivity": 5,
+          "zone6_sensitivity": 5
+        },
+        "enable_audio": false,
+        "enable_indoor_mode": true,
+        "enable_ir_led": true,
+        "enable_pir_validation": true,
+        "enable_recording": true,
+        "enable_rlmd": false,
+        "end_detection": 20,
+        "loitering_threshold": 10,
+        "motion_detection_enabled": true,
+        "motion_snooze_device_enabled": false,
+        "motion_snooze_privacy_timeout": 3,
+        "motion_snooze_profile": [
+          1,
+          5,
+          15
+        ],
+        "motion_snooze_threshold_mins": 2,
+        "zone_settings_v2_enabled": true
+      },
+      "pir_settings": {
+        "sensitivity_1": 5,
+        "sensitivity_2": 5,
+        "sensitivity_3": 5,
+        "zone_enable": 31,
+        "zone_mask": 7
+      },
+      "ptz_settings": {
+        "auto_scan": {
+          "pause_ms": 500,
+          "step_size": 25
+        },
+        "mode": "user",
+        "pan_settings": {
+          "movement": {
+            "max_acceleration": 1,
+            "max_speed": 0.63,
+            "step_size": 15
+          },
+          "positions": {
+            "default": -30,
+            "max": 170,
+            "min": -170
+          }
+        },
+        "tilt_settings": {
+          "movement": {
+            "max_acceleration": 1,
+            "max_speed": 0.56,
+            "step_size": 5
+          },
+          "positions": {
+            "default": 20,
+            "max": 30,
+            "min": -30
+          }
+        }
+      },
+      "schedule_settings": {},
+      "sheila_settings": {
+        "cv_processing_enabled": false,
+        "local_storage_enabled": false,
+        "offline_module": {
+          "host": "opaque-3",
+          "security_fqdn": ""
+        },
+        "session_registration_api": 1
+      },
+      "snapshot_settings": {
+        "close_container": 1,
+        "frequency_after_secs": 2,
+        "frequency_secs": 180,
+        "lite_24x7_resolution_p": 360,
+        "max_upload_kb": 5000,
+        "ome_resolution_p": 360,
+        "period_after_secs": 30
+      },
+      "stream_settings": {
+        "active_streaming_profile": "rms",
+        "profile": 2,
+        "setting": 0,
+        "streaming_profiles": {
+          "freeswitch": {},
+          "rms": {
+            "host": "opaque-6",
+            "port": 443
+          }
+        }
+      },
+      "thermometer_settings": {},
+      "type": "stickup_cam_mini_ptz_v1",
+      "video_settings": {
+        "ae_level": 32,
+        "ae_mask": "",
+        "ae_mode": 0,
+        "aspect_ratio": "16:9",
+        "auto_clip_length_enabled": true,
+        "brightness": 10,
+        "clip_length_max": 60,
+        "clip_length_min": 10,
+        "contrast": 80,
+        "dynamic_resolution_enabled": true,
+        "early_stream_start_enabled": false,
+        "encryption_enabled": false,
+        "encryption_method": 1,
+        "exposure_control": 2,
+        "flick_elim_mode": 0,
+        "hdr_enable": false,
+        "hevc_enabled": false,
+        "ignore_zones": {
+          "zone1": {
+            "name": "opaque-5",
+            "state": 0,
+            "vertex1": {
+              "x": 0,
+              "y": 0
+            },
+            "vertex2": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "zone2": {
+            "name": "opaque-5",
+            "state": 0,
+            "vertex1": {
+              "x": 0,
+              "y": 0
+            },
+            "vertex2": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "zone3": {
+            "name": "opaque-5",
+            "state": 0,
+            "vertex1": {
+              "x": 0,
+              "y": 0
+            },
+            "vertex2": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "zone4": {
+            "name": "opaque-5",
+            "state": 0,
+            "vertex1": {
+              "x": 0,
+              "y": 0
+            },
+            "vertex2": {
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        "ir_led_brightness": 40,
+        "night_color_enable": false,
+        "qos_policies": 0,
+        "recording_24x7_mode": 0,
+        "retinal_tuning": {
+          "enabled": true,
+          "user_specified_enabled": false
+        },
+        "saturation": 48
+      },
+      "vod_settings": {
+        "enable": true,
+        "forced_enable_vod": false,
+        "toggled_at": "2026-01-01T00:00:00Z",
+        "use_cached_vod_domain": false
+      },
+      "volume_settings": {
+        "doorbell_volume": 8,
+        "mic_volume": 11,
+        "voice_volume": 11
+      },
+      "zone_settings": {
+        "motion": [
+          {
+            "id": "command-1",
+            "name": "opaque-7",
+            "properties": {
+              "detection_types": [
+                "motion"
+              ]
+            },
+            "state": "enabled",
+            "vertices": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 0.5,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0.6
+              },
+              {
+                "x": 1,
+                "y": 1
+              },
+              {
+                "x": 0.5,
+                "y": 1
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 0,
+                "y": 0.6
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "json": true
+  }
+}

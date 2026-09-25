@@ -1,0 +1,4058 @@
+{
+  "messages": [
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "requested_notifications": [
+            {
+              "filter_identifier": "sanitized-text",
+              "filters": {
+                "doorbot_ids": [
+                  1000
+                ]
+              },
+              "notification_scope": "event",
+              "notification_type": "shoulder_tap"
+            }
+          ]
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-1",
+        "method": "push_subscribe"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "status": "ok",
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "method": "push_subscription_ack",
+        "riid": "route-1"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "entry_point": "timeline",
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0 1 2 3 4 5 6\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\na=x-ring-bandwidth-estimated-kbps:4300\r\na=x-ring-network-type:cellular\r\na=x-ring-hyperfocus:1\r\nm=audio 41601 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:153323199 1 udp 2122260224 192.0.2.1 41601 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:153323199 1 udp 2122129152 192.0.2.1 57028 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:3227870720 1 udp 2122187008 fec0::2001:db8::1 57163 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:3227870720 1 udp 2122055936 fec0::2001:db8::1 33583 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:0\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 46228 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:153323199 1 udp 2122260224 192.0.2.1 46228 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:153323199 1 udp 2122129152 192.0.2.1 44122 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:3227870720 1 udp 2122187008 fec0::2001:db8::1 59237 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:3227870720 1 udp 2122055936 fec0::2001:db8::1 44611 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:1\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 37792 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:153323199 1 udp 2122260224 192.0.2.1 37792 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:153323199 1 udp 2122129152 192.0.2.1 47019 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:3227870720 1 udp 2122187008 fec0::2001:db8::1 34166 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:3227870720 1 udp 2122055936 fec0::2001:db8::1 53956 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:2\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 42683 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:153323199 1 udp 2122260224 192.0.2.1 42683 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:153323199 1 udp 2122129152 192.0.2.1 56914 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:3227870720 1 udp 2122187008 fec0::2001:db8::1 43493 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:3227870720 1 udp 2122055936 fec0::2001:db8::1 53369 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:3\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 55510 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:153323199 1 udp 2122260223 192.0.2.1 55510 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:153323199 1 udp 2122129151 192.0.2.1 54013 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:3227870720 1 udp 2122187263 fec0::2001:db8::1 52268 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:3227870720 1 udp 2122056191 fec0::2001:db8::1 52277 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:4\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=video 48916 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 103 104 107 108 35 36 37 38 39 40 109 114 115 41\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:153323199 1 udp 2122260223 192.0.2.1 48916 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:153323199 1 udp 2122129151 192.0.2.1 55141 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:3227870720 1 udp 2122187263 fec0::2001:db8::1 55624 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:3227870720 1 udp 2122056191 fec0::2001:db8::1 56520 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:5\r\na=x-full-quality\r\na=extmap:14 urn:ietf:params:rtp-hdrext:toffset\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:13 urn:3gpp:video-orientation\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:6 http://www.webrtc.org/experiments/rtp-hdrext/video-content-type\r\na=extmap:7 http://www.webrtc.org/experiments/rtp-hdrext/video-timing\r\na=extmap:8 http://www.webrtc.org/experiments/rtp-hdrext/color-space\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id\r\na=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:96 H264/90000\r\na=rtcp-fb:96 goog-remb\r\na=rtcp-fb:96 transport-cc\r\na=rtcp-fb:96 ccm fir\r\na=rtcp-fb:96 nack\r\na=rtcp-fb:96 nack pli\r\na=fmtp:96 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e034\r\na=rtpmap:97 rtx/90000\r\na=fmtp:97 apt=96\r\na=rtpmap:98 H264/90000\r\na=rtcp-fb:98 goog-remb\r\na=rtcp-fb:98 transport-cc\r\na=rtcp-fb:98 ccm fir\r\na=rtcp-fb:98 nack\r\na=rtcp-fb:98 nack pli\r\na=fmtp:98 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=420034\r\na=rtpmap:99 rtx/90000\r\na=fmtp:99 apt=98\r\na=rtpmap:100 H264/90000\r\na=rtcp-fb:100 goog-remb\r\na=rtcp-fb:100 transport-cc\r\na=rtcp-fb:100 ccm fir\r\na=rtcp-fb:100 nack\r\na=rtcp-fb:100 nack pli\r\na=fmtp:100 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=4d0034\r\na=rtpmap:101 rtx/90000\r\na=fmtp:101 apt=100\r\na=rtpmap:103 H264/90000\r\na=rtcp-fb:103 goog-remb\r\na=rtcp-fb:103 transport-cc\r\na=rtcp-fb:103 ccm fir\r\na=rtcp-fb:103 nack\r\na=rtcp-fb:103 nack pli\r\na=fmtp:103 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640c34\r\na=rtpmap:104 rtx/90000\r\na=fmtp:104 apt=103\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 hw-accelerated=0;level-id=156;profile-id=1;tx-mode=SRST\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=rtpmap:37 AV1/90000\r\na=rtcp-fb:37 goog-remb\r\na=rtcp-fb:37 transport-cc\r\na=rtcp-fb:37 ccm fir\r\na=rtcp-fb:37 nack\r\na=rtcp-fb:37 nack pli\r\na=fmtp:37 hw-accelerated=0;level-idx=15;profile=0;tier=0\r\na=rtpmap:38 rtx/90000\r\na=fmtp:38 apt=37\r\na=rtpmap:39 AV1/90000\r\na=rtcp-fb:39 goog-remb\r\na=rtcp-fb:39 transport-cc\r\na=rtcp-fb:39 ccm fir\r\na=rtcp-fb:39 nack\r\na=rtcp-fb:39 nack pli\r\na=fmtp:39 hw-accelerated=0;level-idx=15;profile=1;tier=0\r\na=rtpmap:40 rtx/90000\r\na=fmtp:40 apt=39\r\na=rtpmap:109 red/90000\r\na=rtpmap:114 rtx/90000\r\na=fmtp:114 apt=109\r\na=rtpmap:115 ulpfec/90000\r\na=rtpmap:41 flexfec-03/90000\r\na=rtcp-fb:41 goog-remb\r\na=rtcp-fb:41 transport-cc\r\na=fmtp:41 repair-window=10000000\r\nm=application 42042 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=candidate:153323199 1 udp 2122260223 192.0.2.1 42042 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:153323199 1 udp 2122129151 192.0.2.1 37509 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:3227870720 1 udp 2122187263 fec0::2001:db8::1 44830 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:3227870720 1 udp 2122056191 fec0::2001:db8::1 42841 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:6\r\na=sctp-port:5000\r\na=max-message-size:262144",
+          "type": "cloud"
+        },
+        "dialog_id": "dialog-2",
+        "riid": "route-2",
+        "method": "playback"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nc=IN IP4 192.0.2.1\r\nt=0 0\r\na=ice-options:trickle ice2\r\na=group:BUNDLE 0 1 2 3 4 5 6\r\na=tool:rsl-3.30.1\r\na=x-ring-hyperfocus:1\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:546fabdd6df3bb525a9567b5e73db0\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:0\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:hrFiSN0JlYiWC71rE5H4vrxbQF7rLr4SmuXu YHCSwQ11J9MEo7EAhR629DGAamqjnvs8hoc0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:546fabdd6df3bb525a9567b5e73db0\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:1\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:hrFiSN0JlYiWC71rE5H4vrxbQF7rLr4SmuXu mR5XEw9EdzwvBJuLM0I3YWibqepR4dMhJKjG\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:546fabdd6df3bb525a9567b5e73db0\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:2\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:hrFiSN0JlYiWC71rE5H4vrxbQF7rLr4SmuXu c3GgWYR0ItcQMocrA6pdLHxFvVeALm2qtD80\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:546fabdd6df3bb525a9567b5e73db0\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:3\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:hrFiSN0JlYiWC71rE5H4vrxbQF7rLr4SmuXu YxFiH7ErzN1OzvaaJgJxwbEsMUEOI8rfMFXI\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:546fabdd6df3bb525a9567b5e73db0\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:4\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:hrFiSN0JlYiWC71rE5H4vrxbQF7rLr4SmuXu WmhRtu7RXtLauSY4gAINuf28GCxKLnaoLLM1\r\nm=video 9 UDP/TLS/RTP/SAVPF 107 108 35 36\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:546fabdd6df3bb525a9567b5e73db0\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:5\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 profile-id=1;tier-flag=0;level-id=156\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=ssrc-group:FID 1649289060 1649289062\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:hrFiSN0JlYiWC71rE5H4vrxbQF7rLr4SmuXu yKYp4g2MnJtEwKCxeaNHfDja8OnN8naTfZGQ\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:hrFiSN0JlYiWC71rE5H4vrxbQF7rLr4SmuXu yKYp4g2MnJtEwKCxeaNHfDja8OnN8naTfZGQ\r\na=x-full-quality\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:546fabdd6df3bb525a9567b5e73db0\r\na=mid:6\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n",
+          "session_info": {
+            "ping_interval": 10,
+            "region": "opaque-2"
+          },
+          "type": "answer"
+        },
+        "dialog_id": "dialog-2",
+        "method": "sdp",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 UDP 2130706431 192.0.2.1 43269 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-2",
+        "method": "ice",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 UDP 2130706175 2001:db8::1 47947 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-2",
+        "method": "ice",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "is_ok": true,
+          "text": "opaque-3"
+        },
+        "dialog_id": "dialog-2",
+        "method": "notification",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 UDP 2122318079 192.0.2.1 443 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-2",
+        "method": "ice",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 UDP 2122317823 2001:db8::1 443 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-2",
+        "method": "ice",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 TCP 1518338303 192.0.2.1 443 typ host tcptype passive",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-2",
+        "method": "ice",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 TCP 1518338047 2001:db8::1 443 typ host tcptype passive",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-2",
+        "method": "ice",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1"
+        },
+        "dialog_id": "dialog-2",
+        "riid": "route-2",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000
+        },
+        "dialog_id": "dialog-2",
+        "method": "pong",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "is_ok": true,
+          "text": "opaque-4"
+        },
+        "dialog_id": "dialog-2",
+        "method": "notification",
+        "riid": "route-2"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-3",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "stream_options": {
+            "audio_enabled": false,
+            "video_enabled": true
+          },
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0 1 2\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\na=x-ring-bandwidth-estimated-kbps:4300\r\na=x-ring-network-type:cellular\r\na=x-ring-hyperfocus:1\r\nm=audio 57938 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:486160547 1 udp 2122260224 192.0.2.1 57938 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:486160547 1 udp 2122129152 192.0.2.1 45371 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:1206767710 1 udp 2122187008 fec0::2001:db8::1 46277 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:1206767710 1 udp 2122055936 fec0::2001:db8::1 40494 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:0\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendrecv\r\na=msid:syntheticstream synthetictrack\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:- synthetic-id\r\nm=video 41033 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 103 104 107 108 35 36 37 38 39 40 109 114 115 41\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:486160547 1 udp 2122260224 192.0.2.1 41033 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:486160547 1 udp 2122129152 192.0.2.1 38452 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:1206767710 1 udp 2122187008 fec0::2001:db8::1 38855 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:1206767710 1 udp 2122055936 fec0::2001:db8::1 43906 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:1\r\na=extmap:14 urn:ietf:params:rtp-hdrext:toffset\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:13 urn:3gpp:video-orientation\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:6 http://www.webrtc.org/experiments/rtp-hdrext/video-content-type\r\na=extmap:7 http://www.webrtc.org/experiments/rtp-hdrext/video-timing\r\na=extmap:8 http://www.webrtc.org/experiments/rtp-hdrext/color-space\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id\r\na=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:96 H264/90000\r\na=rtcp-fb:96 goog-remb\r\na=rtcp-fb:96 transport-cc\r\na=rtcp-fb:96 ccm fir\r\na=rtcp-fb:96 nack\r\na=rtcp-fb:96 nack pli\r\na=fmtp:96 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e034\r\na=rtpmap:97 rtx/90000\r\na=fmtp:97 apt=96\r\na=rtpmap:98 H264/90000\r\na=rtcp-fb:98 goog-remb\r\na=rtcp-fb:98 transport-cc\r\na=rtcp-fb:98 ccm fir\r\na=rtcp-fb:98 nack\r\na=rtcp-fb:98 nack pli\r\na=fmtp:98 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=420034\r\na=rtpmap:99 rtx/90000\r\na=fmtp:99 apt=98\r\na=rtpmap:100 H264/90000\r\na=rtcp-fb:100 goog-remb\r\na=rtcp-fb:100 transport-cc\r\na=rtcp-fb:100 ccm fir\r\na=rtcp-fb:100 nack\r\na=rtcp-fb:100 nack pli\r\na=fmtp:100 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=4d0034\r\na=rtpmap:101 rtx/90000\r\na=fmtp:101 apt=100\r\na=rtpmap:103 H264/90000\r\na=rtcp-fb:103 goog-remb\r\na=rtcp-fb:103 transport-cc\r\na=rtcp-fb:103 ccm fir\r\na=rtcp-fb:103 nack\r\na=rtcp-fb:103 nack pli\r\na=fmtp:103 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640c34\r\na=rtpmap:104 rtx/90000\r\na=fmtp:104 apt=103\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 hw-accelerated=0;level-id=156;profile-id=1;tx-mode=SRST\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=rtpmap:37 AV1/90000\r\na=rtcp-fb:37 goog-remb\r\na=rtcp-fb:37 transport-cc\r\na=rtcp-fb:37 ccm fir\r\na=rtcp-fb:37 nack\r\na=rtcp-fb:37 nack pli\r\na=fmtp:37 hw-accelerated=0;level-idx=15;profile=0;tier=0\r\na=rtpmap:38 rtx/90000\r\na=fmtp:38 apt=37\r\na=rtpmap:39 AV1/90000\r\na=rtcp-fb:39 goog-remb\r\na=rtcp-fb:39 transport-cc\r\na=rtcp-fb:39 ccm fir\r\na=rtcp-fb:39 nack\r\na=rtcp-fb:39 nack pli\r\na=fmtp:39 hw-accelerated=0;level-idx=15;profile=1;tier=0\r\na=rtpmap:40 rtx/90000\r\na=fmtp:40 apt=39\r\na=rtpmap:109 red/90000\r\na=rtpmap:114 rtx/90000\r\na=fmtp:114 apt=109\r\na=rtpmap:115 ulpfec/90000\r\na=rtpmap:41 flexfec-03/90000\r\na=rtcp-fb:41 goog-remb\r\na=rtcp-fb:41 transport-cc\r\na=fmtp:41 repair-window=10000000\r\nm=application 57022 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=candidate:486160547 1 udp 2122260224 192.0.2.1 57022 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:486160547 1 udp 2122129152 192.0.2.1 56748 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:1206767710 1 udp 2122187008 fec0::2001:db8::1 37750 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:1206767710 1 udp 2122055936 fec0::2001:db8::1 48170 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:2\r\na=sctp-port:5000\r\na=max-message-size:262144"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "live_view"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "requested_at": 1700000000000
+        },
+        "dialog_id": "dialog-3",
+        "method": "session_created",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=x-ring-hyperfocus:1\r\na=group:BUNDLE 0 1 2\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\nc=IN IP4 192.0.2.1\r\na=sendrecv\r\na=mid:0\r\na=rtcp-mux\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 32474 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 443 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 63858 typ host\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 42376 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 443 typ host tcptype passive\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=rtpmap:111 OPUS/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=ssrc:123456 msid:2718527215@gml-3726902631 0\r\na=ssrc:123456 cname:syntheticcname\r\nm=video 9 UDP/TLS/RTP/SAVPF 107 108\r\nc=IN IP4 192.0.2.1\r\na=sendonly\r\na=mid:1\r\na=rtcp-mux\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 32474 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 443 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 63858 typ host\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 42376 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 443 typ host tcptype passive\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=rtcp-fb:107 transport-cc\r\na=fmtp:107 profile-level-id=640034;packetization-mode=1\r\na=rtpmap:108 RTX/90000\r\na=fmtp:108 apt=107\r\na=ssrc-group:FID 126013473 1181179226\r\na=ssrc:123456 msid:2718527215@gml-3726902631 1\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:2718527215@gml-3726902631 1\r\na=ssrc:123456 cname:syntheticcname\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=mid:2\r\na=sctp-port:5000\r\na=max-message-size:262144\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 32474 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 42467 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 63858 typ host\r\na=candidate:6 1 TCP 1010827775 2001:db8::1 43129 typ host tcptype passive\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 42376 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 60405 typ host tcptype passive\r\n",
+          "session_info": {
+            "cell_id": "opaque-5",
+            "created_at": 1700000000001,
+            "ding_id": "opaque-6",
+            "ding_kind": "on_demand",
+            "ip": "opaque-7",
+            "ping_interval": 10,
+            "region": "opaque-2",
+            "rms_version": "d0db6907",
+            "session_id": "session-3"
+          },
+          "type": "answer"
+        },
+        "dialog_id": "dialog-3",
+        "method": "sdp",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "activate_session"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "enabled": false,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "mic_enable"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "audio_enabled": false,
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "stream_options"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "method": "pong",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "is_ok": true,
+          "text": "camera_connected"
+        },
+        "dialog_id": "dialog-3",
+        "method": "notification",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "method": "camera_started",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "is_ok": false,
+          "session_id": "session-2",
+          "text": "opaque-8"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "notification"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-5",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "reason": {
+            "code": 0,
+            "text": "opaque-9"
+          },
+          "session_id": "session-1"
+        },
+        "dialog_id": "dialog-2",
+        "riid": "route-2",
+        "method": "close"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-6",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-1",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000002,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-1",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592286000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-2",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000003,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-2",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592287000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-3",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000004,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-3",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592288000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-4",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000005,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "method": "pong",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-4",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592288000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-5",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000006,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-5",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592289000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-7",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-6",
+            "params": {
+              "direction": "RIGHT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000007,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-6",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592291000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-7",
+            "params": {
+              "direction": "RIGHT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000008,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-7",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592292000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-8",
+            "params": {
+              "direction": "RIGHT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000009,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-8",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592293000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-9",
+            "params": {
+              "direction": "RIGHT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000010,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-9",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592294000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-8",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "method": "pong",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-9",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-10",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "method": "pong",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-11",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-12",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "method": "pong",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-13",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-14",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-10",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "speed": 0.5,
+              "timestamp": 1700000000011,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Continuous"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-11",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "speed": 0.0,
+              "timestamp": 1700000000012,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Continuous"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-10",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592325000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-11",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592325000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-12",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000013,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-12",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592326000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-13",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "speed": 0.5,
+              "timestamp": 1700000000014,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Continuous"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-14",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "speed": 0.0,
+              "timestamp": 1700000000015,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Continuous"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-13",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592328000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-14",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592328000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-15",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000016,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "method": "pong",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-15",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592328000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-16",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000017,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-16",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592329000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-17",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000018,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-17",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592329000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-18",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000019,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-15",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-18",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592330000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-19",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000020,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-19",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592331000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-20",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000021,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-20",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592331000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-21",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000022,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-21",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592332000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-22",
+            "params": {
+              "direction": "LEFT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000023,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-23",
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Halted",
+            "params": {
+              "direction": "LEFT",
+              "reason": "LIMIT_REACHED",
+              "sessionId": "session-4",
+              "timestamp": 2929592333000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-22",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592333000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-16",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-24",
+            "params": {
+              "direction": "RIGHT",
+              "sessionId": "session-4",
+              "timestamp": 1700000000024,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Step"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-24",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592336000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-25",
+            "params": {
+              "direction": "RIGHT",
+              "sessionId": "session-4",
+              "speed": 0.5,
+              "timestamp": 1700000000025,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Continuous"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-25",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592337000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "method": "pong",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "command": {
+            "id": "command-26",
+            "params": {
+              "direction": "RIGHT",
+              "sessionId": "session-4",
+              "speed": 0.0,
+              "timestamp": 1700000000026,
+              "version": 1
+            },
+            "jsonrpc": "2.0",
+            "method": "PTZ.Pan.Continuous"
+          },
+          "doorbot_id": 1000,
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "rpc"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-2",
+          "command": {
+            "id": "command-26",
+            "jsonrpc": "2.0",
+            "result": {
+              "sessionId": "session-4",
+              "timestamp": 2929592339000.0,
+              "version": 1.0
+            }
+          }
+        },
+        "dialog_id": "dialog-3",
+        "method": "rpc",
+        "riid": "route-4"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-17",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "reason": {
+            "code": 0,
+            "text": "opaque-9"
+          },
+          "session_id": "session-2"
+        },
+        "dialog_id": "dialog-3",
+        "riid": "route-4",
+        "method": "close"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "entry_point": "timeline",
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0 1 2 3 4 5 6\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\na=x-ring-bandwidth-estimated-kbps:4300\r\na=x-ring-network-type:cellular\r\na=x-ring-hyperfocus:1\r\nm=audio 37263 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:1369305948 1 udp 2122260224 192.0.2.1 37263 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:1369305948 1 udp 2122129152 192.0.2.1 52586 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:176823201 1 udp 2122187008 fec0::2001:db8::1 55141 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:176823201 1 udp 2122055936 fec0::2001:db8::1 46429 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:0\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 38647 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:1369305948 1 udp 2122260224 192.0.2.1 38647 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:1369305948 1 udp 2122129152 192.0.2.1 57120 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:176823201 1 udp 2122187008 fec0::2001:db8::1 59209 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:176823201 1 udp 2122055936 fec0::2001:db8::1 35239 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:1\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 41400 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:1369305948 1 udp 2122260224 192.0.2.1 41400 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:1369305948 1 udp 2122129152 192.0.2.1 36725 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:176823201 1 udp 2122187008 fec0::2001:db8::1 50038 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:176823201 1 udp 2122055936 fec0::2001:db8::1 40986 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:2\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 56204 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:1369305948 1 udp 2122260224 192.0.2.1 56204 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:1369305948 1 udp 2122129152 192.0.2.1 60543 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:176823201 1 udp 2122187008 fec0::2001:db8::1 40803 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:176823201 1 udp 2122055936 fec0::2001:db8::1 40849 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:3\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:4\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 103 104 107 108 35 36 37 38 39 40 109 114 115 41\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:5\r\na=x-full-quality\r\na=extmap:14 urn:ietf:params:rtp-hdrext:toffset\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:13 urn:3gpp:video-orientation\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:6 http://www.webrtc.org/experiments/rtp-hdrext/video-content-type\r\na=extmap:7 http://www.webrtc.org/experiments/rtp-hdrext/video-timing\r\na=extmap:8 http://www.webrtc.org/experiments/rtp-hdrext/color-space\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id\r\na=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:96 H264/90000\r\na=rtcp-fb:96 goog-remb\r\na=rtcp-fb:96 transport-cc\r\na=rtcp-fb:96 ccm fir\r\na=rtcp-fb:96 nack\r\na=rtcp-fb:96 nack pli\r\na=fmtp:96 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e034\r\na=rtpmap:97 rtx/90000\r\na=fmtp:97 apt=96\r\na=rtpmap:98 H264/90000\r\na=rtcp-fb:98 goog-remb\r\na=rtcp-fb:98 transport-cc\r\na=rtcp-fb:98 ccm fir\r\na=rtcp-fb:98 nack\r\na=rtcp-fb:98 nack pli\r\na=fmtp:98 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=420034\r\na=rtpmap:99 rtx/90000\r\na=fmtp:99 apt=98\r\na=rtpmap:100 H264/90000\r\na=rtcp-fb:100 goog-remb\r\na=rtcp-fb:100 transport-cc\r\na=rtcp-fb:100 ccm fir\r\na=rtcp-fb:100 nack\r\na=rtcp-fb:100 nack pli\r\na=fmtp:100 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=4d0034\r\na=rtpmap:101 rtx/90000\r\na=fmtp:101 apt=100\r\na=rtpmap:103 H264/90000\r\na=rtcp-fb:103 goog-remb\r\na=rtcp-fb:103 transport-cc\r\na=rtcp-fb:103 ccm fir\r\na=rtcp-fb:103 nack\r\na=rtcp-fb:103 nack pli\r\na=fmtp:103 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640c34\r\na=rtpmap:104 rtx/90000\r\na=fmtp:104 apt=103\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 hw-accelerated=0;level-id=156;profile-id=1;tx-mode=SRST\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=rtpmap:37 AV1/90000\r\na=rtcp-fb:37 goog-remb\r\na=rtcp-fb:37 transport-cc\r\na=rtcp-fb:37 ccm fir\r\na=rtcp-fb:37 nack\r\na=rtcp-fb:37 nack pli\r\na=fmtp:37 hw-accelerated=0;level-idx=15;profile=0;tier=0\r\na=rtpmap:38 rtx/90000\r\na=fmtp:38 apt=37\r\na=rtpmap:39 AV1/90000\r\na=rtcp-fb:39 goog-remb\r\na=rtcp-fb:39 transport-cc\r\na=rtcp-fb:39 ccm fir\r\na=rtcp-fb:39 nack\r\na=rtcp-fb:39 nack pli\r\na=fmtp:39 hw-accelerated=0;level-idx=15;profile=1;tier=0\r\na=rtpmap:40 rtx/90000\r\na=fmtp:40 apt=39\r\na=rtpmap:109 red/90000\r\na=rtpmap:114 rtx/90000\r\na=fmtp:114 apt=109\r\na=rtpmap:115 ulpfec/90000\r\na=rtpmap:41 flexfec-03/90000\r\na=rtcp-fb:41 goog-remb\r\na=rtcp-fb:41 transport-cc\r\na=fmtp:41 repair-window=10000000\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:6\r\na=sctp-port:5000\r\na=max-message-size:262144",
+          "type": "cloud"
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "playback"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nc=IN IP4 192.0.2.1\r\nt=0 0\r\na=ice-options:trickle ice2\r\na=group:BUNDLE 0 1 2 3 4 5 6\r\na=tool:rsl-3.30.1\r\na=x-ring-hyperfocus:1\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:537109bf6feeda62b44eb7003c5f2c\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:0\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:nX5O9slFTOoHOCl1VFmWQZ3sbl0fz547ayVS SXj5zAi3q8FCAKuAPQAG3zgKZJPH2iHdXxCP\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:537109bf6feeda62b44eb7003c5f2c\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:1\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:nX5O9slFTOoHOCl1VFmWQZ3sbl0fz547ayVS GN0GYRPV4Bq6BYAYK0rJ7Lexpkbfn1bWSxPz\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:537109bf6feeda62b44eb7003c5f2c\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:2\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:nX5O9slFTOoHOCl1VFmWQZ3sbl0fz547ayVS dZKdA1njFSYaKfyPYqhJz33HCwgXaFbbSO3l\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:537109bf6feeda62b44eb7003c5f2c\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:3\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:nX5O9slFTOoHOCl1VFmWQZ3sbl0fz547ayVS hjRbcgz5dVOui3dyuxkWYqIcEoxD7V2rQxWr\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:537109bf6feeda62b44eb7003c5f2c\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:4\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:nX5O9slFTOoHOCl1VFmWQZ3sbl0fz547ayVS B2jWR9d960emdYWBSpQDdrUY4mXIUpuwukqJ\r\nm=video 9 UDP/TLS/RTP/SAVPF 107 108 35 36\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:537109bf6feeda62b44eb7003c5f2c\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:5\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 profile-id=1;tier-flag=0;level-id=156\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=ssrc-group:FID 3450331328 3450331330\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:nX5O9slFTOoHOCl1VFmWQZ3sbl0fz547ayVS 0HegmCLLKIp3KSZKajoQrdZADnLyjZUXjReh\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:nX5O9slFTOoHOCl1VFmWQZ3sbl0fz547ayVS 0HegmCLLKIp3KSZKajoQrdZADnLyjZUXjReh\r\na=x-full-quality\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:537109bf6feeda62b44eb7003c5f2c\r\na=mid:6\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n",
+          "session_info": {
+            "ping_interval": 10,
+            "region": "opaque-2"
+          },
+          "type": "answer"
+        },
+        "dialog_id": "dialog-4",
+        "method": "sdp",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:1369305948 1 udp 2122260223 192.0.2.1 35020 typ host generation 0 ufrag kLfN network-id 5 network-cost 10",
+          "mid": "4",
+          "mlineindex": 4
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 UDP 2130706431 192.0.2.1 44091 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-4",
+        "method": "ice",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 UDP 2130706175 2001:db8::1 59126 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-4",
+        "method": "ice",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "is_ok": true,
+          "text": "opaque-3"
+        },
+        "dialog_id": "dialog-4",
+        "method": "notification",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 UDP 2122318079 192.0.2.1 443 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-4",
+        "method": "ice",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:1369305948 1 udp 2122129151 192.0.2.1 45639 typ host generation 0 ufrag kLfN network-id 1 network-cost 900",
+          "mid": "4",
+          "mlineindex": 4
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:176823201 1 udp 2122187263 fec0::2001:db8::1 44312 typ host generation 0 ufrag kLfN network-id 6 network-cost 10",
+          "mid": "4",
+          "mlineindex": 4
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:176823201 1 udp 2122056191 fec0::2001:db8::1 52421 typ host generation 0 ufrag kLfN network-id 2 network-cost 900",
+          "mid": "4",
+          "mlineindex": 4
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:1369305948 1 udp 2122260223 192.0.2.1 56159 typ host generation 0 ufrag kLfN network-id 5 network-cost 10",
+          "mid": "5",
+          "mlineindex": 5
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:1369305948 1 udp 2122129151 192.0.2.1 42073 typ host generation 0 ufrag kLfN network-id 1 network-cost 900",
+          "mid": "5",
+          "mlineindex": 5
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:176823201 1 udp 2122187263 fec0::2001:db8::1 39832 typ host generation 0 ufrag kLfN network-id 6 network-cost 10",
+          "mid": "5",
+          "mlineindex": 5
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:176823201 1 udp 2122056191 fec0::2001:db8::1 43207 typ host generation 0 ufrag kLfN network-id 2 network-cost 900",
+          "mid": "5",
+          "mlineindex": 5
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 UDP 2122317823 2001:db8::1 443 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-4",
+        "method": "ice",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 TCP 1518338303 192.0.2.1 443 typ host tcptype passive",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-4",
+        "method": "ice",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 TCP 1518338047 2001:db8::1 443 typ host tcptype passive",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-4",
+        "method": "ice",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:1369305948 1 udp 2122260223 192.0.2.1 55350 typ host generation 0 ufrag kLfN network-id 5 network-cost 10",
+          "mid": "6",
+          "mlineindex": 6
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:1369305948 1 udp 2122129151 192.0.2.1 39376 typ host generation 0 ufrag kLfN network-id 1 network-cost 900",
+          "mid": "6",
+          "mlineindex": 6
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:176823201 1 udp 2122187263 fec0::2001:db8::1 56107 typ host generation 0 ufrag kLfN network-id 6 network-cost 10",
+          "mid": "6",
+          "mlineindex": 6
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:176823201 1 udp 2122056191 fec0::2001:db8::1 34328 typ host generation 0 ufrag kLfN network-id 2 network-cost 900",
+          "mid": "6",
+          "mlineindex": 6
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-19",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1"
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000
+        },
+        "dialog_id": "dialog-4",
+        "method": "pong",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "filter_identifiers": [
+            "sanitized-text"
+          ],
+          "ingestion_time_ms": 1790298649844,
+          "notification_scope": "event",
+          "notification_type": "shoulder_tap",
+          "payload": {
+            "device_id": "device-1",
+            "end_time": "2026-01-01T00:00:00Z",
+            "location_id": "location-1",
+            "start_time": "2026-01-01T00:00:00Z"
+          },
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "method": "push_event"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "is_ok": true,
+          "text": "opaque-4"
+        },
+        "dialog_id": "dialog-4",
+        "method": "notification",
+        "riid": "route-18"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "stream_options": {
+            "audio_enabled": false,
+            "video_enabled": true
+          },
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0 1 2\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\na=x-ring-bandwidth-estimated-kbps:4300\r\na=x-ring-network-type:cellular\r\na=x-ring-hyperfocus:1\r\nm=audio 50572 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:2036021929 1 udp 2122260224 192.0.2.1 50572 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:2036021929 1 udp 2122129152 192.0.2.1 53185 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:575459924 1 udp 2122187008 fec0::2001:db8::1 51305 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:575459924 1 udp 2122055936 fec0::2001:db8::1 33160 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:0\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendrecv\r\na=msid:syntheticstream synthetictrack\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:- synthetic-id\r\nm=video 58904 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 103 104 107 108 35 36 37 38 39 40 109 114 115 41\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:2036021929 1 udp 2122260224 192.0.2.1 58904 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:2036021929 1 udp 2122129152 192.0.2.1 60367 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:575459924 1 udp 2122187008 fec0::2001:db8::1 38532 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:575459924 1 udp 2122055936 fec0::2001:db8::1 41172 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:1\r\na=extmap:14 urn:ietf:params:rtp-hdrext:toffset\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:13 urn:3gpp:video-orientation\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:6 http://www.webrtc.org/experiments/rtp-hdrext/video-content-type\r\na=extmap:7 http://www.webrtc.org/experiments/rtp-hdrext/video-timing\r\na=extmap:8 http://www.webrtc.org/experiments/rtp-hdrext/color-space\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id\r\na=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:96 H264/90000\r\na=rtcp-fb:96 goog-remb\r\na=rtcp-fb:96 transport-cc\r\na=rtcp-fb:96 ccm fir\r\na=rtcp-fb:96 nack\r\na=rtcp-fb:96 nack pli\r\na=fmtp:96 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e034\r\na=rtpmap:97 rtx/90000\r\na=fmtp:97 apt=96\r\na=rtpmap:98 H264/90000\r\na=rtcp-fb:98 goog-remb\r\na=rtcp-fb:98 transport-cc\r\na=rtcp-fb:98 ccm fir\r\na=rtcp-fb:98 nack\r\na=rtcp-fb:98 nack pli\r\na=fmtp:98 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=420034\r\na=rtpmap:99 rtx/90000\r\na=fmtp:99 apt=98\r\na=rtpmap:100 H264/90000\r\na=rtcp-fb:100 goog-remb\r\na=rtcp-fb:100 transport-cc\r\na=rtcp-fb:100 ccm fir\r\na=rtcp-fb:100 nack\r\na=rtcp-fb:100 nack pli\r\na=fmtp:100 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=4d0034\r\na=rtpmap:101 rtx/90000\r\na=fmtp:101 apt=100\r\na=rtpmap:103 H264/90000\r\na=rtcp-fb:103 goog-remb\r\na=rtcp-fb:103 transport-cc\r\na=rtcp-fb:103 ccm fir\r\na=rtcp-fb:103 nack\r\na=rtcp-fb:103 nack pli\r\na=fmtp:103 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640c34\r\na=rtpmap:104 rtx/90000\r\na=fmtp:104 apt=103\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 hw-accelerated=0;level-id=156;profile-id=1;tx-mode=SRST\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=rtpmap:37 AV1/90000\r\na=rtcp-fb:37 goog-remb\r\na=rtcp-fb:37 transport-cc\r\na=rtcp-fb:37 ccm fir\r\na=rtcp-fb:37 nack\r\na=rtcp-fb:37 nack pli\r\na=fmtp:37 hw-accelerated=0;level-idx=15;profile=0;tier=0\r\na=rtpmap:38 rtx/90000\r\na=fmtp:38 apt=37\r\na=rtpmap:39 AV1/90000\r\na=rtcp-fb:39 goog-remb\r\na=rtcp-fb:39 transport-cc\r\na=rtcp-fb:39 ccm fir\r\na=rtcp-fb:39 nack\r\na=rtcp-fb:39 nack pli\r\na=fmtp:39 hw-accelerated=0;level-idx=15;profile=1;tier=0\r\na=rtpmap:40 rtx/90000\r\na=fmtp:40 apt=39\r\na=rtpmap:109 red/90000\r\na=rtpmap:114 rtx/90000\r\na=fmtp:114 apt=109\r\na=rtpmap:115 ulpfec/90000\r\na=rtpmap:41 flexfec-03/90000\r\na=rtcp-fb:41 goog-remb\r\na=rtcp-fb:41 transport-cc\r\na=fmtp:41 repair-window=10000000\r\nm=application 33712 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=candidate:2036021929 1 udp 2122260224 192.0.2.1 33712 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:2036021929 1 udp 2122129152 192.0.2.1 40660 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:575459924 1 udp 2122187008 fec0::2001:db8::1 48132 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:575459924 1 udp 2122055936 fec0::2001:db8::1 40833 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:2\r\na=sctp-port:5000\r\na=max-message-size:262144"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "live_view"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5",
+          "requested_at": 1700000000027
+        },
+        "dialog_id": "dialog-5",
+        "method": "session_created",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5",
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=x-ring-hyperfocus:1\r\na=group:BUNDLE 0 1 2\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\nc=IN IP4 192.0.2.1\r\na=sendrecv\r\na=mid:0\r\na=rtcp-mux\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 59971 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 443 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 28824 typ host\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 53531 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 443 typ host tcptype passive\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=rtpmap:111 OPUS/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=ssrc:123456 msid:1758066403@gml-1153038367 0\r\na=ssrc:123456 cname:syntheticcname\r\nm=video 9 UDP/TLS/RTP/SAVPF 107 108\r\nc=IN IP4 192.0.2.1\r\na=sendonly\r\na=mid:1\r\na=rtcp-mux\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 59971 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 443 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 28824 typ host\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 53531 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 443 typ host tcptype passive\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=rtcp-fb:107 transport-cc\r\na=fmtp:107 profile-level-id=640034;packetization-mode=1\r\na=rtpmap:108 RTX/90000\r\na=fmtp:108 apt=107\r\na=ssrc-group:FID 3381625726 2820962269\r\na=ssrc:123456 msid:1758066403@gml-1153038367 1\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:1758066403@gml-1153038367 1\r\na=ssrc:123456 cname:syntheticcname\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=mid:2\r\na=sctp-port:5000\r\na=max-message-size:262144\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 59971 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 41941 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 28824 typ host\r\na=candidate:6 1 TCP 1010827775 2001:db8::1 51339 typ host tcptype passive\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 53531 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 58865 typ host tcptype passive\r\n",
+          "session_info": {
+            "cell_id": "opaque-5",
+            "created_at": 1700000000028,
+            "ding_id": "opaque-10",
+            "ding_kind": "on_demand",
+            "ip": "opaque-7",
+            "ping_interval": 10,
+            "region": "opaque-2",
+            "rms_version": "d0db6907",
+            "session_id": "session-6"
+          },
+          "type": "answer"
+        },
+        "dialog_id": "dialog-5",
+        "method": "sdp",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "activate_session"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "enabled": false,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "mic_enable"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "audio_enabled": false,
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "stream_options"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "pong",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-21",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5",
+          "is_ok": true,
+          "text": "camera_connected"
+        },
+        "dialog_id": "dialog-5",
+        "method": "notification",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "camera_started",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "is_ok": false,
+          "session_id": "session-5",
+          "text": "opaque-8"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "notification"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "reason": {
+            "code": 0,
+            "text": "opaque-9"
+          },
+          "session_id": "session-1"
+        },
+        "dialog_id": "dialog-4",
+        "riid": "route-18",
+        "method": "close"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-22",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "pong",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-23",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-24",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "pong",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-25",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-26",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "pong",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-27",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-28",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "pong",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-29",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-30",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "pong",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-31",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-32",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "pong",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-33",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "enabled": true,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "mic_enable"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5",
+          "stealth_mode": false
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "camera_options"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "audio_enabled": true,
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "stream_options"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-34",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "method": "pong",
+        "riid": "route-20"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-35",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-36",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "enabled": false,
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "mic_enable"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "reason": {
+            "code": 0,
+            "text": "opaque-9"
+          },
+          "session_id": "session-5"
+        },
+        "dialog_id": "dialog-5",
+        "riid": "route-20",
+        "method": "close"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "entry_point": "timeline",
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0 1 2 3 4 5 6\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\na=x-ring-bandwidth-estimated-kbps:4300\r\na=x-ring-network-type:cellular\r\na=x-ring-hyperfocus:1\r\nm=audio 52450 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:833144703 1 udp 2122260224 192.0.2.1 52450 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:833144703 1 udp 2122129152 192.0.2.1 50708 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:4176357312 1 udp 2122187008 fec0::2001:db8::1 55756 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:4176357312 1 udp 2122055936 fec0::2001:db8::1 39714 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:0\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 40216 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:833144703 1 udp 2122260224 192.0.2.1 40216 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:833144703 1 udp 2122129152 192.0.2.1 47684 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:4176357312 1 udp 2122187008 fec0::2001:db8::1 36280 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:4176357312 1 udp 2122055936 fec0::2001:db8::1 37926 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:1\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 34669 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:833144703 1 udp 2122260224 192.0.2.1 34669 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:833144703 1 udp 2122129152 192.0.2.1 56036 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:4176357312 1 udp 2122187008 fec0::2001:db8::1 39114 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:4176357312 1 udp 2122055936 fec0::2001:db8::1 54228 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:2\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 41093 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:833144703 1 udp 2122260224 192.0.2.1 41093 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:833144703 1 udp 2122129152 192.0.2.1 38686 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:4176357312 1 udp 2122187008 fec0::2001:db8::1 33687 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:4176357312 1 udp 2122055936 fec0::2001:db8::1 60445 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:3\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=audio 46587 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:833144703 1 udp 2122260223 192.0.2.1 46587 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:833144703 1 udp 2122129151 192.0.2.1 43084 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:4176357312 1 udp 2122187263 fec0::2001:db8::1 45346 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:4176357312 1 udp 2122056191 fec0::2001:db8::1 47383 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:4\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\nm=video 46860 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 103 104 107 108 35 36 37 38 39 40 109 114 115 41\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:833144703 1 udp 2122260223 192.0.2.1 46860 typ host generation 0 network-id 5 network-cost 10\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:5\r\na=x-full-quality\r\na=extmap:14 urn:ietf:params:rtp-hdrext:toffset\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:13 urn:3gpp:video-orientation\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:6 http://www.webrtc.org/experiments/rtp-hdrext/video-content-type\r\na=extmap:7 http://www.webrtc.org/experiments/rtp-hdrext/video-timing\r\na=extmap:8 http://www.webrtc.org/experiments/rtp-hdrext/color-space\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id\r\na=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:96 H264/90000\r\na=rtcp-fb:96 goog-remb\r\na=rtcp-fb:96 transport-cc\r\na=rtcp-fb:96 ccm fir\r\na=rtcp-fb:96 nack\r\na=rtcp-fb:96 nack pli\r\na=fmtp:96 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e034\r\na=rtpmap:97 rtx/90000\r\na=fmtp:97 apt=96\r\na=rtpmap:98 H264/90000\r\na=rtcp-fb:98 goog-remb\r\na=rtcp-fb:98 transport-cc\r\na=rtcp-fb:98 ccm fir\r\na=rtcp-fb:98 nack\r\na=rtcp-fb:98 nack pli\r\na=fmtp:98 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=420034\r\na=rtpmap:99 rtx/90000\r\na=fmtp:99 apt=98\r\na=rtpmap:100 H264/90000\r\na=rtcp-fb:100 goog-remb\r\na=rtcp-fb:100 transport-cc\r\na=rtcp-fb:100 ccm fir\r\na=rtcp-fb:100 nack\r\na=rtcp-fb:100 nack pli\r\na=fmtp:100 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=4d0034\r\na=rtpmap:101 rtx/90000\r\na=fmtp:101 apt=100\r\na=rtpmap:103 H264/90000\r\na=rtcp-fb:103 goog-remb\r\na=rtcp-fb:103 transport-cc\r\na=rtcp-fb:103 ccm fir\r\na=rtcp-fb:103 nack\r\na=rtcp-fb:103 nack pli\r\na=fmtp:103 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640c34\r\na=rtpmap:104 rtx/90000\r\na=fmtp:104 apt=103\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 hw-accelerated=0;level-id=156;profile-id=1;tx-mode=SRST\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=rtpmap:37 AV1/90000\r\na=rtcp-fb:37 goog-remb\r\na=rtcp-fb:37 transport-cc\r\na=rtcp-fb:37 ccm fir\r\na=rtcp-fb:37 nack\r\na=rtcp-fb:37 nack pli\r\na=fmtp:37 hw-accelerated=0;level-idx=15;profile=0;tier=0\r\na=rtpmap:38 rtx/90000\r\na=fmtp:38 apt=37\r\na=rtpmap:39 AV1/90000\r\na=rtcp-fb:39 goog-remb\r\na=rtcp-fb:39 transport-cc\r\na=rtcp-fb:39 ccm fir\r\na=rtcp-fb:39 nack\r\na=rtcp-fb:39 nack pli\r\na=fmtp:39 hw-accelerated=0;level-idx=15;profile=1;tier=0\r\na=rtpmap:40 rtx/90000\r\na=fmtp:40 apt=39\r\na=rtpmap:109 red/90000\r\na=rtpmap:114 rtx/90000\r\na=fmtp:114 apt=109\r\na=rtpmap:115 ulpfec/90000\r\na=rtpmap:41 flexfec-03/90000\r\na=rtcp-fb:41 goog-remb\r\na=rtcp-fb:41 transport-cc\r\na=fmtp:41 repair-window=10000000\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:6\r\na=sctp-port:5000\r\na=max-message-size:262144",
+          "type": "cloud"
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "playback"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:833144703 1 udp 2122129151 192.0.2.1 41970 typ host generation 0 ufrag xpvf network-id 1 network-cost 900",
+          "mid": "5",
+          "mlineindex": 5
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:4176357312 1 udp 2122187263 fec0::2001:db8::1 49624 typ host generation 0 ufrag xpvf network-id 6 network-cost 10",
+          "mid": "5",
+          "mlineindex": 5
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:4176357312 1 udp 2122056191 fec0::2001:db8::1 40494 typ host generation 0 ufrag xpvf network-id 2 network-cost 900",
+          "mid": "5",
+          "mlineindex": 5
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:833144703 1 udp 2122260223 192.0.2.1 41773 typ host generation 0 ufrag xpvf network-id 5 network-cost 10",
+          "mid": "6",
+          "mlineindex": 6
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:833144703 1 udp 2122129151 192.0.2.1 45351 typ host generation 0 ufrag xpvf network-id 1 network-cost 900",
+          "mid": "6",
+          "mlineindex": 6
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:4176357312 1 udp 2122187263 fec0::2001:db8::1 54994 typ host generation 0 ufrag xpvf network-id 6 network-cost 10",
+          "mid": "6",
+          "mlineindex": 6
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:4176357312 1 udp 2122056191 fec0::2001:db8::1 58202 typ host generation 0 ufrag xpvf network-id 2 network-cost 900",
+          "mid": "6",
+          "mlineindex": 6
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "ice"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nc=IN IP4 192.0.2.1\r\nt=0 0\r\na=ice-options:trickle ice2\r\na=group:BUNDLE 0 1 2 3 4 5 6\r\na=tool:rsl-3.30.1\r\na=x-ring-hyperfocus:1\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:3824cd1c90c446b2d450fdc7f672e6\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:0\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:01KfuULBbwSquNqfMQCTFS2L5wOVz398YQKd pAh6qhkCgj2q42Vmqhqj9xjaD1rh6D5XHzWu\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:3824cd1c90c446b2d450fdc7f672e6\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:1\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:01KfuULBbwSquNqfMQCTFS2L5wOVz398YQKd X8exn8pStlvyuaKfxpTeuEmi6li7tshZQsIB\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:3824cd1c90c446b2d450fdc7f672e6\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:2\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:01KfuULBbwSquNqfMQCTFS2L5wOVz398YQKd x0AnDsn9je7jEfy3vYEVTRsDF0ditYxVEGyn\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:3824cd1c90c446b2d450fdc7f672e6\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:3\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:01KfuULBbwSquNqfMQCTFS2L5wOVz398YQKd 9WVhpvbg2pMfeH9TQPKIzzjGAOQZ8pEie2a9\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 0\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:3824cd1c90c446b2d450fdc7f672e6\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:4\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=rtpmap:0 PCMU/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:01KfuULBbwSquNqfMQCTFS2L5wOVz398YQKd cCsSIDpLQ890ExbrPjcFapsLUdxiIBnYEZIu\r\nm=video 9 UDP/TLS/RTP/SAVPF 107 108 35 36\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:3824cd1c90c446b2d450fdc7f672e6\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=mid:5\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendonly\r\na=msid:syntheticstream synthetictrack\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 profile-id=1;tier-flag=0;level-id=156\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=ssrc-group:FID 1194802409 1194802411\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:01KfuULBbwSquNqfMQCTFS2L5wOVz398YQKd UQCj26qMDZ0vnmYfg5ef73fXMM6alFYD9kNv\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:01KfuULBbwSquNqfMQCTFS2L5wOVz398YQKd UQCj26qMDZ0vnmYfg5ef73fXMM6alFYD9kNv\r\na=x-full-quality\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=bundle-only\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:active\r\na=tls-id:3824cd1c90c446b2d450fdc7f672e6\r\na=mid:6\r\na=sctp-port:5000\r\na=max-message-size:262144\r\n",
+          "session_info": {
+            "ping_interval": 10,
+            "region": "opaque-2"
+          },
+          "type": "answer"
+        },
+        "dialog_id": "dialog-6",
+        "method": "sdp",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 UDP 2130706431 192.0.2.1 36370 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-6",
+        "method": "ice",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 UDP 2130706175 2001:db8::1 47958 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-6",
+        "method": "ice",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "is_ok": true,
+          "text": "opaque-3"
+        },
+        "dialog_id": "dialog-6",
+        "method": "notification",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 UDP 2122318079 192.0.2.1 443 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-6",
+        "method": "ice",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 UDP 2122317823 2001:db8::1 443 typ host",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-6",
+        "method": "ice",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:1633205773 1 TCP 1518338303 192.0.2.1 443 typ host tcptype passive",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-6",
+        "method": "ice",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "ice": "candidate:335703402 1 TCP 1518338047 2001:db8::1 443 typ host tcptype passive",
+          "mlineindex": 0
+        },
+        "dialog_id": "dialog-6",
+        "method": "ice",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "filter_identifiers": [
+            "sanitized-text"
+          ],
+          "ingestion_time_ms": 1790298731223,
+          "notification_scope": "event",
+          "notification_type": "shoulder_tap",
+          "payload": {
+            "device_id": "device-1",
+            "end_time": "2026-01-01T00:00:00Z",
+            "location_id": "location-1",
+            "start_time": "2026-01-01T00:00:00Z"
+          },
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "method": "push_event"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1"
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000
+        },
+        "dialog_id": "dialog-6",
+        "method": "pong",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-1",
+          "user_id": 1000,
+          "is_ok": true,
+          "text": "opaque-4"
+        },
+        "dialog_id": "dialog-6",
+        "method": "notification",
+        "riid": "route-37"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-38",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-39",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "reason": {
+            "code": 0,
+            "text": "opaque-9"
+          },
+          "session_id": "session-1"
+        },
+        "dialog_id": "dialog-6",
+        "riid": "route-37",
+        "method": "close"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-1"
+        },
+        "dialog_id": "dialog-1",
+        "riid": "route-40",
+        "method": "push_unsubscribe"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "requested_notifications": [
+            {
+              "filter_identifier": "sanitized-text",
+              "filters": {
+                "doorbot_ids": [
+                  1000
+                ]
+              },
+              "notification_scope": "event",
+              "notification_type": "shoulder_tap"
+            }
+          ]
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-41",
+        "method": "push_subscribe"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "status": "ok",
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "method": "push_subscription_ack",
+        "riid": "route-41"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-42",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-43",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-44",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-45",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-46",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-47",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-48",
+        "method": "push_heartbeat"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "subscription_id": "opaque-11"
+        },
+        "dialog_id": "dialog-7",
+        "riid": "route-49",
+        "method": "push_unsubscribe"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "stream_options": {
+            "audio_enabled": false,
+            "video_enabled": true
+          },
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0 1 2\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS\r\na=x-ring-bandwidth-estimated-kbps:4300\r\na=x-ring-network-type:cellular\r\na=x-ring-hyperfocus:1\r\nm=audio 46607 UDP/TLS/RTP/SAVPF 111 63 0 8 13 110 126\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:3084886016 1 udp 2122260224 192.0.2.1 46607 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:3084886016 1 udp 2122129152 192.0.2.1 52572 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:2123972799 1 udp 2122187008 fec0::2001:db8::1 55965 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:2123972799 1 udp 2122055936 fec0::2001:db8::1 36277 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:0\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendrecv\r\na=msid:syntheticstream synthetictrack\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:- synthetic-id\r\nm=video 35816 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 103 104 107 108 35 36 37 38 39 40 109 114 115 41\r\nc=IN IP4 192.0.2.1\r\na=rtcp:9 IN IP4 192.0.2.1\r\na=candidate:3084886016 1 udp 2122260224 192.0.2.1 35816 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:3084886016 1 udp 2122129152 192.0.2.1 58708 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:2123972799 1 udp 2122187008 fec0::2001:db8::1 37494 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:2123972799 1 udp 2122055936 fec0::2001:db8::1 36454 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:1\r\na=extmap:14 urn:ietf:params:rtp-hdrext:toffset\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:13 urn:3gpp:video-orientation\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:5 http://www.webrtc.org/experiments/rtp-hdrext/playout-delay\r\na=extmap:6 http://www.webrtc.org/experiments/rtp-hdrext/video-content-type\r\na=extmap:7 http://www.webrtc.org/experiments/rtp-hdrext/video-timing\r\na=extmap:8 http://www.webrtc.org/experiments/rtp-hdrext/color-space\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap:10 urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id\r\na=extmap:11 urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id\r\na=recvonly\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:96 H264/90000\r\na=rtcp-fb:96 goog-remb\r\na=rtcp-fb:96 transport-cc\r\na=rtcp-fb:96 ccm fir\r\na=rtcp-fb:96 nack\r\na=rtcp-fb:96 nack pli\r\na=fmtp:96 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e034\r\na=rtpmap:97 rtx/90000\r\na=fmtp:97 apt=96\r\na=rtpmap:98 H264/90000\r\na=rtcp-fb:98 goog-remb\r\na=rtcp-fb:98 transport-cc\r\na=rtcp-fb:98 ccm fir\r\na=rtcp-fb:98 nack\r\na=rtcp-fb:98 nack pli\r\na=fmtp:98 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=420034\r\na=rtpmap:99 rtx/90000\r\na=fmtp:99 apt=98\r\na=rtpmap:100 H264/90000\r\na=rtcp-fb:100 goog-remb\r\na=rtcp-fb:100 transport-cc\r\na=rtcp-fb:100 ccm fir\r\na=rtcp-fb:100 nack\r\na=rtcp-fb:100 nack pli\r\na=fmtp:100 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=4d0034\r\na=rtpmap:101 rtx/90000\r\na=fmtp:101 apt=100\r\na=rtpmap:103 H264/90000\r\na=rtcp-fb:103 goog-remb\r\na=rtcp-fb:103 transport-cc\r\na=rtcp-fb:103 ccm fir\r\na=rtcp-fb:103 nack\r\na=rtcp-fb:103 nack pli\r\na=fmtp:103 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640c34\r\na=rtpmap:104 rtx/90000\r\na=fmtp:104 apt=103\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 goog-remb\r\na=rtcp-fb:107 transport-cc\r\na=rtcp-fb:107 ccm fir\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=fmtp:107 hw-accelerated=0;level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=640034\r\na=rtpmap:108 rtx/90000\r\na=fmtp:108 apt=107\r\na=rtpmap:35 H265/90000\r\na=rtcp-fb:35 goog-remb\r\na=rtcp-fb:35 transport-cc\r\na=rtcp-fb:35 ccm fir\r\na=rtcp-fb:35 nack\r\na=rtcp-fb:35 nack pli\r\na=fmtp:35 hw-accelerated=0;level-id=156;profile-id=1;tx-mode=SRST\r\na=rtpmap:36 rtx/90000\r\na=fmtp:36 apt=35\r\na=rtpmap:37 AV1/90000\r\na=rtcp-fb:37 goog-remb\r\na=rtcp-fb:37 transport-cc\r\na=rtcp-fb:37 ccm fir\r\na=rtcp-fb:37 nack\r\na=rtcp-fb:37 nack pli\r\na=fmtp:37 hw-accelerated=0;level-idx=15;profile=0;tier=0\r\na=rtpmap:38 rtx/90000\r\na=fmtp:38 apt=37\r\na=rtpmap:39 AV1/90000\r\na=rtcp-fb:39 goog-remb\r\na=rtcp-fb:39 transport-cc\r\na=rtcp-fb:39 ccm fir\r\na=rtcp-fb:39 nack\r\na=rtcp-fb:39 nack pli\r\na=fmtp:39 hw-accelerated=0;level-idx=15;profile=1;tier=0\r\na=rtpmap:40 rtx/90000\r\na=fmtp:40 apt=39\r\na=rtpmap:109 red/90000\r\na=rtpmap:114 rtx/90000\r\na=fmtp:114 apt=109\r\na=rtpmap:115 ulpfec/90000\r\na=rtpmap:41 flexfec-03/90000\r\na=rtcp-fb:41 goog-remb\r\na=rtcp-fb:41 transport-cc\r\na=fmtp:41 repair-window=10000000\r\nm=application 36182 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=candidate:3084886016 1 udp 2122260224 192.0.2.1 36182 typ host generation 0 network-id 5 network-cost 10\r\na=candidate:3084886016 1 udp 2122129152 192.0.2.1 50198 typ host generation 0 network-id 1 network-cost 900\r\na=candidate:2123972799 1 udp 2122187008 fec0::2001:db8::1 50346 typ host generation 0 network-id 6 network-cost 10\r\na=candidate:2123972799 1 udp 2122055936 fec0::2001:db8::1 51841 typ host generation 0 network-id 2 network-cost 900\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=ice-options:trickle renomination\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=setup:actpass\r\na=mid:2\r\na=sctp-port:5000\r\na=max-message-size:262144"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "live_view"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7",
+          "requested_at": 1700000000029
+        },
+        "dialog_id": "dialog-8",
+        "method": "session_created",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7",
+          "sdp": "v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\na=x-ring-hyperfocus:1\r\na=group:BUNDLE 0 1 2\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\nc=IN IP4 192.0.2.1\r\na=sendrecv\r\na=mid:0\r\na=rtcp-mux\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 50938 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 443 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 43555 typ host\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 42629 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 443 typ host tcptype passive\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=rtpmap:111 OPUS/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 useinbandfec=1\r\na=ssrc:123456 msid:2220570235@gml-1240198719 0\r\na=ssrc:123456 cname:syntheticcname\r\nm=video 9 UDP/TLS/RTP/SAVPF 107 108\r\nc=IN IP4 192.0.2.1\r\na=sendonly\r\na=mid:1\r\na=rtcp-mux\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 50938 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 443 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 43555 typ host\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 42629 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 443 typ host tcptype passive\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=rtpmap:107 H264/90000\r\na=rtcp-fb:107 nack\r\na=rtcp-fb:107 nack pli\r\na=rtcp-fb:107 transport-cc\r\na=fmtp:107 profile-level-id=640034;packetization-mode=1\r\na=rtpmap:108 RTX/90000\r\na=fmtp:108 apt=107\r\na=ssrc-group:FID 3601244198 2392916729\r\na=ssrc:123456 msid:2220570235@gml-1240198719 1\r\na=ssrc:123456 cname:syntheticcname\r\na=ssrc:123456 msid:2220570235@gml-1240198719 1\r\na=ssrc:123456 cname:syntheticcname\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 192.0.2.1\r\na=mid:2\r\na=sctp-port:5000\r\na=max-message-size:262144\r\na=setup:active\r\na=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\na=ice-ufrag:syntheticufrag\r\na=ice-pwd:syntheticicepassword0123456789\r\na=candidate:1 1 UDP 2013266431 2001:db8::1 50938 typ host\r\na=candidate:3 1 TCP 1010828799 2001:db8::1 33293 typ host tcptype passive\r\na=candidate:4 1 UDP 2013266430 2001:db8::1 43555 typ host\r\na=candidate:6 1 TCP 1010827775 2001:db8::1 64149 typ host tcptype passive\r\na=candidate:7 1 UDP 2013266429 192.0.2.1 42629 typ host\r\na=candidate:9 1 TCP 1010828031 192.0.2.1 27617 typ host tcptype passive\r\n",
+          "session_info": {
+            "cell_id": "opaque-5",
+            "created_at": 1700000000030,
+            "ding_id": "opaque-12",
+            "ding_kind": "on_demand",
+            "ip": "opaque-7",
+            "ping_interval": 10,
+            "region": "opaque-2",
+            "rms_version": "d0db6907",
+            "session_id": "session-8"
+          },
+          "type": "answer"
+        },
+        "dialog_id": "dialog-8",
+        "method": "sdp",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "activate_session"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "enabled": false,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "mic_enable"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "audio_enabled": false,
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "stream_options"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7",
+          "is_ok": true,
+          "text": "camera_connected"
+        },
+        "dialog_id": "dialog-8",
+        "method": "notification",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "camera_started",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "is_ok": false,
+          "session_id": "session-7",
+          "text": "opaque-8"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "notification"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    },
+    {
+      "direction": "client_to_server",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "riid": "route-50",
+        "method": "ping"
+      }
+    },
+    {
+      "direction": "server_to_client",
+      "frame": "text",
+      "payload": {
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "session-7"
+        },
+        "dialog_id": "dialog-8",
+        "method": "pong",
+        "riid": "route-50"
+      }
+    }
+  ]
+}

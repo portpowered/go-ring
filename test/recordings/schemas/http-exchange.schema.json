@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recorded HTTP exchange",
+  "type": "object",
+  "required": [
+    "request",
+    "response"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "request": {
+      "type": "object",
+      "required": [
+        "method",
+        "origin",
+        "path",
+        "query",
+        "headers",
+        "body",
+        "json",
+        "headers_mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "type": "string"
+        },
+        "origin": {
+          "type": "string",
+          "format": "uri"
+        },
+        "path": {
+          "type": "string"
+        },
+        "query": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "value"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "body": {},
+        "json": {
+          "type": "boolean"
+        },
+        "headers_mode": {
+          "enum": [
+            "exact",
+            "required"
+          ]
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "required": [
+        "status",
+        "headers",
+        "body",
+        "json"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "body": {},
+        "json": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
