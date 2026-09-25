@@ -4,7 +4,7 @@ The additive typed API covers the fields and calls backed by the checked-in C1 H
 
 | Go API | Wire contract | Evidence and boundaries |
 |---|---|---|
-| `GetDeviceSettings` | `GET /devices/v1/devices/{id}/settings`; returns `motion_detection_enabled` from `motion_settings` | [`device-settings-get.json`](../test/recordings/http/device-settings-get.json). The response contains many other settings; this API deliberately does not surface an unclassified raw map. |
+| `GetDeviceSettings` | `GET /devices/v1/devices/{id}/settings`; returns `motion_detection_enabled` from `motion_settings` | [`device-settings-get.json`](../test/recordings/http/device-settings-get.json). The response contains many other settings; this API deliberately does not surface an unclassified raw map. The public field is a pointer: nil means missing/null/unknown, while a non-nil false is an observed disabled state. |
 | `PatchDeviceSettings` | `PATCH /devices/v1/devices/{id}/settings` with `{"motion_settings":{"motion_detection_enabled":bool}}` | [`device-settings-patch.json`](../test/recordings/http/device-settings-patch.json). Nil means no supported field was supplied and is rejected. Other settings are not rewritten. |
 | `SetSiren` | `PUT /clients_api/doorbots/{id}/siren_on` or `_off`, no request body or query | [`siren-on.json`](../test/recordings/http/siren-on.json), [`siren-off.json`](../test/recordings/http/siren-off.json). The on response reports a duration of 30 seconds, but the captured request has no duration parameter; callers cannot set one. |
 

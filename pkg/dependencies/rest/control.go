@@ -12,7 +12,7 @@ import (
 
 // GetMotionDetectionEnabled reads the one settings field supported by the current
 // typed public settings API. Other response fields are intentionally ignored.
-func (c *Client) GetMotionDetectionEnabled(ctx context.Context, deviceID int64) (bool, error) {
+func (c *Client) GetMotionDetectionEnabled(ctx context.Context, deviceID int64) (*bool, error) {
 	var response struct {
 		MotionSettings struct {
 			MotionDetectionEnabled *bool `json:"motion_detection_enabled"`
@@ -20,12 +20,9 @@ func (c *Client) GetMotionDetectionEnabled(ctx context.Context, deviceID int64) 
 	}
 	path := settingsPath(deviceID)
 	if err := c.doJSONRequest(ctx, "GET", path, nil, &response); err != nil {
-		return false, err
+		return nil, err
 	}
-	if response.MotionSettings.MotionDetectionEnabled == nil {
-		return false, ringapimodels.NewBadRequestError("settings response omitted motion_detection_enabled", nil)
-	}
-	return *response.MotionSettings.MotionDetectionEnabled, nil
+	return response.MotionSettings.MotionDetectionEnabled, nil
 }
 
 // PatchMotionDetectionEnabled changes only the captured motion detection field.

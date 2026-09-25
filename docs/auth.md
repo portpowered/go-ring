@@ -15,6 +15,8 @@ Ring's APIs are unofficial and may change without notice. The implementation fol
 
 All calls must be made from a backend process. Ring's OAuth pages do not support cross-origin browser authentication.
 
+`WithUsername` and `WithPassword` provide fallback credentials to `Authenticate` when its request fields are empty; non-empty request values take precedence. `Request2FACode` still takes its credentials directly in `Request2FACodeRequest`. `WithRefreshToken` provides the analogous fallback when `RefreshTokenRequest.RefreshToken` is empty. These options do not trigger automatic authentication or token refresh.
+
 ## Initial authentication
 
 Create one client and use it for both 2FA calls. The client retains the PKCE verifier, OAuth state, CSRF token, cookies, and hardware ID between calls.

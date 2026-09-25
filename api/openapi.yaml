@@ -231,15 +231,16 @@ components:
       additionalProperties: true
     DeviceSettings:
       type: object
-      required: [motion_settings]
       properties:
-        motion_settings: {$ref: '#/components/schemas/MotionSettings'}
+        motion_settings:
+          anyOf:
+            - {$ref: '#/components/schemas/MotionSettings'}
+            - {type: 'null'}
       additionalProperties: {$ref: '#/components/schemas/JsonValue'}
     MotionSettings:
       type: object
-      required: [motion_detection_enabled]
       properties:
-        motion_detection_enabled: {type: boolean}
+        motion_detection_enabled: {type: [boolean, 'null']}
       additionalProperties: {$ref: '#/components/schemas/JsonValue'}
     DeviceSettingsPatch:
       type: object

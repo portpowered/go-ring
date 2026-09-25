@@ -11,6 +11,13 @@ import (
 // Authenticate performs full authentication flow with username/password
 // If 2FA is required, it will return a Requires2FAError
 func (c *Client) Authenticate(ctx context.Context, req AuthenticateRequest) (*ringapimodels.AuthResponse, error) {
+	username, password := req.Username, req.Password
+	if username == "" {
+		username = c.username
+	}
+	if password == "" {
+		password = c.password
+	}
 	// Generate hardware ID if not set
 	hardwareID := c.hardwareID
 	if hardwareID == "" {
@@ -20,7 +27,7 @@ func (c *Client) Authenticate(ctx context.Context, req AuthenticateRequest) (*ri
 	}
 
 	// Perform authentication
-	tokenResp, err := c.restClient.Authenticate(ctx, req.Username, req.Password, hardwareID, req.OTPCode)
+	tokenResp, err := c.restClient.Authenticate(ctx, username, password, hardwareID, req.OTPCode)
 	if err != nil {
 		if ringapimodels.IsRequires2FAError(err) {
 			return nil, err
@@ -55,7 +62,11 @@ func (c *Client) Request2FACode(ctx context.Context, req Request2FACodeRequest) 
 
 // RefreshToken refreshes an access token using a refresh token
 func (c *Client) RefreshToken(ctx context.Context, req RefreshTokenRequest) (*ringapimodels.AuthResponse, error) {
-	tokenResp, err := c.restClient.RefreshAccessToken(ctx, req.RefreshToken)
+	refreshToken := req.RefreshToken
+	if refreshToken == "" {
+		refreshToken = c.refreshToken
+	}
+	tokenResp, err := c.restClient.RefreshAccessToken(ctx, refreshToken)
 	if err != nil {
 		return nil, err
 	}

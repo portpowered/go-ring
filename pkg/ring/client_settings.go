@@ -10,7 +10,8 @@ import (
 // DeviceSettings contains only fields confirmed in captured settings exchanges.
 // Fields not represented here remain opaque to callers of the typed API.
 type DeviceSettings struct {
-	MotionDetectionEnabled bool
+	// MotionDetectionEnabled is nil when the response omits or nulls the field.
+	MotionDetectionEnabled *bool
 }
 
 // GetDeviceSettingsRequest identifies a device whose supported settings are read.

@@ -150,6 +150,12 @@ class HTTPContracts(unittest.TestCase):
         invalid = copy.deepcopy(captured)
         invalid["motion_settings"]["motion_detection_enabled"] = "yes"
         self.assertFalse(response.is_valid(invalid))
+        missing = {"motion_settings": {}}
+        null_value = {"motion_settings": {"motion_detection_enabled": None}}
+        null_settings = {"motion_settings": None}
+        self.assertTrue(response.is_valid(missing))
+        self.assertTrue(response.is_valid(null_value))
+        self.assertTrue(response.is_valid(null_settings))
 
 
 if __name__ == "__main__":

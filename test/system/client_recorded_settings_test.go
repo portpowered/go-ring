@@ -36,7 +36,7 @@ func TestRecordedSettingsAndSirenAcrossRegions(t *testing.T) {
 		}{
 			{name: "get motion setting", file: "device-settings-get.json", call: func(c *ring.Client) error {
 				settings, err := c.GetDeviceSettings(context.Background(), ring.GetDeviceSettingsRequest{DeviceID: "12345"})
-				if err == nil && settings.MotionDetectionEnabled {
+				if err == nil && (settings.MotionDetectionEnabled == nil || *settings.MotionDetectionEnabled) {
 					return ringapimodels.NewBadRequestError("fixture expected motion detection disabled", nil)
 				}
 				return err
