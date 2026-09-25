@@ -10,3 +10,4 @@ tokens.json
 # Private native network captures; commit reviewed sanitized cassettes only.
 /docs/internal/*.mitmproxy
 /docs/internal/*.har
+/.venv-capture/

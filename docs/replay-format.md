@@ -78,3 +78,20 @@ documents. `test/contracts/README.md` identifies Python baseline test
 counterparts and labels signaling and other route-only additions as
 capture-only. See that file before treating a captured route as proof of
 equivalent high-level behavior.
+
+## Repeatable verification order
+
+Run `python tools/verify_reference.py` from the repository root (requires uv).
+It checks the pinned Python suite first, then the shared-recording adapters,
+then signaling payload schemas and recording/sanitizer tests. The reference
+and capture tooling use separate ignored virtual environments so mitmproxy
+cannot replace the reference's locked dependencies. The same command runs in
+CI on Windows and Linux. It needs the reference submodule and package downloads
+during setup; the reference tests themselves prohibit external connections.
+
+Next run `go test -race ./... -timeout 120s` with `GOWORK=off`. Neither command
+requires the private native recording: committed sanitized files are the test
+inputs. Extraction of a new recording is a separate maintainer operation.
+Passing these commands is one completion gate; the remaining feature mapping,
+README/API documentation, and the planned 90% library coverage gate must also
+be satisfied before calling the implementation complete.

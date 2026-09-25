@@ -1,6 +1,6 @@
 # go-ring: third-party library design and testing plan
 
-Status: proposed implementation plan, grounded in the checkout and capture inspected on 2026-09-25. API examples below describe the target design unless explicitly marked current. This work adds the reference submodule and this plan; it does not implement the proposed SDK changes.
+Status: implementation in progress. API examples below describe the target design unless explicitly marked current. See [porting progress](porting-progress.md) for the Python baseline, recording comparisons, verified implementation, and outstanding gaps. Follow the execution order in [the porting process](internal/process-of-reverse-engineering.md): reference architecture and tests, shared replay contracts, mapped Go tests, implementation, then verification.
 
 Design supplements: [feature/wire/session parity matrix](parity-matrix.md) and [session API, SDP construction and lifecycle contract](session-design.md). These define the revised public shape: Client -> SignalingConnection -> DeviceSession, with separate EventSubscription and PlaybackSession scopes. Intentional breaking changes are accepted to make the feature set clear; RTCStream is an existing type to migrate away from.
 
@@ -39,7 +39,7 @@ Assign independent evidence and implementation statuses. For example, a behavior
 
 | Evidence code | Meaning | Requirements |
 |---|---|---|
-| C1 | New native mitmproxy recording | Capture digest, flow ordinal, sanitized fixture, parser/redaction version |
+| C1 | New native mitmproxy recording | Actual sanitized fixture and schema; source conversation identified in prose |
 | P1 | Pinned Python source or tests | Commit, file, test/function name; distinguish source behavior from tested behavior |
 | L1 | Existing Go fixtures | Preserve their documented unknown capture dates/provenance |
 | S1 | Synthetic robustness scenario | State the mutation and its parent fixture; never label captured |
@@ -51,7 +51,7 @@ Create `docs/evidence/operations.yaml` as the source for the support matrix. Eac
 
 ### What the new recording actually adds
 
-The supplied file is **native mitmproxy**, not a HAR: `docs/internal/network-capture-flows-ring.mitmproxy` (13,672,990 bytes). SHA-256: `2b76185876adac6487db378ce0a340060e19171049091dce6c3c3559b8f70b63`. Parsing found 512 HTTP flows, including three WebSocket upgrades at `api.prod.signalling.ring.devices.a2z.com/ws`. Flows 2, 21 and 402 contain respectively 0, 254 and 243 WebSocket messages: **497 messages total**. Ordinals are one-based within the native file; message ordinals are one-based within each flow. The initial inventory incorrectly filtered on `ring.com` hostnames and missed these conversations; this corrected inventory supersedes that finding. Discovery must enumerate all hosts before classifying their roles. Counts are occurrences, not distinct features or devices.
+The supplied file is **native mitmproxy**, not a HAR: `docs/internal/network-capture-flows-ring.mitmproxy`. Parsing found 512 HTTP flows, including three WebSocket upgrades at `api.prod.signalling.ring.devices.a2z.com/ws`. Flows 2, 21 and 402 contain respectively 0, 254 and 243 WebSocket messages: **497 messages total**. Ordinals are one-based within the native file; message ordinals are one-based within each flow. The initial inventory incorrectly filtered on `ring.com` hostnames and missed these conversations; this corrected inventory supersedes that finding. Discovery must enumerate all hosts before classifying their roles. Counts are occurrences, not distinct features or devices.
 
 | C1 observation on api.ring.com | Count/status | What to investigate or implement |
 |---|---|---|
@@ -90,7 +90,7 @@ All 48 outgoing RPC commands have a `params.sessionId` distinct from outer `body
 
 The same capture includes live_view, playback, SDP, ICE, session_created, activate_session, camera_started, camera_options, mic_enable, stream_options, close, 74 outgoing pings and 74 incoming pongs. Push subscribe/ack, push_heartbeat, push_event and unsubscribe are also present. Eleven SDP responses specify `session_info.ping_interval: 10`; median per-session ping spacing is approximately 10 seconds, supporting seconds for this captured profile. Push subscription heartbeat and live-view session heartbeat are separate lifecycles even when sharing a socket. See the session design for precise timer policies and the requested 60-minute session maximum.
 
-If a separate HAR is supplied later, assign it C2 and compare it to C1 by digest and normalized operations. A HAR export may lose native WebSocket information; retain native flow provenance and report missing bodies/frames explicitly.
+If a separate HAR is supplied later, assign it C2 and compare its actual requests, responses, and conversations to C1. A HAR export may lose native WebSocket information; retain native flow provenance and report missing bodies/frames explicitly.
 
 ### Capture-to-fixture pipeline
 
@@ -98,8 +98,8 @@ If a separate HAR is supplied later, assign it C2 and compare it to C1 by digest
 2. Produce a sanitized inventory of method, host, templated path, status, body format and flow ordinal. Do not output headers, query values, media or response bodies to logs.
 3. Select operation-focused conversations, including prerequisite requests and before/after reads when present. Preserve ordering and meaningful status/body distinctions.
 4. Redact credentials, cookies, signed URLs, personal data, addresses, coordinates, device/network identifiers, media and SDP/ICE network details. Use consistent synthetic mappings so cross-request identity still works; preserve string-vs-number and null-vs-absent distinctions.
-5. Store minimal request/response fixtures, manifest, sanitizer version and review record. Fail closed on unhandled formats; decode compressed/base64 bodies before inspection. Secret scanning complements review and cannot prove anonymization alone.
-6. Generate synthetic errors as separate cases with `derived_from` metadata. Keep raw source digests in the manifest; public fixtures must contain no dependency on the local raw file.
+5. Store the actual sanitized request/response and ordered session files with their JSON schemas. Do not add manifests, digests, format versions, capture timestamps, environment labels, or extraction metadata. Fail closed on unhandled formats; decode compressed/base64 bodies before inspection. Secret scanning complements review and cannot prove anonymization alone.
+6. Generate synthetic errors as explicit test mutations of named fixtures. Explain the mutation in the test; public fixtures must contain no dependency on the local raw file. Keep protocol timestamps and version fields when they are part of the actual wire payload.
 
 Suggested layout: `test/fixtures/{legacy,python,capture-c1,synthetic}/`, `test/replay/scenarios/`, `tools/capture/`, `docs/evidence/`. Adapt rather than immediately relocating all existing fixtures.
 
@@ -341,7 +341,7 @@ Required handling guidance: a timed-out mutation may already have succeeded; rec
 
 | Task | Deliverable | Depends on | Acceptance |
 |---|---|---|---|
-| T0 Baseline/reference | Pin Python, record tests/API/coverage, map compatibility and third-party notices | None | Reproducible baseline and source manifest; reference remains unmodified |
+| T0 Baseline/reference | Pin Python, record tests/API/coverage, map compatibility and third-party notices | None | Reproducible baseline and file/test mapping; reference remains unmodified |
 | T1 Evidence ingestion | Ignore raw capture, parser/sanitizer, C1 inventory, operation matrix, focused fixtures | T0 | Repeatable sanitized output; reviewed provenance; no raw secrets in tracked files |
 | T2 Replay infrastructure | Strict transport, scripted WS peer, fake clock/IDs, common scenario schema | T0 | Unexpected request fails; fresh response bodies; no real network; no sleep-dependent protocol assertions |
 | T3 Public/lifecycle contracts | Client/SignalingConnection/DeviceSession APIs, ownership, RPC correlation, keepalive, SDP profiles, 60-minute expiry; preserve auth | T0, T2 | Breaking migration is explicit; close drains sessions/pending RPC; fake-clock expiry passes; auth unchanged |

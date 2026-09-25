@@ -20,3 +20,8 @@ fmt:
 	$(GO) fmt ./...
 vet:
 	$(GO) vet ./...
+
+# Optional maintainer checks; ordinary Go builds do not require Python or uv.
+.PHONY: test-reference
+test-reference:
+	python tools/verify_reference.py

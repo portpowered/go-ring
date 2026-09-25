@@ -7,8 +7,10 @@ toolchain go1.24.2
 require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/pion/sdp/v3 v3.0.9
 	github.com/pion/webrtc/v3 v3.2.40
 	github.com/stretchr/testify v1.9.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -23,7 +25,6 @@ require (
 	github.com/pion/rtcp v1.2.12 // indirect
 	github.com/pion/rtp v1.8.5 // indirect
 	github.com/pion/sctp v1.8.16 // indirect
-	github.com/pion/sdp/v3 v3.0.9 // indirect
 	github.com/pion/srtp/v2 v2.0.18 // indirect
 	github.com/pion/stun v0.6.1 // indirect
 	github.com/pion/transport/v2 v2.2.4 // indirect
@@ -32,5 +33,4 @@ require (
 	golang.org/x/crypto v0.44.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
