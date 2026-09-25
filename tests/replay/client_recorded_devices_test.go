@@ -1,4 +1,4 @@
-package system
+package replay_test
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 
 func deviceListExchange(t *testing.T, origin string) replay.Exchange {
 	t.Helper()
-	x, err := replay.LoadExchange(filepath.Join("..", "..", "test", "recordings", "http", "device-list.json"))
+	x, err := replay.LoadExchange(filepath.Join("fixtures", "recordings", "http", "device-list.json"))
 	require.NoError(t, err)
 	// C1 captures only Accept among request headers; preserve that observed
 	// requirement while allowing the public client to add its normal headers.
@@ -57,13 +57,13 @@ func TestRecordedDeviceListAndGetDevice(t *testing.T) {
 		)
 		require.NoError(t, err)
 		ctx := context.Background()
-		var cams []*ringapimodels.StickUpCam
+		var cams []ringapimodels.StickUpCam
 		if lookup {
 			device, getErr := client.GetDevice(ctx, ring.GetDeviceRequest{DeviceID: fmt.Sprint(id)})
 			require.NoError(t, getErr)
 			cam, ok := device.(*ringapimodels.StickUpCam)
 			require.True(t, ok)
-			cams = []*ringapimodels.StickUpCam{cam}
+			cams = []ringapimodels.StickUpCam{*cam}
 		} else {
 			devices, listErr := client.ListDevices(ctx)
 			require.NoError(t, listErr)

@@ -1,4 +1,4 @@
-package contracts
+package replay_test
 
 import (
 	"encoding/json"
@@ -28,11 +28,11 @@ func object(v any) map[string]any { m, _ := v.(map[string]any); return m }
 func TestRecordedHTTPMethodsAreInOpenAPI(t *testing.T) {
 	doc := loadYAML(t, filepath.Join("..", "..", "api", "openapi.yaml"))
 	paths := object(doc["paths"])
-	files, e := filepath.Glob(filepath.Join("..", "recordings", "http", "*.json"))
+	files, e := filepath.Glob(filepath.Join("fixtures", "recordings", "http", "*.json"))
 	if e != nil {
 		t.Fatal(e)
 	}
-	variants, e := filepath.Glob(filepath.Join("..", "recordings", "http", "variants", "*.json"))
+	variants, e := filepath.Glob(filepath.Join("fixtures", "recordings", "http", "variants", "*.json"))
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -110,7 +110,7 @@ func TestSessionRecordingsUseAsyncAPIEnvelopeAndPTZMethods(t *testing.T) {
 	client := enumSet(t, object(schemas["ClientEnvelope"]))
 	server := enumSet(t, object(schemas["ServerEnvelope"]))
 	ptz := enumSet(t, object(schemas["PTZRPC"]))
-	files, e := filepath.Glob(filepath.Join("..", "recordings", "sessions", "*.json"))
+	files, e := filepath.Glob(filepath.Join("fixtures", "recordings", "sessions", "*.json"))
 	if e != nil {
 		t.Fatal(e)
 	}

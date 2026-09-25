@@ -1,4 +1,4 @@
-package unit
+package ring_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Wire-shape success cases use the shared Python replay fixtures in test/system.
+// Wire-shape success cases use the shared Python replay fixtures in tests/replay.
 // These focused cases ensure invalid calls never reach the HTTP transport.
 func TestLegacyControlValidationBeforeHTTP(t *testing.T) {
 	checks := []struct {

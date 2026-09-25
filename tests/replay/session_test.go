@@ -1,4 +1,4 @@
-package system_test
+package replay_test
 
 import (
 	"context"

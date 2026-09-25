@@ -18,8 +18,8 @@ from ring_doorbell.ring import Ring
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEVICE_LIST = ROOT / "test" / "recordings" / "http" / "device-list.json"
-HTTP_RECORDINGS = ROOT / "test" / "recordings" / "http"
+DEVICE_LIST = ROOT / "tests" / "replay" / "fixtures" / "recordings" / "http" / "device-list.json"
+HTTP_RECORDINGS = ROOT / "tests" / "replay" / "fixtures" / "recordings" / "http"
 
 
 def load_recorded_devices() -> tuple[dict, list[dict]]:

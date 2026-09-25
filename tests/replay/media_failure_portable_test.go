@@ -1,4 +1,4 @@
-package system_test
+package replay_test
 
 import (
 	"context"
@@ -28,7 +28,7 @@ type portableMedia struct {
 }
 
 func TestPortableRecordingBytes(t *testing.T) {
-	b, err := os.ReadFile(filepath.Join("..", "porting-fixtures", "media-variants.json"))
+	b, err := os.ReadFile(filepath.Join("fixtures", "porting", "media-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestPortableRecordingBytes(t *testing.T) {
 }
 
 func TestPortableRecordingShareURL(t *testing.T) {
-	b, err := os.ReadFile(filepath.Join("..", "porting-fixtures", "media-variants.json"))
+	b, err := os.ReadFile(filepath.Join("fixtures", "porting", "media-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func (f failureTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 func TestPortableHTTPFailures(t *testing.T) {
-	cases, err := replay.LoadCases[portableFailure](filepath.Join("..", "porting-fixtures", "http-failures.json"))
+	cases, err := replay.LoadCases[portableFailure](filepath.Join("fixtures", "porting", "http-failures.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

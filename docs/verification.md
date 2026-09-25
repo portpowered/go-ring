@@ -9,18 +9,18 @@ comparison, synthetic regression cases, and unsupported features.
 
 ## Results
 
-Verified locally on Windows with Go 1.24.2, `GOWORK=off`:
+Verified locally on Windows with `GOWORK=off`:
 
 | Check | Result |
 |---|---|
-| `go run ./tools/coverage` | Passed, including full Go race suite; 2050/2272 maintained library statements, 90.23% |
-| Per-package coverage floors | Passed; `internal/protocol` 100%, `internal/signaling` 96.7%, REST 92.2%, public `ring` 87.5%, API models 100% |
+| `go run ./tools/coverage` | Passed, including full Go race suite; 1913/2100 maintained library statements, 91.10% |
+| Per-package coverage floors | Passed; `internal/protocol` 100%, `internal/signaling` 96.7%, REST 92.2%, public `ring` 88.6%, API models 100% |
 | `go vet ./...` | Passed |
 | `go build ./...` | Passed, including examples |
 | Go formatting / module tidy | Clean; no module metadata change |
 | Pinned Python original tests | 40 passed |
 | Python fixture replay, including the original-test migration index | 72 passed; 447/465 selected Python lines, 96.13% |
-| OpenAPI/AsyncAPI document and payload checks | 11 passed |
+| OpenAPI/AsyncAPI document and payload checks | 12 passed |
 | Capture extraction/sanitizer/schema checks | 11 passed |
 
 `python tools/verify_reference.py` runs the original Python tests, fixture-only
@@ -28,7 +28,7 @@ coverage gate, protocol contracts, and capture checks. It
 requires the initialized reference submodule, uv, and Node.js/npm; it installs
 isolated test dependencies. The actual test replay is offline, with local
 HTTP/WebSocket peers permitted. The private mitmproxy file is not required.
-Coverage includes handwritten code under `pkg` and `internal`; test harnesses,
+Coverage includes handwritten code under `pkg` and `internal`; generated models and wire clients, test harnesses,
 examples, tests, and maintainer tools are exercised but excluded from the
 library denominator. Minor scheduling-dependent branch counts can vary; the
 90% overall gate and per-package floors remain enforced.
@@ -40,8 +40,8 @@ library denominator. Minor scheduling-dependent branch counts can vary; the
   harnesses and synthetic variants without capture metadata manifests.
 - T3-T5: explicit client/connection/device-session ownership, preserved auth
   mechanisms, HTTP reliability and configuration regression tests, validated
-  OpenAPI/AsyncAPI contracts. Wire DTOs remain handwritten with schema checks;
-  [architecture](architecture.md) explains that decision.
+  OpenAPI/AsyncAPI contracts. Public API models, HTTP wire clients, and
+  signaling bodies are generated from their maintained schemas.
 - T6: typed settings and siren operations with recorded replay. Optional EVM
   history adapters, groups, favorites, deletion, reboot and other captured
   routes remain separate decisions, not implied public SDK support.
@@ -56,11 +56,14 @@ missed heartbeats, RPC correlation and cancellation, blocked writes, queue
 pressure, unexpected HTTP requests, regional endpoint overrides, injected
 clients, failed token retrieval, and authentication failure stages. These are
 synthetic reliability evidence, not additional captured vendor behavior.
-The Go replay suite now uses the Python harness's portable ticket, legacy
+The Go replay suite in `tests/replay` now uses the Python harness's portable ticket, legacy
 control, in-home chime, recording-byte, HTTP-failure, and remote-session
 fixtures. The Python-profile snapshot and recording share URL also have
 portable Go replay; captured PTZ commands, inbound ICE, and heartbeat pairs
-run as individually named subtests. C1's separate app-snaps requests lack a
+run as individually named subtests. Connection-level tests also replay PTZ
+acknowledgements, a zero-speed stop, and ping/pong independently of the full
+conversation. Co-located unit tests cover implementation details; opt-in
+`tests/integration` tests require real endpoints. C1's separate app-snaps requests lack a
 recorded successful response.
 
 ## Explicit limits
@@ -71,7 +74,8 @@ executed as part of this local verification. The caller owns the media peer;
 Pion offer construction is tested locally, not end-to-end media interoperability.
 
 Full Python feature parity is not the completion criterion. Public push and
-playback abstractions remain deferred; existing event support is experimental.
+playback abstractions have offline replay coverage; live service compatibility
+remains unverified. Existing event support is experimental.
 The captured GET ticket endpoint has not been established as equivalent to the
 legacy POST signaling bootstrap. Python's siren-on duration query intentionally
 differs from the captured Go request. Sixty-minute expiry is an SDK limit, and

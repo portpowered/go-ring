@@ -1,4 +1,4 @@
-package system_test
+package replay_test
 
 import (
 	"context"
@@ -20,7 +20,7 @@ type portableSessionCase struct {
 
 func portableSessionCases(t *testing.T) map[string]json.RawMessage {
 	t.Helper()
-	rows, err := replay.LoadCases[portableSessionCase](filepath.Join("..", "porting-fixtures", "session-variants.json"))
+	rows, err := replay.LoadCases[portableSessionCase](filepath.Join("fixtures", "porting", "session-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func portableSessionCases(t *testing.T) map[string]json.RawMessage {
 
 func recordedLiveView(t *testing.T) (string, map[string]json.RawMessage) {
 	t.Helper()
-	r, err := replay.LoadSessionRecording(filepath.Join("..", "recordings", "sessions", "flow-402.json"))
+	r, err := replay.LoadSessionRecording(filepath.Join("fixtures", "recordings", "sessions", "flow-402.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-package signaling
+package replay_test
 
 import (
 	"context"
@@ -9,19 +9,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/internal/testkit/replay"
 )
 
 type recordedMessages struct {
 	Messages []struct {
-		Direction string  `json:"direction"`
-		Payload   Message `json:"payload"`
+		Direction string            `json:"direction"`
+		Payload   signaling.Message `json:"payload"`
 	} `json:"messages"`
 }
 
 func loadConversation(t *testing.T, name string) recordedMessages {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("..", "..", "test", "recordings", "sessions", name))
+	b, err := os.ReadFile(filepath.Join("fixtures", "recordings", "sessions", name))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +53,7 @@ func TestRecordedSDPOfferAnswers(t *testing.T) {
 					continue
 				}
 				if row.Direction == "client_to_server" {
-					if _, err := ParseSDP(body.SDP); err != nil {
+					if _, err := signaling.ParseSDP(body.SDP); err != nil {
 						t.Fatalf("%s offer: %v", m.Method, err)
 					}
 					offers[m.DialogID] = body.SDP
@@ -62,7 +63,7 @@ func TestRecordedSDPOfferAnswers(t *testing.T) {
 				if !ok {
 					t.Fatal("answer without corresponding offer")
 				}
-				if _, err := NormalizeAnswer(offer, body.SDP); err != nil {
+				if _, err := signaling.NormalizeAnswer(offer, body.SDP); err != nil {
 					t.Fatalf("answer: %v", err)
 				}
 				answers++
@@ -80,8 +81,8 @@ func TestRecordedSDPOfferAnswers(t *testing.T) {
 func TestRecordedPTZConversations(t *testing.T) {
 	for _, name := range []string{"flow-21.json", "flow-402.json"} {
 		t.Run(name, func(t *testing.T) {
-			sessions := map[string]*Session{}
-			out := make(chan Message, 64)
+			sessions := map[string]*signaling.Session{}
+			out := make(chan signaling.Message, 64)
 			ids := map[string]string{}
 			pending := map[string]chan error{}
 			calls, results, notifications := 0, 0, 0
@@ -110,7 +111,7 @@ func TestRecordedPTZConversations(t *testing.T) {
 							t.Fatal("missing control ID")
 						}
 						var err error
-						s, err = NewSession(context.Background(), SessionConfig{DeviceID: body.DeviceID, DialogID: m.DialogID, SignalID: body.SessionID, ControlID: control, Heartbeat: 10 * time.Second, Clock: newClock(), Send: func(_ context.Context, m Message) error { out <- m; return nil }})
+						s, err = signaling.NewSession(context.Background(), signaling.SessionConfig{DeviceID: body.DeviceID, DialogID: m.DialogID, SignalID: body.SessionID, ControlID: control, Heartbeat: 10 * time.Second, Clock: newRecordedClock(), Send: func(_ context.Context, m signaling.Message) error { out <- m; return nil }})
 						if err != nil {
 							t.Fatal(err)
 						}
@@ -126,7 +127,7 @@ func TestRecordedPTZConversations(t *testing.T) {
 					done := make(chan error, 1)
 					pending[body.Command.ID] = done
 					go func(method string) { _, err := s.Call(context.Background(), method, params); done <- err }(body.Command.Method)
-					actual := nextMessage(t, out)
+					actual := recordedNextMessage(t, out)
 					var sent map[string]any
 					if err := json.Unmarshal(actual.Body, &sent); err != nil {
 						t.Fatal(err)
@@ -193,7 +194,7 @@ func TestRecordedPTZConversations(t *testing.T) {
 func TestRecordedPTZCommandsIndividually(t *testing.T) {
 	for _, name := range []string{"flow-21.json", "flow-402.json"} {
 		recording := loadConversation(t, name)
-		replies := map[string]Message{}
+		replies := map[string]signaling.Message{}
 		for _, row := range recording.Messages {
 			if row.Direction != "server_to_client" || row.Payload.Method != "rpc" {
 				continue
@@ -238,8 +239,8 @@ func TestRecordedPTZCommandsIndividually(t *testing.T) {
 				if !ok {
 					t.Fatal("missing control session ID")
 				}
-				out := make(chan Message, 1)
-				s, err := NewSession(context.Background(), SessionConfig{DeviceID: body.DeviceID, DialogID: row.Payload.DialogID, SignalID: body.SignalID, ControlID: control, Heartbeat: 10 * time.Second, Clock: newClock(), Send: func(_ context.Context, m Message) error { out <- m; return nil }})
+				out := make(chan signaling.Message, 1)
+				s, err := signaling.NewSession(context.Background(), signaling.SessionConfig{DeviceID: body.DeviceID, DialogID: row.Payload.DialogID, SignalID: body.SignalID, ControlID: control, Heartbeat: 10 * time.Second, Clock: newRecordedClock(), Send: func(_ context.Context, m signaling.Message) error { out <- m; return nil }})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -252,7 +253,7 @@ func TestRecordedPTZCommandsIndividually(t *testing.T) {
 				}
 				done := make(chan error, 1)
 				go func() { _, err := s.Call(context.Background(), body.Command.Method, params); done <- err }()
-				actual := nextMessage(t, out)
+				actual := recordedNextMessage(t, out)
 				var actualBody struct {
 					Command struct {
 						ID     string         `json:"id"`
@@ -306,7 +307,7 @@ func TestRecordedPTZCommandsIndividually(t *testing.T) {
 // time; the separate virtual-hour test checks the hard 60-minute expiry.
 func TestRecordedHeartbeatPairsIndividually(t *testing.T) {
 	for _, name := range []string{"flow-21.json", "flow-402.json"} {
-		pending := map[string]Message{}
+		pending := map[string]signaling.Message{}
 		count := 0
 		for _, row := range loadConversation(t, name).Messages {
 			m := row.Payload
@@ -331,15 +332,15 @@ func TestRecordedHeartbeatPairsIndividually(t *testing.T) {
 				if err := json.Unmarshal(ping.Body, &body); err != nil {
 					t.Fatal(err)
 				}
-				clock := newClock()
-				out := make(chan Message, 1)
-				s, err := NewSession(context.Background(), SessionConfig{DeviceID: body.DeviceID, DialogID: ping.DialogID, SignalID: body.SignalID, ControlID: "control-fixture", Heartbeat: 10 * time.Second, Clock: clock, Send: func(_ context.Context, msg Message) error { out <- msg; return nil }})
+				clock := newRecordedClock()
+				out := make(chan signaling.Message, 1)
+				s, err := signaling.NewSession(context.Background(), signaling.SessionConfig{DeviceID: body.DeviceID, DialogID: ping.DialogID, SignalID: body.SignalID, ControlID: "control-fixture", Heartbeat: 10 * time.Second, Clock: clock, Send: func(_ context.Context, msg signaling.Message) error { out <- msg; return nil }})
 				if err != nil {
 					t.Fatal(err)
 				}
 				defer s.Close()
 				clock.advance(10 * time.Second)
-				actual := nextMessage(t, out)
+				actual := recordedNextMessage(t, out)
 				if actual.Method != "ping" || actual.DialogID != ping.DialogID || !replay.SemanticEqual(actual.Body, ping.Body) {
 					t.Fatalf("ping differs from capture: %+v", actual)
 				}
@@ -381,7 +382,7 @@ func TestRecordedRemoteICEIndividually(t *testing.T) {
 				if body.Candidate == "" {
 					t.Fatal("empty recorded ICE candidate")
 				}
-				s, err := NewSession(context.Background(), SessionConfig{DeviceID: body.DeviceID, DialogID: m.DialogID, SignalID: body.SignalID, ControlID: "control-fixture", Heartbeat: 10 * time.Second, Clock: newClock(), Send: func(context.Context, Message) error { return nil }})
+				s, err := signaling.NewSession(context.Background(), signaling.SessionConfig{DeviceID: body.DeviceID, DialogID: m.DialogID, SignalID: body.SignalID, ControlID: "control-fixture", Heartbeat: 10 * time.Second, Clock: newRecordedClock(), Send: func(context.Context, signaling.Message) error { return nil }})
 				if err != nil {
 					t.Fatal(err)
 				}

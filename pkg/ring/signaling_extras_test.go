@@ -14,7 +14,7 @@ import (
 
 func capturedFrame(t *testing.T, method, direction string) signaling.Message {
 	t.Helper()
-	r, err := replay.LoadSessionRecording(filepath.Join("..", "..", "test", "recordings", "sessions", "flow-21.json"))
+	r, err := replay.LoadSessionRecording(filepath.Join("..", "..", "tests", "replay", "fixtures", "recordings", "sessions", "flow-21.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

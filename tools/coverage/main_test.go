@@ -13,6 +13,15 @@ func TestTotalsMergeDuplicatesAndCountStatements(t *testing.T) {
 	}
 }
 
+func TestExcludeGeneratedModelsKeepsHandwrittenPackageCoverage(t *testing.T) {
+	profile := []byte("mode: atomic\ngithub.com/example/pkg/ringapimodels/models.gen.go:1.1,2.1 8 0\ngithub.com/example/pkg/ringapimodels/devices.go:1.1,2.1 2 1\n")
+	filtered := excludeGeneratedModels(profile)
+	covered, total, err := totals(filtered)
+	if err != nil || covered != 2 || total != 2 {
+		t.Fatalf("filtered coverage = %d/%d, %v", covered, total, err)
+	}
+}
+
 func TestPackageTotalsMergeBlocksByPackage(t *testing.T) {
 	profile := []byte("mode: atomic\ngithub.com/example/a/one.go:1.1,2.1 3 0\ngithub.com/example/a/two.go:1.1,2.1 1 1\ngithub.com/example/b/one.go:1.1,2.1 4 0\n")
 	got, err := packageTotals(profile)

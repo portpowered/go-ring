@@ -1,0 +1,6 @@
+package: ringapimodels
+generate:
+  models: true
+output: pkg/ringapimodels/models.gen.go
+output-options:
+  skip-prune: true

@@ -1,4 +1,4 @@
-package system_test
+package replay_test
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 // The same synthetic POST ticket exchange is used by the Python harness.
 // It covers the supported legacy profile; the captured C1 GET is distinct.
 func TestPortableLegacyTicketBootstrap(t *testing.T) {
-	x, err := replay.LoadExchange(filepath.Join("..", "porting-fixtures", "legacy-ticket.json"))
+	x, err := replay.LoadExchange(filepath.Join("fixtures", "porting", "legacy-ticket.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

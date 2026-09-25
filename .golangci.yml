@@ -33,6 +33,8 @@ linters:
     rules:
       - path: '(^|/)(pkg/generatedhttp|pkg/generatedsignaling)/'
         linters: [revive, govet, unused, staticcheck, mnd, cyclop]
+      - path: '(^|/)pkg/ringapimodels/models\.gen\.go$'
+        linters: [revive, govet, unused, staticcheck, mnd, cyclop]
       - path: '_test\.go$'
         linters: [revive, mnd, cyclop]
       - path: '(^|/)(test|tools|internal/testkit)/'

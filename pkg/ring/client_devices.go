@@ -23,32 +23,32 @@ func (c *Client) ListDevices(ctx context.Context) (*ringapimodels.DevicesRespons
 	// Convert doorbells
 	for _, raw := range rawResponse.Doorbots {
 		doorbell := convertToDoorbell(raw)
-		response.Doorbells = append(response.Doorbells, doorbell)
+		response.Doorbells = append(response.Doorbells, *doorbell)
 	}
 
 	// Convert authorized doorbells (shared doorbells) and merge with doorbells
 	for _, raw := range rawResponse.AuthorizedDoorbots {
 		doorbell := convertToDoorbell(raw)
-		response.Doorbells = append(response.Doorbells, doorbell)
+		response.Doorbells = append(response.Doorbells, *doorbell)
 	}
 
 	// Convert chimes
 	for _, raw := range rawResponse.Chimes {
 		chime := convertToChime(raw)
-		response.Chimes = append(response.Chimes, chime)
+		response.Chimes = append(response.Chimes, *chime)
 	}
 
 	// Convert stickup cams
 	for _, raw := range rawResponse.StickupCams {
 		stickupCam := convertToStickUpCam(raw)
-		response.StickUpCams = append(response.StickUpCams, stickupCam)
+		response.StickUpCams = append(response.StickUpCams, *stickupCam)
 	}
 
 	// Preserve unrecognized device kinds as generic devices so callers can
 	// inspect their identifiers and raw family/kind metadata without guessed
 	// capabilities.
 	for _, raw := range rawResponse.Other {
-		response.Other = append(response.Other, convertToOther(raw))
+		response.Other = append(response.Other, *convertToOther(raw))
 	}
 
 	return response, nil

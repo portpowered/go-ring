@@ -1,0 +1,118 @@
+openapi: 3.1.0
+info:
+  title: go-ring public model projections
+  version: 0.1.0
+  description: >-
+    SDK-facing projections of Ring responses. These are deliberately separate
+    from raw HTTP wire responses in openapi.yaml: the client classifies device
+    families, fills defaults, and exposes stable Go fields after decoding.
+paths: {}
+components:
+  schemas:
+    DeviceHealth:
+      type: object
+      required: [battery_level, battery_status, signal_strength, firmware_version, last_update]
+      properties:
+        battery_level: {type: [integer, 'null']}
+        battery_status: {type: [string, 'null']}
+        signal_strength: {type: [integer, 'null']}
+        firmware_version: {type: [string, 'null']}
+        last_update: {type: [string, 'null']}
+    Doorbell:
+      type: object
+      required: [id, name, family, address, timezone, wifi_name, wifi_signal_strength, volume, has_light, motion_detection_enabled]
+      properties:
+        id: {type: string, x-go-name: ID}
+        name: {type: string}
+        family: {type: string}
+        address: {type: string}
+        timezone: {type: string}
+        wifi_name: {type: string}
+        wifi_signal_strength: {type: integer}
+        volume: {type: integer}
+        has_light: {type: boolean}
+        light_brightness: {type: integer}
+        motion_detection_enabled: {type: boolean}
+        health: {$ref: '#/components/schemas/DeviceHealth'}
+    Chime:
+      type: object
+      required: [id, name, family, address, timezone, wifi_name, wifi_signal_strength, volume]
+      properties:
+        id: {type: string, x-go-name: ID}
+        name: {type: string}
+        family: {type: string}
+        address: {type: string}
+        timezone: {type: string}
+        wifi_name: {type: string}
+        wifi_signal_strength: {type: integer}
+        volume: {type: integer}
+        health: {$ref: '#/components/schemas/DeviceHealth'}
+    StickUpCam:
+      type: object
+      required: [id, name, description, family, address, timezone, wifi_name, wifi_signal_strength, volume, has_light, motion_detection_enabled]
+      properties:
+        id: {type: string, x-go-name: ID}
+        name: {type: string}
+        description: {type: string}
+        family: {type: string}
+        address: {type: string}
+        timezone: {type: string}
+        wifi_name: {type: string}
+        wifi_signal_strength: {type: integer}
+        volume: {type: integer}
+        has_light: {type: boolean}
+        light_brightness: {type: integer}
+        motion_detection_enabled: {type: boolean}
+        health: {$ref: '#/components/schemas/DeviceHealth'}
+    Other:
+      type: object
+      required: [id, name, family, address, timezone, kind]
+      properties:
+        id: {type: string, x-go-name: ID}
+        name: {type: string}
+        family: {type: string}
+        address: {type: string}
+        timezone: {type: string}
+        kind: {type: string}
+        health: {$ref: '#/components/schemas/DeviceHealth'}
+    DevicesResponse:
+      type: object
+      required: [doorbots, chimes, stickup_cams, other]
+      properties:
+        doorbots: {type: array, x-go-name: Doorbells, items: {$ref: '#/components/schemas/Doorbell'}}
+        chimes: {type: array, items: {$ref: '#/components/schemas/Chime'}}
+        stickup_cams: {type: array, x-go-name: StickUpCams, items: {$ref: '#/components/schemas/StickUpCam'}}
+        other: {type: array, items: {$ref: '#/components/schemas/Other'}}
+    AuthResponse:
+      type: object
+      required: [access_token, refresh_token, expires_in, token_type]
+      properties:
+        access_token: {type: string}
+        refresh_token: {type: string}
+        expires_in: {type: integer}
+        token_type: {type: string}
+    EventKind:
+      type: string
+      enum: [motion, ding, on_demand]
+    Event:
+      type: object
+      required: [kind, device_id, timestamp, data]
+      properties:
+        kind: {$ref: '#/components/schemas/EventKind'}
+        device_id: {type: integer, format: int64, x-go-name: DeviceID}
+        timestamp: {type: string}
+        data: {type: object, additionalProperties: true}
+    Recording:
+      type: object
+      required: [id, kind, answered, created_at, device_id]
+      properties:
+        id: {type: integer, format: int64, x-go-name: ID}
+        kind: {type: string}
+        answered: {type: boolean}
+        created_at: {type: string}
+        device_id: {type: integer, format: int64, x-go-name: DeviceID}
+    RecordingHistoryResponse:
+      type: object
+      required: [recordings]
+      properties:
+        recordings: {type: array, items: {$ref: '#/components/schemas/Recording'}}

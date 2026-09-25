@@ -30,14 +30,16 @@ The caller owns and closes the media peer separately.
 | Code | Responsibility |
 |---|---|
 | `pkg/ring` | Public request/result types, client options, device normalization, HTTP methods, connection and session ownership |
-| `pkg/ringapimodels` | Existing public device models and typed errors |
+| `pkg/ringapimodels` | OpenAPI-generated public device, auth, event, and recording projections; handwritten behavior and typed errors |
 | `pkg/dependencies/rest` | Existing auth mechanisms and HTTP request/response adaptation; custom HTTP client support; safe-read retries |
 | `pkg/dependencymodels` | Existing wire-facing HTTP models |
 | `internal/protocol` | Verified service defaults, endpoint profiles, paths, signaling method and RPC constants |
 | `internal/signaling` | SDP validation/normalization, active-session RPC correlation, liveness/expiry and named policy defaults |
 | `internal/testkit/replay` | Strict offline HTTP transport and scripted local WebSocket peers |
 | `api` | Validated OpenAPI and AsyncAPI contracts; raw captured operations can exist without a public wrapper |
-| `test/recordings` | Actual sanitized exchanges, conversations, and schemas |
+| `tests/replay/fixtures/recordings` | Actual sanitized exchanges, conversations, and schemas |
+| `tests/replay` | Public API replay tests against local HTTP/WebSocket peers, with captured and labeled synthetic fixtures |
+| `tests/integration` | Opt-in full end-to-end tests against real endpoints and hardware |
 | `tools/reference-replay`, `tools/protocols`, `tools/capture` | Optional maintainer comparison, validation, and extraction tools |
 
 The existing REST/wire packages remain in place for compatibility. New callers

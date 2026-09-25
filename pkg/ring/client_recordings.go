@@ -21,7 +21,7 @@ func (c *Client) GetDeviceHistory(ctx context.Context, req GetDeviceHistoryReque
 
 	response := &ringapimodels.RecordingHistoryResponse{}
 	for _, raw := range rawResponse.Recordings {
-		recording := &ringapimodels.Recording{
+		recording := ringapimodels.Recording{
 			ID:        raw.ID,
 			Kind:      raw.Kind,
 			Answered:  raw.Answered,
@@ -43,7 +43,7 @@ func (c *Client) GetActiveDings(ctx context.Context) (*ringapimodels.RecordingHi
 
 	response := &ringapimodels.RecordingHistoryResponse{}
 	for _, raw := range rawResponse.Recordings {
-		recording := &ringapimodels.Recording{
+		recording := ringapimodels.Recording{
 			ID:        raw.ID,
 			Kind:      raw.Kind,
 			Answered:  raw.Answered,

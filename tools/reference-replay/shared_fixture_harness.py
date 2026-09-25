@@ -1,6 +1,6 @@
 """Run the committed HTTP recordings through the pinned Python HTTP client.
 
-The JSON files under test/recordings are language-neutral inputs. Go tests can
+The JSON files under tests/replay/fixtures/recordings are language-neutral inputs. Go tests can
 load the same files without depending on this Python adapter.
 """
 
@@ -13,9 +13,9 @@ from typing import Any
 from aioresponses import CallbackResult, aioresponses
 
 ROOT = Path(__file__).resolve().parents[2]
-HTTP = ROOT / "test" / "recordings" / "http"
-SESSIONS = ROOT / "test" / "recordings" / "sessions"
-PORTING = ROOT / "test" / "porting-fixtures"
+HTTP = ROOT / "tests" / "replay" / "fixtures" / "recordings" / "http"
+SESSIONS = ROOT / "tests" / "replay" / "fixtures" / "recordings" / "sessions"
+PORTING = ROOT / "tests" / "replay" / "fixtures" / "porting"
 IDENTITIES = {"device_id": "101", "location_id": "location-1", "recording_id": "recording-1"}
 
 

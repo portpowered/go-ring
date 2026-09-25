@@ -15,7 +15,7 @@ test-race:
 test-cover:
 	$(GO) run ./tools/coverage
 test-integration:
-	$(GO) test -tags integration ./test/integration/... -timeout 5m
+	$(GO) test -tags integration ./tests/integration/... -timeout 5m
 fmt:
 	$(GO) fmt ./...
 vet:
@@ -25,8 +25,9 @@ vet:
 # oapi-codegen v2.8.0 uses a Go 1.25+ toolchain (GOTOOLCHAIN=auto).
 generate-api:
 	$(GO) run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config pkg/generatedhttp/config.yaml api/openapi.yaml
+	$(GO) run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config pkg/ringapimodels/config.yaml api/client-models.openapi.yaml
 	cd tools/protocols && npm ci && node -e "const fs=require('fs'); const dir='../../pkg/generatedsignaling'; for (const file of fs.readdirSync(dir)) if (file.endsWith('.go')) fs.unlinkSync(dir+'/'+file)" && npx --no-install modelina generate golang ../../api/asyncapi.yaml --packageName generatedsignaling --goIncludeTags -o ../../pkg/generatedsignaling
-	$(GO) fmt ./pkg/generatedhttp ./pkg/generatedsignaling
+	$(GO) fmt ./pkg/generatedhttp ./pkg/generatedsignaling ./pkg/ringapimodels
 
 lint:
 	golangci-lint run ./...

@@ -1,6 +1,6 @@
 # HTTP OpenAPI coverage
 
-[`api/openapi.yaml`](../api/openapi.yaml) validates every sanitized HTTP recording under `test/recordings/http`, including response bodies and captured request bodies. Settings wire responses remain extensible, while the documented typed Go surface currently covers only `motion_settings.motion_detection_enabled`. Captured settings PATCH variants for motion, video, general, and volume settings remain part of the broader wire schema; their presence does not imply corresponding Go methods.
+[`api/openapi.yaml`](../api/openapi.yaml) validates every sanitized HTTP recording under `tests/replay/fixtures/recordings/http`, including response bodies and captured request bodies. Settings wire responses remain extensible, while the documented typed Go surface currently covers only `motion_settings.motion_detection_enabled`. Captured settings PATCH variants for motion, video, general, and volume settings remain part of the broader wire schema; their presence does not imply corresponding Go methods.
 
 The spec names captured query parameters for timeline, history-device, location detail, captured ticket GET, and recording delete operations. They are marked optional because a single captured request cannot establish which parameters the service requires. Captured query values remain evidence examples, not exhaustive accepted-value lists.
 

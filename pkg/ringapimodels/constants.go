@@ -39,9 +39,6 @@ const (
 	DeviceFamilyOther      DeviceFamily = "other"
 )
 
-// EventKind represents the type of event
-type EventKind string
-
 const (
 	EventKindMotion   EventKind = "motion"
 	EventKindDing     EventKind = "ding"

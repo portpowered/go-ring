@@ -1,4 +1,4 @@
-package system_test
+package replay_test
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 
 func snapshotExchanges(t *testing.T, timestamp int64, withImage bool) ([]replay.Exchange, portableMedia) {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("..", "porting-fixtures", "media-variants.json"))
+	b, err := os.ReadFile(filepath.Join("fixtures", "porting", "media-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

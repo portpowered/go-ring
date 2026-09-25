@@ -15,7 +15,7 @@ from mitmproxy.io import FlowReader
 
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "test" / "recordings"
+OUT = ROOT / "tests" / "replay" / "fixtures" / "recordings"
 PRIVATE_KEY = re.compile(r"token|secret|password|credential|authorization|cookie|email|phone|address|postal|post.?code|zip|latitude|longitude|coordinate|(?:^|_)(?:lat|lon|lng)$|serial|mac|bssid|ssid|fingerprint|ice.?pwd|ice.?ufrag|usernamefragment|private.?key|nonce|cursor|pagination|continuation|page.?token|(?:^|_)auth(?:_|$)|(?:^|_)sid$|device.?id|doorbot.?id|location(?:.?id)?|owner|user.?id|account.?id|uuid|session.?id|dialog.?id|riid|command.?id|ticket|cell.?id|ding.?id|ip.?address|(?:^|_)ip$|(?:^|_)id$|(?:^|_)(?:name|description|text|host.?name|host|region|gateway|timezone|network.?name)$", re.I)
 SAFE_FIELDS = {"method", "jsonrpc", "direction", "reason", "type", "kind", "status", "command_name", "model", "firmware", "device_type", "device_family", "protocol", "content_type", "codec", "mid", "setup", "fingerprint_type", "network_type", "candidate_type", "sdp_type", "version", "source", "event", "event_type", "notification_type", "notification_scope", "source_type", "action", "role", "state"}
 SAFE_TEXT_ENUMS = {"camera_connected"}

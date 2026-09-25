@@ -22,7 +22,7 @@ from shared_fixture_harness import ROOT, PORTING, load_case
 
 
 def legacy_response(name):
-    return json.loads((ROOT / "test" / "fixtures" / name).read_text(encoding="utf-8"))
+    return json.loads((ROOT / "tests" / "replay" / "fixtures" / "legacy" / name).read_text(encoding="utf-8"))
 
 
 def legacy_ring():

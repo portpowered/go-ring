@@ -29,7 +29,7 @@ The Python project is a behavioral reference, not an instruction to duplicate it
 | README | Useful badges and examples; auth snippet has undefined variables | Replace with compiled examples and evidence-qualified support matrix |
 | CI | OS/Go matrix, race tests, vet, formatting, module checks, Codecov upload | Keep these; add local coverage gate, contracts, and replay checks |
 
-The full default test run passed. The verified coverage baseline used PowerShell: `$env:GOWORK='off'; go test ./test/unit/... '-coverpkg=./pkg/...' '-coverprofile=coverage.plan.out' -timeout 120s`, and passed at **69.8%**. An earlier unquoted invocation reported 87.5%; it did not establish the intended library-wide denominator and is superseded by the explicitly quoted run. The coverage figure is not branch coverage, capture coverage, or a new race-test result.
+The full default test run passed. The verified coverage baseline used PowerShell: `$env:GOWORK='off'; go test ./pkg/ring/... '-coverpkg=./pkg/...' '-coverprofile=coverage.plan.out' -timeout 120s`, and passed at **69.8%**. An earlier unquoted invocation reported 87.5%; it did not establish the intended library-wide denominator and is superseded by the explicitly quoted run. The coverage figure is not branch coverage, capture coverage, or a new race-test result.
 
 ## 3. Sources and evidence model
 
@@ -101,7 +101,7 @@ If a separate HAR is supplied later, assign it C2 and compare its actual request
 5. Store the actual sanitized request/response and ordered session files with their JSON schemas. Do not add manifests, digests, format versions, capture timestamps, environment labels, or extraction metadata. Fail closed on unhandled formats; decode compressed/base64 bodies before inspection. Secret scanning complements review and cannot prove anonymization alone.
 6. Generate synthetic errors as explicit test mutations of named fixtures. Explain the mutation in the test; public fixtures must contain no dependency on the local raw file. Keep protocol timestamps and version fields when they are part of the actual wire payload.
 
-Suggested layout: `test/fixtures/{legacy,python,capture-c1,synthetic}/`, `test/replay/scenarios/`, `tools/capture/`, `docs/evidence/`. Adapt rather than immediately relocating all existing fixtures.
+Suggested layout: `tests/replay/fixtures/legacy/{legacy,python,capture-c1,synthetic}/`, `test/replay/scenarios/`, `tools/capture/`, `docs/evidence/`. Adapt rather than immediately relocating all existing fixtures.
 
 ## 4. Target architecture
 
@@ -331,8 +331,8 @@ The release placeholder must be replaced before publication. Keep the working li
 | Networking (`docs/networking.md`) | [Configuration ownership](constants-and-configuration.md), [HTTP contracts](protocols/http.md), [HTTP test progress](http-test-progress.md), and [migration behavior](migration.md) cover injected clients/endpoints, response handling, bounded retries, contexts, and redirect limitations. Proxy/TLS behavior follows the injected Go clients; no separate retry-after feature is claimed. |
 | Support (`docs/support.md`) | The reviewed [parity matrix](parity-matrix.md), [porting progress](porting-progress.md), and README evidence table list supported behavior and explicit unknowns; they are not generated device-certification claims. |
 | Testing (`docs/testing.md`) | [Replay format](replay-format.md), the [reverse-engineering process](internal/process-of-reverse-engineering.md), this plan's coverage denominator, and `tools/verify_reference.py` describe offline checks, Python mapping, deterministic seams, and opt-in live tests. |
-| Evidence (`docs/evidence/README.md`) | [Recording notes](../test/recordings/README.md), [legacy fixture notes](../test/fixtures/README.md), and the [parity matrix](parity-matrix.md) describe capture scope, source distinctions, synthetic fixtures, and known conflicts. No separate evidence registry is maintained. |
-| Reverse engineering (`docs/reverse-engineering.md`) | The [reverse-engineering process](internal/process-of-reverse-engineering.md), [recording notes](../test/recordings/README.md), and `tools/capture/extract.py` describe local extraction and sanitization. `CONTRIBUTING.md` covers source attribution and review. |
+| Evidence (`docs/evidence/README.md`) | [Recording notes](../tests/replay/fixtures/recordings/README.md), [legacy fixture notes](../tests/replay/fixtures/legacy/README.md), and the [parity matrix](parity-matrix.md) describe capture scope, source distinctions, synthetic fixtures, and known conflicts. No separate evidence registry is maintained. |
+| Reverse engineering (`docs/reverse-engineering.md`) | The [reverse-engineering process](internal/process-of-reverse-engineering.md), [recording notes](../tests/replay/fixtures/recordings/README.md), and `tools/capture/extract.py` describe local extraction and sanitization. `CONTRIBUTING.md` covers source attribution and review. |
 | Migration (`docs/migration.md`) | [Migration guidance](migration.md) covers current lifecycle and behavior changes; feature-specific settings and identity details remain in their API docs. |
 | Repository instructions (`AGENTS.md`) | No project-root AGENTS.md is maintained. [README](../README.md), [contributing guide](../CONTRIBUTING.md), and the [reverse-engineering process](internal/process-of-reverse-engineering.md) provide user intent, Go contribution practice, evidence rules, and verification commands. |
 

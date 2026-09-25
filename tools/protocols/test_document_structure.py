@@ -34,6 +34,11 @@ class FullDocumentStructure(unittest.TestCase):
         reject_remote_refs(doc)
         validate(doc)
 
+    def test_public_model_projection_document(self):
+        doc = load("client-models.openapi.yaml")
+        reject_remote_refs(doc)
+        validate(doc)
+
     def test_openapi_validator_rejects_missing_required_document_fields(self):
         doc = load("openapi.yaml")
         del doc["info"]

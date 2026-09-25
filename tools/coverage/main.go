@@ -54,6 +54,10 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
+	profile = excludeGeneratedModels(profile)
+	if err = os.WriteFile(profilePath, profile, 0o600); err != nil {
+		fail(err)
+	}
 	covered, total, err := totals(profile)
 	if err != nil {
 		fail(err)
@@ -65,7 +69,7 @@ func main() {
 	}
 	percent := 100 * float64(covered) / float64(total)
 	fmt.Printf("Maintained library coverage: %.2f%% (%d/%d statements); required %.2f%%\n", percent, covered, total, *minimum)
-	fmt.Println("Includes maintained pkg and internal; excludes generated wire code, testkit, examples, test, and tools.")
+	fmt.Println("Includes maintained pkg and internal; excludes generated models/wire code, testkit, examples, tests, and tools.")
 	if percent < *minimum {
 		fail(fmt.Errorf("library coverage target not met"))
 	}
@@ -79,6 +83,20 @@ func main() {
 }
 
 func fail(err error) { fmt.Fprintln(os.Stderr, err); os.Exit(1) }
+
+// Keep the generated SDK projection out of the maintained handwritten-code
+// denominator and the published profile. The same package also contains
+// handwritten device methods, which remain in scope.
+func excludeGeneratedModels(profile []byte) []byte {
+	lines := bytes.Split(profile, []byte{'\n'})
+	filtered := make([][]byte, 0, len(lines))
+	for _, line := range lines {
+		if !bytes.Contains(line, []byte("/pkg/ringapimodels/models.gen.go:")) {
+			filtered = append(filtered, line)
+		}
+	}
+	return bytes.Join(filtered, []byte{'\n'})
+}
 
 func totals(profile []byte) (covered, total int, err error) {
 	blocks, err := parseBlocks(profile)

@@ -2,10 +2,10 @@
 
 The first porting gate runs the pinned Python project against files that Go can
 read later. The reference submodule stays unchanged. `tools/reference-replay`
-contains the Python adapter, while `test/recordings`, `test/fixtures`, and
-`test/porting-fixtures` contain the language-neutral inputs. The existing Go
-tests still need to be migrated to the shared scenario cases; the Python gate
-does not claim that migration is already complete.
+contains the Python adapter, while `tests/replay/fixtures/recordings`, `tests/replay/fixtures/legacy`, and
+`tests/replay/fixtures/porting` contain the language-neutral inputs. Go's
+`tests/replay` suite consumes the corresponding shared scenarios; the Python
+coverage gate measures only selected Python entry points.
 
 Run `python tools/verify_reference.py` from the repository root. It executes the
 original Python suite, then all replay tests with Python coverage, then the
@@ -33,7 +33,7 @@ five live-view conversations in the two captured WebSocket files. It checks
 method, path, query parameters, request JSON, response status, and response
 body on HTTP replay. Session replay retains message order and checks Python's
 supported offer/answer, ICE, notification, and activation behavior. The
-`test/porting-fixtures` JSON files contain clearly synthetic legacy and failure
+`tests/replay/fixtures/porting` JSON files contain clearly synthetic legacy and failure
 cases that the capture lacks: ticket bootstrap, control request shapes, media
 bytes, remote close, malformed or unknown messages, lifecycle, and HTTP
 failures. They contain test data and expected behavior, without hashes,

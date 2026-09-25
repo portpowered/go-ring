@@ -2,6 +2,50 @@
 // Request types for the public client. The wire interface is generated from the schemas.
 package ring
 
+import (
+	"context"
+
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
+)
+
+// ClientAPI is the complete public account-level surface implemented by Client.
+// A caller that needs only part of it may define a smaller local interface.
+// DeviceSession, PlaybackSession, and PushSubscription own their own lifecycles.
+type ClientAPI interface {
+	Apply(...Option) error
+	Close() error
+
+	Authenticate(context.Context, AuthenticateRequest) (*ringapimodels.AuthResponse, error)
+	Request2FACode(context.Context, Request2FACodeRequest) error
+	RefreshToken(context.Context, RefreshTokenRequest) (*ringapimodels.AuthResponse, error)
+
+	ListDevices(context.Context) (*ringapimodels.DevicesResponse, error)
+	GetDevice(context.Context, GetDeviceRequest) (ringapimodels.Device, error)
+	UpdateDeviceHealth(context.Context, UpdateDeviceHealthRequest) (*ringapimodels.DeviceHealth, error)
+	GetDeviceSettings(context.Context, GetDeviceSettingsRequest) (DeviceSettings, error)
+	PatchDeviceSettings(context.Context, PatchDeviceSettingsRequest) error
+	GetSnapshot(context.Context, GetSnapshotRequest) (*Snapshot, error)
+
+	SetVolume(context.Context, SetVolumeRequest) error
+	SetLights(context.Context, SetLightsRequest) error
+	SetMotionDetection(context.Context, SetMotionDetectionRequest) error
+	SetSiren(context.Context, SetSirenRequest) error
+	TestSound(context.Context, TestSoundRequest) error
+	SetInHomeChime(context.Context, SetInHomeChimeRequest) error
+
+	GetDeviceHistory(context.Context, GetDeviceHistoryRequest) (*ringapimodels.RecordingHistoryResponse, error)
+	GetActiveDings(context.Context) (*ringapimodels.RecordingHistoryResponse, error)
+	GetRecording(context.Context, GetRecordingRequest) (*ringapimodels.VideoStream, error)
+	GetRecordingShareURL(context.Context, GetRecordingShareURLRequest) (string, error)
+	GetLastRecordingID(context.Context, GetLastRecordingIDRequest) (int64, error)
+
+	OpenSignaling(context.Context, OpenSignalingRequest) (*SignalingConnection, error)
+	ConnectEvents(context.Context) (*EventConnection, error)
+	Listen(context.Context, ringapimodels.EventCallback) error
+}
+
+var _ ClientAPI = (*Client)(nil)
+
 // AuthenticateRequest contains parameters for Authenticate
 type AuthenticateRequest struct {
 	Username string
