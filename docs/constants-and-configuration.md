@@ -22,3 +22,26 @@ Configuration precedence: explicit injected endpoint/profile > selected verified
 OpenAPI/AsyncAPI are the canonical wire schema sources; generated DTO/enums should come from them. For handwritten endpoint defaults, treat the endpoint registry as the runtime source and add a consistency test against the specifications' server/path/method declarations. Do not claim both files independently authoritative. SDK lifecycle defaults are policy, documented in session-design.md and tested against named policy values; they are not upstream guarantees.
 
 No host literals or message strings scattered through feature methods. Feature code references named endpoint builders and wire constants. No guessed fallback hosts, transparent version changes, automatic credential forwarding to arbitrary redirects, or global mutable endpoint settings. Each client receives an immutable copied configuration; each session owns negotiated values. Changing a constant/profile requires linked evidence plus affected replay/spec tests.
+
+## Current implementation
+
+`internal/protocol/endpoints.go` is the runtime owner of OAuth, API, Solutions,
+signaling, and experimental event hosts and the currently centralized route
+constants. `internal/protocol/profiles.go` selects verified defaults;
+`pkg/ring/endpoints.go` exposes `Region`, `Endpoints`, `WithRegion`, and
+`WithEndpoints`. HTTP origins accept http/https and signaling accepts ws/wss;
+userinfo and fragments are rejected. Configuration is per client. Explicit
+endpoint overrides take precedence regardless of option order. US is the
+default; EU/FE require an explicit Solutions origin for signaling bootstrap.
+
+`internal/signaling/policy.go` owns the new session policy: 60-minute maximum
+age, 30-second negotiation deadline, 10-second handshake/write/RPC limits,
+2-second best-effort close, three missed heartbeat intervals, bounded queues,
+and 1 MiB message/ticket limits. The negotiated interval remains session state.
+The fallback heartbeat is five seconds; the recorded sessions advertise ten.
+The clock seam is internal and the sixty-minute core lifetime is tested with
+virtual time.
+
+This is still a migration: generated DTOs, a complete wire-method registry,
+and removal of every legacy literal are planned work. The table above is the
+target ownership layout and does not claim those files already exist.

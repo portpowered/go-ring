@@ -16,8 +16,6 @@ var (
 	ErrBackpressure = errors.New("session event queue full")
 )
 
-const MaxSessionAge = 60 * time.Minute
-
 // Clock allows deterministic deadlines without waiting real session lifetimes.
 type Clock interface {
 	Now() time.Time
@@ -81,7 +79,7 @@ func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
 	if c.DeviceID <= 0 || c.DialogID == "" || c.SignalID == "" || c.ControlID == "" || c.SignalID == c.ControlID || c.Send == nil {
 		return nil, fmt.Errorf("invalid session configuration")
 	}
-	if c.Heartbeat <= 0 || c.Heartbeat > time.Minute {
+	if c.Heartbeat <= 0 || c.Heartbeat > MaxHeartbeatInterval {
 		return nil, fmt.Errorf("invalid heartbeat interval")
 	}
 	if c.MaxAge == 0 {
@@ -97,7 +95,7 @@ func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
 		c.Clock = RealClock{}
 	}
 	child, cancel := context.WithCancel(ctx)
-	s := &Session{ctx: child, cancel: cancel, done: make(chan struct{}), clock: c.Clock, send: c.Send, deviceID: c.DeviceID, dialogID: c.DialogID, signalID: c.SignalID, controlID: c.ControlID, lastPong: c.Clock.Now(), expiresAt: c.Clock.Now().Add(c.MaxAge), pending: make(map[string]chan rpcReply), events: make(chan Message, 32), writeGate: make(chan struct{}, 1)}
+	s := &Session{ctx: child, cancel: cancel, done: make(chan struct{}), clock: c.Clock, send: c.Send, deviceID: c.DeviceID, dialogID: c.DialogID, signalID: c.SignalID, controlID: c.ControlID, lastPong: c.Clock.Now(), expiresAt: c.Clock.Now().Add(c.MaxAge), pending: make(map[string]chan rpcReply), events: make(chan Message, EventQueueCapacity), writeGate: make(chan struct{}, 1)}
 	// Create timers before returning so fake-clock advances cannot race startup.
 	expiry := c.Clock.After(c.MaxAge)
 	tick := c.Clock.After(c.Heartbeat)
@@ -121,7 +119,7 @@ func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
 				s.mu.Lock()
 				age := s.clock.Now().Sub(s.lastPong)
 				s.mu.Unlock()
-				if age >= 3*c.Heartbeat {
+				if age >= MissedHeartbeatIntervals*c.Heartbeat {
 					s.finish(ErrHeartbeat)
 					return
 				}
@@ -224,7 +222,7 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 	// Every RPC has a bounded result wait even when the caller provides no
 	// deadline. The injected clock also cancels a queued or blocked write.
 	callCtx, cancel := context.WithCancelCause(ctx)
-	timeout := s.clock.After(10 * time.Second)
+	timeout := s.clock.After(RPCResponseTimeout)
 	finished, stopped := make(chan struct{}), make(chan struct{})
 	go func() {
 		defer close(stopped)
