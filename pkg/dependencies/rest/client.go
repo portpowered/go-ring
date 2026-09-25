@@ -13,19 +13,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 // Client is a REST API client for Ring services
 type Client struct {
-	httpClient  *http.Client
-	baseURI     string
-	accessToken string
-	tokenGetter func(ctx context.Context) (string, error)
-	userAgent   string
-	hardwareID  string
-	authMu      sync.Mutex
-	pendingPKCE *pkceState
+	httpClient   *http.Client
+	baseURI      string
+	oauthBaseURI string
+	accessToken  string
+	tokenGetter  func(ctx context.Context) (string, error)
+	userAgent    string
+	hardwareID   string
+	authMu       sync.Mutex
+	pendingPKCE  *pkceState
 }
 
 // ClientOption is a function that configures a Client
@@ -43,6 +45,11 @@ func WithBaseURI(baseURL string) ClientOption {
 	return func(c *Client) {
 		c.baseURI = baseURL
 	}
+}
+
+// WithEndpointBases configures per-client Ring service origins.
+func WithEndpointBases(apiBase, oauthBase string) ClientOption {
+	return func(c *Client) { c.baseURI, c.oauthBaseURI = apiBase, oauthBase }
 }
 
 // WithAccessToken sets an access token directly
@@ -76,8 +83,9 @@ func WithHardwareID(hardwareID string) ClientOption {
 // NewClient creates a new REST API client
 func NewClient(opts ...ClientOption) *Client {
 	client := &Client{
-		baseURI:   ringapimodels.RingAPIBaseURI,
-		userAgent: ringapimodels.DefaultUserAgent,
+		baseURI:      protocol.APIBaseURL,
+		oauthBaseURI: protocol.OAuthBaseURL,
+		userAgent:    ringapimodels.DefaultUserAgent,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},

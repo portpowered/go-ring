@@ -16,13 +16,16 @@ import (
 
 // Client is the main client for interacting with Ring services
 type Client struct {
-	restClient   *rest.Client
-	accessToken  string
-	refreshToken string
-	username     string
-	password     string
-	hardwareID   string
-	userAgent    string
+	restClient        *rest.Client
+	accessToken       string
+	refreshToken      string
+	username          string
+	password          string
+	hardwareID        string
+	userAgent         string
+	region            Region
+	endpointOverrides Endpoints
+	endpoints         Endpoints
 
 	tokenGetter       func(ctx context.Context) (string, error)
 	rtcWebSocketURL   string
@@ -53,8 +56,11 @@ func NewClient(opts ...Option) (*Client, error) {
 	client := &Client{
 		restClient:        rest.NewClient(),
 		userAgent:         ringapimodels.DefaultUserAgent,
-		rtcWebSocketURL:   ringapimodels.RingRTCStreamingWebSocketEndpoint,
+		region:            RegionUS,
 		eventWebSocketURL: "wss://api.ring.com/clients_api/ws",
+	}
+	if err := client.applyEndpointConfiguration(); err != nil {
+		return nil, err
 	}
 
 	for _, opt := range opts {

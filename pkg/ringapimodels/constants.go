@@ -1,23 +1,25 @@
 package ringapimodels
 
+import "github.com/portpowered/go-ring/internal/protocol"
+
 const (
 	// Ring API base URIs
-	RingAPIBaseURI   = "https://api.ring.com"
-	RingOAuthBaseURI = "https://oauth.ring.com"
-	RingOAuthURI     = RingOAuthBaseURI + "/oauth/token"
+	RingAPIBaseURI   = protocol.APIBaseURL
+	RingOAuthBaseURI = protocol.OAuthBaseURL
+	RingOAuthURI     = protocol.OAuthBaseURL + protocol.OAuthTokenPath
 
 	// Ring API endpoints
-	RingDevicesEndpoint      = "/clients_api/ring_devices"
-	RingDevicesV3Endpoint    = "/device_info/v3/devices"
-	RingSessionEndpoint      = "/clients_api/session"
-	RingDingsActiveEndpoint  = "/clients_api/dings/active"
-	RingDingsHistoryEndpoint = "/clients_api/dings/history"
-	RingRecordingEndpoint    = "/clients_api/dings/{id}/recording"
+	RingDevicesEndpoint      = protocol.DevicesPath
+	RingDevicesV3Endpoint    = protocol.DevicesV3Path
+	RingSessionEndpoint      = protocol.SessionPath
+	RingDingsActiveEndpoint  = protocol.DingsActivePath
+	RingDingsHistoryEndpoint = protocol.DingsHistoryPath
+	RingRecordingEndpoint    = protocol.RecordingPath
 
 	// RTC Streaming endpoints
-	RingAppAPIURI                     = "https://prd-api-us.prd.rings.solutions"
-	RingRTCStreamingTicketEndpoint    = "/api/v1/clap/ticket/request/signalsocket"
-	RingRTCStreamingWebSocketEndpoint = "wss://api.prod.signalling.ring.devices.a2z.com:443/ws?api_version=4.0&auth_type=ring_solutions&client_id=ring_site-{client_id}&token={token}"
+	RingAppAPIURI                     = protocol.USSolutionsBaseURL
+	RingRTCStreamingTicketEndpoint    = protocol.TicketPath
+	RingRTCStreamingWebSocketEndpoint = protocol.SignalingURL
 
 	// Default user agent
 	DefaultUserAgent = "android:com.ringapp"

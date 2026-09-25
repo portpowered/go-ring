@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -105,7 +106,7 @@ func (c *Client) authenticateLegacy(ctx context.Context, username, password, har
 		"grant_type": {"password"}, "username": {username}, "password": {password},
 		"client_id": {ringapimodels.RingClientID}, "scope": {ringapimodels.RingScope},
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ringapimodels.RingOAuthURI, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.oauthBaseURI+protocol.OAuthTokenPath, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, ringapimodels.NewNetworkError("failed to create legacy auth request", err)
 	}
@@ -147,20 +148,18 @@ func (c *Client) initiatePKCE(ctx context.Context, hardwareID string) error {
 	verifier := base64.RawURLEncoding.EncodeToString(verifierBytes)
 	challengeBytes := sha256.Sum256([]byte(verifier))
 	state := hex.EncodeToString(stateBytes)
-	redirectURI := "https://ring.com/signin/callback"
+	redirectURI := protocol.OAuthCallbackURL
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return ringapimodels.NewInternalServerError("failed to create OAuth cookie jar", err)
 	}
-	authClient := &http.Client{
-		Transport: c.httpClient.Transport,
-		Timeout:   c.httpClient.Timeout,
-		Jar:       jar,
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
+	authClientCopy := *c.httpClient
+	authClientCopy.Jar = jar
+	authClientCopy.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
 	}
+	authClient := &authClientCopy
 
 	params := url.Values{
 		"redirect_uri":          {redirectURI},
@@ -179,7 +178,7 @@ func (c *Client) initiatePKCE(ctx context.Context, hardwareID string) error {
 		"app_brand":             {"ring"},
 		"hardware_id":           {hardwareID},
 	}
-	currentURL := ringapimodels.RingOAuthBaseURI + "/oauth/v2/authorize?" + params.Encode()
+	currentURL := c.oauthBaseURI + protocol.OAuthAuthorizePath + "?" + params.Encode()
 	var html string
 	for range 5 {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, currentURL, nil)
@@ -215,7 +214,7 @@ func (c *Client) initiatePKCE(ctx context.Context, hardwareID string) error {
 		html = string(body)
 		break
 	}
-	csrfToken := extractCSRF(html, jar)
+	csrfToken := extractCSRF(html, jar, c.oauthBaseURI)
 	if csrfToken == "" {
 		return ringapimodels.NewAuthenticationError("unable to extract CSRF token from Ring OAuth page", http.StatusUnauthorized)
 	}
@@ -263,7 +262,7 @@ func (c *Client) verify2FA(ctx context.Context, code string) error {
 }
 
 func (c *Client) authFormRequest(ctx context.Context, client *http.Client, path string, form url.Values) (*http.Response, []byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ringapimodels.RingOAuthBaseURI+path, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.oauthBaseURI+path, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, nil, ringapimodels.NewNetworkError("failed to create OAuth request", err)
 	}
@@ -283,7 +282,7 @@ func (c *Client) authFormRequest(ctx context.Context, client *http.Client, path 
 
 func (c *Client) authorizationCode(ctx context.Context) (string, error) {
 	pending := c.pendingPKCE
-	currentURL := ringapimodels.RingOAuthBaseURI + "/oauth/v2/authorize"
+	currentURL := c.oauthBaseURI + protocol.OAuthAuthorizePath
 	for range 5 {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, currentURL, nil)
 		if err != nil {
@@ -321,7 +320,7 @@ func (c *Client) exchangeAuthorizationCode(ctx context.Context, code, hardwareID
 		"code": {code}, "grant_type": {"authorization_code"}, "redirect_uri": {pending.redirectURI},
 		"code_verifier": {pending.verifier}, "client_id": {ringapimodels.RingClientID},
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ringapimodels.RingOAuthURI, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.oauthBaseURI+protocol.OAuthTokenPath, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, ringapimodels.NewNetworkError("failed to create OAuth token request", err)
 	}
@@ -344,7 +343,7 @@ func (c *Client) RefreshAccessToken(ctx context.Context, refreshToken string) (*
 
 func (c *Client) refreshAccessToken(ctx context.Context, refreshToken, hardwareID string) (*TokenResponse, error) {
 	data := url.Values{"grant_type": {"refresh_token"}, "refresh_token": {refreshToken}, "client_id": {ringapimodels.RingClientID}, "scope": {ringapimodels.RingScope}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ringapimodels.RingOAuthURI, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.oauthBaseURI+protocol.OAuthTokenPath, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, ringapimodels.NewNetworkError("failed to create refresh request", err)
 	}
@@ -398,8 +397,8 @@ func resolveOAuthURL(base, location string) (string, error) {
 	return baseURL.ResolveReference(next).String(), nil
 }
 
-func extractCSRF(html string, jar http.CookieJar) string {
-	for _, rawURL := range []string{ringapimodels.RingOAuthBaseURI, ringapimodels.RingOAuthBaseURI + "/oauth/v2/signin"} {
+func extractCSRF(html string, jar http.CookieJar, oauthBase string) string {
+	for _, rawURL := range []string{oauthBase, oauthBase + protocol.OAuthSigninPath} {
 		parsed, _ := url.Parse(rawURL)
 		for _, cookie := range jar.Cookies(parsed) {
 			switch strings.ToLower(cookie.Name) {

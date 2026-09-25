@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -60,7 +61,10 @@ func (c *Client) StartRTCStream(ctx context.Context, req StartRTCStreamRequest) 
 	}
 
 	// Make HTTP request to get ticket
-	ticketURL := ringapimodels.RingAppAPIURI + ringapimodels.RingRTCStreamingTicketEndpoint
+	if c.endpoints.SolutionsBaseURL == "" {
+		return nil, ringapimodels.NewConnectionError("Solutions bootstrap URL is unverified for selected region; configure WithEndpoints", nil)
+	}
+	ticketURL := c.endpoints.SolutionsBaseURL + protocol.TicketPath
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", ticketURL, nil)
 	if err != nil {
 		return nil, ringapimodels.NewNetworkError("failed to create ticket request", err)
