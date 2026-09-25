@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -148,6 +149,14 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	negotiationCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	var signalID, riid, answerSDP, controlID string
+	startedSuccessfully := false
+	defer func() {
+		if !startedSuccessfully && signalID != "" {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			_ = c.send(ctx, signaling.Message{Method: "close", DialogID: dialog, RIID: riid, Body: mustJSON(map[string]any{"doorbot_id": id, "session_id": signalID})})
+			cancel()
+		}
+	}()
 	heartbeat := 5 * time.Second
 	for answerSDP == "" || signalID == "" {
 		select {
@@ -305,6 +314,7 @@ activated:
 		}
 	}
 drained:
+	startedSuccessfully = true
 	return created, nil
 }
 
@@ -405,6 +415,9 @@ func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousReques
 	if r.Direction != "LEFT" && r.Direction != "RIGHT" {
 		return nil, fmt.Errorf("invalid pan direction %q", r.Direction)
 	}
+	if r.Speed < 0 || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
+		return nil, fmt.Errorf("invalid pan speed")
+	}
 	s.mu.Lock()
 	s.movement[PanAxis] = r.Direction
 	s.mu.Unlock()
@@ -419,6 +432,9 @@ func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousReques
 func (s *DeviceSession) TiltContinuous(ctx context.Context, r TiltContinuousRequest) (*PTZResult, error) {
 	if r.Direction != "UP" && r.Direction != "DOWN" {
 		return nil, fmt.Errorf("invalid tilt direction %q", r.Direction)
+	}
+	if r.Speed < 0 || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
+		return nil, fmt.Errorf("invalid tilt speed")
 	}
 	s.mu.Lock()
 	s.movement[TiltAxis] = r.Direction
