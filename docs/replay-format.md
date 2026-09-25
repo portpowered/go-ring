@@ -72,12 +72,14 @@ captured. HTTP PTZ routes are not part of these recordings or specifications.
 ## Contract documents and baseline pairing
 
 `api/openapi.yaml` distinguishes captured HTTP operations from existing-Go and
-Python-referenced HTTP/auth operations;
-`api/asyncapi.yaml` describes observed signaling envelope methods and PTZ RPC
-shapes. `test/contracts/contracts_test.go` checks the recordings against those
-documents. `test/contracts/README.md` identifies Python baseline test
-counterparts and labels signaling and other route-only additions as
-capture-only. See that file before treating a captured route as proof of
+Python-referenced HTTP/auth operations; `api/asyncapi.yaml` describes observed
+signaling envelope methods and PTZ RPC shapes. `test/contracts/contracts_test.go`
+checks recorded HTTP method/path/status/origin and signaling method constants.
+`tools/protocols/test_contracts.py` validates recorded payloads against the
+schemas, while `tools/protocols/test_document_structure.py` validates the full
+OpenAPI and AsyncAPI documents. `test/contracts/README.md` identifies Python
+baseline test counterparts and labels signaling and other route-only additions
+as capture-only. See that file before treating a captured route as proof of
 equivalent high-level behavior.
 
 ## Repeatable verification order
@@ -90,9 +92,11 @@ cannot replace the reference's locked dependencies. The same command runs in
 CI on Windows and Linux. It needs the reference submodule and package downloads
 during setup; the reference tests themselves prohibit external connections.
 
-Next run `go test -race ./... -timeout 120s` with `GOWORK=off`. Neither command
+Next run `go test -race ./... -timeout 120s` with `GOWORK=off`, followed by
+`go run ./tools/coverage` to check the enforced 90% handwritten-library
+coverage budget. Neither command
 requires the private native recording: committed sanitized files are the test
 inputs. Extraction of a new recording is a separate maintainer operation.
-Passing these commands is one completion gate; the remaining feature mapping,
-README/API documentation, and the planned 90% library coverage gate must also
-be satisfied before calling the implementation complete.
+Passing these commands is one completion gate; the remaining feature mapping
+and README/API documentation must also be satisfied before calling the
+implementation complete.

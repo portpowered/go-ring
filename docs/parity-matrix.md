@@ -21,7 +21,7 @@ Paths below are relative to api.ring.com unless another host is given. “Diverg
 | POST /clients_api/chimes/{id}/play_sound | Divergent: /clients_api/ring_devices/{id}/test_sound | async_test_sound | Not identified | PlayChimeSound with verified payload |
 | PUT /clients_api/doorbots/{id} for in-home chime | Divergent: /clients_api/ring_devices/{id}/in_home_chime | Existing-doorbell type/enabled/duration setters | Doorbot update present; field-level comparison pending | Typed chime settings |
 | GET /clients_api/chimes/{id}/linked_doorbots | — | async_get_linked_tree | Not identified | Explicit backlog |
-| PUT /clients_api/doorbots/{id}/siren_{on,off} | SetSiren; captured request shape replayed | async_set_siren | One each | Add SetSiren; compare duration semantics before declaring full parity |
+| PUT /clients_api/doorbots/{id}/siren_{on,off} | SetSiren; captured requests replayed | async_set_siren | One each | Keep SetSiren; on-request duration semantics remain unverified because the capture has no query pair while Python sends `duration=30` |
 | GET /clients_api/doorbots/{id}/history | GetDeviceHistory | async_history | New history/timeline routes instead | Preserve legacy and compare normalized results |
 | GET /clients_api/dings/active | GetActiveDings | async_update_dings | Not identified | Keep; distinct from push events |
 | GET /clients_api/dings/{id}/recording | GetRecording streams body | recording URL/download helpers | Not identified | Document streaming vs file-writing API distinction |

@@ -1,6 +1,6 @@
 # Stateful signaling and device sessions
 
-Implementation contract with current APIs and remaining requirements. The connection/device-session API is implemented and locally tested; push/playback, priority scheduling, and live media interoperability remain separate gaps. See [porting progress](porting-progress.md) for the test mapping. This document supersedes the earlier plan to retain RTCStream as the primary name. Optimize feature clarity; retain existing authentication mechanisms. Companion: [parity matrix](parity-matrix.md), [implementation plan](library-improvement-plan.md).
+Implementation contract with current APIs and remaining requirements. The connection/device-session API and bounded priority writer are implemented and locally tested; push/playback and live media interoperability remain separate gaps. The writer prioritizes queued safety messages while preserving bounded access for ordinary commands; it cannot preempt a socket write already in progress. See [porting progress](porting-progress.md) for the test mapping. This document supersedes the earlier plan to retain RTCStream as the primary name. Optimize feature clarity; retain existing authentication mechanisms. Companion: [parity matrix](parity-matrix.md), [implementation plan](library-improvement-plan.md).
 
 ## Public objects and ownership
 
@@ -70,7 +70,7 @@ Required construction recipe for examples and documentation:
 4. Send the description using StartDeviceSession. Apply Answer as the remote description exactly once. Apply remote ICE events after the remote description exists; queue bounded early candidates.
 5. Keep the DeviceSession alive while media/control is used. Send PTZ or microphone/stream options through its typed methods. Close the session and caller peer separately.
 
-The schema for SessionDescription must state type=offer or answer and non-empty SDP text. The SDP-specific validator checks structural consistency rather than hardcoding observed payload IDs:
+The public SessionDescription uses type=offer or answer and non-empty SDP text. StartDeviceSession validates and parses the caller's offer; the returned answer is parsed and normalized by matching media sections by MID. These checks establish structural consistency, not codec/media interoperability:
 
 | SDP element | Documentation / validation rule |
 |---|---|
@@ -84,9 +84,9 @@ The schema for SessionDescription must state type=offer or answer and non-empty 
 | Application section | Preserve SCTP attributes when present; don't require it for all devices without evidence |
 | Vendor a=x-* fields | Preserve unknown extensions; maintain an observed/required/optional inventory instead of guessing requirements |
 
-For a recvonly offer, the answer direction must be sendonly or inactive. Existing Go and Python implementations include an answer-direction workaround. Replace broad regex rewriting with a narrowly scoped parsed transformation, matched by MID; preserve original/normalized diagnostic metadata without logging private SDP. Test sendrecv audio, multiple same-kind m-lines, rejected sections, unknown attributes and line endings. [Offer/answer direction rules](https://www.rfc-editor.org/rfc/rfc3264.html)
+For a recvonly offer, the answer direction must be sendonly or inactive. Go parses the SDP and applies the observed recvonly/sendrecv workaround to the matching media section by MID, while retaining unknown attributes. The normalized answer is returned; the implementation does not preserve a separate original/normalized diagnostic pair. Live media interoperability remains unverified. [Offer/answer direction rules](https://www.rfc-editor.org/rfc/rfc3264.html)
 
-Provide complete synthetic SDP fixtures for parser/replay tests and executable examples that generate real peer offers. A diagram or hand-edited SDP fragment is explanatory only and must not be presented as runnable connection credentials. Add `examples/device-session`, `examples/device-session-trickle`, and a playback example only when its contract is implemented.
+The `examples/device-session` program generates real peer offers and supports non-trickle and `-trickle` modes; parser and replay tests use synthetic SDP. A diagram or hand-edited SDP fragment is explanatory only and must not be presented as runnable connection credentials. A playback example remains deferred until its contract is implemented.
 
 ## Internal state and timers
 
@@ -110,7 +110,7 @@ Use an injected monotonic clock and one deadline-aware scheduler or equivalent b
 
 At hard expiry, reject new sends, return ErrSessionExpired (inspect with errors.Is) to Wait and pending commands, and release routing entries/queues/timers. Start any bounded graceful stop/close before the hard deadline; force teardown at the deadline. Parent cancellation, peer close or socket failure may terminate earlier. Do not automatically reauthenticate, reopen, renegotiate or replay PTZ to evade the limit. Applications explicitly create a fresh session/peer as needed.
 
-Writer scheduling must prioritize close/stop and heartbeat without starving ordinary commands. Register pending RPC before enqueueing the write. Distinguish canceled-before-send from timeout-after-send; the latter may have moved the camera. Continuous movement stop is a captured zero-speed RPC with the tracked axis/direction; if the connection is gone, do not claim the camera stopped. The reader routes messages without invoking user callbacks or waiting for consumer I/O. Bounded event overflow produces an explicit terminal error rather than blocking heartbeats.
+The writer prioritizes queued close, ping/pong, and zero-speed continuous-PTZ messages. When both queues remain nonempty, at least one ordinary command runs after four priority writes. A write already in progress cannot be preempted. Pending RPCs are registered before enqueueing; cancellation before a queued write starts removes it, while a timeout after sending may leave the camera action's outcome unknown. Continuous movement stop is a zero-speed RPC with the tracked axis/direction; if the connection is gone, do not claim the camera stopped. The reader routes messages without invoking user callbacks or waiting for consumer I/O. Bounded event overflow produces an explicit terminal error rather than blocking heartbeats.
 
 ## Required acceptance tests
 
