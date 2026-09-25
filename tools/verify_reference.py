@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 import subprocess
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / "reference" / "python-ring-doorbell"
@@ -38,7 +39,12 @@ def main():
     pytest = (python, "-m", "pytest", "-p", "no:socket", "-p",
               "offline_socket_guard", "-o", "addopts=", "-q")
     run(*pytest, "tests", cwd=REFERENCE, env=env)
-    run(*pytest, ROOT / "tools/reference-replay/test_shared_recordings.py", cwd=REFERENCE, env=env)
+    with tempfile.TemporaryDirectory(prefix="go-ring-python-coverage-") as directory:
+        report = Path(directory) / "fixture-coverage.json"
+        run(*pytest, "--cov=ring_doorbell", "--cov-branch",
+            f"--cov-report=json:{report}", ROOT / "tools/reference-replay",
+            cwd=REFERENCE, env=env)
+        run(python, ROOT / "tools/reference-replay/measure_port_scope.py", report, env=env)
     run(python, "-m", "unittest", "discover", "-s", "tools/protocols", "-v", env=env)
     if not interpreter(capture_env).exists():
         run("uv", "venv", "--python", "3.12", capture_env)

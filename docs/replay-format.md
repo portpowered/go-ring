@@ -85,8 +85,9 @@ equivalent high-level behavior.
 ## Repeatable verification order
 
 Run `python tools/verify_reference.py` from the repository root (requires uv and Node.js/npm).
-It checks the pinned Python suite first, then the shared-recording adapters,
-then signaling payload schemas and recording/sanitizer tests. The reference
+It checks the pinned Python suite first, then the fixture replay suite and its
+95% selected-Python-code coverage gate, then signaling payload schemas and
+recording/sanitizer tests. The reference
 and capture tooling use separate ignored virtual environments so mitmproxy
 cannot replace the reference's locked dependencies. The same command runs in
 CI on Windows and Linux. It needs the reference submodule and package downloads
@@ -100,3 +101,12 @@ inputs. Extraction of a new recording is a separate maintainer operation.
 Passing these commands is one completion gate; the remaining feature mapping
 and README/API documentation must also be satisfied before calling the
 implementation complete.
+
+## Python-first portable replay
+
+The [Python replay harness](python-replay-harness.md) runs the captured HTTP
+exchanges and ordered live-view messages through the pinned reference before
+the corresponding Go tests are migrated. Additional JSON inputs under
+`test/porting-fixtures/` are synthetic test cases for legacy routes and failures
+absent from the capture. They are not capture observations. The Python adapters
+live under `tools/reference-replay/`; the JSON files can be read by Go directly.

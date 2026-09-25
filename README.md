@@ -128,6 +128,7 @@ unknown, not be treated as unsupported.
 - [Overall implementation plan](docs/library-improvement-plan.md) and [porting process](docs/internal/process-of-reverse-engineering.md)
 - [OpenAPI HTTP contracts](api/openapi.yaml) and [AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
 - [Recording formats and verification order](docs/replay-format.md)
+- [Python fixture replay and original-test migration index](docs/python-replay-harness.md)
 - [Sanitized recordings](test/recordings/README.md) and [legacy fixture provenance](test/fixtures/README.md)
 - [Contributing](CONTRIBUTING.md)
 
@@ -140,7 +141,8 @@ go build ./examples/...
 Set `GOWORK=off` when testing this module independently of a surrounding workspace.
 For the reference-first comparison checks, initialize the submodule, install uv and Node.js/npm,
 and run `python tools/verify_reference.py`. This runs the pinned Python tests,
-shared recording adapters, and schema/sanitizer checks in separate local
+the shared fixture replay with its 95% selected-code coverage gate, and
+schema/sanitizer checks in separate local
 environments. The private mitmproxy file is not required for CI.
 
 The maintained library coverage gate requires 90% statement coverage, alongside

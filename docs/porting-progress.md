@@ -1,5 +1,12 @@
 # Python parity replay baseline
 
+The first Python migration gate is now the [portable fixture replay harness](python-replay-harness.md):
+all 35 original Python test functions have a migration decision, 40 original
+cases pass, and 72 replay cases cover 96.13% of explicitly selected Python
+entry-point lines. The existing Go tests have not yet all been converted to
+consume these shared scenario files. The table below retains the protocol
+comparison and known divergences.
+
 The Python package under `reference/python-ring-doorbell` provides behavioral
 tests for the compatibility baseline. Sanitized C1 recordings remain the wire
 evidence. Tests should identify both sources and preserve differences in route

@@ -19,11 +19,12 @@ Verified locally on Windows with Go 1.24.2, `GOWORK=off`:
 | `go build ./...` | Passed, including examples |
 | Go formatting / module tidy | Clean; no module metadata change |
 | Pinned Python original tests | 40 passed |
-| Python/shared-recording adapter tests | 8 passed |
+| Python fixture replay, including the original-test migration index | 72 passed; 447/465 selected Python lines, 96.13% |
 | OpenAPI/AsyncAPI document and payload checks | 11 passed |
 | Capture extraction/sanitizer/schema checks | 11 passed |
 
-`python tools/verify_reference.py` runs all four Python/contract groups. It
+`python tools/verify_reference.py` runs the original Python tests, fixture-only
+coverage gate, protocol contracts, and capture checks. It
 requires the initialized reference submodule, uv, and Node.js/npm; it installs
 isolated test dependencies. The actual test replay is offline, with local
 HTTP/WebSocket peers permitted. The private mitmproxy file is not required.
