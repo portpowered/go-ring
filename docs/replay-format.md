@@ -3,7 +3,7 @@
 The checked-in recordings under `test/recordings` contain sanitized HTTP
 exchanges and ordered WebSocket application messages. They preserve observed
 request/response fields, message directions, and JSON bodies. They do not carry
-manifests, provenance digests, timestamps, environment labels, or extraction
+manifests, provenance digests, capture timestamps, environment labels, or extraction
 metadata. Synthetic identity replacements are consistent within each session.
 
 ## HTTP exchange JSON
@@ -71,7 +71,8 @@ captured. HTTP PTZ routes are not part of these recordings or specifications.
 
 ## Contract documents and baseline pairing
 
-`api/openapi.yaml` describes only captured HTTP operations;
+`api/openapi.yaml` distinguishes captured HTTP operations from existing-Go and
+Python-referenced HTTP/auth operations;
 `api/asyncapi.yaml` describes observed signaling envelope methods and PTZ RPC
 shapes. `test/contracts/contracts_test.go` checks the recordings against those
 documents. `test/contracts/README.md` identifies Python baseline test
@@ -81,7 +82,7 @@ equivalent high-level behavior.
 
 ## Repeatable verification order
 
-Run `python tools/verify_reference.py` from the repository root (requires uv).
+Run `python tools/verify_reference.py` from the repository root (requires uv and Node.js/npm).
 It checks the pinned Python suite first, then the shared-recording adapters,
 then signaling payload schemas and recording/sanitizer tests. The reference
 and capture tooling use separate ignored virtual environments so mitmproxy
