@@ -13,7 +13,7 @@ test:
 test-race:
 	$(GO) test -race ./... -timeout $(GO_TEST_TIMEOUT)
 test-cover:
-	$(GO) test -race -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./... -timeout $(GO_TEST_TIMEOUT)
+	$(GO) run ./tools/coverage
 test-integration:
 	$(GO) test -tags integration ./test/integration/... -timeout 5m
 fmt:
