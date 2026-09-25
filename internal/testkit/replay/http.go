@@ -23,14 +23,24 @@ type Exchange struct {
 	Response Response `json:"response"`
 }
 type Request struct {
-	Method  string          `json:"method"`
-	Origin  string          `json:"origin"`
-	Path    string          `json:"path"`
-	Query   []Pair          `json:"query"`
-	Headers http.Header     `json:"headers"`
-	Body    json.RawMessage `json:"body"`
-	JSON    bool            `json:"json,omitempty"`
+	Method      string          `json:"method"`
+	Origin      string          `json:"origin"`
+	Path        string          `json:"path"`
+	Query       []Pair          `json:"query"`
+	Headers     http.Header     `json:"headers"`
+	HeadersMode HeadersMode     `json:"headers_mode,omitempty"`
+	Body        json.RawMessage `json:"body"`
+	JSON        bool            `json:"json,omitempty"`
 }
+
+// HeadersMode controls cassette header matching. Empty mode is exact.
+type HeadersMode string
+
+const (
+	HeadersExact    HeadersMode = "exact"
+	HeadersRequired HeadersMode = "required"
+)
+
 type Response struct {
 	Status  int             `json:"status"`
 	Headers http.Header     `json:"headers"`
@@ -135,7 +145,7 @@ func matches(x Request, r *http.Request, b []byte) (bool, string) {
 	if !reflect.DeepEqual(sortedPairs(x.Query), sortedPairs(queryPairs(u.Query()))) {
 		return false, "query"
 	}
-	if !reflect.DeepEqual(canonicalHeaders(x.Headers), canonicalHeaders(r.Header)) {
+	if !headersMatch(x.Headers, r.Header, x.HeadersMode) {
 		return false, "headers"
 	}
 	if x.JSON {
@@ -146,6 +156,24 @@ func matches(x Request, r *http.Request, b []byte) (bool, string) {
 		return false, "body"
 	}
 	return true, ""
+}
+func headersMatch(want, got http.Header, mode HeadersMode) bool {
+	w, g := canonicalHeaders(want), canonicalHeaders(got)
+	if mode == "" {
+		mode = HeadersExact
+	}
+	if mode == HeadersExact {
+		return reflect.DeepEqual(w, g)
+	}
+	if mode != HeadersRequired {
+		return false
+	}
+	for k, values := range w {
+		if !reflect.DeepEqual(values, g[k]) {
+			return false
+		}
+	}
+	return true
 }
 func decodeBody(v json.RawMessage, isJSON bool) []byte {
 	if len(v) == 0 {

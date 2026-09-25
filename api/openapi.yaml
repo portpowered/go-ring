@@ -1,0 +1,42 @@
+openapi: 3.1.0
+info:
+  title: Ring captured HTTP surface
+  version: 0.1.0
+  description: >-
+    Narrow contract for the HTTP operations currently represented by sanitized
+    recordings. Schemas intentionally describe captured envelope and operation
+    shapes; they do not claim complete coverage of Ring's evolving API.
+servers:
+  - url: https://api.ring.com
+    description: Captured Ring API origin
+paths:
+  /device_info/v3/devices:
+    get: {operationId: listDevices, responses: {'200': {$ref: '#/components/responses/Json'}}}
+  /device_info/v3/devices/{device_id}:
+    get: {operationId: getDevice, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+  /devices/{device_type_id}/devices/{device_id}/settings:
+    get: {operationId: getDeviceSettings, parameters: [{$ref: '#/components/parameters/device_type_id'}, {$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+    patch: {operationId: patchDeviceSettings, parameters: [{$ref: '#/components/parameters/device_type_id'}, {$ref: '#/components/parameters/device_id'}], requestBody: {$ref: '#/components/requestBodies/Json'}, responses: {'200': {$ref: '#/components/responses/Json'}}}
+  /evm/v2/timeline/devices/{device_id}:
+    get: {operationId: getDeviceTimeline, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+  /evm/v3/history/devices:
+    get: {operationId: getHistoryDevices, responses: {'200': {$ref: '#/components/responses/Json'}}}
+  /clients_api/doorbots/{device_id}/siren_on:
+    put: {operationId: turnSirenOn, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+  /clients_api/doorbots/{device_id}/siren_off:
+    put: {operationId: turnSirenOff, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+  /api/v1/clap/tickets:
+    get:
+      operationId: requestSignalingTicket
+      servers: [{url: https://prd-api-us.prd.rings.solutions}]
+      responses: {'200': {$ref: '#/components/responses/Json'}}
+components:
+  parameters:
+    device_id: {name: device_id, in: path, required: true, schema: {type: string}}
+    device_type_id: {name: device_type_id, in: path, required: true, schema: {type: string}}
+  requestBodies:
+    Json: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
+  responses:
+    Json: {description: Captured JSON response, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
+  schemas:
+    JsonValue: {description: Operation-specific captured JSON; see the corresponding sanitized recording, oneOf: [{type: object}, {type: array}, {type: string}, {type: number}, {type: boolean}, {type: 'null'}]}

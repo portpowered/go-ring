@@ -81,6 +81,25 @@ func TestCanonicalHeadersMergeCaseVariants(t *testing.T) {
 	}
 }
 
+func TestHeadersModeExactDefaultAndRequiredSubset(t *testing.T) {
+	want := http.Header{"Accept": {"application/json"}, "X-Key": {"a", "b"}}
+	extra := http.Header{"Accept": {"application/json"}, "X-Key": {"b", "a"}, "User-Agent": {"client"}}
+	if headersMatch(want, extra, "") || headersMatch(want, extra, HeadersExact) {
+		t.Fatal("exact mode accepted extra header")
+	}
+	if !headersMatch(want, extra, HeadersRequired) {
+		t.Fatal("required mode rejected extra headers or reordered values")
+	}
+	for _, got := range []http.Header{{"Accept": {"application/json"}}, {"Accept": {"application/json"}, "X-Key": {"a"}}, {"Accept": {"text/plain"}, "X-Key": {"a", "b"}}} {
+		if headersMatch(want, got, HeadersRequired) {
+			t.Fatalf("required mode accepted missing/different/repeated values: %#v", got)
+		}
+	}
+	if headersMatch(want, extra, HeadersMode("typo")) {
+		t.Fatal("unknown header mode accepted")
+	}
+}
+
 func TestTransportRejectsUnexpectedHeaderAndQuery(t *testing.T) {
 	x := Exchange{Request: Request{Method: "GET", Origin: "https://example.test", Path: "/x", Query: []Pair{{"a", "1"}}, Headers: http.Header{}}, Response: Response{Status: 204}}
 	tr := NewTransport(x)

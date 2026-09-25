@@ -1,0 +1,80 @@
+asyncapi: 3.0.0
+info:
+  title: Ring signaling application messages
+  version: 0.1.0
+  description: >-
+    Observed WebSocket application envelope and PTZ RPC shapes from the included
+    sanitized signaling conversations. Binary/control frames and complete media
+    negotiation semantics are outside this contract.
+servers:
+  ring:
+    host: api.prod.signalling.ring.devices.a2z.com
+    protocol: wss
+    description: Captured signaling host; tests use a local peer.
+channels:
+  signaling:
+    address: /ws
+    messages:
+      clientMessage: {$ref: '#/components/messages/ClientMessage'}
+      serverMessage: {$ref: '#/components/messages/ServerMessage'}
+operations:
+  sendMessage:
+    action: send
+    channel: {$ref: '#/channels/signaling'}
+    messages: [{$ref: '#/channels/signaling/messages/clientMessage'}]
+  receiveMessage:
+    action: receive
+    channel: {$ref: '#/channels/signaling'}
+    messages: [{$ref: '#/channels/signaling/messages/serverMessage'}]
+components:
+  messages:
+    ClientMessage:
+      payload: {$ref: '#/components/schemas/ClientEnvelope'}
+    ServerMessage:
+      payload: {$ref: '#/components/schemas/ServerEnvelope'}
+  schemas:
+    ClientEnvelope:
+      type: object
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum: [activate_session, camera_options, close, ice, live_view, mic_enable, notification, ping, playback, push_heartbeat, push_subscribe, push_unsubscribe, rpc, sdp, stream_options]
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {type: object}
+    ServerEnvelope:
+      type: object
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum: [camera_started, close, ice, notification, pong, push_event, push_subscription_ack, rpc, sdp, session_created]
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {type: object}
+    PTZRPC:
+      type: object
+      required: [jsonrpc, id, method, params]
+      properties:
+        jsonrpc: {const: '2.0'}
+        id: {type: string}
+        method:
+          type: string
+          enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Tilt.Step, PTZ.Tilt.Continuous, PTZ.Pan.Halted]
+        params:
+          type: object
+          required: [sessionId, timestamp, version]
+          properties:
+            sessionId: {type: string}
+            timestamp: {type: number}
+            version: {type: number, const: 1}
+            direction: {type: string, enum: [LEFT, RIGHT, UP, DOWN]}
+            speed: {type: number}
+            reason: {type: string}
+    Heartbeat:
+      description: Captured application ping from client and pong from server; timing policy is not specified here.
+      type: object
+      properties:
+        method: {type: string, enum: [ping, pong]}
+        body: {type: object}
