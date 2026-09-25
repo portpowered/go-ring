@@ -208,6 +208,24 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	// Every RPC has a bounded result wait even when the caller provides no
+	// deadline. The injected clock also cancels a queued or blocked write.
+	callCtx, cancel := context.WithCancelCause(ctx)
+	timeout := s.clock.After(10 * time.Second)
+	finished, stopped := make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(stopped)
+		select {
+		case <-finished:
+		case <-s.done:
+			cancel(s.Wait(context.Background()))
+		case <-callCtx.Done():
+		case <-timeout:
+			cancel(context.DeadlineExceeded)
+		}
+	}()
+	defer func() { close(finished); cancel(nil); <-stopped }()
+	ctx = callCtx
 	s.mu.Lock()
 	if s.closed {
 		err := s.terminal
@@ -229,13 +247,16 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 	p["version"] = 1
 	err := s.Send(ctx, "rpc", map[string]any{"command": map[string]any{"jsonrpc": "2.0", "id": id, "method": method, "params": p}})
 	if err != nil {
+		if cause := context.Cause(callCtx); cause != nil {
+			return nil, cause
+		}
 		return nil, err
 	}
 	select {
 	case reply := <-ch:
 		return reply.result, reply.err
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, context.Cause(callCtx)
 	case <-s.done:
 		return nil, s.Wait(context.Background())
 	}

@@ -15,6 +15,11 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 		return nil, fmt.Errorf("SDP exceeds size limit")
 	}
 	var description sdp.SessionDescription
+	// The recorded Android offers omit a final line ending. Pion's parser
+	// requires one; normalize only this framing detail before parsing.
+	if !strings.HasSuffix(raw, "\n") {
+		raw += "\r\n"
+	}
 	if err := description.UnmarshalString(raw); err != nil {
 		return nil, fmt.Errorf("invalid SDP syntax")
 	}
