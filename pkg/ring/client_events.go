@@ -80,6 +80,9 @@ func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallbac
 			event, err := conn.Receive()
 			if err != nil {
 				if ringapimodels.IsClosedError(err) {
+					if ctxErr := ctx.Err(); ctxErr != nil {
+						return ctxErr
+					}
 					return nil
 				}
 				return err

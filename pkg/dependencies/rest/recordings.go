@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -14,17 +15,17 @@ import (
 func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int, kind string) (*dependencymodels.RingRecordingHistoryResponse, error) {
 	// Build endpoint with device ID in the path: /clients_api/doorbots/{device_id}/history
 	endpoint := "/clients_api/doorbots/" + strconv.FormatInt(deviceID, 10) + "/history"
-	params := []string{}
+	params := url.Values{}
 
 	if limit > 0 {
-		params = append(params, "limit="+strconv.Itoa(limit))
+		params.Set("limit", strconv.Itoa(limit))
 	}
 	if kind != "" {
-		params = append(params, "kind="+kind)
+		params.Set("kind", kind)
 	}
 
-	if len(params) > 0 {
-		endpoint += "?" + strings.Join(params, "&")
+	if encoded := params.Encode(); encoded != "" {
+		endpoint += "?" + encoded
 	}
 
 	// The API returns an array directly, not wrapped in an object

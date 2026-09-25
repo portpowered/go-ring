@@ -91,6 +91,16 @@ func (ec *EventConnection) Receive() (*ringapimodels.Event, error) {
 	if closed {
 		return nil, ringapimodels.NewClosedError("connection is closed")
 	}
+	// Preserve wire order by draining already-decoded events before returning
+	// the terminal read error that follows them.
+	select {
+	case event, ok := <-ec.messageChan:
+		if !ok {
+			return nil, ringapimodels.NewClosedError("message channel closed")
+		}
+		return event, nil
+	default:
+	}
 
 	select {
 	case event, ok := <-ec.messageChan:
