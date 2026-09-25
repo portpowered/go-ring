@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ import (
 
 // RTCStream represents an active RTC stream
 type RTCStream struct {
+	client         *Client
 	streamID       string
 	deviceID       string
 	sessionID      string
@@ -45,6 +47,15 @@ type RTCStream struct {
 // StartRTCStream starts a WebRTC stream for live video from a device
 // req.SDPOffer is the SDP offer from the caller
 func (c *Client) StartRTCStream(ctx context.Context, req StartRTCStreamRequest) (*RTCStream, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	c.mu.RLock()
+	closed := c.closed
+	c.mu.RUnlock()
+	if closed {
+		return nil, ringapimodels.NewClosedError("client is closed")
+	}
 	if err := c.ensureSession(ctx); err != nil {
 		return nil, ringapimodels.NewConnectionError("failed to register Ring session", err)
 	}
@@ -103,7 +114,7 @@ func (c *Client) StartRTCStream(ctx context.Context, req StartRTCStreamRequest) 
 	// Format: client_id (UUID) and token (ticket)
 	clientID := uuid.New().String()
 	wsURL := strings.Replace(c.rtcWebSocketURL, "{client_id}", clientID, 1)
-	wsURL = strings.Replace(wsURL, "{token}", ticketResp.Ticket, 1)
+	wsURL = strings.Replace(wsURL, "{token}", url.QueryEscape(ticketResp.Ticket), 1)
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: 10 * time.Second,
@@ -124,6 +135,8 @@ func (c *Client) StartRTCStream(ctx context.Context, req StartRTCStreamRequest) 
 	dialogID := uuid.New().String()
 
 	stream := &RTCStream{
+		client:        c,
+		streamID:      uuid.NewString(),
 		deviceID:      req.DeviceID, // Store as string
 		dialogID:      dialogID,
 		sdpOffer:      req.SDPOffer,
@@ -178,14 +191,29 @@ func (c *Client) StartRTCStream(ctx context.Context, req StartRTCStreamRequest) 
 	select {
 	case sdpAnswer := <-stream.sdpAnswerChan:
 		stream.mu.Lock()
+		if !stream.isAlive {
+			stream.mu.Unlock()
+			return nil, ringapimodels.NewClosedError("RTC stream closed during startup")
+		}
 		stream.sdpAnswer = sdpAnswer
-		stream.mu.Unlock()
-
-		// Start ping task
+		// Publish the ticker and worker count before Close can join workers.
 		stream.pingTicker = time.NewTicker(5 * time.Second)
 		stream.wg.Add(1)
+		stream.mu.Unlock()
 		go stream.pinger()
 
+		c.mu.Lock()
+		if c.closed {
+			c.mu.Unlock()
+			_ = stream.Close()
+			return nil, ringapimodels.NewClosedError("client is closed")
+		}
+		if c.legacyStreams == nil {
+			c.legacyStreams = make(map[*RTCStream]struct{})
+		}
+		c.legacyStreams[stream] = struct{}{}
+		c.mu.Unlock()
+		go func() { <-streamCtx.Done(); _ = stream.Close() }()
 		return stream, nil
 	case err := <-stream.closeChan:
 		cancel()
@@ -197,12 +225,21 @@ func (c *Client) StartRTCStream(ctx context.Context, req StartRTCStreamRequest) 
 		return nil, ringapimodels.NewConnectionError("timeout waiting for SDP answer", nil)
 	case <-streamCtx.Done():
 		wsConn.Close()
-		return nil, streamCtx.Err()
+		select {
+		case err := <-stream.closeChan:
+			return nil, err
+		default:
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		return nil, ringapimodels.NewConnectionError("RTC socket closed during negotiation", nil)
 	}
 }
 
 // reader reads messages from the WebSocket
 func (rs *RTCStream) reader() {
+	defer rs.cancel()
 	defer rs.wg.Done()
 	defer close(rs.readerDone)
 
@@ -430,9 +467,6 @@ func (rs *RTCStream) handleNotification(msg map[string]interface{}) {
 
 // handleClose handles close message
 func (rs *RTCStream) handleClose(msg map[string]interface{}) {
-	rs.mu.Lock()
-	rs.isAlive = false
-	rs.mu.Unlock()
 
 	// Extract error information from close message
 	var errorMsg string
@@ -468,7 +502,8 @@ func (rs *RTCStream) handleClose(msg map[string]interface{}) {
 		// Channel already has an error or is closed, ignore
 	}
 
-	rs.Close()
+	// The reader must not synchronously join itself.
+	go rs.Close()
 }
 
 // handlePong handles pong message
@@ -492,6 +527,7 @@ func (rs *RTCStream) activateSession() {
 	rs.mu.RUnlock()
 
 	if conn != nil {
+		_ = conn.NetConn().SetWriteDeadline(time.Now().Add(2 * time.Second))
 		rs.writeMu.Lock()
 		conn.WriteMessage(websocket.TextMessage, msgBytes)
 		rs.writeMu.Unlock()
@@ -568,11 +604,22 @@ func (rs *RTCStream) getSessionMessage(method string, body map[string]interface{
 
 // StopRTCStream stops an active RTC stream
 func (c *Client) StopRTCStream(ctx context.Context, req StopRTCStreamRequest) error {
-	// The stream is stopped by calling Close() on the RTCStream
-	// This method exists for interface compatibility but the actual
-	// stream management should be done via the RTCStream.Close() method
-	// req.StreamID is not used, but kept for interface compatibility
-	return nil
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	c.mu.RLock()
+	var match *RTCStream
+	for stream := range c.legacyStreams {
+		if stream.GetStreamID() == req.StreamID {
+			match = stream
+			break
+		}
+	}
+	c.mu.RUnlock()
+	if match == nil {
+		return ringapimodels.NewNotFoundError("RTC stream not found", nil)
+	}
+	return match.Close()
 }
 
 // Close closes the RTC stream
@@ -596,14 +643,20 @@ func (rs *RTCStream) Close() error {
 	rs.mu.Unlock()
 
 	if conn != nil {
+		_ = conn.NetConn().SetWriteDeadline(time.Now().Add(2 * time.Second))
 		rs.writeMu.Lock()
 		closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
-		conn.WriteMessage(websocket.CloseMessage, closeMsg)
+		conn.WriteControl(websocket.CloseMessage, closeMsg, time.Now().Add(2*time.Second))
 		conn.Close()
 		rs.writeMu.Unlock()
 	}
 
 	rs.wg.Wait()
+	if rs.client != nil {
+		rs.client.mu.Lock()
+		delete(rs.client.legacyStreams, rs)
+		rs.client.mu.Unlock()
+	}
 	return nil
 }
 
@@ -611,7 +664,10 @@ func (rs *RTCStream) Close() error {
 func (rs *RTCStream) GetStreamID() string {
 	rs.mu.RLock()
 	defer rs.mu.RUnlock()
-	return rs.sessionID
+	if rs.sessionID != "" {
+		return rs.sessionID
+	}
+	return rs.streamID
 }
 
 // GetDeviceID returns the device ID

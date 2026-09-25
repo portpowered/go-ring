@@ -915,17 +915,65 @@ func TestRTCStream_ForceCorrectSDPAnswer(t *testing.T) {
 }
 
 func TestStopRTCStream(t *testing.T) {
+	for _, how := range []string{"stop", "client-close", "context-cancel"} {
+		t.Run(how, func(t *testing.T) {
+			disconnected := make(chan struct{})
+			wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
+				if err != nil {
+					return
+				}
+				defer conn.Close()
+				defer close(disconnected)
+				var offer map[string]any
+				if err := conn.ReadJSON(&offer); err != nil {
+					return
+				}
+				dialog := offer["dialog_id"]
+				if err := conn.WriteJSON(map[string]any{"method": "session_created", "dialog_id": dialog, "body": map[string]any{"session_id": "legacy-test-session"}}); err != nil {
+					return
+				}
+				if err := conn.WriteJSON(map[string]any{"method": "sdp", "dialog_id": dialog, "body": map[string]any{"sdp": "v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n"}}); err != nil {
+					return
+				}
+				for {
+					if _, _, err := conn.ReadMessage(); err != nil {
+						return
+					}
+				}
+			}))
+			defer wsServer.Close()
+			client, transport := newTestClientWithRTCWebSocketURL("test_token", strings.Replace(wsServer.URL, "http://", "ws://", 1))
+			defer client.Close()
+			transport.SetResponseWithBody("POST", "/api/v1/clap/ticket/request/signalsocket", http.StatusOK, map[string]any{"ticket": "synthetic-ticket"})
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			stream, err := client.StartRTCStream(ctx, ring.StartRTCStreamRequest{DeviceID: "1001", SDPOffer: "v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n"})
+			require.NoError(t, err)
+			require.NotEmpty(t, stream.GetStreamID())
+			switch how {
+			case "stop":
+				require.NoError(t, client.StopRTCStream(ctx, ring.StopRTCStreamRequest{StreamID: stream.GetStreamID()}))
+			case "client-close":
+				require.NoError(t, client.Close())
+			case "context-cancel":
+				cancel()
+			}
+			select {
+			case <-disconnected:
+			case <-time.After(time.Second):
+				t.Fatal("owned RTC socket was not closed")
+			}
+			require.NoError(t, stream.Close())
+		})
+	}
 	client, _ := newTestClientWithToken("test_token")
 	defer client.Close()
-
-	ctx := context.Background()
-	streamID := "test_stream_id"
-
-	// StopRTCStream is a no-op that returns nil
-	err := client.StopRTCStream(ctx, ring.StopRTCStreamRequest{
-		StreamID: streamID,
-	})
-	assert.NoError(t, err)
+	err := client.StopRTCStream(context.Background(), ring.StopRTCStreamRequest{StreamID: "missing"})
+	require.True(t, ringapimodels.IsNotFoundError(err))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	require.ErrorIs(t, client.StopRTCStream(ctx, ring.StopRTCStreamRequest{StreamID: "missing"}), context.Canceled)
 }
 
 func TestStartRTCStream_Timeout(t *testing.T) {
@@ -947,8 +995,12 @@ func TestStartRTCStream_Timeout(t *testing.T) {
 		var offerMsg map[string]interface{}
 		conn.ReadJSON(&offerMsg)
 
-		// Just keep connection alive without sending SDP
-		time.Sleep(100 * time.Millisecond)
+		// Wait for caller cancellation without racing a server-side close.
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
 	}))
 	defer wsServer.Close()
 
@@ -970,19 +1022,6 @@ func TestStartRTCStream_Timeout(t *testing.T) {
 		SDPOffer: sdpOffer,
 	})
 
-	// Should timeout waiting for SDP answer or fail to connect
-	if err != nil {
-		// May be connection error, network error, HTTP error, or context deadline exceeded
-		assert.True(t, ringapimodels.IsConnectionError(err) ||
-			ringapimodels.IsNetworkError(err) ||
-			ringapimodels.IsHTTPError(err) ||
-			ringapimodels.IsUnauthorizedError(err) ||
-			err == context.DeadlineExceeded)
-		assert.Nil(t, stream)
-	} else {
-		// If connection succeeded, clean up
-		if stream != nil {
-			stream.Close()
-		}
-	}
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Nil(t, stream)
 }

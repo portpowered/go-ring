@@ -39,6 +39,7 @@ type Client struct {
 	sessionRegistered    bool
 	closed               bool
 	signalingConnections map[*SignalingConnection]struct{}
+	legacyStreams        map[*RTCStream]struct{}
 }
 
 // Option is a function that configures a Client
@@ -299,7 +300,14 @@ func (c *Client) Close() error {
 	for conn := range c.signalingConnections {
 		connections = append(connections, conn)
 	}
+	streams := make([]*RTCStream, 0, len(c.legacyStreams))
+	for stream := range c.legacyStreams {
+		streams = append(streams, stream)
+	}
 	c.mu.Unlock()
+	for _, stream := range streams {
+		_ = stream.Close()
+	}
 	for _, conn := range connections {
 		_ = conn.Close()
 	}

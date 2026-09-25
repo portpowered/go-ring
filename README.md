@@ -139,8 +139,8 @@ not a claim that the current checkout meets it. Live tests are opt-in via
 
 Intentional API changes are allowed during this improvement work. Existing
 `StartRTCStream`/`StopRTCStream` remain legacy APIs; prefer the new session model
-for new signaling work once its required behavior is verified. A release must
-publish migration guidance for any removed or changed API.
+for new signaling work once its required behavior is verified. See [migration guidance](docs/migration.md) for changed lifecycle, retry, and
+error behavior.
 
 Go implementation: Apache-2.0, see [LICENSE](LICENSE). The separately vendored
 Python reference retains its own LGPL-3.0-or-later license. Its source and tests
