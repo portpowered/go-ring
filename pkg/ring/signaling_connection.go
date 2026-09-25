@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -193,6 +194,16 @@ func (c *SignalingConnection) writeFrame(ctx context.Context, m signaling.Messag
 	}
 	_ = c.conn.SetWriteDeadline(time.Time{})
 	_ = netConn.SetWriteDeadline(time.Time{})
+	if err != nil {
+		if cause := ctx.Err(); cause != nil {
+			return cause
+		}
+		// The socket deadline may fire before the context timer is scheduled.
+		var timeout net.Error
+		if d, ok := ctx.Deadline(); ok && !time.Now().Before(d) && errors.As(err, &timeout) && timeout.Timeout() {
+			return context.DeadlineExceeded
+		}
+	}
 	return err
 }
 
