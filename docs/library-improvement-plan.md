@@ -213,7 +213,7 @@ Each operation/schema carries `x-evidence` links, implementation status, and san
 
 ### AsyncAPI and RPC
 
-Create `api/asyncapi.yaml` with a pinned AsyncAPI 3.x version, describing go-ring's send/receive perspective, actual WebSocket handshake, authentication ticket acquisition reference, message direction, correlation and session identifiers, error/close messages, and JSON schemas. Keep session-state transitions in `docs/protocols/rtc.md` alongside the machine-readable schema.
+Create `api/asyncapi.yaml` with a pinned AsyncAPI 3.x version, describing go-ring's send/receive perspective, actual WebSocket handshake, authentication ticket acquisition reference, message direction, correlation and session identifiers, error/close messages, and JSON schemas. Keep session-state transitions in `docs/session-design.md` alongside the machine-readable schema.
 
 The signaling envelope contains `method`, `dialog_id`, and `body`, with `riid` present in captured messages; the outer envelope is not JSON-RPC 2.0. Its `rpc` body embeds an actual JSON-RPC 2.0 command. Define separate reusable schemas for outer routing, PTZ requests, result replies, errors (synthetic until observed), and unsolicited Halted messages. Include all four captured PTZ request methods, their result correlation, and Pan.Halted, plus live_view, playback, session_created, sdp, ice, activate_session, notification, camera_options, camera_started, mic_enable, stream_options, ping, pong and close. Model push subscribe/ack, heartbeat, events and unsubscribe separately. Distinguish application ping/pong from WebSocket control frames; do not infer request/reply pairs for every message.
 
@@ -322,20 +322,21 @@ The release placeholder must be replaced before publication. Keep the working li
 
 | Document | Required content |
 |---|---|
-| `docs/architecture.md` | Layer boundaries, request path, configuration vs session state, ownership, concurrency, public compatibility |
-| `docs/protocols/overview.md` | Authentication/session setup, HTTP vs RTC vs push, endpoint versions/hosts, known unknowns |
-| `docs/auth.md` | Token precedence, stable hardware identity, 2FA errors, explicit refresh, token storage ownership, no credential logging |
-| `docs/rtcstream.md` and `docs/protocols/rtc.md` | Caller SDP/ICE responsibilities, state diagram, sequencing, deadlines, heartbeat, close/error semantics, media ownership |
-| `docs/errors.md` | Error taxonomy, errors.Is/As examples, permissions vs unsupported operations, ambiguous mutation outcome |
-| `docs/networking.md` | Injected HTTP/WS clients, deadlines, proxy/TLS behavior, redirect credentials, opt-in retry and Retry-After examples |
-| `docs/support.md` | Generated device/feature/evidence matrix, regional/account restrictions or explicitly unknown values |
-| `docs/testing.md` | Offline commands, scenario format, Python mapping, coverage denominator, deterministic clocks, live-test policy |
-| `docs/evidence/README.md` | Source registry, provenance chain, C1 observations vs hypotheses, conflicts and recapture checklist |
-| `docs/reverse-engineering.md` | Local capture workflow, normalization/redaction, reproducible extraction, source licenses and contribution review |
-| `docs/migration.md` | Existing-to-new APIs, settings maps, model aliases, no-op stop fix, session ownership and deprecations |
-| `AGENTS.md` | Brief architecture/Go conventions, README intent, evidence requirements, offline test and generation commands |
+| Topic in the original outline | Current documentation and coverage |
+|---|---|
+| Architecture and protocol overview (`docs/architecture.md`, `docs/protocols/overview.md`) | [Architecture](architecture.md), [HTTP protocol](protocols/http.md), [parity matrix](parity-matrix.md), and [session design](session-design.md) cover ownership, API families, hosts/versions, and known unknowns. These consolidated documents are the maintained equivalents; no separate overview is needed. |
+| Authentication (`docs/auth.md`) | [Authentication](auth.md) documents token precedence, hardware identity, 2FA, explicit refresh, storage ownership, and credential safety. |
+| RTC/session design (`docs/rtcstream.md`, `docs/protocols/rtc.md`) | [Session design](session-design.md) is the current connection/session contract; [legacy RTC streaming](rtcstream.md) describes the older API. AsyncAPI holds wire schemas. A separate `protocols/rtc.md` would duplicate the session design. |
+| Errors (`docs/errors.md`) | [HTTP error boundaries](protocols/http.md#error-boundaries), [migration behavior](migration.md), and the README's request-handling guidance cover typed errors, refresh, permission failures, and uncertain mutations. |
+| Networking (`docs/networking.md`) | [Configuration ownership](constants-and-configuration.md), [HTTP contracts](protocols/http.md), [HTTP test progress](http-test-progress.md), and [migration behavior](migration.md) cover injected clients/endpoints, response handling, bounded retries, contexts, and redirect limitations. Proxy/TLS behavior follows the injected Go clients; no separate retry-after feature is claimed. |
+| Support (`docs/support.md`) | The reviewed [parity matrix](parity-matrix.md), [porting progress](porting-progress.md), and README evidence table list supported behavior and explicit unknowns; they are not generated device-certification claims. |
+| Testing (`docs/testing.md`) | [Replay format](replay-format.md), the [reverse-engineering process](internal/process-of-reverse-engineering.md), this plan's coverage denominator, and `tools/verify_reference.py` describe offline checks, Python mapping, deterministic seams, and opt-in live tests. |
+| Evidence (`docs/evidence/README.md`) | [Recording notes](../test/recordings/README.md), [legacy fixture notes](../test/fixtures/README.md), and the [parity matrix](parity-matrix.md) describe capture scope, source distinctions, synthetic fixtures, and known conflicts. No separate evidence registry is maintained. |
+| Reverse engineering (`docs/reverse-engineering.md`) | The [reverse-engineering process](internal/process-of-reverse-engineering.md), [recording notes](../test/recordings/README.md), and `tools/capture/extract.py` describe local extraction and sanitization. `CONTRIBUTING.md` covers source attribution and review. |
+| Migration (`docs/migration.md`) | [Migration guidance](migration.md) covers current lifecycle and behavior changes; feature-specific settings and identity details remain in their API docs. |
+| Repository instructions (`AGENTS.md`) | No project-root AGENTS.md is maintained. [README](../README.md), [contributing guide](../CONTRIBUTING.md), and the [reverse-engineering process](internal/process-of-reverse-engineering.md) provide user intent, Go contribution practice, evidence rules, and verification commands. |
 
-Required handling guidance: a timed-out mutation may already have succeeded; reconcile state before retrying. Read retries must be bounded and honor context. A 401 may require caller-driven token refresh, but must not cause an infinite login loop. A 403 does not imply a missing device. Do not automatically fall back between endpoint generations for arbitrary errors. An event disconnect may lose events unless recovery semantics are verified. Unknown device capabilities must remain unknown rather than being silently reported as false.
+Required handling guidance: a timed-out mutation may already have succeeded; reconcile current state before deciding to retry. Automatic retries are limited to GET/HEAD, at most three attempts, and stop when the request context is canceled; they do not honor `Retry-After`. A 401 may call for one caller-driven `RefreshToken` and token persistence, but the client does not run an automatic login loop. A 403 is an authorization/permission failure, not evidence that the device is missing. Do not automatically fall back between endpoint generations for arbitrary errors. Experimental event disconnection can lose events because recovery semantics are not verified. Unknown device capabilities remain unknown rather than being silently reported as false.
 
 ## 9. Sequenced implementation tasks
 

@@ -108,8 +108,19 @@ in `pkg/ring/endpoints.go`; see [ownership and configuration](docs/constants-and
 Pass bounded contexts to HTTP operations. Check returned errors before using
 results, and handle session termination through `Wait` or `Receive`. A lost
 connection ends its device sessions; create a new connection explicitly.
-Mutating PTZ requests are not automatically retried, because a lost reply does
-not prove a command was not executed.
+Mutating requests are not automatically retried, because a lost reply does not
+prove the operation was not executed. Reconcile device state before deciding
+whether to retry a timed-out mutation. Automatic HTTP retries are limited to
+GET and HEAD, at most three attempts, and are bounded by the request context.
+
+The client does not automatically refresh credentials or repeat an API request
+after a 401. A caller may use `RefreshToken`, persist the rotated token response,
+and then retry according to its own policy. A 403 indicates an authorization or
+permission failure; it does not mean a device is missing. Do not switch to a
+different endpoint generation just because an operation returned an error.
+The experimental event connection may lose events across a disconnect because
+recovery semantics are not verified. Unknown device capabilities should remain
+unknown, not be treated as unsupported.
 
 ## Protocols and development
 
