@@ -35,6 +35,14 @@ func (s *DeviceSession) Close() error
 func (c *SignalingConnection) Close() error
 ```
 
+Pan commands use `PanDirection` (`PanLeft`, `PanRight`) and tilt commands use
+`TiltDirection` (`TiltUp`, `TiltDown`). Existing untyped string literals such
+as `Direction: "LEFT"` remain assignable, while named string variables should
+use the matching direction type. `PTZResult` exposes `SessionID`, `Timestamp`,
+and `Version` from the captured acknowledgement and retains the full result in
+`Raw` for forward-compatible fields. Remote command failures are `*RPCError`
+values and can be inspected with `errors.As`.
+
 StartDeviceSessionRequest contains device ID, a typed SDP offer, media options, ICE mode and optional shorter maximum duration. It does not require callers to manufacture session IDs, RPC IDs, timestamps or heartbeat messages. An open/start context governs the returned object's lifetime. Command/Receive/Wait contexts govern only the individual wait or command. Document this distinction in examples: don't pass a short-lived HTTP request context when intending to retain the session.
 
 StartDeviceSession sends the offer, obtains a validated answer and signaling ID, and completes the defined signaling activation prerequisites. It returns a handle ready for signaling/control; it does not assert that media is flowing. The caller applies Answer to its peer. Candidate events are buffered until consumed. Trickle candidates produced during start are buffered by the example/adapter and flushed through SendICE after the handle is returned; test this against a scripted peer rather than assuming arbitrary timing works.
@@ -135,5 +143,8 @@ ICE configuration; no captured TURN credentials are reused.
 The example applies the negotiated answer before consuming remote ICE events
 and separately closes the peer, child session, connection, and client. Its Go
 tests generate both offer profiles using real local Pion objects with no Ring
-credentials or vendor traffic. Trickle wire behavior has scripted session
-tests; a complete local candidate-buffering example remains outstanding.
+credentials or vendor traffic. Use `-trickle` to queue local candidates while the session starts, then flush
+them through SendICE after activation. The queue is bounded and cancels the
+example on overflow; candidate identity is preserved and no speculative
+end-of-candidates message is sent. Local Pion tests verify the buffered
+candidates reference the generated offer; scripted peers test wire delivery.

@@ -16,7 +16,7 @@ func TestOfferProfilesUseLocalPeerDescriptions(t *testing.T) {
 			t.Fatal(err)
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		offer, err := makeOffer(ctx, pc, audio)
+		offer, err := makeOffer(ctx, pc, audio, false)
 		cancel()
 		if err != nil {
 			pc.Close()
@@ -45,5 +45,53 @@ func TestOfferProfilesUseLocalPeerDescriptions(t *testing.T) {
 			t.Fatal("offer is not gathered local description")
 		}
 		pc.Close()
+	}
+}
+
+func TestTrickleProfileBuffersPeerCandidatesWithMIDAndIndex(t *testing.T) {
+	var settings webrtc.SettingEngine
+	settings.SetIncludeLoopbackCandidate(true)
+	var media webrtc.MediaEngine
+	if err := media.RegisterDefaultCodecs(); err != nil {
+		t.Fatal(err)
+	}
+	pc, err := webrtc.NewAPI(webrtc.WithSettingEngine(settings), webrtc.WithMediaEngine(&media)).NewPeerConnection(webrtc.Configuration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pc.Close()
+	candidates := make(chan webrtc.ICECandidateInit, 128)
+	pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
+		if candidate != nil {
+			candidates <- candidate.ToJSON()
+		}
+	})
+	gathered := webrtc.GatheringCompletePromise(pc)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	offer, err := makeOffer(ctx, pc, false, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := signaling.ParseSDP(offer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-gathered:
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	if len(candidates) == 0 {
+		t.Fatal("no buffered local candidates")
+	}
+	for len(candidates) > 0 {
+		candidate := <-candidates
+		if candidate.SDPMid == nil || candidate.SDPMLineIndex == nil {
+			t.Fatal("missing candidate identity")
+		}
+		if err = signaling.ValidateICE(parsed, *candidate.SDPMid, int(*candidate.SDPMLineIndex)); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

@@ -24,6 +24,7 @@ func main() {
 }
 func run() error {
 	audio := flag.Bool("audio", false, "negotiate an audio transceiver as well as receive-only video")
+	trickle := flag.Bool("trickle", false, "queue local ICE candidates during startup and send them after activation")
 	flag.Parse()
 	token, device := os.Getenv("RING_ACCESS_TOKEN"), os.Getenv("RING_DEVICE_ID")
 	if token == "" || device == "" {
@@ -35,13 +36,29 @@ func run() error {
 			return errors.New("invalid RING_ICE_SERVERS_JSON")
 		}
 	}
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	signalCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+	ctx, fail := context.WithCancelCause(signalCtx)
+	defer fail(nil)
 	pc, err := webrtc.NewPeerConnection(config)
 	if err != nil {
 		return err
 	}
 	defer pc.Close()
+	localCandidates := make(chan webrtc.ICECandidateInit, 128)
+	if *trickle {
+		pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
+			if candidate == nil {
+				return
+			} // No unverified end-of-candidates wire message.
+			select {
+			case localCandidates <- candidate.ToJSON():
+			case <-ctx.Done():
+			default:
+				fail(errors.New("local ICE candidate queue full"))
+			}
+		})
+	}
 	// Consuming packets keeps this example independent of a renderer. Applications
 	// attach their own renderer/decoder and microphone track to the peer.
 	pc.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
@@ -52,7 +69,7 @@ func run() error {
 		}
 	})
 	offerCtx, offerCancel := context.WithTimeout(ctx, 15*time.Second)
-	offer, err := makeOffer(offerCtx, pc, *audio)
+	offer, err := makeOffer(offerCtx, pc, *audio, *trickle)
 	offerCancel()
 	if err != nil {
 		return err
@@ -67,7 +84,11 @@ func run() error {
 		return err
 	}
 	defer conn.Close()
-	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: device, Offer: ring.SessionDescription{Type: "offer", SDP: offer}, AudioEnabled: *audio, VideoEnabled: true, ICEMode: ring.ICENonTrickle})
+	mode := ring.ICENonTrickle
+	if *trickle {
+		mode = ring.ICETrickle
+	}
+	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: device, Offer: ring.SessionDescription{Type: "offer", SDP: offer}, AudioEnabled: *audio, VideoEnabled: true, ICEMode: mode})
 	if err != nil {
 		return err
 	}
@@ -75,11 +96,40 @@ func run() error {
 	if err = pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: session.Answer().SDP}); err != nil {
 		return err
 	}
+	if *trickle {
+		senderDone := make(chan struct{})
+		go func() {
+			defer close(senderDone)
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case candidate := <-localCandidates:
+					if candidate.SDPMid == nil || candidate.SDPMLineIndex == nil {
+						fail(errors.New("local candidate lacks MID or index"))
+						return
+					}
+					err := session.SendICE(ctx, ring.ICECandidateRequest{Candidate: candidate.Candidate, MID: *candidate.SDPMid, MLineIndex: int(*candidate.SDPMLineIndex)})
+					if err != nil {
+						fail(err)
+						return
+					}
+				}
+			}
+		}()
+		defer func() { fail(nil); <-senderDone }()
+	}
 	fmt.Println("Signaling session active; Ctrl+C closes the session and local peer.")
 	for {
 		event, err := session.Receive(ctx)
 		if err != nil {
-			if ctx.Err() != nil || errors.Is(err, ring.ErrSessionClosed) {
+			if ctx.Err() != nil {
+				if cause := context.Cause(ctx); !errors.Is(cause, context.Canceled) {
+					return cause
+				}
+				return nil
+			}
+			if errors.Is(err, ring.ErrSessionClosed) {
 				return nil
 			}
 			return err
@@ -100,7 +150,7 @@ func run() error {
 	}
 }
 
-func makeOffer(ctx context.Context, pc *webrtc.PeerConnection, audio bool) (string, error) {
+func makeOffer(ctx context.Context, pc *webrtc.PeerConnection, audio, trickle bool) (string, error) {
 	if audio {
 		if _, err := pc.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio, webrtc.RtpTransceiverInit{Direction: webrtc.RTPTransceiverDirectionSendrecv}); err != nil {
 			return "", err
@@ -113,9 +163,15 @@ func makeOffer(ctx context.Context, pc *webrtc.PeerConnection, audio bool) (stri
 	if err != nil {
 		return "", err
 	}
-	gathered := webrtc.GatheringCompletePromise(pc)
+	var gathered <-chan struct{}
+	if !trickle {
+		gathered = webrtc.GatheringCompletePromise(pc)
+	}
 	if err = pc.SetLocalDescription(offer); err != nil {
 		return "", err
+	}
+	if trickle {
+		return pc.LocalDescription().SDP, nil
 	}
 	select {
 	case <-gathered:

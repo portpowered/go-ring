@@ -83,3 +83,28 @@ func FuzzParseSDP(f *testing.F) {
 	f.Add("not-sdp")
 	f.Fuzz(func(t *testing.T, raw string) { _, _ = ParseSDP(raw) })
 }
+
+func TestAnswerDirectionMatrix(t *testing.T) {
+	header := strings.Replace(sessionHeader, "BUNDLE a b", "BUNDLE a", 1)
+	for _, offerDirection := range []string{"sendrecv", "sendonly", "recvonly", "inactive"} {
+		for _, answerDirection := range []string{"sendrecv", "sendonly", "recvonly", "inactive"} {
+			t.Run(offerDirection+"/"+answerDirection, func(t *testing.T) {
+				allowed := offerDirection == "sendrecv" || answerDirection == "inactive" || offerDirection == "sendonly" && answerDirection == "recvonly" || offerDirection == "recvonly" && (answerDirection == "sendonly" || answerDirection == "sendrecv")
+				_, err := NormalizeAnswer(header+audio("a", offerDirection), header+audio("a", answerDirection))
+				if (err == nil) != allowed {
+					t.Fatalf("allowed=%v error=%v", allowed, err)
+				}
+			})
+		}
+	}
+	rejected := strings.Replace(header+audio("a", "sendrecv"), "m=audio 9", "m=audio 0", 1)
+	if _, err := NormalizeAnswer(rejected, header+audio("a", "sendrecv")); err == nil {
+		t.Fatal("answer reactivated a rejected stream")
+	}
+	if _, err := NormalizeAnswer(rejected, rejected); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ParseSDP(header + "a=sendonly\r\na=recvonly\r\n" + audio("a", "sendrecv")); err == nil {
+		t.Fatal("accepted conflicting session directions")
+	}
+}

@@ -11,7 +11,7 @@ import (
 // ParseSDP validates the media identities used to route trickled ICE. It does not
 // certify codec interoperability or replace a peer connection's SDP validation.
 func ParseSDP(raw string) (*sdp.SessionDescription, error) {
-	if len(raw) > 1<<20 {
+	if len(raw) > MaxMessageBytes {
 		return nil, fmt.Errorf("SDP exceeds size limit")
 	}
 	var description sdp.SessionDescription
@@ -25,6 +25,16 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 	}
 	if len(description.MediaDescriptions) == 0 {
 		return nil, fmt.Errorf("SDP has no media sections")
+	}
+	sessionDirections := 0
+	for _, attribute := range description.Attributes {
+		switch attribute.Key {
+		case "sendrecv", "sendonly", "recvonly", "inactive":
+			sessionDirections++
+		}
+	}
+	if sessionDirections > 1 {
+		return nil, fmt.Errorf("SDP has conflicting session directions")
 	}
 	mids := make(map[string]bool)
 	for _, media := range description.MediaDescriptions {
@@ -100,6 +110,9 @@ func NormalizeAnswer(offer, answer string) (string, error) {
 		if media.MediaName.Port.Value == 0 {
 			continue
 		}
+		if original.MediaName.Port.Value == 0 {
+			return "", fmt.Errorf("SDP answer reactivates a rejected offer section")
+		}
 		if direction(o, original) == "recvonly" && direction(a, media) == "sendrecv" {
 			found := false
 			for j := range media.Attributes {
@@ -113,7 +126,12 @@ func NormalizeAnswer(offer, answer string) (string, error) {
 			}
 			changed = true
 		}
-		if direction(o, original) == "recvonly" && direction(a, media) == "recvonly" {
+		// RFC 3264 section 6.1, after the capture-backed recvonly workaround.
+		offerDirection, answerDirection := direction(o, original), direction(a, media)
+		invalid := offerDirection == "recvonly" && answerDirection != "sendonly" && answerDirection != "inactive"
+		invalid = invalid || offerDirection == "sendonly" && answerDirection != "recvonly" && answerDirection != "inactive"
+		invalid = invalid || offerDirection == "inactive" && answerDirection != "inactive"
+		if invalid {
 			return "", fmt.Errorf("SDP answer direction incompatible with offer")
 		}
 	}
