@@ -3,6 +3,7 @@ package system_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -108,7 +109,30 @@ func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
 			fail(e)
 			return
 		}
-		for i, expected := range []string{"PTZ.Pan.Step", "PTZ.Pan.Step", "PTZ.Pan.Continuous"} {
+		ice, e := read()
+		iceBody, _ := ice["body"].(map[string]any)
+		if e != nil || ice["method"] != "ice" || iceBody["mid"] != "0" || iceBody["mlineindex"] != float64(0) {
+			fail(fmt.Errorf("expected valid trickle ICE: %v", e))
+			return
+		}
+		for i, expected := range []string{"mic_enable", "stream_options"} {
+			m, e := read()
+			if e != nil || m["method"] != expected {
+				fail(fmt.Errorf("expected caller %s control: %v", expected, e))
+				return
+			}
+			b, _ := m["body"].(map[string]any)
+			if i == 0 && b["enabled"] != false {
+				fail(fmt.Errorf("microphone value was not forwarded: %v", b))
+				return
+			}
+			if i == 1 && (b["audio_enabled"] != false || b["video_enabled"] != true) {
+				fail(fmt.Errorf("stream options were not forwarded: %v", b))
+				return
+			}
+		}
+		rpcMethods := []string{"PTZ.Pan.Step", "PTZ.Pan.Step", "PTZ.Pan.Continuous", "PTZ.Tilt.Step", "PTZ.Tilt.Continuous", "PTZ.Pan.Continuous", "PTZ.Pan.Step", "PTZ.Tilt.Step"}
+		for i, expected := range rpcMethods {
 			msg, e := read()
 			if e != nil {
 				fail(e)
@@ -134,29 +158,42 @@ func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
 				return
 			}
 			if expected == "PTZ.Pan.Continuous" && params["speed"] != float64(0.5) {
-				fail(fmt.Errorf("expected continuous speed, got %v", params["speed"]))
+				if i != 5 || params["speed"] != float64(0) {
+					fail(fmt.Errorf("unexpected pan speed, got %v", params["speed"]))
+					return
+				}
+			}
+			if expected == "PTZ.Tilt.Continuous" && params["speed"] != float64(0.25) {
+				fail(fmt.Errorf("expected tilt speed, got %v", params["speed"]))
 				return
 			}
-			if e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": cmd["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": int64(1700000000001 + i), "version": 1}}}}); e != nil {
+			if i == len(rpcMethods)-2 {
+				e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": cmd["id"], "error": map[string]any{"code": 422, "message": "denied"}}}})
+			} else if i < len(rpcMethods)-1 {
+				e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": cmd["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": int64(1700000000001 + i), "version": 1}}}})
+			}
+			if e != nil {
 				fail(e)
 				return
 			}
 		}
-		stop, e := read()
-		if e != nil {
-			fail(e)
-			return
-		}
-		stopBody, _ := stop["body"].(map[string]any)
-		stopCommand, _ := stopBody["command"].(map[string]any)
-		stopParams, _ := stopCommand["params"].(map[string]any)
-		if stopCommand["method"] != "PTZ.Pan.Continuous" || stopParams["speed"] != float64(0) {
-			fail(fmt.Errorf("close did not stop tracked movement: %v", stopCommand))
-			return
-		}
-		if e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": stopCommand["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": int64(1700000000010), "version": 1}}}}); e != nil {
-			fail(e)
-			return
+		for range 1 {
+			stop, e := read()
+			if e != nil {
+				fail(e)
+				return
+			}
+			stopBody, _ := stop["body"].(map[string]any)
+			stopCommand, _ := stopBody["command"].(map[string]any)
+			stopParams, _ := stopCommand["params"].(map[string]any)
+			if (stopCommand["method"] != "PTZ.Pan.Continuous" && stopCommand["method"] != "PTZ.Tilt.Continuous") || stopParams["speed"] != float64(0) {
+				fail(fmt.Errorf("close did not stop tracked movement: %v", stopCommand))
+				return
+			}
+			if e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": stopCommand["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": 1700000000010, "version": 1}}}}); e != nil {
+				fail(e)
+				return
+			}
 		}
 		closeMsg, e := read()
 		if e != nil {
@@ -195,21 +232,74 @@ func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
 			t.Fatalf("accepted candidate with mismatched media identity: %+v", candidate)
 		}
 	}
-	for _, call := range []func(context.Context) (*ring.PTZResult, error){func(c context.Context) (*ring.PTZResult, error) {
-		return session.PanStep(c, ring.PanStepRequest{Direction: "RIGHT"})
-	}, func(c context.Context) (*ring.PTZResult, error) {
-		return session.PanStep(c, ring.PanStepRequest{Direction: "LEFT"})
-	}, func(c context.Context) (*ring.PTZResult, error) {
-		return session.PanContinuous(c, ring.PanContinuousRequest{Direction: "RIGHT", Speed: 0.5})
-	}} {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		result, e := call(ctx)
+	if err = session.SendICE(context.Background(), ring.ICECandidateRequest{Candidate: "candidate:1 1 UDP 1 127.0.0.1 9 typ host", MID: "0", MLineIndex: 0}); err != nil {
+		t.Fatal(err)
+	}
+	if err = session.SetMicrophone(context.Background(), ring.SetMicrophoneRequest{Enabled: false}); err != nil {
+		t.Fatal(err)
+	}
+	audio, video := false, true
+	if err = session.SetStreamOptions(context.Background(), ring.SetStreamOptionsRequest{AudioEnabled: &audio, VideoEnabled: &video}); err != nil {
+		t.Fatal(err)
+	}
+	calls := []struct {
+		run     func(context.Context) (*ring.PTZResult, error)
+		outcome int
+	}{
+		{func(c context.Context) (*ring.PTZResult, error) {
+			return session.PanStep(c, ring.PanStepRequest{Direction: "RIGHT"})
+		}, 0},
+		{func(c context.Context) (*ring.PTZResult, error) {
+			return session.PanStep(c, ring.PanStepRequest{Direction: "LEFT"})
+		}, 0},
+		{func(c context.Context) (*ring.PTZResult, error) {
+			return session.PanContinuous(c, ring.PanContinuousRequest{Direction: "RIGHT", Speed: 0.5})
+		}, 0},
+		{func(c context.Context) (*ring.PTZResult, error) {
+			return session.TiltStep(c, ring.TiltStepRequest{Direction: "DOWN"})
+		}, 0},
+		{func(c context.Context) (*ring.PTZResult, error) {
+			return session.TiltContinuous(c, ring.TiltContinuousRequest{Direction: "UP", Speed: 0.25})
+		}, 0},
+		{func(c context.Context) (*ring.PTZResult, error) {
+			return session.StopPTZ(c, ring.StopPTZRequest{Axis: ring.PanAxis})
+		}, 0},
+		{func(c context.Context) (*ring.PTZResult, error) {
+			return session.PanStep(c, ring.PanStepRequest{Direction: "RIGHT"})
+		}, 1},
+		{func(c context.Context) (*ring.PTZResult, error) {
+			return session.TiltStep(c, ring.TiltStepRequest{Direction: "UP"})
+		}, 2},
+	}
+	for _, call := range calls {
+		duration := time.Second
+		if call.outcome == 2 {
+			duration = 20 * time.Millisecond
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), duration)
+		result, e := call.run(ctx)
 		cancel()
+		if call.outcome == 1 {
+			var rpcErr *ring.RPCError
+			if !errors.As(e, &rpcErr) || rpcErr.Code != 422 {
+				t.Fatalf("RPC error = %v", e)
+			}
+			continue
+		}
+		if call.outcome == 2 {
+			if !errors.Is(e, context.DeadlineExceeded) {
+				t.Fatalf("canceled PTZ error = %v", e)
+			}
+			continue
+		}
 		if e != nil {
 			t.Fatal(e)
 		}
 		if len(result.Raw) == 0 {
 			t.Fatal("empty PTZ result")
+		}
+		if result.SessionID != "control-1" || result.Timestamp == 0 || result.Version != 1 {
+			t.Fatalf("typed acknowledgement not populated: %+v", result)
 		}
 	}
 	if err = conn.Close(); err != nil {
@@ -364,9 +454,12 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	second, e := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1002", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}, VideoEnabled: true})
+	second, e := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1002", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}, VideoEnabled: true, ICEMode: ring.ICENonTrickle})
 	if e != nil {
 		t.Fatal(e)
+	}
+	if e = second.SendICE(context.Background(), ring.ICECandidateRequest{Candidate: "candidate:2 1 UDP 1 127.0.0.1 9 typ host", MID: "0", MLineIndex: 0}); e == nil {
+		t.Fatal("non-trickle session accepted a candidate send")
 	}
 	type result struct {
 		value *ring.PTZResult

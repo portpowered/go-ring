@@ -64,7 +64,7 @@ func TestOversizedTicketResponseIsRejected(t *testing.T) {
 }
 
 func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
-	for _, mode := range []string{"negotiation_cancel", "rpc_remote_close", "session_expiry", "heartbeat_timeout", "event_backpressure"} {
+	for _, mode := range []string{"negotiation_cancel", "rpc_remote_close", "session_expiry", "heartbeat_timeout", "event_backpressure", "malformed_rpc_envelope", "malformed_close"} {
 		t.Run(mode, func(t *testing.T) {
 			tickets := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{"ticket":"x"}`)) }))
 			defer tickets.Close()
@@ -114,6 +114,16 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 					}
 				}
 				_ = write(map[string]any{"method": "camera_started", "dialog_id": first.Dialog, "riid": "r", "body": map[string]any{"doorbot_id": 1001, "session_id": "s"}})
+				if mode == "malformed_rpc_envelope" {
+					_, _, _ = c.ReadMessage() // Wait until StartDeviceSession has returned.
+					_ = write(map[string]any{"method": "rpc", "dialog_id": first.Dialog, "riid": "r", "body": map[string]any{"doorbot_id": 1001, "session_id": "s", "command": "broken"}})
+					return
+				}
+				if mode == "malformed_close" {
+					_, _, _ = c.ReadMessage() // Wait until StartDeviceSession has returned.
+					_ = write(map[string]any{"method": "close", "dialog_id": first.Dialog, "riid": "r", "body": "malformed"})
+					return
+				}
 				if mode == "heartbeat_timeout" {
 					pings := 0
 					for i := 0; i < 4; i++ {
@@ -138,6 +148,7 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 					return
 				}
 				if mode == "event_backpressure" {
+					_, _, _ = c.ReadMessage() // Wait until StartDeviceSession has returned.
 					for i := 0; i < 40; i++ {
 						if write(map[string]any{"method": "motion_event", "dialog_id": first.Dialog, "riid": "r", "body": map[string]any{"doorbot_id": 1001, "session_id": "s", "sequence": i}}) != nil {
 							return
@@ -189,7 +200,7 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 				return
 			}
 			request := ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}}
-			if mode == "session_expiry" || mode == "heartbeat_timeout" || mode == "event_backpressure" {
+			if mode == "session_expiry" || mode == "heartbeat_timeout" || mode == "event_backpressure" || mode == "malformed_rpc_envelope" || mode == "malformed_close" {
 				if mode == "session_expiry" {
 					request.MaxAge = 25 * time.Millisecond
 				}
@@ -197,6 +208,11 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 			session, err := conn.StartDeviceSession(context.Background(), request)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if mode == "event_backpressure" {
+				if err = session.SetMicrophone(context.Background(), ring.SetMicrophoneRequest{Enabled: true}); err != nil {
+					t.Fatal(err)
+				}
 			}
 			if mode == "session_expiry" || mode == "heartbeat_timeout" || mode == "event_backpressure" {
 				waitLimit := time.Second
@@ -216,6 +232,18 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 				cancel()
 				if !errors.Is(err, want) || session.State() != state {
 					t.Fatalf("expired session state=%s err=%v", session.State(), err)
+				}
+				return
+			}
+			if mode == "malformed_rpc_envelope" || mode == "malformed_close" {
+				if err = session.SetMicrophone(context.Background(), ring.SetMicrophoneRequest{Enabled: true}); err != nil {
+					t.Fatal(err)
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				err = session.Wait(ctx)
+				cancel()
+				if err == nil {
+					t.Fatal("malformed remote message did not terminate session")
 				}
 				return
 			}

@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
 )
 
@@ -55,14 +55,24 @@ type ICECandidateRequest struct {
 	MID        string
 	MLineIndex int
 }
-type PanStepRequest struct{ Direction string }
-type TiltStepRequest struct{ Direction string }
+type PanDirection string
+type TiltDirection string
+
+const (
+	PanLeft  PanDirection  = protocol.PanLeft
+	PanRight PanDirection  = protocol.PanRight
+	TiltUp   TiltDirection = protocol.TiltUp
+	TiltDown TiltDirection = protocol.TiltDown
+)
+
+type PanStepRequest struct{ Direction PanDirection }
+type TiltStepRequest struct{ Direction TiltDirection }
 type PanContinuousRequest struct {
-	Direction string
+	Direction PanDirection
 	Speed     float64
 }
 type TiltContinuousRequest struct {
-	Direction string
+	Direction TiltDirection
 	Speed     float64
 }
 type PTZAxis string
@@ -82,7 +92,17 @@ type SessionEvent struct {
 	Method string
 	Body   json.RawMessage
 }
-type PTZResult struct{ Raw json.RawMessage }
+
+// PTZResult exposes captured acknowledgement fields while Raw retains unknown extensions.
+type PTZResult struct {
+	SessionID string          `json:"sessionId"`
+	Timestamp float64         `json:"timestamp"`
+	Version   float64         `json:"version"`
+	Raw       json.RawMessage `json:"-"`
+}
+
+// RPCError describes a command rejection returned by the signaling service.
+type RPCError = signaling.RPCError
 
 type DeviceSession struct {
 	connection *SignalingConnection
@@ -411,31 +431,36 @@ func (s *DeviceSession) call(ctx context.Context, method string, params map[stri
 	if e != nil {
 		return nil, e
 	}
-	return &PTZResult{Raw: append(json.RawMessage(nil), b...)}, nil
+	var result PTZResult
+	if err := json.Unmarshal(b, &result); err != nil {
+		return nil, fmt.Errorf("decode PTZ result: %w", err)
+	}
+	result.Raw = append(json.RawMessage(nil), b...)
+	return &result, nil
 }
 func (s *DeviceSession) PanStep(ctx context.Context, r PanStepRequest) (*PTZResult, error) {
-	if r.Direction != "LEFT" && r.Direction != "RIGHT" {
+	if r.Direction != PanLeft && r.Direction != PanRight {
 		return nil, fmt.Errorf("invalid pan direction %q", r.Direction)
 	}
-	return s.call(ctx, "PTZ.Pan.Step", map[string]any{"direction": r.Direction})
+	return s.call(ctx, protocol.RPCPanStep, map[string]any{"direction": r.Direction})
 }
 func (s *DeviceSession) TiltStep(ctx context.Context, r TiltStepRequest) (*PTZResult, error) {
-	if r.Direction != "UP" && r.Direction != "DOWN" {
+	if r.Direction != TiltUp && r.Direction != TiltDown {
 		return nil, fmt.Errorf("invalid tilt direction %q", r.Direction)
 	}
-	return s.call(ctx, "PTZ.Tilt.Step", map[string]any{"direction": r.Direction})
+	return s.call(ctx, protocol.RPCTiltStep, map[string]any{"direction": r.Direction})
 }
 func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousRequest) (*PTZResult, error) {
-	if r.Direction != "LEFT" && r.Direction != "RIGHT" {
+	if r.Direction != PanLeft && r.Direction != PanRight {
 		return nil, fmt.Errorf("invalid pan direction %q", r.Direction)
 	}
 	if r.Speed < 0 || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
 		return nil, fmt.Errorf("invalid pan speed")
 	}
 	s.mu.Lock()
-	s.movement[PanAxis] = r.Direction
+	s.movement[PanAxis] = string(r.Direction)
 	s.mu.Unlock()
-	v, e := s.call(ctx, "PTZ.Pan.Continuous", map[string]any{"direction": r.Direction, "speed": r.Speed})
+	v, e := s.call(ctx, protocol.RPCPanContinuous, map[string]any{"direction": r.Direction, "speed": r.Speed})
 	if e != nil {
 		s.mu.Lock()
 		delete(s.movement, PanAxis)
@@ -444,16 +469,16 @@ func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousReques
 	return v, e
 }
 func (s *DeviceSession) TiltContinuous(ctx context.Context, r TiltContinuousRequest) (*PTZResult, error) {
-	if r.Direction != "UP" && r.Direction != "DOWN" {
+	if r.Direction != TiltUp && r.Direction != TiltDown {
 		return nil, fmt.Errorf("invalid tilt direction %q", r.Direction)
 	}
 	if r.Speed < 0 || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
 		return nil, fmt.Errorf("invalid tilt speed")
 	}
 	s.mu.Lock()
-	s.movement[TiltAxis] = r.Direction
+	s.movement[TiltAxis] = string(r.Direction)
 	s.mu.Unlock()
-	v, e := s.call(ctx, "PTZ.Tilt.Continuous", map[string]any{"direction": r.Direction, "speed": r.Speed})
+	v, e := s.call(ctx, protocol.RPCTiltContinuous, map[string]any{"direction": r.Direction, "speed": r.Speed})
 	if e != nil {
 		s.mu.Lock()
 		delete(s.movement, TiltAxis)
@@ -468,7 +493,10 @@ func (s *DeviceSession) StopPTZ(ctx context.Context, r StopPTZRequest) (*PTZResu
 	if direction == "" {
 		return nil, fmt.Errorf("no tracked continuous movement for axis %q", r.Axis)
 	}
-	method := "PTZ." + stringsTitle(string(r.Axis)) + ".Continuous"
+	method := protocol.RPCPanContinuous
+	if r.Axis == TiltAxis {
+		method = protocol.RPCTiltContinuous
+	}
 	result, e := s.call(ctx, method, map[string]any{"direction": direction, "speed": 0.0})
 	if e == nil {
 		s.mu.Lock()
@@ -476,12 +504,6 @@ func (s *DeviceSession) StopPTZ(ctx context.Context, r StopPTZRequest) (*PTZResu
 		s.mu.Unlock()
 	}
 	return result, e
-}
-func stringsTitle(v string) string {
-	if v == "" {
-		return v
-	}
-	return strings.ToUpper(v[:1]) + v[1:]
 }
 func (s *DeviceSession) SetMicrophone(ctx context.Context, r SetMicrophoneRequest) error {
 	return s.core.Send(ctx, "mic_enable", map[string]any{"enabled": r.Enabled})
@@ -520,7 +542,10 @@ func (s *DeviceSession) close(sendClose bool) error {
 		// Stop each tracked continuous move before closing the signaling session.
 		// Both RPC acknowledgements and the final close share one short best-effort budget.
 		for axis, direction := range movements {
-			method := "PTZ." + stringsTitle(string(axis)) + ".Continuous"
+			method := protocol.RPCPanContinuous
+			if axis == TiltAxis {
+				method = protocol.RPCTiltContinuous
+			}
 			_, _ = s.call(ctx, method, map[string]any{"direction": direction, "speed": 0.0})
 		}
 		_ = s.core.Send(ctx, "close", nil)
