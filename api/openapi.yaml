@@ -1,19 +1,310 @@
 openapi: 3.1.0
 info:
-  title: Ring captured HTTP surface
+  title: Ring HTTP SDK and captured surface
   version: 0.1.0
   description: >-
-    Narrow contract for HTTP operations represented by sanitized recordings or
-    explicitly documented existing client behavior. It does not claim complete
-    coverage of Ring's evolving API. Query parameters are optional unless a
-    capture or implementation establishes otherwise; one sample does not prove
-    server-side requiredness.
+    Contract for sanitized captures and existing Go SDK HTTP behavior. Each
+    operation identifies whether its source is a capture, Go implementation, or
+    pinned Python reference. It does not claim complete coverage of Ring's
+    evolving API. Query parameters are optional unless a capture or existing
+    implementation establishes otherwise.
 servers:
   - url: https://api.ring.com
     description: Captured Ring API origin
 security:
   - RingAccessToken: []
 paths:
+  /oauth/v2/authorize:
+    get:
+      operationId: beginOrContinueOAuthAuthorization
+      description: >-
+        Existing Go PKCE flow. The first request sends the authorization query
+        parameters; later requests reuse the cookie-backed session and may omit
+        them. Redirect state is checked by the client. This route is not present
+        in the C1 HTTP captures.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      x-contract-source: existing-go-and-pinned-python
+      x-evidence: [../pkg/dependencies/rest/auth.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
+      parameters:
+        - {name: redirect_uri, in: query, required: false, schema: {type: string, format: uri}}
+        - {name: client_id, in: query, required: false, schema: {type: string}}
+        - {name: response_type, in: query, required: false, schema: {type: string, enum: [code]}}
+        - {name: prompt, in: query, required: false, schema: {type: string}}
+        - {name: state, in: query, required: false, schema: {type: string}}
+        - {name: scope, in: query, required: false, schema: {type: string}}
+        - {name: code_challenge, in: query, required: false, schema: {type: string}}
+        - {name: code_challenge_method, in: query, required: false, schema: {type: string, enum: [S256]}}
+        - {name: device_model, in: query, required: false, schema: {type: string}}
+        - {name: app_version, in: query, required: false, schema: {type: string}}
+        - {name: dark_mode, in: query, required: false, schema: {type: string}}
+        - {name: device_brand, in: query, required: false, schema: {type: string}}
+        - {name: device_os_version, in: query, required: false, schema: {type: string}}
+        - {name: app_brand, in: query, required: false, schema: {type: string}}
+        - {name: hardware_id, in: query, required: false, schema: {type: string}}
+      responses:
+        '200':
+          description: Sign-in page
+          content:
+            text/html:
+              schema: {type: string}
+        '302': {$ref: '#/components/responses/OAuthRedirect'}
+        default: {$ref: '#/components/responses/AuthFailure'}
+  /oauth/v2/signin:
+    post:
+      operationId: submitOAuthCredentials
+      description: >-
+        Existing Go PKCE credential submission using the OAuth cookie jar and
+        CSRF token. Python auth is the behavioral reference. Credentials are
+        form data, never query parameters. No C1 capture establishes this flow.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      x-contract-source: existing-go-and-pinned-python
+      x-evidence: [../pkg/dependencies/rest/auth.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [username, password, csrf-token]
+              properties:
+                username: {type: string}
+                password: {type: string, format: password}
+                csrf-token: {type: string}
+      responses:
+        '200': {$ref: '#/components/responses/Json'}
+        '302': {$ref: '#/components/responses/OAuthRedirect'}
+        '412': {$ref: '#/components/responses/TwoFactorRequired'}
+        default: {$ref: '#/components/responses/AuthFailure'}
+  /oauth/v2/2fa/verify:
+    post:
+      operationId: verifyOAuthTwoFactorCode
+      description: Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      x-contract-source: existing-go-and-pinned-python
+      x-evidence: [../pkg/dependencies/rest/auth.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [2fa_code, csrf-token, remember_me]
+              properties:
+                2fa_code: {type: string}
+                csrf-token: {type: string}
+                remember_me: {type: string, enum: ['false']}
+      responses:
+        '200': {$ref: '#/components/responses/Json'}
+        '201': {$ref: '#/components/responses/Json'}
+        '400': {$ref: '#/components/responses/AuthFailure'}
+        '401': {$ref: '#/components/responses/AuthFailure'}
+        default: {$ref: '#/components/responses/AuthFailure'}
+  /oauth/token:
+    post:
+      operationId: exchangeOrRefreshOAuthToken
+      description: >-
+        Existing Go authorization-code PKCE exchange and explicit refresh;
+        legacy password grant remains a fallback only when the OAuth authorize
+        endpoint is unavailable. There is no captured OAuth token exchange.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      x-contract-source: existing-go-and-pinned-python
+      x-evidence: [../pkg/dependencies/rest/auth.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/OAuthTokenGrant'}
+      responses:
+        '200': {$ref: '#/components/responses/OAuthToken'}
+        '400': {$ref: '#/components/responses/AuthFailure'}
+        '401': {$ref: '#/components/responses/AuthFailure'}
+        '412': {$ref: '#/components/responses/TwoFactorRequired'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        default: {$ref: '#/components/responses/AuthFailure'}
+  /clients_api/session:
+    post:
+      operationId: registerClientSession
+      description: >-
+        Existing Go session-registration body, sent once before inventory or
+        signaling when a hardware ID is configured. Python exposes the same
+        session action. The shape below follows source code; no C1 capture was
+        identified.
+      x-contract-source: existing-go-and-pinned-python
+      x-evidence: [../pkg/dependencies/rest/devices.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ClientSessionRegistration'}
+      responses:
+        '200': {$ref: '#/components/responses/Json'}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/ring_devices/{device_id}/volume:
+    put:
+      operationId: setLegacyDeviceVolume
+      description: >-
+        Existing Go SDK route and JSON body. The pinned Python doorbell/chime
+        implementation instead PUTs to family-specific resource paths with
+        form-style settings parameters; this spec does not claim route parity.
+      x-contract-source: existing-go
+      x-evidence: [../pkg/dependencies/rest/control.go, ../pkg/ring/client_control.go]
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [volume]
+              properties: {volume: {type: integer, minimum: 0, maximum: 11}}
+      responses:
+        '2XX': {description: Successful update; the Go caller ignores any response body}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/ring_devices/{device_id}/lights:
+    put:
+      operationId: setLegacyDeviceLights
+      description: >-
+        Existing Go SDK body-based route. Python uses a PUT path suffix of
+        floodlight_light_on or floodlight_light_off with no JSON body.
+      x-contract-source: existing-go
+      x-evidence: [../pkg/dependencies/rest/control.go, ../reference/python-ring-doorbell/ring_doorbell/stickup_cam.py]
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [state]
+              properties:
+                state: {type: string, enum: [on, off]}
+                duration: {type: integer, minimum: 0}
+      responses:
+        '2XX': {description: Successful update; the Go caller ignores any response body}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/ring_devices/{device_id}/motion_detection:
+    put:
+      operationId: setLegacyMotionDetection
+      description: >-
+        Existing Go compatibility route with an enabled boolean. Python uses
+        PATCH /devices/v1/devices/{id}/settings with motion_settings instead;
+        that newer route is specified separately and is capture-backed.
+      x-contract-source: existing-go
+      x-evidence: [../pkg/dependencies/rest/control.go, ../reference/python-ring-doorbell/ring_doorbell/doorbot.py]
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties: {enabled: {type: boolean}}
+      responses:
+        '2XX': {description: Successful update; the Go caller ignores any response body}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/ring_devices/{device_id}/test_sound:
+    post:
+      operationId: testLegacyDeviceSound
+      description: >-
+        Existing Go route with JSON kind. Python uses POST
+        /clients_api/chimes/{id}/play_sound with kind as a query parameter.
+      x-contract-source: existing-go
+      x-evidence: [../pkg/dependencies/rest/control.go, ../reference/python-ring-doorbell/ring_doorbell/chime.py]
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind]
+              properties: {kind: {type: string, enum: [ding, motion]}}
+      responses:
+        '2XX': {description: Successful sound test; the Go caller ignores any response body}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/ring_devices/{device_id}/in_home_chime:
+    put:
+      operationId: setLegacyInHomeChime
+      description: >-
+        Existing Go method sends its caller-provided JSON object directly. The
+        Python implementation updates fields on PUT /clients_api/doorbots/{id};
+        those routes and payloads are not asserted equivalent.
+      x-contract-source: existing-go
+      x-evidence: [../pkg/dependencies/rest/control.go, ../reference/python-ring-doorbell/ring_doorbell/doorbot.py]
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      requestBody: {$ref: '#/components/requestBodies/ExtensibleObject'}
+      responses:
+        '2XX': {description: Successful update; the Go caller ignores any response body}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/ring_devices/{device_id}/health:
+    get:
+      operationId: getLegacyDeviceHealth
+      description: >-
+        Existing Go GetDeviceHealth route. Python uses family-specific doorbot
+        and chime health routes. The captured HTTP set has no matching health
+        response; SDK tests use local fixtures only.
+      x-contract-source: existing-go
+      x-evidence: [../pkg/dependencies/rest/devices.go, ../reference/python-ring-doorbell/ring_doorbell/doorbot.py, ../reference/python-ring-doorbell/ring_doorbell/chime.py]
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      responses:
+        '200': {$ref: '#/components/responses/Json'}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/doorbots/{device_id}/history:
+    get:
+      operationId: getLegacyDeviceHistory
+      description: >-
+        Existing Go history operation and pinned Python doorbell history share
+        this doorbot path. The Go API exposes limit and kind; Python additionally
+        supports older_than and client-side enforcement/retries. C1 history
+        routes use EVM endpoints and are specified separately.
+      x-contract-source: existing-go-and-pinned-python
+      x-evidence: [../pkg/dependencies/rest/recordings.go, ../reference/python-ring-doorbell/ring_doorbell/generic.py]
+      parameters:
+        - {$ref: '#/components/parameters/device_id'}
+        - {$ref: '#/components/parameters/limit'}
+        - {$ref: '#/components/parameters/kind'}
+        - {$ref: '#/components/parameters/older_than'}
+      responses:
+        '200': {$ref: '#/components/responses/RecordingArray'}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/dings/active:
+    get:
+      operationId: getActiveDings
+      description: Existing Go and Python active-dings route. No matching C1 capture was identified.
+      x-contract-source: existing-go-and-pinned-python
+      x-evidence: [../pkg/dependencies/rest/recordings.go, ../reference/python-ring-doorbell/ring_doorbell/ring.py]
+      responses:
+        '200': {$ref: '#/components/responses/RecordingArray'}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/dings/{recording_id}/recording:
+    get:
+      operationId: streamRecording
+      description: >-
+        Existing Go method returns the response body as a streaming VideoStream;
+        the caller owns and must close Body. It requests video/mp4 and does not
+        buffer the media. Go's default http.Client follows redirects according
+        to its CheckRedirect policy; a custom client may change that behavior.
+        No sanitized recording response establishes redirect or media-host
+        details.
+      x-contract-source: existing-go-and-pinned-python
+      x-evidence: [../pkg/dependencies/rest/recordings.go, ../reference/python-ring-doorbell/ring_doorbell/doorbot.py]
+      parameters: [{$ref: '#/components/parameters/recording_id'}]
+      responses:
+        '200':
+          description: Video stream; body remains open for the caller to consume and close.
+          content:
+            video/mp4:
+              schema: {type: string, format: binary}
+        '302':
+          description: Possible upstream redirect if exposed by the configured HTTP client; not established by local recordings.
+          headers:
+            Location: {schema: {type: string, format: uri-reference}}
+        default: {$ref: '#/components/responses/HTTPFailure'}
   /device_info/v3/devices:
     get:
       operationId: listDevices
@@ -175,7 +466,7 @@ components:
     start_time: {name: start_time, in: query, required: false, description: Observed query name; requiredness is not established., schema: {type: string}}
     end_time: {name: end_time, in: query, required: false, description: Observed query name; requiredness is not established., schema: {type: string}}
     order: {name: order, in: query, required: false, description: Observed query name; value shown is desc., schema: {type: string}}
-    limit: {name: limit, in: query, required: false, description: Observed query name; value shown is 20., schema: {type: string}}
+    limit: {name: limit, in: query, required: false, description: Observed query name; value shown is 20 in a capture., schema: {type: integer}}
     capabilities: {name: capabilities, in: query, required: false, description: Observed on timeline and history-device requests; cardinality is not established., schema: {type: string}}
     source_ids: {name: source_ids, in: query, required: false, description: Observed query name; value is sanitized in the capture., schema: {type: string}}
     allowUserOnly: {name: allowUserOnly, in: query, required: false, schema: {type: string}}
@@ -185,6 +476,8 @@ components:
     requestedTransport: {name: requestedTransport, in: query, required: false, schema: {type: string}}
     include: {name: include, in: query, required: false, description: Observed comma-separated value; accepted values are not exhaustively established., schema: {type: string}}
     confirm_delete_favorite: {name: confirm_delete_favorite, in: query, required: false, description: Observed value is false; server-side requiredness is not established., schema: {type: string}}
+    kind: {name: kind, in: query, required: false, description: Go forwards this value without restricting it; Python filters returned entries client-side., schema: {type: string}}
+    older_than: {name: older_than, in: query, required: false, description: Supported by the pinned Python history helper; not currently sent by Go., schema: {type: integer}}
   requestBodies:
     Json: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
     DeviceSettingsPatch:
@@ -192,6 +485,11 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/DeviceSettingsPatch'}
+    ExtensibleObject:
+      required: true
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ExtensibleObject'}
   responses:
     DeviceList:
       description: Captured v3 inventory; device-specific fields remain extensible
@@ -213,8 +511,127 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/SirenStatus'}
+    OAuthToken:
+      description: Existing Go token response shape; no matching C1 OAuth capture
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/OAuthToken'}
+    OAuthRedirect:
+      description: OAuth navigation response; the client checks returned state
+      headers:
+        Location: {required: true, schema: {type: string, format: uri-reference}}
+    TwoFactorRequired:
+      description: OAuth server requests or rejects a two-factor verification step
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/JsonValue'}
+    RateLimited:
+      description: OAuth server rate-limited a request
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/JsonValue'}
+    AuthFailure:
+      description: Authentication failure response mapped to an SDK authentication error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/JsonValue'}
+    HTTPFailure:
+      description: Existing Go methods map non-2xx API responses to HTTPError; not a captured error contract
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/JsonValue'}
+    RecordingArray:
+      description: Legacy recording list; Go decodes a JSON array directly
+      content:
+        application/json:
+          schema:
+            type: array
+            items: {$ref: '#/components/schemas/Recording'}
     Json: {description: Captured JSON response, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
   schemas:
+    OAuthTokenGrant:
+      description: >-
+        Form variants currently used by Go: authorization-code PKCE, explicit
+        refresh, and the compatibility password grant fallback.
+      oneOf:
+        - {$ref: '#/components/schemas/AuthorizationCodeGrant'}
+        - {$ref: '#/components/schemas/RefreshTokenGrant'}
+        - {$ref: '#/components/schemas/LegacyPasswordGrant'}
+    AuthorizationCodeGrant:
+      type: object
+      required: [grant_type, code, redirect_uri, code_verifier, client_id]
+      properties:
+        grant_type: {type: string, const: authorization_code}
+        code: {type: string}
+        redirect_uri: {type: string, format: uri}
+        code_verifier: {type: string}
+        client_id: {type: string}
+      additionalProperties: false
+    RefreshTokenGrant:
+      type: object
+      required: [grant_type, refresh_token, client_id, scope]
+      properties:
+        grant_type: {type: string, const: refresh_token}
+        refresh_token: {type: string}
+        client_id: {type: string}
+        scope: {type: string}
+      additionalProperties: false
+    LegacyPasswordGrant:
+      type: object
+      required: [grant_type, username, password, client_id, scope]
+      properties:
+        grant_type: {type: string, const: password}
+        username: {type: string}
+        password: {type: string, format: password}
+        client_id: {type: string}
+        scope: {type: string}
+      additionalProperties: false
+    OAuthToken:
+      type: object
+      required: [access_token, token_type]
+      properties:
+        access_token: {type: string}
+        refresh_token: {type: string}
+        expires_in: {type: integer}
+        token_type: {type: string}
+        scope: {type: string}
+      additionalProperties: true
+    ClientSessionRegistration:
+      type: object
+      required: [device]
+      properties:
+        device:
+          type: object
+          required: [hardware_id, metadata, os]
+          properties:
+            hardware_id: {type: string}
+            metadata:
+              type: object
+              required: [api_version, device_model]
+              properties:
+                api_version: {type: integer, const: 11}
+                device_model: {type: string}
+              additionalProperties: true
+            os: {type: string, const: android}
+          additionalProperties: true
+      additionalProperties: true
+    Recording:
+      type: object
+      required: [id, kind, answered, created_at, doorbot]
+      properties:
+        id: {type: integer}
+        kind: {type: string}
+        answered: {type: boolean}
+        created_at: {type: string}
+        doorbot:
+          type: object
+          required: [id]
+          properties: {id: {type: integer}}
+          additionalProperties: true
+      additionalProperties: true
+    ExtensibleObject:
+      type: object
+      additionalProperties: {$ref: '#/components/schemas/JsonValue'}
     DeviceList:
       type: object
       required: [devices]
