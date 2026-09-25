@@ -25,9 +25,10 @@ Paths below are relative to api.ring.com unless another host is given. “Diverg
 | GET /clients_api/doorbots/{id}/history | GetDeviceHistory | async_history | New history/timeline routes instead | Preserve legacy and compare normalized results |
 | GET /clients_api/dings/active | GetActiveDings | async_update_dings | Not identified | Keep; distinct from push events |
 | GET /clients_api/dings/{id}/recording | GetRecording streams body | recording URL/download helpers | Not identified | Document streaming vs file-writing API distinction |
+| GET /clients_api/dings/{id}/share/play | GetRecordingShareURL returns URL | async_recording_url | No matching C1 response | Shared synthetic media fixture passes; server acceptance unverified |
 | GET /evm/v3/history/devices; /evm/v2/timeline/devices/{id} | — | No matching routes found | 6 / 38 responses | New history/timeline adapters |
 | PUT /clients_api/dings/{id}/favorite; DELETE /clients_api/dings/{id} | — | No matching helpers found | One each | Separate candidate recording mutations |
-| Snapshot timestamp/image routes | — | async_get_snapshot | app-snaps /snapshots/next/{id}, missing responses | Backlog; different routes and insufficient response evidence |
+| POST /clients_api/snapshots/timestamps; GET /clients_api/snapshots/image/{id} | GetSnapshot triggers, polls freshness, then returns bounded image bytes | async_get_snapshot | C1 instead requests app-snaps /snapshots/next/{id}, with missing responses | Shared synthetic Python-profile replay passes; C1 profile remains separate and unverified |
 | GET /groups/v1/locations/{id}/groups | — | async_update_groups | 34 responses | Group discovery backlog |
 | Location /devices vs group /groups/{id}/devices | — | Group-device retrieval/control | Location /devices observed | Separate operations, not equivalent routes |
 | PUT /commands/v1/devices/{id}/device_rpc | — | Intercom async_open_door, JSON-RPC | Not identified | Separate intercom scope; not PTZ transport |
@@ -37,7 +38,7 @@ Paths below are relative to api.ring.com unless another host is given. “Diverg
 | POST prd-api-us.prd.rings.solutions/api/v1/clap/ticket/request/signalsocket | RTC ticket request | RTC ticket request | Different GET route below | Preserve supported bootstrap; compare ticket response families |
 | GET prd-api-us.prd.rings.solutions/api/v1/clap/tickets | — | No matching route found | Three responses | Document C1 bootstrap separately; don't assume interchangeability |
 
-The divergent Go routes are source-level findings in `pkg/dependencies/rest/control.go` and `devices.go`, compared with Python `const.py`, `doorbot.py`, `chime.py`, and `stickup_cam.py`. Existing Go tests can validate a self-consistent mock route without establishing vendor compatibility. Prioritize exact request matching for these rows. Suggestions to correct/verify routing mean correction only if evidence shows the current route fails; successful current/captured routes take precedence over Python alternatives.
+Remaining divergent health routing is a source-level finding in `pkg/dependencies/rest/devices.go`, compared with Python's family-specific helpers. Shared synthetic replay proves exact Python-profile request shapes for controls, snapshots, and share URLs, but does not establish live vendor compatibility. Successful current/captured routes take precedence over Python alternatives.
 
 ## Signaling, RPC and RTC behavior
 
@@ -70,6 +71,6 @@ The C1 socket is wss://api.prod.signalling.ring.devices.a2z.com/ws. HTTP upgrade
 
 Maintain operation, reference function/test, actual recording file, schema, and Go test links in this matrix and [porting progress](porting-progress.md). Keep source support, replay support and live verification separate. No capture manifest or generated metadata registry is required. These reviewed Markdown tables are the mapping.
 
-Release scope: first make existing HTTP methods accurate and establish DeviceSession with keepalive, SDP/ICE, PTZ and controls. Playback and push subscriptions receive explicit types and backlog entries, with implementation gated on complete conversation fixtures. Python-only intercom/groups/snapshot features stay visible rather than being implied by a general parity claim.
+Release scope: existing HTTP methods, Python-profile snapshots and recording share URLs, and DeviceSession with keepalive, SDP/ICE, PTZ, and controls have offline replay coverage. Playback and push subscriptions remain separate backlog items; their implementation needs focused conversation fixtures. Python-only intercom and group features remain visible rather than being implied by a general parity claim. The C1 app-snaps profile still lacks a response contract.
 
 Sources: current Go `pkg/ring`, `pkg/dependencies/rest`, `examples/rtc-stream`; pinned Python `ring.py`, `auth.py`, `generic.py`, `doorbot.py`, `chime.py`, `stickup_cam.py`, `group.py`, `other.py`, `webrtcstream.py`, `listen/eventlistener.py`; C1 local flow/message inspection. See [the pinned Python source](https://github.com/python-ring-doorbell/python-ring-doorbell/tree/486193a80e7c924a0ab14b04d47305e1b36e419e/ring_doorbell).

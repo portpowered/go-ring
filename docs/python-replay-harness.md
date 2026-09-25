@@ -102,7 +102,9 @@ select individual captured frames from both streams; the longer conversation
 test remains as an ordering and notification regression. All dynamic dialog,
 control, and RPC IDs are rebound at the replay boundary.
 
-The Go replay now also consumes the synthetic recording bytes and four HTTP
-failure cases. The Python share URL and snapshot fields have no matching Go
-API; deferred Python-only features remain explicit parity gaps. A passing Go
-test of another route is not counted as migration of one of those fixtures.
+The Go replay now also consumes synthetic recording bytes and share URL,
+snapshot timestamp and image, and four HTTP failure cases. `GetSnapshot`
+implements Python's legacy route profile; C1's different app-snaps request has
+no recorded response. Deferred Python-only features remain explicit parity
+gaps. A passing Go test of another route is not counted as migration of one
+of those fixtures.

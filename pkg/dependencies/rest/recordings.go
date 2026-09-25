@@ -7,9 +7,26 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/dependencymodels"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
+
+// GetRecordingShareURL follows the pinned Python legacy share/play profile.
+// The C1 recording does not establish this route's response.
+func (c *Client) GetRecordingShareURL(ctx context.Context, recordingID int64) (string, error) {
+	path := strings.Replace(protocol.RecordingSharePath, "{id}", strconv.FormatInt(recordingID, 10), 1)
+	var response struct {
+		URL string `json:"url"`
+	}
+	if err := c.doJSONRequest(ctx, http.MethodGet, path, nil, &response); err != nil {
+		return "", err
+	}
+	if response.URL == "" {
+		return "", ringapimodels.NewBadRequestError("recording share response lacks URL", nil)
+	}
+	return response.URL, nil
+}
 
 // GetDeviceHistory retrieves the history of recordings for a device
 func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int, kind string) (*dependencymodels.RingRecordingHistoryResponse, error) {

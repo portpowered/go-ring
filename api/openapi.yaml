@@ -260,6 +260,23 @@ paths:
           headers:
             Location: {schema: {type: string, format: uri-reference}}
         default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/dings/{recording_id}/share/play:
+    get:
+      operationId: getLegacyRecordingShareURL
+      description: Pinned Python legacy share/play response, replayed synthetically by Go; no matching C1 response.
+      x-contract-source: pinned-python-and-go-synthetic-replay
+      x-evidence: [../reference/python-ring-doorbell/ring_doorbell/doorbot.py, ../test/porting-fixtures/media-variants.json, ../pkg/dependencies/rest/recordings.go]
+      parameters: [{$ref: '#/components/parameters/recording_id'}]
+      responses:
+        '200':
+          description: Playback share URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties: {url: {type: string, format: uri}}
+        default: {$ref: '#/components/responses/HTTPFailure'}
   /device_info/v3/devices:
     get:
       operationId: listDevices
@@ -312,6 +329,52 @@ paths:
       operationId: turnSirenOff
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses: {'200': {description: Siren stopped; empty captured response}}
+  /clients_api/snapshots/timestamps:
+    post:
+      operationId: refreshLegacySnapshotTimestamp
+      description: >-
+        Pinned Python legacy snapshot trigger and poll. The first response may
+        omit timestamps. This contract comes from shared synthetic replay, not
+        the C1 app-snaps request with missing response.
+      x-contract-source: pinned-python-and-go-synthetic-replay
+      x-evidence: [../reference/python-ring-doorbell/ring_doorbell/doorbot.py, ../test/porting-fixtures/media-variants.json, ../pkg/dependencies/rest/snapshot.go]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [doorbot_ids]
+              properties:
+                doorbot_ids: {type: array, minItems: 1, items: {type: integer, minimum: 1}}
+      responses:
+        '200':
+          description: Optional timestamp for the requested snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamps:
+                    type: array
+                    items:
+                      type: object
+                      required: [timestamp]
+                      properties: {timestamp: {type: integer, format: int64}}
+        default: {$ref: '#/components/responses/HTTPFailure'}
+  /clients_api/snapshots/image/{device_id}:
+    get:
+      operationId: getLegacySnapshotImage
+      description: Pinned Python legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+      x-contract-source: pinned-python-and-go-synthetic-replay
+      x-evidence: [../reference/python-ring-doorbell/ring_doorbell/doorbot.py, ../test/porting-fixtures/media-variants.json, ../pkg/dependencies/rest/snapshot.go]
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      responses:
+        '200':
+          description: Snapshot image bytes
+          content:
+            image/jpeg: {schema: {type: string, format: binary}}
+        default: {$ref: '#/components/responses/HTTPFailure'}
   /api/v1/clap/tickets:
     get:
       operationId: getCapturedLocationTickets

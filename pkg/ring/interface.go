@@ -83,6 +83,8 @@ type GetRecordingRequest struct {
 	RecordingID int64
 }
 
+type GetRecordingShareURLRequest struct{ RecordingID int64 }
+
 // GetLastRecordingIDRequest contains parameters for GetLastRecordingID
 type GetLastRecordingIDRequest struct {
 	DeviceID string
@@ -148,6 +150,12 @@ type ClientInterface interface {
 
 	// GetRecording retrieves a video stream for a recording
 	GetRecording(ctx context.Context, req GetRecordingRequest) (*ringapimodels.VideoStream, error)
+
+	// GetRecordingShareURL returns the legacy share/play URL.
+	GetRecordingShareURL(ctx context.Context, req GetRecordingShareURLRequest) (string, error)
+
+	// GetSnapshot requests a fresh legacy snapshot and returns buffered image bytes.
+	GetSnapshot(ctx context.Context, req GetSnapshotRequest) (*Snapshot, error)
 
 	// GetLastRecordingID retrieves the ID of the most recent recording for a device
 	GetLastRecordingID(ctx context.Context, req GetLastRecordingIDRequest) (int64, error)

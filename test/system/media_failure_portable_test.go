@@ -63,6 +63,55 @@ func TestPortableRecordingBytes(t *testing.T) {
 	}
 }
 
+func TestPortableRecordingShareURL(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join("..", "porting-fixtures", "media-variants.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var media portableMedia
+	if err := json.Unmarshal(b, &media); err != nil {
+		t.Fatal(err)
+	}
+	const origin = "https://portable.example.test"
+	responseBody, _ := json.Marshal(map[string]string{"url": media.Recording.ShareURL})
+	transport := replay.NewTransport(replay.Exchange{
+		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/share/play", HeadersMode: replay.HeadersRequired},
+		Response: replay.Response{Status: 200, Body: responseBody, JSON: true},
+	})
+	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{RecordingID: 42})
+	if err != nil || got != media.Recording.ShareURL {
+		t.Fatalf("share URL = %q, %v", got, err)
+	}
+	if err := transport.AssertConsumed(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPortableRecordingShareURLInvalidAndMissing(t *testing.T) {
+	const origin = "https://portable.example.test"
+	transport := replay.NewTransport(replay.Exchange{
+		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/share/play", HeadersMode: replay.HeadersRequired},
+		Response: replay.Response{Status: 200, Body: json.RawMessage(`{}`), JSON: true},
+	})
+	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{RecordingID: 0}); err == nil {
+		t.Fatal("zero recording ID accepted")
+	}
+	if _, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{RecordingID: 42}); err == nil {
+		t.Fatal("missing share URL accepted")
+	}
+	if err := transport.AssertConsumed(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 type portableFailure struct {
 	Case    string `json:"case"`
 	Outcome string `json:"outcome"`

@@ -4,7 +4,7 @@ The first Python migration gate is now the [portable fixture replay harness](pyt
 all 35 original Python test functions have a migration decision, 40 original
 cases pass, and 72 replay cases cover 96.13% of explicitly selected Python
 entry-point lines. Go now replays the shared ticket, control, in-home chime,
-recording-byte, HTTP-failure, and session-variant inputs, plus individual
+recording-byte/share-URL, snapshot, HTTP-failure, and session-variant inputs, plus individual
 captured SDP, PTZ, ICE, and heartbeat cases. The table below retains the
 protocol comparison and known divergences.
 
@@ -21,6 +21,7 @@ or payload shape rather than treating one as proof of the other.
 | Siren control | [`tests/test_ring.py::test_stickup_cam_controls`](../reference/python-ring-doorbell/tests/test_ring.py) sends siren off and on commands. | [`siren-off.json`](../test/recordings/http/siren-off.json) matches Python's off request. [`siren-on.json`](../test/recordings/http/siren-on.json) captures the on path with no query pair. | `Client.SetSiren` is covered by [`TestRecordedSettingsAndSirenAcrossRegions`](../test/system/client_recorded_settings_test.go). | The adapter replays the off call through Python `Auth`; a separate request-shape test shows Python's on call adds `duration=30`, which this capture does not contain. The response's duration does not establish the request query, so full on-request parity remains unverified. |
 | History | [`tests/test_ring.py::test_doorbell_attributes`](../reference/python-ring-doorbell/tests/test_ring.py) checks legacy per-device history results. | [`device-timeline.json`](../test/recordings/http/device-timeline.json) and [`history-devices.json`](../test/recordings/http/history-devices.json) use EVM routes and response envelopes. | [`TestGetDeviceHistory_Success`](../test/unit/client_recordings_test.go) exercises Go's existing history method against its own legacy fixture. | Python's `/clients_api/doorbots/{id}/history` and its array results are distinct from C1's timeline and grouped-feed contracts; the adapter asserts the gap without feeding EVM data into the legacy parser. |
 | Device detail | Python attribute cases read cached inventory objects; the current Go `GetDevice` also searches its list response. | [`device-detail.json`](../test/recordings/http/device-detail.json) records `GET /device_info/v3/devices/{device_id}`. | `GetDevice` is covered via [`device-list.json`](../test/recordings/http/device-list.json). | The detail recording route has no current public Go method and is not counted as supported-route coverage. |
+| Snapshot and recording share URL | Python `async_get_snapshot` triggers/polls a timestamp then downloads image bytes; `async_recording_url` parses a share URL. | C1's `app-snaps.ring.com/snapshots/next/{id}` requests lack successful responses; no C1 share URL response exists. | [`TestPortableSnapshotFreshnessAndImage`](../test/system/snapshot_portable_test.go) and [`TestPortableRecordingShareURL`](../test/system/media_failure_portable_test.go) replay the shared synthetic media values and Python legacy routes. | Go returns bounded snapshot bytes and timestamp, not a file; the C1 app-snaps profile remains unverified and separate. |
 
 ## Signaling and session implementation status
 

@@ -13,8 +13,8 @@ Verified locally on Windows with Go 1.24.2, `GOWORK=off`:
 
 | Check | Result |
 |---|---|
-| `go run ./tools/coverage` | Passed, including full Go race suite; 1984/2202 maintained library statements, 90.10% |
-| Per-package coverage floors | Passed; `internal/protocol` 100%, `internal/signaling` 96.7%, REST 92.3%, public `ring` 87.3%, API models 100% |
+| `go run ./tools/coverage` | Passed, including full Go race suite; 2050/2272 maintained library statements, 90.23% |
+| Per-package coverage floors | Passed; `internal/protocol` 100%, `internal/signaling` 96.7%, REST 92.2%, public `ring` 87.5%, API models 100% |
 | `go vet ./...` | Passed |
 | `go build ./...` | Passed, including examples |
 | Go formatting / module tidy | Clean; no module metadata change |
@@ -58,9 +58,10 @@ clients, failed token retrieval, and authentication failure stages. These are
 synthetic reliability evidence, not additional captured vendor behavior.
 The Go replay suite now uses the Python harness's portable ticket, legacy
 control, in-home chime, recording-byte, HTTP-failure, and remote-session
-fixtures. Captured PTZ commands, inbound ICE, and heartbeat pairs run as
-individually named subtests. Python's snapshot and share URL variants have
-no matching public Go API.
+fixtures. The Python-profile snapshot and recording share URL also have
+portable Go replay; captured PTZ commands, inbound ICE, and heartbeat pairs
+run as individually named subtests. C1's separate app-snaps requests lack a
+recorded successful response.
 
 ## Explicit limits
 

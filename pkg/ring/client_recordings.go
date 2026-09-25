@@ -61,6 +61,15 @@ func (c *Client) GetRecording(ctx context.Context, req GetRecordingRequest) (*ri
 	return c.restClient.GetRecording(ctx, req.RecordingID)
 }
 
+// GetRecordingShareURL returns the legacy playback share URL for a recording.
+// Access permissions and subscription checks are resolved by the server.
+func (c *Client) GetRecordingShareURL(ctx context.Context, req GetRecordingShareURLRequest) (string, error) {
+	if req.RecordingID <= 0 {
+		return "", ringapimodels.NewBadRequestError("invalid recording ID", nil)
+	}
+	return c.restClient.GetRecordingShareURL(ctx, req.RecordingID)
+}
+
 // GetLastRecordingID retrieves the ID of the most recent recording for a device
 func (c *Client) GetLastRecordingID(ctx context.Context, req GetLastRecordingIDRequest) (int64, error) {
 	history, err := c.GetDeviceHistory(ctx, GetDeviceHistoryRequest{

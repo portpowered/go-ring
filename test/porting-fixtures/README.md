@@ -21,8 +21,9 @@ actual captured files. Go reads the same files through `internal/testkit/replay`
 `test/system/legacy_controls_portable_test.go` exercises all six legacy control
 requests and three in-home chime options; and `test/system/session_portable_replay_test.go`
 exercises remote ICE and close variants alongside captured live-view SDP.
-`test/system/media_failure_portable_test.go` uses the synthetic recording bytes
-and all four HTTP failure cases. Python's share URL and snapshot values have
-no matching Go API and remain comparison data. Legacy controls without C1
-capture remain synthetic Python-derived evidence;
+`test/system/media_failure_portable_test.go` uses the synthetic recording bytes,
+share URL, and all four HTTP failure cases. `test/system/snapshot_portable_test.go`
+uses the synthetic snapshot timestamp and image bytes, including stale and
+failed responses. Legacy controls and these media routes without C1 capture
+remain synthetic Python-derived evidence;
 the shared fixtures do not establish live service acceptance.

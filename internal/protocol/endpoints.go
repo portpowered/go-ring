@@ -18,6 +18,7 @@ const (
 	DingsActivePath               = "/clients_api/dings/active"
 	DingsHistoryPath              = "/clients_api/dings/history"
 	RecordingPath                 = "/clients_api/dings/{id}/recording"
+	RecordingSharePath            = "/clients_api/dings/{id}/share/play"
 	DeviceSettingsPath            = "/devices/v1/devices/{id}/settings"
 	DoorbotSirenOnPath            = "/clients_api/doorbots/{id}/siren_on"
 	DoorbotSirenOffPath           = "/clients_api/doorbots/{id}/siren_off"
@@ -26,4 +27,6 @@ const (
 	LegacyChimeSoundPath          = "/clients_api/chimes/{id}/play_sound"
 	DoorbotLightOnPath            = "/clients_api/doorbots/{id}/floodlight_light_on"
 	DoorbotLightOffPath           = "/clients_api/doorbots/{id}/floodlight_light_off"
+	LegacySnapshotTimestampPath   = "/clients_api/snapshots/timestamps"
+	LegacySnapshotImagePath       = "/clients_api/snapshots/image/{id}"
 )

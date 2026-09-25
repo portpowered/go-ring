@@ -52,6 +52,16 @@ The [device session example](examples/device-session) generates its SDP with Pio
 The [examples](examples) compile with the library. Running them contacts Ring and
 may operate a device; normal tests do not run them.
 
+For a fresh still image, call `GetSnapshot(ctx, ring.GetSnapshotRequest{DeviceID: id})`.
+It triggers and polls Python's legacy snapshot route, then returns image bytes,
+timestamp, and content type. The default is three immediate polls; set
+`PollInterval` and a bounded context when the service needs time to produce a
+new image. `ErrSnapshotNotReady` means no newer timestamp appeared. Recording
+media remains a caller-closed stream through `GetRecording`; use
+`GetRecordingShareURL` when you need the legacy share/play URL. These snapshot
+and share routes are backed by synthetic Python replay, not a successful C1
+capture. See [HTTP contract evidence](docs/protocols/http.md).
+
 ## Authentication
 
 Existing authentication mechanisms remain supported: `Request2FACode`,
@@ -129,6 +139,7 @@ unknown, not be treated as unsupported.
 - [OpenAPI HTTP contracts](api/openapi.yaml) and [AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
 - [Recording formats and verification order](docs/replay-format.md)
 - [Python fixture replay and original-test migration index](docs/python-replay-harness.md)
+- [Remaining migration scope](docs/migration-scope.md)
 - [Sanitized recordings](test/recordings/README.md) and [legacy fixture provenance](test/fixtures/README.md)
 - [Contributing](CONTRIBUTING.md)
 
@@ -147,7 +158,7 @@ environments. The private mitmproxy file is not required for CI.
 
 The maintained library coverage gate requires 90% statement coverage, alongside
 behavioral and race tests. The completed offline verification run passed at
-90.10%; see [verification results](docs/verification.md) for scope and commands. Live tests are opt-in via
+90.23%; see [verification results](docs/verification.md) for scope and commands. Live tests are opt-in via
 `make test-integration` and require explicit credentials and device configuration.
 
 ## Compatibility and license
