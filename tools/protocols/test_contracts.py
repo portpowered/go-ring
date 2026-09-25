@@ -72,5 +72,57 @@ class SignalingContracts(unittest.TestCase):
         self.assertTrue(self.validators["server_to_client"].is_valid(value))
 
 
+class HTTPContracts(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.doc = document("openapi.yaml")
+        cls.rows = [(path, json.loads(path.read_text(encoding="utf-8")))
+                    for path in sorted((ROOT / "test/recordings/http").rglob("*.json"))]
+
+    def resolve(self, value):
+        while "$ref" in value:
+            ref = value["$ref"]
+            self.assertTrue(ref.startswith("#/"))
+            value = self.doc
+            for part in ref[2:].split("/"):
+                value = value[part]
+        return value
+
+    def test_recorded_http_bodies(self):
+        for path, row in self.rows:
+            with self.subTest(fixture=path.name):
+                request, response = row["request"], row["response"]
+                operation = self.doc["paths"][request["path"]][request["method"].lower()]
+                servers = operation.get("servers", self.doc["servers"])
+                self.assertIn(request["origin"], [server["url"] for server in servers])
+                body_contract = self.resolve(operation.get("requestBody", {}))
+                if body_contract.get("required"):
+                    self.assertTrue(request["json"])
+                if request["json"]:
+                    schema = body_contract["content"]["application/json"]["schema"]
+                    validator(self.doc, schema).validate(request["body"])
+                response_contract = self.resolve(operation["responses"][str(response["status"])])
+                if response["json"]:
+                    schema = response_contract["content"]["application/json"]["schema"]
+                    validator(self.doc, schema).validate(response["body"])
+                else:
+                    self.assertIsNone(response["body"])
+                    self.assertNotIn("content", response_contract)
+
+    def test_synthetic_invalid_http_payloads_rejected(self):
+        # These mutations are robustness cases, not additional captured replies.
+        cases = [
+            ("/commands/v1/devices/{device_id}", "patch", {"command_name": "unknown"}),
+            ("/duos/v1/devices/{device_id}/update", "put", {"entity": {"live_view_enabled": "false"}}),
+        ]
+        for path, method, body in cases:
+            contract = self.resolve(self.doc["paths"][path][method]["requestBody"])
+            schema = contract["content"]["application/json"]["schema"]
+            self.assertFalse(validator(self.doc, schema).is_valid(body))
+        inventory = validator(self.doc, {"$ref": "#/components/schemas/DeviceList"})
+        self.assertFalse(inventory.is_valid({"devices": {}}))
+        self.assertFalse(inventory.is_valid({}))
+
+
 if __name__ == "__main__":
     unittest.main()

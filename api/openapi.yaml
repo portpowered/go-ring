@@ -11,9 +11,9 @@ servers:
     description: Captured Ring API origin
 paths:
   /device_info/v3/devices:
-    get: {operationId: listDevices, responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get: {operationId: listDevices, responses: {'200': {$ref: '#/components/responses/DeviceList'}}}
   /device_info/v3/devices/{device_id}:
-    get: {operationId: getDevice, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+    get: {operationId: getDevice, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/DeviceDetail'}}}
   /devices/v1/devices/{device_id}/settings:
     get: {operationId: getDeviceSettings, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
     patch: {operationId: patchDeviceSettings, parameters: [{$ref: '#/components/parameters/device_id'}], requestBody: {$ref: '#/components/requestBodies/Json'}, responses: {'200': {$ref: '#/components/responses/Json'}}}
@@ -24,7 +24,7 @@ paths:
   /clients_api/doorbots/{device_id}/siren_on:
     put: {operationId: turnSirenOn, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
   /clients_api/doorbots/{device_id}/siren_off:
-    put: {operationId: turnSirenOff, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {$ref: '#/components/responses/Json'}}}
+    put: {operationId: turnSirenOff, parameters: [{$ref: '#/components/parameters/device_id'}], responses: {'200': {description: Siren stopped; empty captured response}}}
   /api/v1/clap/tickets:
     get:
       operationId: requestLocationTickets
@@ -72,7 +72,7 @@ paths:
   /clients_api/dings/{recording_id}:
     delete: {operationId: deleteRecording, parameters: [{$ref: '#/components/parameters/recording_id'}], responses: {'204': {description: Recording deleted; empty response}}}
   /clients_api/dings/{recording_id}/favorite:
-    put: {operationId: favoriteRecording, parameters: [{$ref: '#/components/parameters/recording_id'}], responses: {'201': {$ref: '#/components/responses/Json'}}}
+    put: {operationId: favoriteRecording, parameters: [{$ref: '#/components/parameters/recording_id'}], responses: {'201': {description: Recording favorited; empty captured response}}}
 components:
   parameters:
     device_id: {name: device_id, in: path, required: true, schema: {type: string}}
@@ -81,6 +81,28 @@ components:
   requestBodies:
     Json: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
   responses:
+    DeviceList:
+      description: Captured v3 inventory; device-specific fields remain extensible
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceList'}
+    DeviceDetail:
+      description: Captured v3 detail envelope
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceDetail'}
     Json: {description: Captured JSON response, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
   schemas:
+    DeviceList:
+      type: object
+      required: [devices]
+      properties:
+        devices: {type: array, items: {type: object}}
+        device_operation_sets: {type: object}
+    DeviceDetail:
+      type: object
+      required: [device]
+      properties:
+        device: {type: object}
+        device_operation_set: {type: object}
     JsonValue: {description: Operation-specific captured JSON; see the corresponding sanitized recording, oneOf: [{type: object}, {type: array}, {type: string}, {type: number}, {type: boolean}, {type: 'null'}]}
