@@ -1,10 +1,10 @@
 # Feature and protocol parity
 
-Design baseline, 2026-09-25. Compare behavior and exact wire operations, not similarly named methods. “Implemented” means source exists, not live-certified support. Python is pinned at `486193a80e7c924a0ab14b04d47305e1b36e419e`. C1 is the native capture identified in [the plan](library-improvement-plan.md). A dash means no implementation/evidence identified in the inspected source/capture, not proof that Ring lacks the feature.
+Implementation and evidence matrix. Compare behavior and exact wire operations, not similarly named methods. “Implemented” means source exists, not live-certified support. Python is pinned at `486193a80e7c924a0ab14b04d47305e1b36e419e`. C1 is the native capture identified in [the plan](library-improvement-plan.md). A dash means no implementation/evidence identified in the inspected source/capture, not proof that Ring lacks the feature.
 
 ## HTTP operations
 
-Paths below are relative to api.ring.com unless another host is given. “Divergent” means different, not defective. Prefer verified working Go behavior and direct capture evidence over Python. Investigate with contract tests; do not change a working route merely to match Python. Record intentional differences as accepted outcomes. Target API names are proposals, not implemented exports.
+Paths below are relative to api.ring.com unless another host is given. “Divergent” means different, not defective. Prefer verified working Go behavior and direct capture evidence over Python. Investigate with contract tests; do not change a working route merely to match Python. Record intentional differences as accepted outcomes. Implemented additions are identified below; remaining target names are proposals. See [porting progress](porting-progress.md) for exact tests and files.
 
 | Feature / raw operation | Current Go | Python reference | C1 capture | Target / decision |
 |---|---|---|---|---|
@@ -17,11 +17,11 @@ Paths below are relative to api.ring.com unless another host is given. “Diverg
 | GET /clients_api/doorbots/{id}/health; /clients_api/chimes/{id}/health | Divergent: uses /clients_api/ring_devices/{id}/health | Family-specific health routes | No matching health response identified | Correct/verify GetDeviceHealth routing per family |
 | PUT /clients_api/doorbots/{id}; /clients_api/chimes/{id} for volume | Divergent: /clients_api/ring_devices/{id}/volume | Family-specific update bodies | Doorbot update observed; volume semantics not yet established | Typed SetVolume with verified request body |
 | PUT /clients_api/doorbots/{id}/floodlight_light_{on,off} | Divergent: /clients_api/ring_devices/{id}/lights | async_set_lights / async_set_light | Not identified | Verify/fix SetLights routing |
-| PATCH /devices/v1/devices/{id}/settings for motion | Divergent: /clients_api/ring_devices/{id}/motion_detection | async_set_motion_detection | Settings patches present; classify each body | Typed settings, explicit field-level evidence |
+| PATCH /devices/v1/devices/{id}/settings for motion | GetDeviceSettings / PatchDeviceSettings; legacy SetMotionDetection retains its existing route | async_set_motion_detection | Settings patches present; classify each body | Typed settings, explicit field-level evidence |
 | POST /clients_api/chimes/{id}/play_sound | Divergent: /clients_api/ring_devices/{id}/test_sound | async_test_sound | Not identified | PlayChimeSound with verified payload |
 | PUT /clients_api/doorbots/{id} for in-home chime | Divergent: /clients_api/ring_devices/{id}/in_home_chime | Existing-doorbell type/enabled/duration setters | Doorbot update present; field-level comparison pending | Typed chime settings |
 | GET /clients_api/chimes/{id}/linked_doorbots | — | async_get_linked_tree | Not identified | Explicit backlog |
-| PUT /clients_api/doorbots/{id}/siren_{on,off} | — | async_set_siren | One each | Add SetSiren; compare duration semantics before declaring full parity |
+| PUT /clients_api/doorbots/{id}/siren_{on,off} | SetSiren; captured request shape replayed | async_set_siren | One each | Add SetSiren; compare duration semantics before declaring full parity |
 | GET /clients_api/doorbots/{id}/history | GetDeviceHistory | async_history | New history/timeline routes instead | Preserve legacy and compare normalized results |
 | GET /clients_api/dings/active | GetActiveDings | async_update_dings | Not identified | Keep; distinct from push events |
 | GET /clients_api/dings/{id}/recording | GetRecording streams body | recording URL/download helpers | Not identified | Document streaming vs file-writing API distinction |
@@ -45,22 +45,22 @@ The C1 socket is wss://api.prod.signalling.ring.devices.a2z.com/ws. HTTP upgrade
 
 | Raw message / behavior | Current Go | Python reference | C1 | Target shape and test |
 |---|---|---|---|---|
-| Connect/close signaling socket | Per RTCStream | Per RingWebRtcStream | 3 upgrades, 497 messages | SignalingConnection owns transport and children |
-| live_view offer | StartRTCStream; video enabled/audio disabled hardcoded | generate; audio/video enabled | 5 sends | StartDeviceSession with explicit media options; no hardcoded mismatch |
-| session_created | Stores signaling ID | Stores signaling ID | 5 receives | DeviceSession identity, distinguish from control ID |
-| sdp answer | Getter; direction normalization | Return or callback; normalization | 11 receives including playback | Typed Answer and readiness; validate negotiated profile |
-| ice | OnICECandidate; internal received-candidate handling | Send plus callback/collection | 19 sends, 36 receives | SendICE and typed remote-ICE events; bounded pre-answer buffering |
-| activate_session | Sends on answer | Sends on answer | 5 sends | Explicit activation transition; ready != first answer alone |
-| camera_started / notification | Notification/camera-options handling; no complete lifecycle contract | Camera-started logging and notification handling | Both present | Typed readiness/status events |
+| Connect/close signaling socket | OpenSignaling owns shared transport and children; legacy RTCStream remains | Per RingWebRtcStream | 3 upgrades, 497 messages | SignalingConnection owns transport and children |
+| live_view offer | StartDeviceSession with explicit media options; legacy StartRTCStream remains | generate; audio/video enabled | 5 sends | StartDeviceSession with explicit media options; no hardcoded mismatch |
+| session_created | DeviceSession validates device/dialog/session identity | Stores signaling ID | 5 receives | DeviceSession identity, distinguish from control ID |
+| sdp answer | Typed Answer; parsed MID-based direction normalization and offer validation | Return or callback; normalization | 11 receives including playback | Typed Answer and readiness; validate negotiated profile |
+| ice | SendICE with MID/index validation; Receive supplies remote wire events | Send plus callback/collection | 19 sends, 36 receives | SendICE and typed remote-ICE events; bounded pre-answer buffering |
+| activate_session | Explicit activation sequence, waits for camera_started | Sends on answer | 5 sends | Explicit activation transition; ready != first answer alone |
+| camera_started / notification | Activation readiness and bounded session events | Camera-started logging and notification handling | Both present | Typed readiness/status events |
 | camera_options | Sends stealth_mode setting after notification | Similar handling | 2 sends | Typed session control, documented write/ack semantics |
-| mic_enable / stream_options | No public methods | No corresponding sender found | 9 / 7 sends | SetMicrophone / SetStreamOptions on DeviceSession |
-| PTZ.Pan.Step / PTZ.Tilt.Step inside rpc | — | No PTZ RPC sender found; recognizes PTZ device kind | 21 / 5 sends | DeviceSession.PanStep / TiltStep |
-| PTZ.Pan.Continuous / PTZ.Tilt.Continuous | — | No sender found | 16 / 6 sends, includes zero speed | Continuous movement and explicit stop contract |
-| RPC result / PTZ.Pan.Halted | — | No handler found | 48 results / 2 halted | Pending-call correlation; unsolicited limit events |
+| mic_enable / stream_options | SetMicrophone / SetStreamOptions, tested at local peer | No corresponding sender found | 9 / 7 sends | SetMicrophone / SetStreamOptions on DeviceSession |
+| PTZ.Pan.Step / PTZ.Tilt.Step inside rpc | Typed PanStep / TiltStep with correlated acknowledgements | No PTZ RPC sender found; recognizes PTZ device kind | 21 / 5 sends | DeviceSession.PanStep / TiltStep |
+| PTZ.Pan.Continuous / PTZ.Tilt.Continuous | Typed continuous methods / StopPTZ; tracked zero-speed teardown | No sender found | 16 / 6 sends, includes zero speed | Continuous movement and explicit stop contract |
+| RPC result / PTZ.Pan.Halted | Typed results/RPCError; unsolicited events via Receive | No handler found | 48 results / 2 halted | Pending-call correlation; unsolicited limit events |
 | Zoom / presets / absolute positioning | — | No corresponding API found | Not observed | Out of supported target until evidenced |
-| ping / pong | 5-second ticker; lastKeepAlive updated, no expiry enforcement identified | 5-second pinger; caller keep_alive age limits sending | 74 / 74, advertised interval 10 | Automatic liveness, deadline-driven failure, no caller ping loop |
-| Session lifetime 60 minutes | No fixed maximum identified | No 60-minute maximum identified | Not established by short captures | Explicit requested SDK policy, fake-clock expiry tests |
-| close | RTCStream.Close; StopRTCStream is no-op | close and remote-close callback | 10 sends / 1 receive | DeviceSession.Close; typed terminal reason; bounded drain |
+| ping / pong | Negotiated interval, matching-pong deadline and tested heartbeat failure | 5-second pinger; caller keep_alive age limits sending | 74 / 74, advertised interval 10 | Automatic liveness, deadline-driven failure, no caller ping loop |
+| Session lifetime 60 minutes | DeviceSession hard maximum including negotiation; fake-clock core tests | No 60-minute maximum identified | Not established by short captures | Explicit requested SDK policy, fake-clock expiry tests |
+| close | DeviceSession.Close and parent ownership; legacy StopRTCStream now acts on registered IDs | close and remote-close callback | 10 sends / 1 receive | DeviceSession.Close; typed terminal reason; bounded drain |
 | playback + SDP/ICE | — | No playback WebSocket sender found | 6 sends | Separate PlaybackSession scope, not implicit LiveView mode |
 | push_subscribe / ack / heartbeat / event / unsubscribe | Experimental unrelated /clients_api/ws event API | FCM listener, different transport | All observed | EventSubscription on SignalingConnection; transport parity remains partial |
 | Media reception / decoding | Pion example; core client supplies signaling | Requires external WebRTC client | SDP/ICE, no media capability certification | Caller-owned peer connection; SDK handles signaling/control |
@@ -68,7 +68,7 @@ The C1 socket is wss://api.prod.signalling.ring.devices.a2z.com/ws. HTTP upgrade
 
 ## How to maintain this matrix
 
-For every row, add operation ID, fixture/scenario IDs, source file/function, evidence flow/message ordinals, implementation status and target milestone to `docs/evidence/operations.yaml` when that registry is implemented. Keep source support, replay support and live verification separate. The tables are the current reviewed baseline; they are not yet generated.
+Maintain operation, reference function/test, actual recording file, schema, and Go test links in this matrix and [porting progress](porting-progress.md). Keep source support, replay support and live verification separate. No capture manifest or generated metadata registry is required. These reviewed Markdown tables are the mapping.
 
 Release scope: first make existing HTTP methods accurate and establish DeviceSession with keepalive, SDP/ICE, PTZ and controls. Playback and push subscriptions receive explicit types and backlog entries, with implementation gated on complete conversation fixtures. Python-only intercom/groups/snapshot features stay visible rather than being implied by a general parity claim.
 

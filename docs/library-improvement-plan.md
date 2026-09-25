@@ -47,7 +47,7 @@ Assign independent evidence and implementation statuses. For example, a behavior
 
 Implementation statuses: planned, implemented, replay-tested, experimental, deprecated. Device support should identify feature, family/model evidence, account role, region when known, last verification, and known restrictions. Unknown is a valid value.
 
-Create `docs/evidence/operations.yaml` as the source for the support matrix. Each operation links Go method, wire operation ID, Python reference, evidence IDs, fixture IDs, tests, unsupported cases, and unresolved conflicts. Field-level claims such as nullability or requiredness need evidence too. Never infer that a response field is universally required because one capture contains it.
+Maintain the support mapping in `docs/parity-matrix.md` and `docs/porting-progress.md`. Each operation links Go method, wire operation ID, Python reference, actual fixture files, tests, unsupported cases, and unresolved conflicts. Do not add a capture manifest or metadata registry. Field-level claims such as nullability or requiredness need evidence too. Never infer that a response field is universally required because one capture contains it.
 
 ### What the new recording actually adds
 

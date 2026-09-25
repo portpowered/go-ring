@@ -912,9 +912,15 @@ func TestRTCStream_ForceCorrectSDPAnswer(t *testing.T) {
 func TestStopRTCStream(t *testing.T) {
 	for _, how := range []string{"stop", "client-close", "context-cancel", "keepalive"} {
 		t.Run(how, func(t *testing.T) {
+			ticket := "synthetic+ticket&not_extra=yes?"
 			disconnected := make(chan struct{})
 			pingSeen := make(chan struct{}, 1)
 			wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Get("token") != ticket || r.URL.Query().Get("not_extra") != "" {
+					t.Error("ticket was not URL escaped")
+					http.Error(w, "bad ticket", http.StatusBadRequest)
+					return
+				}
 				conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
 				if err != nil {
 					return
@@ -950,9 +956,9 @@ func TestStopRTCStream(t *testing.T) {
 				}
 			}))
 			defer wsServer.Close()
-			client, transport := newTestClientWithRTCWebSocketURL("test_token", strings.Replace(wsServer.URL, "http://", "ws://", 1))
+			client, transport := newTestClientWithRTCWebSocketURL("test_token", strings.Replace(wsServer.URL, "http://", "ws://", 1)+"?token={token}")
 			defer client.Close()
-			transport.SetResponseWithBody("POST", "/api/v1/clap/ticket/request/signalsocket", http.StatusOK, map[string]any{"ticket": "synthetic-ticket"})
+			transport.SetResponseWithBody("POST", "/api/v1/clap/ticket/request/signalsocket", http.StatusOK, map[string]any{"ticket": ticket})
 			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 			defer cancel()
 			stream, err := client.StartRTCStream(ctx, ring.StartRTCStreamRequest{DeviceID: "1001", SDPOffer: "v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n"})
@@ -1038,4 +1044,40 @@ func TestStartRTCStream_Timeout(t *testing.T) {
 
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 	require.Nil(t, stream)
+}
+
+func TestLegacySignalingToleratesUnknownAndMalformedOptionalMessages(t *testing.T) {
+	server, _ := createTestWebSocketServer(t, func(conn *websocket.Conn, offer map[string]interface{}) {
+		dialog := offer["dialog_id"]
+		_ = conn.WriteMessage(websocket.TextMessage, []byte(`{`))
+		for _, msg := range []map[string]any{
+			{"method": "unknown_extension", "dialog_id": dialog, "body": map[string]any{"extension": true}},
+			{"method": "session_created", "dialog_id": dialog, "body": []any{}},
+			{"method": "ice", "dialog_id": dialog, "body": "invalid"},
+			{"method": "ice", "dialog_id": dialog, "body": map[string]any{"ice": 42}},
+			{"method": "sdp", "dialog_id": dialog, "body": map[string]any{"sdp": 42}},
+			{"method": "sdp", "dialog_id": dialog, "body": map[string]any{"sdp": "v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n"}},
+		} {
+			if err := conn.WriteJSON(msg); err != nil {
+				return
+			}
+		}
+	})
+	defer server.Close()
+	client, transport := newTestClientWithRTCWebSocketURL("synthetic-token", strings.Replace(server.URL, "http://", "ws://", 1))
+	defer client.Close()
+	transport.SetResponseWithBody("POST", "/api/v1/clap/ticket/request/signalsocket", 200, map[string]any{"ticket": "synthetic"})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	stream, err := client.StartRTCStream(ctx, ring.StartRTCStreamRequest{DeviceID: "1001", SDPOffer: "v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n"})
+	require.NoError(t, err)
+	require.NotEmpty(t, stream.GetStreamID(), "fallback identity is required when peer omitted session_created")
+	require.NoError(t, client.StopRTCStream(ctx, ring.StopRTCStreamRequest{StreamID: stream.GetStreamID()}))
+	require.NoError(t, client.Close())
+	_, err = client.StartRTCStream(ctx, ring.StartRTCStreamRequest{DeviceID: "1001"})
+	require.True(t, ringapimodels.IsClosedError(err))
+	canceled, cancelStart := context.WithCancel(context.Background())
+	cancelStart()
+	_, err = client.StartRTCStream(canceled, ring.StartRTCStreamRequest{DeviceID: "1001"})
+	require.ErrorIs(t, err, context.Canceled)
 }
