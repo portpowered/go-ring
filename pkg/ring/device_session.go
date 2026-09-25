@@ -344,9 +344,7 @@ activated:
 	for {
 		select {
 		case m := <-events:
-			if e := created.core.Handle(m); e != nil {
-				created.terminate(e)
-			}
+			created.handle(m)
 		default:
 			goto drained
 		}
