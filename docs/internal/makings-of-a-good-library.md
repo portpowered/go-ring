@@ -42,6 +42,8 @@ Library best practices:
         4. bespoke protocols are documented in whatever is appropriate (GRPC, custom openAPI, wtv)
         5. constants for API endpoints should be denoted, and if regional we should denote each
         6. our code should try to codegen as much as possible from the schema files
+        7. the object is defined as open additoinal properties, but the objects are not bare objects, we declare as much as possible from the traces so that codegeneration works well
+        8. for async event schemas where there are multiple types we declare each type separately, so that customers can know what they are without parsing independently.
     2. Architecture notes
         1. Denote how auth works, and what is needed (is it sessional, how does it do retry/permissions)
         2. Denote how APIs are used (what parts are sessional, how do different functionality work)
@@ -58,6 +60,7 @@ Library best practices:
         1. reduce code when possible
     2. testing should be replay test based (i.e. do network capture, and sanitize the network capture, then use those as the sample data that we use to test things)
     3. traces should be recorded and pointed to as part of the documentation
+    4. tests should be granular and focused ( i.e. we want to test session establishment, ICE, session termination as a cohesive test, but we also want them to be tested independently as functional tests)
 3. operational best practices
     1. we should denote in the library how to do things such as injecting retries/clients/etc.
         1. we should prefer that systems should inject at the rountripper/http client or the websocket dialer/rpc client level rather than having something activated at the library
@@ -67,7 +70,11 @@ Library best practices:
     1. denote whether CORS is supported ont he endpoints directly
     2. denote
 5. examples
-    1. we should show examples of how a library works
+    1. we should show examples of how a library works (auth, basic enumeration, any tooling/functionality we support)
+6. linting
+    1. we enforce linting by golang lint, biome or whateer is appropriate
+        1. constraints on funlen, file len, as well as cyclomatic complexity, etc are covered by liniting, and the CI is covered as parts of tests.
+    2. go fmt is run/enforced
 
 CI:
 1. automated builds and CI/test on each release, builds on windows/mac/linux
