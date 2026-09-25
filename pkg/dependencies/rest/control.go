@@ -2,10 +2,58 @@ package rest
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
+	"strings"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
+
+// GetMotionDetectionEnabled reads the one settings field supported by the current
+// typed public settings API. Other response fields are intentionally ignored.
+func (c *Client) GetMotionDetectionEnabled(ctx context.Context, deviceID int64) (bool, error) {
+	var response struct {
+		MotionSettings struct {
+			MotionDetectionEnabled *bool `json:"motion_detection_enabled"`
+		} `json:"motion_settings"`
+	}
+	path := settingsPath(deviceID)
+	if err := c.doJSONRequest(ctx, "GET", path, nil, &response); err != nil {
+		return false, err
+	}
+	if response.MotionSettings.MotionDetectionEnabled == nil {
+		return false, ringapimodels.NewBadRequestError("settings response omitted motion_detection_enabled", nil)
+	}
+	return *response.MotionSettings.MotionDetectionEnabled, nil
+}
+
+// PatchMotionDetectionEnabled changes only the captured motion detection field.
+func (c *Client) PatchMotionDetectionEnabled(ctx context.Context, deviceID int64, enabled bool) error {
+	body := struct {
+		MotionSettings struct {
+			MotionDetectionEnabled bool `json:"motion_detection_enabled"`
+		} `json:"motion_settings"`
+	}{}
+	body.MotionSettings.MotionDetectionEnabled = enabled
+	var response json.RawMessage
+	return c.doJSONRequest(ctx, "PATCH", settingsPath(deviceID), body, &response)
+}
+
+// SetSiren toggles the captured legacy doorbot siren route. Duration is not
+// configurable: the capture establishes the server's response duration only.
+func (c *Client) SetSiren(ctx context.Context, deviceID int64, enabled bool) error {
+	path := protocol.DoorbotSirenOffPath
+	if enabled {
+		path = protocol.DoorbotSirenOnPath
+	}
+	path = strings.Replace(path, "{id}", strconv.FormatInt(deviceID, 10), 1)
+	return c.doJSONRequest(ctx, "PUT", path, nil, nil)
+}
+
+func settingsPath(deviceID int64) string {
+	return strings.Replace(protocol.DeviceSettingsPath, "{id}", strconv.FormatInt(deviceID, 10), 1)
+}
 
 // SetVolume sets the volume for a device
 func (c *Client) SetVolume(ctx context.Context, deviceID int64, volume int) error {

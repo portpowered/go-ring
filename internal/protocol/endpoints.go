@@ -18,4 +18,7 @@ const (
 	DingsActivePath               = "/clients_api/dings/active"
 	DingsHistoryPath              = "/clients_api/dings/history"
 	RecordingPath                 = "/clients_api/dings/{id}/recording"
+	DeviceSettingsPath            = "/devices/v1/devices/{id}/settings"
+	DoorbotSirenOnPath            = "/clients_api/doorbots/{id}/siren_on"
+	DoorbotSirenOffPath           = "/clients_api/doorbots/{id}/siren_off"
 )

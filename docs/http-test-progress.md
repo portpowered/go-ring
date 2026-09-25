@@ -1,0 +1,9 @@
+# HTTP and authentication regression coverage
+
+The Go REST client tests cover request construction, injected transports and endpoint bases, bounded server-error retries, request-body replay, cancellation during backoff, token-source failures, response decoding and error responses. Authentication tests exercise the existing PKCE/CSRF and token-refresh helpers with synthetic local responses; they preserve current login and refresh behavior and do not claim a live Ring authentication flow.
+
+The recorded `device-list.json` system replay remains the capture-backed check for device discovery. Its C1 device attributes map to the Python reference cases `tests/test_ring.py::test_basic_attributes` and `test_stickup_cam_attributes`. The new status, malformed-body, cancellation, retry, and OAuth cases are synthetic robustness tests, not captured Ring exchanges. No test in this document makes vendor requests.
+
+The REST retry regression keeps the existing bounded retry policy unchanged and surfaced two client defects: retrying a request reused an already-consumed body, and discarded 5xx response bodies were left open. Retries now recreate the body and close discarded responses. A configured token getter failure now returns a token error before the request is sent. Response error bodies remain available on the returned HTTP error for inspection, while the client no longer prints them to stdout.
+
+Run the package tests offline with `GOWORK=off go test ./pkg/dependencies/rest -count=1`. The repository-wide coverage baseline and goals are described in `docs/library-improvement-plan.md`; this document maps HTTP/auth behavior to regression tests and distinguishes synthetic robustness cases from capture evidence.

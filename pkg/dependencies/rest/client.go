@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -135,6 +134,9 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 
 	// Get token and set authorization header
 	token, err := c.getToken(ctx)
+	if err != nil && c.tokenGetter != nil {
+		return nil, ringapimodels.NewTokenError("failed to retrieve access token", err)
+	}
 	if err == nil && token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -151,12 +153,25 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	maxRetries := 3
 	var resp *http.Response
 	for i := 0; i < maxRetries; i++ {
-		resp, err = c.httpClient.Do(req)
+		attemptReq := req
+		if i > 0 {
+			attemptReq = req.Clone(ctx)
+			if req.GetBody != nil {
+				attemptReq.Body, err = req.GetBody()
+				if err != nil {
+					return nil, ringapimodels.NewNetworkError("failed to recreate request body", err)
+				}
+			}
+		}
+		resp, err = c.httpClient.Do(attemptReq)
 		if err == nil && resp.StatusCode < 500 {
 			break
 		}
 
 		if i < maxRetries-1 {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
 			// Exponential backoff
 			backoff := time.Duration(i+1) * time.Second
 			select {
@@ -182,19 +197,15 @@ func (c *Client) doJSONRequest(ctx context.Context, method, path string, body in
 	}
 	defer resp.Body.Close()
 
-	// Read the response body to print it and decode it
+	// Read the response body before decoding so the transport can be reused.
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ringapimodels.NewNetworkError("failed to read response body", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		fmt.Printf("Error Response Body (%s %s, Status: %d):\n%s\n", method, path, resp.StatusCode, string(bodyBytes))
 		return ringapimodels.NewHTTPError(resp, string(bodyBytes))
 	}
-
-	// // Print successful response body
-	// fmt.Printf("Response Body (%s %s, Status: %d):\n%s\n", method, path, resp.StatusCode, string(bodyBytes))
 
 	if result != nil {
 		if err := json.Unmarshal(bodyBytes, result); err != nil {
