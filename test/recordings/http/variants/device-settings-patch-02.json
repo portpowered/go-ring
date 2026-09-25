@@ -1,6 +1,6 @@
 {
   "request": {
-    "method": "GET",
+    "method": "PATCH",
     "origin": "https://api.ring.com",
     "path": "/devices/v1/devices/{device_id}/settings",
     "query": [],
@@ -10,8 +10,12 @@
       ]
     },
     "headers_mode": "required",
-    "body": null,
-    "json": false
+    "body": {
+      "motion_settings": {
+        "motion_detection_enabled": false
+      }
+    },
+    "json": true
   },
   "response": {
     "status": 200,

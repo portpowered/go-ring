@@ -2,7 +2,7 @@
   "request": {
     "method": "PATCH",
     "origin": "https://api.ring.com",
-    "path": "/devices/{device_id}/devices/{device_id}/settings",
+    "path": "/devices/v1/devices/{device_id}/settings",
     "query": [],
     "headers": {
       "Accept": [
@@ -51,7 +51,7 @@
         },
         "sensitivity": 5,
         "zone_1": {
-          "name": "opaque-7",
+          "name": "opaque-1",
           "state": 2,
           "vertex1": {
             "x": 0,
@@ -87,7 +87,7 @@
           }
         },
         "zone_2": {
-          "name": "opaque-8",
+          "name": "opaque-2",
           "state": 0,
           "vertex1": {
             "x": 0,
@@ -123,7 +123,7 @@
           }
         },
         "zone_3": {
-          "name": "opaque-9",
+          "name": "opaque-3",
           "state": 0,
           "vertex1": {
             "x": 0,
@@ -422,8 +422,8 @@
         "duration": "30s",
         "enable_relay": false,
         "priority": 0,
-        "scheduled_end_time": 1700000005,
-        "scheduled_start_time": 1700000005
+        "scheduled_end_time": 1700000000,
+        "scheduled_start_time": 1700000000
       },
       "general_settings": {
         "auto_power_enabled": false,
@@ -447,7 +447,7 @@
         "keep_alive": 60,
         "keep_alive_auto": 45,
         "sheila": {
-          "host": "opaque-3",
+          "host": "opaque-4",
           "security_fqdn": ""
         }
       },
@@ -458,7 +458,7 @@
         "mode": "cloud",
         "mode_properties": {
           "sheila": {
-            "host": "opaque-3",
+            "host": "opaque-4",
             "security_fqdn": ""
           }
         }
@@ -542,7 +542,7 @@
         "cv_processing_enabled": false,
         "local_storage_enabled": false,
         "offline_module": {
-          "host": "opaque-3",
+          "host": "opaque-4",
           "security_fqdn": ""
         },
         "session_registration_api": 1
@@ -563,7 +563,7 @@
         "streaming_profiles": {
           "freeswitch": {},
           "rms": {
-            "host": "opaque-6",
+            "host": "opaque-5",
             "port": 443
           }
         }
@@ -590,7 +590,7 @@
         "hevc_enabled": false,
         "ignore_zones": {
           "zone1": {
-            "name": "opaque-5",
+            "name": "opaque-6",
             "state": 0,
             "vertex1": {
               "x": 0,
@@ -602,7 +602,7 @@
             }
           },
           "zone2": {
-            "name": "opaque-5",
+            "name": "opaque-6",
             "state": 0,
             "vertex1": {
               "x": 0,
@@ -614,7 +614,7 @@
             }
           },
           "zone3": {
-            "name": "opaque-5",
+            "name": "opaque-6",
             "state": 0,
             "vertex1": {
               "x": 0,
@@ -626,7 +626,7 @@
             }
           },
           "zone4": {
-            "name": "opaque-5",
+            "name": "opaque-6",
             "state": 0,
             "vertex1": {
               "x": 0,
@@ -663,7 +663,7 @@
         "motion": [
           {
             "id": "command-1",
-            "name": "opaque-7",
+            "name": "opaque-1",
             "properties": {
               "detection_types": [
                 "motion"

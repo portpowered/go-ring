@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "origin": "https://api.ring.com",
+    "path": "/groups/v1/locations/{location_id}/devices",
+    "query": [],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": [
+        "application/json"
+      ]
+    },
+    "body": {
+      "groups": []
+    },
+    "json": true
+  }
+}

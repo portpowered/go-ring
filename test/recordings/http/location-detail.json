@@ -1,0 +1,97 @@
+{
+  "request": {
+    "method": "GET",
+    "origin": "https://api.ring.com",
+    "path": "/location_info/v4/locations/{location_id}",
+    "query": [
+      {
+        "name": "include",
+        "value": "capabilities,presentation,status"
+      }
+    ],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": [
+        "application/json"
+      ]
+    },
+    "body": {
+      "meta": {
+        "time": "2026-01-01T00:00:00Z"
+      },
+      "data": {
+        "type": "locations",
+        "id": "command-1",
+        "attributes": {
+          "name": "opaque-1",
+          "city": "Mountlake Terrace",
+          "country": "US",
+          "state": "Washington",
+          "latitude": 0.0,
+          "longitude": 0.0,
+          "address_1": "opaque-2",
+          "address_2": "opaque-3",
+          "zip_code": "opaque-4",
+          "time_zone": "America/Los_Angeles"
+        },
+        "relationships": {
+          "capabilities": {
+            "data": {
+              "type": "capabilities",
+              "id": "command-2"
+            }
+          },
+          "status": {
+            "data": {
+              "type": "status",
+              "id": "command-3"
+            }
+          }
+        }
+      },
+      "included": [
+        {
+          "type": "capabilities",
+          "id": "command-2",
+          "attributes": {
+            "guard_patrol": {
+              "eligible": false,
+              "available": false,
+              "enabled": false,
+              "allowedToPurchase": false,
+              "ineligibility_reasons": [
+                "METADATA_UNAVAILABLE"
+              ],
+              "unavailability_reasons": [
+                "METADATA_UNAVAILABLE"
+              ],
+              "is_allowed_to_purchase": false,
+              "has_active_professional_monitoring_or_vsg": false
+            }
+          }
+        },
+        {
+          "type": "status",
+          "id": "command-3",
+          "attributes": {
+            "guard_patrol": {
+              "eligibility_status": "INELIGIBLE",
+              "service_state": "inactive"
+            }
+          }
+        }
+      ]
+    },
+    "json": true
+  }
+}

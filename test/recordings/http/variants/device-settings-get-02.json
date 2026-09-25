@@ -170,6 +170,7 @@
       "backend_settings": {
         "enable_rich_notifications": true,
         "flick_elim_recommended_mode": 1,
+        "live_view_disabled": true,
         "live_view_preset_profile": "middle",
         "motion_snooze_preset_profile": "low",
         "motion_warning_enabled": false,

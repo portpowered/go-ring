@@ -66,7 +66,7 @@
           "night_mode_on": false,
           "ota_status": "timeout",
           "rss_connected": true,
-          "rssi": -48.0,
+          "rssi": -42.0,
           "rssi_category": "good",
           "second_battery_percentage_category": "unknown",
           "second_battery_voltage_category": "unknown",
@@ -104,8 +104,8 @@
           "vod_enabled": true,
           "battery_error": false,
           "bandwidth_last_time": 1700000002,
-          "firmware_avg_bitrate": "2156761",
-          "video_packets_total": "7165",
+          "firmware_avg_bitrate": "2131270",
+          "video_packets_total": "18284",
           "wifi_is_ring_network": false,
           "wifi_name": "opaque-4",
           "channel": "4",
@@ -134,6 +134,9 @@
         "camera_location_indoor": true,
         "facing_window": false,
         "siren_status": {
+          "started_at": "2026-01-01T00:00:00Z",
+          "duration": "0",
+          "ends_at": "2026-01-01T00:00:00Z",
           "seconds_remaining": 0
         },
         "ext_power_state": null,
@@ -176,11 +179,9 @@
               ]
             },
             "enablement": {
-              "allowed": false,
+              "allowed": true,
               "enabled": false,
-              "disallow_reasons": [
-                "motion_detection_disabled"
-              ]
+              "disallow_reasons": []
             }
           },
           "live_view_audio_privacy_controls": {
@@ -345,8 +346,8 @@
           "dynamic_network_switching_eligible": false,
           "video_recording": {
             "recording_mode": "motion_based",
-            "recording_enabled": false,
-            "recording_state": "inactive",
+            "recording_enabled": true,
+            "recording_state": "active",
             "recording_mode_availability": {
               "continuous": {
                 "supported": true,
@@ -442,7 +443,7 @@
           "advanced_motion_detection_types": [
             "human"
           ],
-          "motion_detection_enabled": false,
+          "motion_detection_enabled": true,
           "rich_notifications_scene_source": "firmware",
           "offline_motion_event_settings": {
             "subscribed": false,

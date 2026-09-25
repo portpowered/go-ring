@@ -1,6 +1,6 @@
 {
   "request": {
-    "method": "GET",
+    "method": "PATCH",
     "origin": "https://api.ring.com",
     "path": "/devices/v1/devices/{device_id}/settings",
     "query": [],
@@ -10,8 +10,12 @@
       ]
     },
     "headers_mode": "required",
-    "body": null,
-    "json": false
+    "body": {
+      "volume_settings": {
+        "voice_volume": 11
+      }
+    },
+    "json": true
   },
   "response": {
     "status": 200,
@@ -170,6 +174,7 @@
       "backend_settings": {
         "enable_rich_notifications": true,
         "flick_elim_recommended_mode": 1,
+        "live_view_disabled": false,
         "live_view_preset_profile": "middle",
         "motion_snooze_preset_profile": "low",
         "motion_warning_enabled": false,
@@ -635,7 +640,7 @@
           }
         },
         "ir_led_brightness": 40,
-        "night_color_enable": false,
+        "night_color_enable": true,
         "qos_policies": 0,
         "recording_24x7_mode": 0,
         "retinal_tuning": {

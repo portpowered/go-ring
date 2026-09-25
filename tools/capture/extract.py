@@ -16,10 +16,10 @@ from mitmproxy.io import FlowReader
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "test" / "recordings"
-PRIVATE_KEY = re.compile(r"token|secret|password|credential|authorization|cookie|email|phone|address|postal|post.?code|zip|latitude|longitude|coordinate|(?:^|_)(?:lat|lon|lng)$|serial|mac|bssid|ssid|fingerprint|ice.?pwd|ice.?ufrag|usernamefragment|private.?key|nonce|(?:^|_)auth(?:_|$)|(?:^|_)sid$|device.?id|doorbot.?id|location.?id|owner|user.?id|account.?id|uuid|session.?id|dialog.?id|riid|command.?id|ticket|cell.?id|ding.?id|ip.?address|(?:^|_)ip$|(?:^|_)id$|(?:^|_)(?:name|description|text|host|region|gateway)$", re.I)
-SAFE_FIELDS = {"method", "jsonrpc", "direction", "reason", "type", "kind", "status", "command_name", "model", "firmware", "hardware_id", "device_type", "device_family", "protocol", "content_type", "codec", "mid", "setup", "fingerprint_type", "network_type", "candidate_type", "sdp_type", "version", "source", "event", "event_type", "notification_type", "notification_scope", "source_type", "action", "role", "state", "timezone"}
+PRIVATE_KEY = re.compile(r"token|secret|password|credential|authorization|cookie|email|phone|address|postal|post.?code|zip|latitude|longitude|coordinate|(?:^|_)(?:lat|lon|lng)$|serial|mac|bssid|ssid|fingerprint|ice.?pwd|ice.?ufrag|usernamefragment|private.?key|nonce|cursor|pagination|continuation|page.?token|(?:^|_)auth(?:_|$)|(?:^|_)sid$|device.?id|doorbot.?id|location(?:.?id)?|owner|user.?id|account.?id|uuid|session.?id|dialog.?id|riid|command.?id|ticket|cell.?id|ding.?id|ip.?address|(?:^|_)ip$|(?:^|_)id$|(?:^|_)(?:name|description|text|host.?name|host|region|gateway|timezone|network.?name)$", re.I)
+SAFE_FIELDS = {"method", "jsonrpc", "direction", "reason", "type", "kind", "status", "command_name", "model", "firmware", "device_type", "device_family", "protocol", "content_type", "codec", "mid", "setup", "fingerprint_type", "network_type", "candidate_type", "sdp_type", "version", "source", "event", "event_type", "notification_type", "notification_scope", "source_type", "action", "role", "state"}
 SAFE_TEXT_ENUMS = {"camera_connected"}
-PRIVATE_TEXT = re.compile(r"(?:[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b\+?\d[\d ()-]{7,}\d\b|\b(?:\d{1,3}\.){3}\d{1,3}\b|\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b|\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b|https?://[^\s\"']+)", re.I)
+PRIVATE_TEXT = re.compile(r"(?:[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b\+?\d[\d ()-]{7,}\d\b|\b(?:\d{1,3}\.){3}\d{1,3}\b|\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b|\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b|https?://[^\s\"']+|(?:api[_ -]?key|access[_ -]?token|refresh[_ -]?token|password|secret|authorization)\s*[:=]\s*[^\s,;]+|-?\d{1,3}\.\d+\s*[,/]\s*-?\d{1,3}\.\d+|\b\d{1,6}\s+[\w .'-]+\b(?:street|st|road|rd|avenue|ave|boulevard|blvd|lane|ln|drive|dr)\b)", re.I)
 
 
 class Sanitizer:
@@ -135,10 +135,21 @@ def json_body(message) -> tuple[bool, object | None]:
 def safe_path(path: str) -> str:
     parts = urlsplit(path)
     p = parts.path
-    p = re.sub(r"(?<=devices/)[^/]+(?=/settings|$)", "{device_id}", p)
-    p = re.sub(r"(?<=devices/)[^/]+(?=/|$)", "{device_id}", p)
-    p = re.sub(r"(?<=locations/)[^/]+(?=/|$)", "{location_id}", p)
-    p = re.sub(r"(?<=doorbots/)[^/]+(?=/|$)", "{device_id}", p)
+    patterns = (
+        (r"^(/device_info/v3/devices/)[^/]+", r"\1{device_id}"),
+        (r"^(/devices/v1/devices/)[^/]+", r"\1{device_id}"),
+        (r"^(/evm/v2/timeline/devices/)[^/]+", r"\1{device_id}"),
+        (r"^(/evm/v4/timeline/devices/)[^/]+", r"\1{device_id}"),
+        (r"^(/clients_api/doorbots/)[^/]+", r"\1{device_id}"),
+        (r"^(/clients_api/dings/)[^/]+", r"\1{recording_id}"),
+        (r"^(/commands/v1/devices/)[^/]+", r"\1{device_id}"),
+        (r"^(/duos/v1/devices/)[^/]+", r"\1{device_id}"),
+        (r"^(/location_info/v4/locations/)[^/]+", r"\1{location_id}"),
+        (r"^(/location_info/v3/locations/)[^/]+", r"\1{location_id}"),
+        (r"^(/groups/v1/locations/)[^/]+", r"\1{location_id}"),
+    )
+    for pattern, replacement in patterns:
+        p = re.sub(pattern, replacement, p)
     return p
 
 
@@ -152,8 +163,53 @@ def eligible(flow) -> str | None:
         if re.fullmatch(r"/clients_api/doorbots/[^/]+/siren_(on|off)", p): return "siren-" + p.rsplit("_", 1)[-1]
         if p == "/evm/v3/history/devices": return "history-devices"
         if re.fullmatch(r"/evm/v2/timeline/devices/[^/]+", p): return "device-timeline"
+        if p == "/location_info/v3/locations": return "location-list"
+        if re.fullmatch(r"/location_info/v4/locations/[^/]+", p): return "location-detail"
+        if re.fullmatch(r"/groups/v1/locations/[^/]+/groups", p): return "groups"
+        if re.fullmatch(r"/groups/v1/locations/[^/]+/devices", p): return "group-devices"
+        if re.fullmatch(r"/clients_api/dings/[^/]+/favorite", p): return "recording-favorite"
+        if re.fullmatch(r"/clients_api/dings/[^/]+", p): return "recording-delete"
+        if re.fullmatch(r"/commands/v1/devices/[^/]+", p): return "device-reboot"
+        if re.fullmatch(r"/duos/v1/devices/[^/]+/update", p): return "duos-update"
     if h == "prd-api-us.prd.rings.solutions" and p == "/api/v1/clap/tickets": return "bootstrap-ticket"
     return None
+
+
+def value_shape(value):
+    if isinstance(value, dict):
+        return {key: value_shape(value[key]) for key in sorted(value)}
+    if isinstance(value, list):
+        shapes = {json.dumps(value_shape(item), sort_keys=True, separators=(",", ":")) for item in value}
+        return {"array": [json.loads(item) for item in sorted(shapes)]}
+    if value is None: return "null"
+    if isinstance(value, bool): return "boolean"
+    if isinstance(value, (int, float)): return "number"
+    return "string"
+
+
+def variant_signature(record: dict) -> str:
+    req, res = record["request"], record["response"]
+    shape = {
+        "method": req["method"], "query": req["query"], "request_json": req["json"],
+        "request_body": req["body"], "status": res["status"], "response_json": res["json"],
+        "response_shape": value_shape(res["body"]),
+    }
+    return json.dumps(shape, sort_keys=True, separators=(",", ":"))
+
+
+def sanitized_exchange(flow) -> dict:
+    req, res = flow.request, flow.response
+    sanitizer = Sanitizer()
+    req_is_json, req_body = json_body(req)
+    res_is_json, res_body = json_body(res)
+    query = [{"name": name, "value": sanitizer.value(value, name)} for name, value in req.query.items(multi=True)]
+    return {
+        "request": {"method": req.method, "origin": "https://" + req.pretty_host, "path": safe_path(req.path), "query": query,
+                    "headers": {"Accept": [req.headers.get("accept", "application/json")]}, "headers_mode": "required",
+                    "body": sanitizer.value(req_body) if req_is_json else None, "json": req_is_json},
+        "response": {"status": res.status_code, "headers": {"Content-Type": ["application/json"]} if res_is_json else {},
+                     "body": sanitizer.value(res_body) if res_is_json else None, "json": res_is_json},
+    }
 
 
 def extract(source: Path) -> None:
@@ -161,7 +217,6 @@ def extract(source: Path) -> None:
     with source.open("rb") as stream:
         flows = list(FlowReader(stream).stream())
     http_records: dict[str, dict] = {}
-    sanitizer = Sanitizer()
     for flow in flows:
         if not flow.request or not flow.response:
             continue
@@ -170,17 +225,30 @@ def extract(source: Path) -> None:
             continue
         if name in http_records:
             continue
-        req, res = flow.request, flow.response
-        req_is_json, req_body = json_body(req)
-        res_is_json, res_body = json_body(res)
-        query = [{"name": name, "value": sanitizer.value(value, name)} for name, value in req.query.items(multi=True)]
-        # Store only useful JSON API exchanges; query/header values are deliberately omitted.
-        http_records[name] = {
-            "request": {"method": req.method, "origin": "https://" + req.pretty_host, "path": safe_path(req.path), "query": query, "headers": {"Accept": [req.headers.get("accept", "application/json")]}, "headers_mode": "required", "body": sanitizer.value(req_body) if req_is_json else None, "json": req_is_json},
-            "response": {"status": res.status_code, "headers": {"Content-Type": ["application/json"]} if res_is_json else {}, "body": sanitizer.value(res_body) if res_is_json else None, "json": res_is_json},
-        }
+        http_records[name] = sanitized_exchange(flow)
     for name, record in http_records.items():
         write_json(OUT / "http" / f"{name}.json", record)
+
+    # Add one fixture for each additional request/body/status/response-shape combination.
+    baseline = {name: {variant_signature(record)} for name, record in http_records.items()}
+    emitted = {name: set(signatures) for name, signatures in baseline.items()}
+    variants: dict[str, list[dict]] = {}
+    for flow in flows:
+        if not flow.request or not flow.response:
+            continue
+        name = eligible(flow)
+        if not name:
+            continue
+        record = sanitized_exchange(flow)
+        signature = variant_signature(record)
+        if signature in emitted.setdefault(name, set()):
+            continue
+        emitted[name].add(signature)
+        variants.setdefault(name, []).append(record)
+    for name, records in variants.items():
+        first_index = 1 if name not in http_records else 2
+        for index, record in enumerate(records, first_index):
+            write_json(OUT / "http" / "variants" / f"{name}-{index:02d}.json", record)
 
     for flow_no in (21, 402):
         flow = flows[flow_no - 1]

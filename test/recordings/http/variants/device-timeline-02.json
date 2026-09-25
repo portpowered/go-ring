@@ -1,0 +1,54 @@
+{
+  "request": {
+    "method": "GET",
+    "origin": "https://api.ring.com",
+    "path": "/evm/v2/timeline/devices/{device_id}",
+    "query": [
+      {
+        "name": "start_time",
+        "value": "2026-01-01T00:00:00Z"
+      },
+      {
+        "name": "end_time",
+        "value": "2026-01-01T00:00:00Z"
+      },
+      {
+        "name": "order",
+        "value": "desc"
+      },
+      {
+        "name": "limit",
+        "value": "20"
+      },
+      {
+        "name": "capabilities",
+        "value": "offline_event"
+      }
+    ],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": [
+        "application/json"
+      ]
+    },
+    "body": {
+      "items": [],
+      "supplemental_data": {
+        "footages": []
+      },
+      "pagination_key": null,
+      "cek_transfer_recipient_response": null
+    },
+    "json": true
+  }
+}

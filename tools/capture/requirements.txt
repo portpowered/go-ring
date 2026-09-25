@@ -1,0 +1,2 @@
+-r ../reference-replay/requirements.txt
+mitmproxy==12.2.3

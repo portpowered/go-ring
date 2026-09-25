@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JSON shape regression probe",
+  "type": "object",
+  "required": ["nullable_value", "items", "device_id", "session_id", "dialog_id", "command_id"],
+  "additionalProperties": false,
+  "properties": {
+    "nullable_value": {"type": "null"},
+    "items": {"type": "array"},
+    "device_id": {"type": "integer"},
+    "session_id": {"type": "string"},
+    "dialog_id": {"type": "string"},
+    "command_id": {"type": "string"}
+  }
+}

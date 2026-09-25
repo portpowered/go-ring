@@ -1,0 +1,24 @@
+{
+  "request": {
+    "method": "PATCH",
+    "origin": "https://api.ring.com",
+    "path": "/commands/v1/devices/{device_id}",
+    "query": [],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": {
+      "command_name": "reboot"
+    },
+    "json": true
+  },
+  "response": {
+    "status": 204,
+    "headers": {},
+    "body": null,
+    "json": false
+  }
+}

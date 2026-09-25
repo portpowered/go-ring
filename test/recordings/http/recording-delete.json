@@ -1,0 +1,27 @@
+{
+  "request": {
+    "method": "DELETE",
+    "origin": "https://api.ring.com",
+    "path": "/clients_api/dings/{recording_id}",
+    "query": [
+      {
+        "name": "confirm_delete_favorite",
+        "value": "false"
+      }
+    ],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 204,
+    "headers": {},
+    "body": null,
+    "json": false
+  }
+}

@@ -14,7 +14,7 @@
       },
       {
         "name": "locationSubscription",
-        "value": "true"
+        "value": "location-2"
       },
       {
         "name": "enableExtendedEmergencyCellUsage",
@@ -42,7 +42,7 @@
       ]
     },
     "body": {
-      "host": "opaque-10",
+      "host": "opaque-1",
       "ticket": "ticket-1",
       "subscriptionTopics": [
         "sanitized-text",

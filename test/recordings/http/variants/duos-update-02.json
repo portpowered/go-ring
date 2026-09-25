@@ -1,0 +1,26 @@
+{
+  "request": {
+    "method": "PUT",
+    "origin": "https://api.ring.com",
+    "path": "/duos/v1/devices/{device_id}/update",
+    "query": [],
+    "headers": {
+      "Accept": [
+        "application/json"
+      ]
+    },
+    "headers_mode": "required",
+    "body": {
+      "entity": {
+        "live_view_enabled": true
+      }
+    },
+    "json": true
+  },
+  "response": {
+    "status": 204,
+    "headers": {},
+    "body": null,
+    "json": false
+  }
+}
