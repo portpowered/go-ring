@@ -36,8 +36,6 @@ func (o WithSignalingDialerOption) Apply(c *Client) error {
 
 type OpenSignalingRequest struct{}
 
-const maxSignalingTicketResponse = 1 << 20
-
 // SignalingConnection owns one authenticated signaling socket and its child device sessions.
 type SignalingConnection struct {
 	client     *Client
@@ -94,12 +92,12 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	var ticket struct {
 		Ticket string `json:"ticket"`
 	}
-	b, readErr := io.ReadAll(io.LimitReader(resp.Body, maxSignalingTicketResponse+1))
+	b, readErr := io.ReadAll(io.LimitReader(resp.Body, signaling.MaxTicketResponseBytes+1))
 	resp.Body.Close()
 	if readErr != nil {
 		return nil, ringapimodels.NewNetworkError("failed to read signaling ticket response", readErr)
 	}
-	if len(b) > maxSignalingTicketResponse {
+	if len(b) > signaling.MaxTicketResponseBytes {
 		return nil, ringapimodels.NewBadRequestError("signaling ticket response exceeds size limit", nil)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -116,7 +114,7 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	wsURL = strings.Replace(wsURL, "{token}", url.QueryEscape(ticket.Ticket), 1)
 	dialer := c.signalingDialer
 	if dialer == nil {
-		d := websocket.Dialer{HandshakeTimeout: 10 * time.Second}
+		d := websocket.Dialer{HandshakeTimeout: signaling.HandshakeTimeout}
 		dialer = &d
 	}
 	h := http.Header{}
@@ -132,7 +130,7 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 		return nil, ringapimodels.NewConnectionError("signaling dialer returned an empty connection", nil)
 	}
 	connCtx, cancel := context.WithCancel(ctx)
-	conn.SetReadLimit(1 << 20)
+	conn.SetReadLimit(signaling.MaxMessageBytes)
 	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), writeGate: make(chan struct{}, 1)}
 	c.mu.Lock()
 	if c.closed {
@@ -177,7 +175,7 @@ func (c *SignalingConnection) send(ctx context.Context, m signaling.Message) err
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	deadline := time.Now().Add(10 * time.Second)
+	deadline := time.Now().Add(signaling.SendTimeout)
 	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
 		deadline = d
 	}

@@ -130,7 +130,7 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 		return nil, fmt.Errorf("maximum session age must be between zero and sixty minutes")
 	}
 	dialog := uuid.NewString()
-	events := make(chan signaling.Message, 128)
+	events := make(chan signaling.Message, signaling.NegotiationQueueCapacity)
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
@@ -146,18 +146,18 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 		cleanup()
 		return nil, err
 	}
-	negotiationCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	negotiationCtx, cancel := context.WithTimeout(ctx, signaling.NegotiationTimeout)
 	defer cancel()
 	var signalID, riid, answerSDP, controlID string
 	startedSuccessfully := false
 	defer func() {
 		if !startedSuccessfully && signalID != "" {
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 			_ = c.send(ctx, signaling.Message{Method: "close", DialogID: dialog, RIID: riid, Body: mustJSON(map[string]any{"doorbot_id": id, "session_id": signalID})})
 			cancel()
 		}
 	}()
-	heartbeat := 5 * time.Second
+	heartbeat := signaling.DefaultHeartbeatInterval
 	for answerSDP == "" || signalID == "" {
 		select {
 		case m := <-events:
@@ -322,7 +322,7 @@ func mustJSON(v any) json.RawMessage { b, _ := json.Marshal(v); return b }
 func (s *DeviceSession) watch() {
 	err := s.core.Wait(context.Background())
 	if errors.Is(err, signaling.ErrExpired) || errors.Is(err, signaling.ErrHeartbeat) {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 		_ = s.connection.send(ctx, signaling.Message{Method: "close", DialogID: s.dialogID, RIID: s.riid, Body: mustJSON(map[string]any{"doorbot_id": s.deviceID, "session_id": s.signalID})})
 		cancel()
 	}
@@ -367,7 +367,20 @@ func (s *DeviceSession) State() SessionState {
 	}
 	return SessionClosed
 }
-func (s *DeviceSession) Wait(ctx context.Context) error { return s.core.Wait(ctx) }
+func (s *DeviceSession) Wait(ctx context.Context) error {
+	err := s.core.Wait(ctx)
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	// Wait for the public wrapper to publish the terminal state and finish its
+	// bounded signaling close after the core has observed expiry or failure.
+	select {
+	case <-s.done:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	return err
+}
 func (s *DeviceSession) Receive(ctx context.Context) (*SessionEvent, error) {
 	m, e := s.core.Receive(ctx)
 	if e != nil {
@@ -496,11 +509,12 @@ func (s *DeviceSession) close(sendClose bool) error {
 	s.terminal = signaling.ErrClosed
 	s.mu.Unlock()
 	if sendClose {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 		_ = s.core.Send(ctx, "close", nil)
 		cancel()
 	}
 	_ = s.core.Close()
 	s.connection.removeSession(s.dialogID)
+	s.doneOnce.Do(func() { close(s.done) })
 	return nil
 }

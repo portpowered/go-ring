@@ -163,12 +163,17 @@ func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
 	if !strings.Contains(dialer.url, "token=synthetic-ticket") || dialer.headers.Get("User-Agent") == "" {
 		t.Fatalf("injected dialer missed endpoint or headers: %s", dialer.url)
 	}
-	session, err := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}, VideoEnabled: true})
+	session, err := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}, VideoEnabled: true, ICEMode: ring.ICETrickle})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got := session.Answer(); got.Type != "answer" || !strings.Contains(got.SDP, "a=sendonly") {
 		t.Fatalf("invalid answer: %+v", got)
+	}
+	for _, candidate := range []ring.ICECandidateRequest{{Candidate: "candidate:x", MID: "unknown", MLineIndex: 0}, {Candidate: "candidate:x", MID: "0", MLineIndex: 1}} {
+		if err = session.SendICE(context.Background(), candidate); err == nil {
+			t.Fatalf("accepted candidate with mismatched media identity: %+v", candidate)
+		}
 	}
 	for _, call := range []func(context.Context) (*ring.PTZResult, error){func(c context.Context) (*ring.PTZResult, error) {
 		return session.PanStep(c, ring.PanStepRequest{Direction: "RIGHT"})
@@ -276,6 +281,7 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 		}
 		type rpc struct {
 			dialog, signal string
+			control        string
 			id             any
 			device         int
 		}
@@ -299,7 +305,7 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 				serverErr <- fmt.Errorf("unknown session dialog")
 				return
 			}
-			calls[i] = rpc{d, fmt.Sprintf("signal-%d", idx+1), cmd["id"], 1001 + idx}
+			calls[i] = rpc{d, fmt.Sprintf("signal-%d", idx+1), fmt.Sprintf("control-%d", idx+1), cmd["id"], 1001 + idx}
 		}
 		// A reply routed to the other dialog must not complete either call.
 		a, b := calls[0], calls[1]
@@ -308,7 +314,7 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 			return
 		}
 		for _, x := range []rpc{b, a} {
-			if e = write(map[string]any{"method": "rpc", "dialog_id": x.dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": x.device, "session_id": x.signal, "command": map[string]any{"jsonrpc": "2.0", "id": x.id, "result": map[string]any{"ok": true}}}}); e != nil {
+			if e = write(map[string]any{"method": "rpc", "dialog_id": x.dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": x.device, "session_id": x.signal, "command": map[string]any{"jsonrpc": "2.0", "id": x.id, "result": map[string]any{"sessionId": x.control, "timestamp": 1700000000001, "version": 1}}}}); e != nil {
 				serverErr <- e
 				return
 			}
