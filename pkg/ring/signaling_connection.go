@@ -43,11 +43,11 @@ type SignalingConnection struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
 	mu         sync.Mutex
-	writeGate  chan struct{}
 	closed     bool
 	terminal   error
 	done       chan struct{}
 	readerDone chan struct{}
+	writer     *signalingWriter
 	pending    map[string]chan signaling.Message
 	sessions   map[string]*DeviceSession
 }
@@ -131,7 +131,8 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	}
 	connCtx, cancel := context.WithCancel(ctx)
 	conn.SetReadLimit(signaling.MaxMessageBytes)
-	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), writeGate: make(chan struct{}, 1)}
+	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession)}
+	s.writer = newSignalingWriter(s.done, s.writeFrame, func(err error) { s.fail(fmt.Errorf("signaling write failed")) })
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
@@ -145,6 +146,7 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	c.signalingConnections[s] = struct{}{}
 	c.mu.Unlock()
 	go s.readLoop()
+	go s.writer.run()
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -164,14 +166,10 @@ func (c *SignalingConnection) send(ctx context.Context, m signaling.Message) err
 		return c.Err()
 	default:
 	}
-	select {
-	case c.writeGate <- struct{}{}:
-		defer func() { <-c.writeGate }()
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-c.done:
-		return c.Err()
-	}
+	return c.writer.send(ctx, m)
+}
+
+func (c *SignalingConnection) writeFrame(ctx context.Context, m signaling.Message) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -180,6 +178,9 @@ func (c *SignalingConnection) send(ctx context.Context, m signaling.Message) err
 		deadline = d
 	}
 	netConn := c.conn.NetConn()
+	// Gorilla caches write deadlines on Conn and reapplies the cached value
+	// inside WriteMessage, so set both the cached deadline and the net.Conn.
+	_ = c.conn.SetWriteDeadline(deadline)
 	_ = netConn.SetWriteDeadline(deadline)
 	cancelWriteDone := make(chan struct{})
 	stopCancel := context.AfterFunc(ctx, func() { _ = netConn.SetWriteDeadline(time.Now()); close(cancelWriteDone) })
@@ -190,10 +191,8 @@ func (c *SignalingConnection) send(ctx context.Context, m signaling.Message) err
 	if !stopCancel() {
 		<-cancelWriteDone
 	}
+	_ = c.conn.SetWriteDeadline(time.Time{})
 	_ = netConn.SetWriteDeadline(time.Time{})
-	if err != nil {
-		c.fail(fmt.Errorf("signaling write failed"))
-	}
 	return err
 }
 
@@ -276,6 +275,7 @@ func (c *SignalingConnection) Close() error {
 	if c.closed {
 		c.mu.Unlock()
 		<-c.readerDone
+		<-c.writer.finished
 		return nil
 	}
 	c.closed = true
@@ -284,8 +284,10 @@ func (c *SignalingConnection) Close() error {
 		children = append(children, s)
 	}
 	c.mu.Unlock()
+	closeCtx, closeCancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
+	defer closeCancel()
 	for _, s := range children {
-		_ = s.close(true)
+		_ = s.closeWithContext(closeCtx, true)
 	}
 	c.mu.Lock()
 	c.terminal = signaling.ErrClosed
@@ -294,6 +296,7 @@ func (c *SignalingConnection) Close() error {
 	c.cancel()
 	_ = c.conn.Close()
 	<-c.readerDone
+	<-c.writer.finished
 	c.client.removeSignaling(c)
 	return nil
 }

@@ -65,7 +65,6 @@ type Session struct {
 	sequence                      uint64
 	pending                       map[string]chan rpcReply
 	events                        chan Message
-	writeGate                     chan struct{}
 }
 
 type SessionConfig struct {
@@ -96,7 +95,7 @@ func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
 		c.Clock = RealClock{}
 	}
 	child, cancel := context.WithCancel(ctx)
-	s := &Session{ctx: child, cancel: cancel, done: make(chan struct{}), clock: c.Clock, send: c.Send, deviceID: c.DeviceID, dialogID: c.DialogID, signalID: c.SignalID, controlID: c.ControlID, lastPong: c.Clock.Now(), expiresAt: c.Clock.Now().Add(c.MaxAge), pending: make(map[string]chan rpcReply), events: make(chan Message, EventQueueCapacity), writeGate: make(chan struct{}, 1)}
+	s := &Session{ctx: child, cancel: cancel, done: make(chan struct{}), clock: c.Clock, send: c.Send, deviceID: c.DeviceID, dialogID: c.DialogID, signalID: c.SignalID, controlID: c.ControlID, lastPong: c.Clock.Now(), expiresAt: c.Clock.Now().Add(c.MaxAge), pending: make(map[string]chan rpcReply), events: make(chan Message, EventQueueCapacity)}
 	// Create timers before returning so fake-clock advances cannot race startup.
 	expiry := c.Clock.After(c.MaxAge)
 	tick := c.Clock.After(c.Heartbeat)
@@ -176,14 +175,6 @@ func (s *Session) Pending() int { s.mu.Lock(); defer s.mu.Unlock(); return len(s
 func (s *Session) Send(ctx context.Context, method string, fields map[string]any) error {
 	if err := ctx.Err(); err != nil {
 		return err
-	}
-	select {
-	case s.writeGate <- struct{}{}:
-		defer func() { <-s.writeGate }()
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-s.done:
-		return s.Wait(context.Background())
 	}
 	s.mu.Lock()
 	closed := s.closed
