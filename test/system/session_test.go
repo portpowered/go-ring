@@ -108,7 +108,7 @@ func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
 			fail(e)
 			return
 		}
-		for i, expected := range []string{"PTZ.Pan.Step", "PTZ.Pan.Step"} {
+		for i, expected := range []string{"PTZ.Pan.Step", "PTZ.Pan.Step", "PTZ.Pan.Continuous"} {
 			msg, e := read()
 			if e != nil {
 				fail(e)
@@ -133,10 +133,30 @@ func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
 				fail(fmt.Errorf("PTZ session ID domain missing"))
 				return
 			}
+			if expected == "PTZ.Pan.Continuous" && params["speed"] != float64(0.5) {
+				fail(fmt.Errorf("expected continuous speed, got %v", params["speed"]))
+				return
+			}
 			if e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": cmd["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": int64(1700000000001 + i), "version": 1}}}}); e != nil {
 				fail(e)
 				return
 			}
+		}
+		stop, e := read()
+		if e != nil {
+			fail(e)
+			return
+		}
+		stopBody, _ := stop["body"].(map[string]any)
+		stopCommand, _ := stopBody["command"].(map[string]any)
+		stopParams, _ := stopCommand["params"].(map[string]any)
+		if stopCommand["method"] != "PTZ.Pan.Continuous" || stopParams["speed"] != float64(0) {
+			fail(fmt.Errorf("close did not stop tracked movement: %v", stopCommand))
+			return
+		}
+		if e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": stopCommand["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": int64(1700000000010), "version": 1}}}}); e != nil {
+			fail(e)
+			return
 		}
 		closeMsg, e := read()
 		if e != nil {
@@ -179,6 +199,8 @@ func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
 		return session.PanStep(c, ring.PanStepRequest{Direction: "RIGHT"})
 	}, func(c context.Context) (*ring.PTZResult, error) {
 		return session.PanStep(c, ring.PanStepRequest{Direction: "LEFT"})
+	}, func(c context.Context) (*ring.PTZResult, error) {
+		return session.PanContinuous(c, ring.PanContinuousRequest{Direction: "RIGHT", Speed: 0.5})
 	}} {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		result, e := call(ctx)
@@ -190,11 +212,11 @@ func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
 			t.Fatal("empty PTZ result")
 		}
 	}
-	if err = session.Close(); err != nil {
-		t.Fatal(err)
-	}
 	if err = conn.Close(); err != nil {
 		t.Fatal(err)
+	}
+	if err = session.Close(); err != nil {
+		t.Fatalf("child close after parent teardown should be harmless: %v", err)
 	}
 	if httpCalls != 1 {
 		t.Fatalf("ticket endpoint called %d times", httpCalls)

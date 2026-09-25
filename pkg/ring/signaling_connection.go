@@ -279,16 +279,18 @@ func (c *SignalingConnection) Close() error {
 		return nil
 	}
 	c.closed = true
-	c.terminal = signaling.ErrClosed
-	close(c.done)
 	children := make([]*DeviceSession, 0, len(c.sessions))
 	for _, s := range c.sessions {
 		children = append(children, s)
 	}
 	c.mu.Unlock()
 	for _, s := range children {
-		_ = s.close(false)
+		_ = s.close(true)
 	}
+	c.mu.Lock()
+	c.terminal = signaling.ErrClosed
+	close(c.done)
+	c.mu.Unlock()
 	c.cancel()
 	_ = c.conn.Close()
 	<-c.readerDone

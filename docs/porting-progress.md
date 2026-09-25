@@ -14,6 +14,21 @@ or payload shape rather than treating one as proof of the other.
 | History | [`tests/test_ring.py::test_doorbell_attributes`](../reference/python-ring-doorbell/tests/test_ring.py) checks legacy per-device history results. | [`device-timeline.json`](../test/recordings/http/device-timeline.json) and [`history-devices.json`](../test/recordings/http/history-devices.json) use EVM routes and response envelopes. | [`TestGetDeviceHistory_Success`](../test/unit/client_recordings_test.go) exercises Go's existing history method against its own legacy fixture. | Python's `/clients_api/doorbots/{id}/history` and its array results are distinct from C1's timeline and grouped-feed contracts; the adapter asserts the gap without feeding EVM data into the legacy parser. |
 | Device detail | Python attribute cases read cached inventory objects; the current Go `GetDevice` also searches its list response. | [`device-detail.json`](../test/recordings/http/device-detail.json) records `GET /device_info/v3/devices/{device_id}`. | `GetDevice` is covered via [`device-list.json`](../test/recordings/http/device-list.json). | The detail recording route has no current public Go method and is not counted as supported-route coverage. |
 
+## Signaling and session implementation status
+
+The signaling API is a partial implementation of the recorded application protocol. These statuses describe tested Go behavior; they do not establish successful media transport against Ring hardware.
+
+| Behavior | Go status | Evidence and limits |
+|---|---|---|
+| Ticket bootstrap and WebSocket ownership | Implemented for the verified legacy POST ticket profile; caller cancellation closes an idle socket. | Synthetic local HTTP/WebSocket test in [`session_test.go`](../test/system/session_test.go). The captured C1 GET ticket profile is not treated as equivalent. |
+| Session start and SDP | Implemented: validates caller offer and device identity, routes `session_created` and SDP by dialog, checks signaling and control-session IDs separately, then activates the session. | Local scripted negotiation and invalid offer cases in [`session_test.go`](../test/system/session_test.go) and [`session_failures_test.go`](../test/system/session_failures_test.go). |
+| ICE | Trickle mode validates candidate MID and m-line index against the caller offer before sending. | Identity mismatch is tested. Non-trickle gathering and a real peer connection/media path remain caller responsibilities and are not verified here. |
+| PTZ RPC | Step commands, separate control-session identity, result correlation, concurrent session routing, and out-of-order replies are implemented. | Synthetic two-session routing test plus captured schema/engine tests. Continuous movement and zero-speed stop use tracked axis/direction; close attempts best-effort zero-speed stops before signaling close. |
+| Heartbeat and expiry | Implemented with negotiated interval, fallback policy, three-interval missed-pong termination, optional shorter MaxAge, `Wait`, and terminal state publication. | System tests cover heartbeat timeout and MaxAge expiry. No automatic reconnect or session renewal is performed. |
+| Queue and socket failures | Bounded event overflow terminates with an exposed backpressure error; a send queued behind another writer can be canceled by its context; pending RPCs fail when the peer closes. | Covered by system and package tests. The public send queue is serialized and deadline bounded; it does not prioritize heartbeat or stop traffic ahead of an already active write. |
+| Session and connection close | Child close is idempotent; tracked continuous movement gets a shared bounded best-effort stop budget before close; connection close tears down children and socket. | Local system test checks child close and duplicate close. Stop acknowledgements depend on peer availability and are not proof of physical movement cessation. |
+| Remote media | Not verified. | The public session accepts caller SDP and returns the signaling answer; it does not create or own a WebRTC peer connection. |
+
 The intentional route difference is explicit: Python's `DEVICES_ENDPOINT` is
 `/clients_api/ring_devices`; C1 captured `/device_info/v3/devices`. The adapter's
 route test asserts that difference. It feeds the captured device object to

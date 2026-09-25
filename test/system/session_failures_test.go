@@ -64,7 +64,7 @@ func TestOversizedTicketResponseIsRejected(t *testing.T) {
 }
 
 func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
-	for _, mode := range []string{"negotiation_cancel", "rpc_remote_close", "session_expiry"} {
+	for _, mode := range []string{"negotiation_cancel", "rpc_remote_close", "session_expiry", "heartbeat_timeout", "event_backpressure"} {
 		t.Run(mode, func(t *testing.T) {
 			tickets := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{"ticket":"x"}`)) }))
 			defer tickets.Close()
@@ -102,7 +102,11 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 					return e
 				}
 				_ = write(map[string]any{"method": "session_created", "dialog_id": first.Dialog, "riid": "r", "body": map[string]any{"doorbot_id": 1001, "session_id": "s"}})
-				_ = write(map[string]any{"method": "sdp", "dialog_id": first.Dialog, "riid": "r", "body": map[string]any{"doorbot_id": 1001, "session_id": "s", "type": "answer", "sdp": answerSDP, "session_info": map[string]any{"session_id": "c", "ping_interval": 10}}})
+				pingInterval := 10
+				if mode == "heartbeat_timeout" {
+					pingInterval = 1
+				}
+				_ = write(map[string]any{"method": "sdp", "dialog_id": first.Dialog, "riid": "r", "body": map[string]any{"doorbot_id": 1001, "session_id": "s", "type": "answer", "sdp": answerSDP, "session_info": map[string]any{"session_id": "c", "ping_interval": pingInterval}}})
 				for _, want := range []string{"activate_session", "mic_enable", "stream_options"} {
 					_, msg, e := c.ReadMessage()
 					if e != nil || !strings.Contains(string(msg), want) {
@@ -110,6 +114,37 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 					}
 				}
 				_ = write(map[string]any{"method": "camera_started", "dialog_id": first.Dialog, "riid": "r", "body": map[string]any{"doorbot_id": 1001, "session_id": "s"}})
+				if mode == "heartbeat_timeout" {
+					pings := 0
+					for i := 0; i < 4; i++ {
+						_, msg, e := c.ReadMessage()
+						if e != nil {
+							return
+						}
+						var v struct {
+							Method string `json:"method"`
+						}
+						_ = json.Unmarshal(msg, &v)
+						if v.Method == "ping" {
+							pings++
+						}
+						if v.Method == "close" {
+							if pings < 2 {
+								t.Errorf("heartbeat closed after only %d pings", pings)
+							}
+							return
+						}
+					}
+					return
+				}
+				if mode == "event_backpressure" {
+					for i := 0; i < 40; i++ {
+						if write(map[string]any{"method": "motion_event", "dialog_id": first.Dialog, "riid": "r", "body": map[string]any{"doorbot_id": 1001, "session_id": "s", "sequence": i}}) != nil {
+							return
+						}
+					}
+					return
+				}
 				_, msg, e := c.ReadMessage()
 				if e != nil {
 					return
@@ -154,18 +189,32 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 				return
 			}
 			request := ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}}
-			if mode == "session_expiry" {
-				request.MaxAge = 25 * time.Millisecond
+			if mode == "session_expiry" || mode == "heartbeat_timeout" || mode == "event_backpressure" {
+				if mode == "session_expiry" {
+					request.MaxAge = 25 * time.Millisecond
+				}
 			}
 			session, err := conn.StartDeviceSession(context.Background(), request)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if mode == "session_expiry" {
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			if mode == "session_expiry" || mode == "heartbeat_timeout" || mode == "event_backpressure" {
+				waitLimit := time.Second
+				want := error(ring.ErrSessionExpired)
+				state := ring.SessionExpired
+				if mode == "heartbeat_timeout" {
+					waitLimit = 5 * time.Second
+					want = ring.ErrSessionHeartbeat
+					state = ring.SessionFailed
+				}
+				if mode == "event_backpressure" {
+					want = ring.ErrSessionBackpressure
+					state = ring.SessionFailed
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), waitLimit)
 				err = session.Wait(ctx)
 				cancel()
-				if !errors.Is(err, ring.ErrSessionExpired) || session.State() != ring.SessionExpired {
+				if !errors.Is(err, want) || session.State() != state {
 					t.Fatalf("expired session state=%s err=%v", session.State(), err)
 				}
 				return

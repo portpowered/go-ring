@@ -18,9 +18,10 @@ import (
 type SessionState string
 
 var (
-	ErrSessionClosed    = signaling.ErrClosed
-	ErrSessionExpired   = signaling.ErrExpired
-	ErrSessionHeartbeat = signaling.ErrHeartbeat
+	ErrSessionClosed       = signaling.ErrClosed
+	ErrSessionExpired      = signaling.ErrExpired
+	ErrSessionHeartbeat    = signaling.ErrHeartbeat
+	ErrSessionBackpressure = signaling.ErrBackpressure
 )
 
 const (
@@ -507,11 +508,22 @@ func (s *DeviceSession) close(sendClose bool) error {
 	}
 	s.closed = true
 	s.terminal = signaling.ErrClosed
+	movements := make(map[PTZAxis]string, len(s.movement))
+	for axis, direction := range s.movement {
+		movements[axis] = direction
+	}
+	s.movement = make(map[PTZAxis]string)
 	s.mu.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
+	defer cancel()
 	if sendClose {
-		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
+		// Stop each tracked continuous move before closing the signaling session.
+		// Both RPC acknowledgements and the final close share one short best-effort budget.
+		for axis, direction := range movements {
+			method := "PTZ." + stringsTitle(string(axis)) + ".Continuous"
+			_, _ = s.call(ctx, method, map[string]any{"direction": direction, "speed": 0.0})
+		}
 		_ = s.core.Send(ctx, "close", nil)
-		cancel()
 	}
 	_ = s.core.Close()
 	s.connection.removeSession(s.dialogID)
