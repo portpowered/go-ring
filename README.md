@@ -143,9 +143,9 @@ and run `python tools/verify_reference.py`. This runs the pinned Python tests,
 shared recording adapters, and schema/sanitizer checks in separate local
 environments. The private mitmproxy file is not required for CI.
 
-The improvement plan targets 90% statement coverage of maintained handwritten
-library code, alongside behavioral and race tests. This is a completion target,
-not a claim that the current checkout meets it. Live tests are opt-in via
+The maintained library coverage gate requires 90% statement coverage, alongside
+behavioral and race tests. The completed offline verification run passed at
+90.11%; see [verification results](docs/verification.md) for scope and commands. Live tests are opt-in via
 `make test-integration` and require explicit credentials and device configuration.
 
 ## Compatibility and license

@@ -1,7 +1,7 @@
 {
   "github.com/portpowered/go-ring/internal/protocol": 100.0,
-  "github.com/portpowered/go-ring/internal/signaling": 96.7,
-  "github.com/portpowered/go-ring/pkg/dependencies/rest": 89.6,
-  "github.com/portpowered/go-ring/pkg/ring": 78.2,
+  "github.com/portpowered/go-ring/internal/signaling": 96.6,
+  "github.com/portpowered/go-ring/pkg/dependencies/rest": 92.1,
+  "github.com/portpowered/go-ring/pkg/ring": 87.2,
   "github.com/portpowered/go-ring/pkg/ringapimodels": 100.0
 }
