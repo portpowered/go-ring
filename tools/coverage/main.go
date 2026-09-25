@@ -33,17 +33,31 @@ func main() {
 	if len(packages) == 0 {
 		fail(fmt.Errorf("no maintained library packages found"))
 	}
-	cmd := exec.Command("go", "test", "-race", "-coverpkg="+strings.Join(packages, ","), "-coverprofile=coverage.out", "-covermode=atomic", "./...", "-timeout", "120s")
+	profileFile, err := os.CreateTemp(".", "coverage.*.out")
+	if err != nil {
+		fail(err)
+	}
+	profilePath := profileFile.Name()
+	if err = profileFile.Close(); err != nil {
+		fail(err)
+	}
+	defer os.Remove(profilePath)
+	cmd := exec.Command("go", "test", "-race", "-coverpkg="+strings.Join(packages, ","), "-coverprofile="+profilePath, "-covermode=atomic", "./...", "-timeout", "120s")
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
 		fail(err)
 	}
-	profile, err := os.ReadFile("coverage.out")
+	profile, err := os.ReadFile(profilePath)
 	if err != nil {
 		fail(err)
 	}
 	covered, total, err := totals(profile)
 	if err != nil {
+		fail(err)
+	}
+	// Publish only the completed profile; parallel runs cannot corrupt each
+	// other's instrumentation or coverage calculation.
+	if err = os.Rename(profilePath, "coverage.out"); err != nil {
 		fail(err)
 	}
 	percent := 100 * float64(covered) / float64(total)
