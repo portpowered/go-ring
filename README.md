@@ -1,24 +1,25 @@
 # go-ring
 
 [![CI](https://github.com/portpowered/go-ring/actions/workflows/ci.yml/badge.svg)](https://github.com/portpowered/go-ring/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/portpowered/go-ring)](https://github.com/portpowered/go-ring/releases)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/portpowered/go-ring)](https://go.dev/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/portpowered/go-ring.svg)](https://pkg.go.dev/github.com/portpowered/go-ring)
 [![License](https://img.shields.io/github/license/portpowered/go-ring)](LICENSE)
-[![Coverage](https://codecov.io/gh/portpowered/go-ring/branch/main/graph/badge.svg)](https://codecov.io/gh/portpowered/go-ring)
-[![Go Report Card](https://goreportcard.com/badge/github.com/portpowered/go-ring)](https://goreportcard.com/report/github.com/portpowered/go-ring)
-![GitHub stars](https://img.shields.io/github/stars/portpowered/go-ring?style=social)
 
-Golang library for integrating against ring doorbells. 
+A Go client for Ring authentication, devices, controls, recordings, and persistent
+signaling sessions. The library is being improved against a pinned
+[Python reference](reference/python-ring-doorbell) and sanitized network
+recordings. See the [porting progress](docs/porting-progress.md) and
+[feature parity matrix](docs/parity-matrix.md) for verified behavior and gaps.
 
-# Install
+## Install
 
-```bash
-go get github.com/portpowered/go-ring@v0.1.0
+Requires Go 1.24 or later. Normal Go consumers do not need Python or the reference
+submodule. The new signaling APIs are under development in this checkout; select
+a release or commit that contains the API you use.
+
+```sh
+go get github.com/portpowered/go-ring
 ```
 
-
-# Examples
 ## List devices
 
 ```go
@@ -29,6 +30,8 @@ import (
     "fmt"
     "log"
     "os"
+    "time"
+
     "github.com/portpowered/go-ring/pkg/ring"
 )
 
@@ -36,104 +39,109 @@ func main() {
     client, err := ring.NewClient(ring.WithAccessToken(os.Getenv("RING_ACCESS_TOKEN")))
     if err != nil { log.Fatal(err) }
     defer client.Close()
-    devices, err := client.ListDevices(context.Background())
+
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+    devices, err := client.ListDevices(ctx)
     if err != nil { log.Fatal(err) }
     fmt.Println(len(devices.Doorbells))
 }
 ```
 
-## Auth
+The [examples](examples) compile with the library. Running them contacts Ring and
+may operate a device; normal tests do not run them.
 
-Use `Authenticate(ctx, ring.AuthenticateRequest{...})` for username/password and optional OTP, or `RefreshToken(ctx, ring.RefreshTokenRequest{...})` to refresh a session. `WithTokenGetter` lets a caller supply credentials dynamically. Callers own secure storage and account permissions.
+## Authentication
 
-```go
+Existing authentication mechanisms remain supported: `Request2FACode`,
+`Authenticate` with an optional OTP, `RefreshToken`, `WithAccessToken`, and
+`WithTokenGetter`. See the complete [token exchange example](examples/token-exchange/main.go).
+Callers own credential storage and token persistence. Do not log access tokens,
+refresh tokens, ticket URLs, or raw recordings. A static access token does not
+provide automatic refresh; use the existing refresh API or a token getter to
+supply renewed credentials.
 
-package main
+## Connections and device sessions
 
-import (
-    "context"
-    "fmt"
-    "log"
-    "os"
-    "github.com/portpowered/go-ring/pkg/ring"
-)
+`Client.OpenSignaling` opens an authenticated WebSocket. Its
+`SignalingConnection.StartDeviceSession` creates a child device session from a
+caller-provided SDP offer. `DeviceSession` owns negotiated identity, heartbeat,
+SDP/ICE exchange, microphone/stream controls, and PTZ requests. This connection
+is broader than an RTC media stream; the caller's WebRTC stack transports media.
 
-func main() {
-    client, err := ring.NewClient()
-    err = client.Request2FACode(ctx, ring.Request2FACodeRequest{
-        Username: username,
-        Password: password,
-    })
+Session methods include `Answer`, `SendICE`, `PanStep`, `TiltStep`,
+`PanContinuous`, `TiltContinuous`, `StopPTZ`, `SetMicrophone`, `SetStreamOptions`,
+`Receive`, `Wait`, and `Close`. PTZ results acknowledge commands; they do not
+prove physical positioning. Device capabilities vary. Zoom is not verified.
 
-    authResp, err := client.Authenticate(ctx, ring.AuthenticateRequest{
-		Username: username,
-		Password: password,
-		OTPCode:  otpCode,
-	})
-}
+Close the session when finished, close the connection to release its children,
+and close the client when its work is done. Keep the connection and session
+contexts alive for their intended lifetime. Cancellation ends owned work.
+Sessions have a maximum lifetime of 60 minutes, an SDK policy rather than a
+proven vendor timeout. See [session design](docs/session-design.md) for SDP
+construction, identity domains, heartbeat and teardown rules; sections marked
+as target behavior remain implementation requirements.
 
+| Surface | Evidence and limits |
+|---|---|
+| Authentication and existing HTTP methods | Existing Go regression tests; Python behavior baseline. The new capture contains no OAuth token exchange. |
+| v3 device inventory | Recorded Go system tests and Python device-model comparison; Python's legacy inventory route differs. |
+| SDP and PTZ | Captured conversation/schema replay plus local connection tests. Signaling ticket bootstrap is separately based on the existing POST mechanism. |
+| Other captured HTTP routes | Committed schemas and exchanges; presence in OpenAPI does not imply a public SDK method. |
+| Push and playback | Present in recordings; full public abstractions remain planned. Existing event WebSocket behavior is experimental. |
+
+The captured GET `/api/v1/clap/tickets` has not been proven equivalent to the
+existing POST signaling ticket bootstrap. Offline replay is not a live
+compatibility guarantee for every model, region, or account.
+
+## Configuration and errors
+
+Use `WithHTTPClient` for a custom HTTP client, `WithWebSocketDialer` for signaling
+transport, `WithRegion` for US/EU/FE, and `WithEndpoints` for per-client endpoint
+overrides. Explicit endpoints win regardless of region option order. EU/FE
+Solutions bootstrap defaults are unverified and require an explicit endpoint;
+no regional hostname is guessed. Local HTTP/WebSocket servers are supported for
+tests. Endpoint constants live in `internal/protocol/endpoints.go`, configuration
+in `pkg/ring/endpoints.go`; see [ownership and configuration](docs/constants-and-configuration.md).
+
+Pass bounded contexts to HTTP operations. Check returned errors before using
+results, and handle session termination through `Wait` or `Receive`. A lost
+connection ends its device sessions; create a new connection explicitly.
+Mutating PTZ requests are not automatically retried, because a lost reply does
+not prove a command was not executed.
+
+## Protocols and development
+
+- [Overall implementation plan](docs/library-improvement-plan.md) and [porting process](docs/internal/process-of-reverse-engineering.md)
+- [OpenAPI HTTP contracts](api/openapi.yaml) and [AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
+- [Recording formats and verification order](docs/replay-format.md)
+- [Sanitized recordings](test/recordings/README.md) and [legacy fixture provenance](test/fixtures/README.md)
+- [Contributing](CONTRIBUTING.md)
+
+```sh
+go test -race ./... -timeout 120s
+go vet ./...
+go build ./examples/...
 ```
 
-From that authResp, the object looks like
-```
+Set `GOWORK=off` when testing this module independently of a surrounding workspace.
+For the reference-first comparison checks, initialize the submodule, install uv,
+and run `python tools/verify_reference.py`. This runs the pinned Python tests,
+shared recording adapters, and schema/sanitizer checks in separate local
+environments. The private mitmproxy file is not required for CI.
 
-// AuthResponse represents an authentication response
-type AuthResponse struct {
-	AccessToken  string
-	RefreshToken string
-	ExpiresIn    int
-	TokenType    string
-}
-```
+The improvement plan targets 90% statement coverage of maintained handwritten
+library code, alongside behavioral and race tests. This is a completion target,
+not a claim that the current checkout meets it. Live tests are opt-in via
+`make test-integration` and require explicit credentials and device configuration.
 
-You then use the access token to access websites, and store them for as long as the token refresh duration lasts. 
+## Compatibility and license
 
-# Supported surface and evidence
+Intentional API changes are allowed during this improvement work. Existing
+`StartRTCStream`/`StopRTCStream` remain legacy APIs; prefer the new session model
+for new signaling work once its required behavior is verified. A release must
+publish migration guidance for any removed or changed API.
 
-1. Authentication to retrieve auth tokens. Via refresh token | OTP
-2. Video connection via WebRTC
-3. device controls for volume
-
-# Examples
-
-Examples use real credentials/devices and are never run by normal CI:
-
-- `go run ./examples/token-exchange` — authentication and refresh.
-- `go run ./examples/enumerate-devices` — list devices.
-- `go run ./examples/chime-sound` — trigger a device action.
-- `go run ./examples/download-recordings` — download a recording.
-- `go run ./examples/rtc-stream` — RTC signaling.
-
-
-# Development
-
-```bash
-make check
-make test-race
-make build-examples
-```
-
-Normal tests use fixtures and local servers, with no vendor credentials. Live tests require `make test-integration` and explicit environment configuration. See [fixture provenance](test/fixtures/README.md) and [contributing](CONTRIBUTING.md).
-
-## Architecture definition
-
-How ring works is basically you setup an auth connection and exchange some tokens for auth. 
-You use those auth tokens to establish a websocket connection. 
-The websocket connection is used as a data channel to like make sure a connection is alive, and to send/receive messages. 
-Additioanlly, the websocket is used to send a signal to establish a video connection, via sending a webRTC SDP. 
-The SDP is then sent to establish a connection between the device and some webRTC target. 
-
-## References
-
-Implementation was based on various libraries: 
-### Python
-1. https://github.com/python-ring-doorbell/python-ring-doorbell
-### PHP
-2. https://github.com/jeroenmoors/php-ring-api
-### Javascript
-3. https://github.com/tsightler/ring-mqtt
-4. https://github.com/dgreif/ring
-
-## Releases and compatibility
-
-Licensed under Apache-2.0; see [LICENSE](LICENSE).
+Go implementation: Apache-2.0, see [LICENSE](LICENSE). The separately vendored
+Python reference retains its own LGPL-3.0-or-later license. Its source and tests
+are a comparison baseline, not a relicensing of this library.
