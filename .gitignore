@@ -3,3 +3,7 @@
 .env
 tokens.json
 .DS_Store
+
+# Private native network captures; commit reviewed sanitized cassettes only.
+/docs/internal/*.mitmproxy
+/docs/internal/*.har
