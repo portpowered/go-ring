@@ -320,3 +320,80 @@ func TestSendRejectsExpiredSessionBeforeTimerDelivery(t *testing.T) {
 		t.Fatalf("terminal = %v", err)
 	}
 }
+
+func TestSessionRejectsInvalidStartupWithoutSending(t *testing.T) {
+	for name, change := range map[string]func(*SessionConfig){
+		"missing identity":      func(c *SessionConfig) { c.DialogID = "" },
+		"same identity domains": func(c *SessionConfig) { c.ControlID = c.SignalID },
+		"missing heartbeat":     func(c *SessionConfig) { c.Heartbeat = 0 },
+		"unbounded heartbeat":   func(c *SessionConfig) { c.Heartbeat = 2 * time.Minute },
+		"negative max age":      func(c *SessionConfig) { c.MaxAge = -time.Second },
+		"extended max age":      func(c *SessionConfig) { c.MaxAge = MaxSessionAge + time.Second },
+	} {
+		t.Run(name, func(t *testing.T) {
+			config := SessionConfig{DeviceID: 1001, DialogID: "d", SignalID: "s", ControlID: "c", Heartbeat: time.Second, Clock: newClock(), Send: func(context.Context, Message) error { t.Error("invalid session sent a message"); return nil }}
+			change(&config)
+			if s, err := NewSession(context.Background(), config); err == nil {
+				s.Close()
+				t.Fatal("invalid startup succeeded")
+			}
+		})
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if s, err := NewSession(ctx, SessionConfig{DeviceID: 1001, DialogID: "d", SignalID: "s", ControlID: "c", Heartbeat: time.Second, Send: func(context.Context, Message) error { return nil }}); !errors.Is(err, context.Canceled) || s != nil {
+		t.Fatalf("canceled startup: %v", err)
+	}
+}
+
+func TestSessionCancellationAndMalformedPayloadDoNotLeakPendingWork(t *testing.T) {
+	s, _, out := setupSession(t)
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := s.Receive(canceled); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	if err := s.Wait(canceled); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	if err := s.Send(canceled, "mic_enable", nil); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	if _, err := s.Call(canceled, "PTZ.Pan.Step", nil); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	if _, err := s.Call(context.Background(), "PTZ.Pan.Step", map[string]any{"invalid": make(chan int)}); err == nil {
+		t.Fatal("accepted unencodable command")
+	}
+	if s.Pending() != 0 {
+		t.Fatal("malformed/canceled call retained pending entry")
+	}
+	select {
+	case <-out:
+		t.Fatal("canceled/malformed operation reached peer")
+	default:
+	}
+	if err := s.Handle(Message{DialogID: "dialog", Method: "rpc", Body: json.RawMessage(`{`)}); err == nil {
+		t.Fatal("accepted malformed body")
+	}
+	s.Fail(nil)
+	if _, err := s.Receive(context.Background()); !errors.Is(err, ErrClosed) {
+		t.Fatal(err)
+	}
+	if _, err := s.Call(context.Background(), "PTZ.Pan.Step", nil); !errors.Is(err, ErrClosed) {
+		t.Fatal(err)
+	}
+	if err := s.Send(context.Background(), "ping", nil); !errors.Is(err, ErrClosed) {
+		t.Fatal(err)
+	}
+	if err := s.Handle(Message{DialogID: "dialog", Method: "pong", Body: json.RawMessage(`{"doorbot_id":1001,"session_id":"signal"}`)}); !errors.Is(err, ErrClosed) {
+		t.Fatal(err)
+	}
+}
+
+func TestRPCErrorFormattingDoesNotExposePeerText(t *testing.T) {
+	err := &RPCError{Code: -32602, Message: "private response body"}
+	if err.Error() != "session RPC error -32602" {
+		t.Fatalf("unsafe error text: %s", err)
+	}
+}

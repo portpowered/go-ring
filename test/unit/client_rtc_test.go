@@ -2,6 +2,7 @@ package unit
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -909,9 +910,10 @@ func TestRTCStream_ForceCorrectSDPAnswer(t *testing.T) {
 }
 
 func TestStopRTCStream(t *testing.T) {
-	for _, how := range []string{"stop", "client-close", "context-cancel"} {
+	for _, how := range []string{"stop", "client-close", "context-cancel", "keepalive"} {
 		t.Run(how, func(t *testing.T) {
 			disconnected := make(chan struct{})
+			pingSeen := make(chan struct{}, 1)
 			wsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
 				if err != nil {
@@ -931,8 +933,19 @@ func TestStopRTCStream(t *testing.T) {
 					return
 				}
 				for {
-					if _, _, err := conn.ReadMessage(); err != nil {
+					_, body, err := conn.ReadMessage()
+					if err != nil {
 						return
+					}
+					var message map[string]any
+					if json.Unmarshal(body, &message) == nil && message["method"] == "ping" {
+						select {
+						case pingSeen <- struct{}{}:
+						default:
+						}
+						if err = conn.WriteJSON(map[string]any{"method": "pong", "dialog_id": dialog, "body": map[string]any{"session_id": "legacy-test-session"}}); err != nil {
+							return
+						}
 					}
 				}
 			}))
@@ -940,13 +953,20 @@ func TestStopRTCStream(t *testing.T) {
 			client, transport := newTestClientWithRTCWebSocketURL("test_token", strings.Replace(wsServer.URL, "http://", "ws://", 1))
 			defer client.Close()
 			transport.SetResponseWithBody("POST", "/api/v1/clap/ticket/request/signalsocket", http.StatusOK, map[string]any{"ticket": "synthetic-ticket"})
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 			defer cancel()
 			stream, err := client.StartRTCStream(ctx, ring.StartRTCStreamRequest{DeviceID: "1001", SDPOffer: "v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n"})
 			require.NoError(t, err)
 			require.NotEmpty(t, stream.GetStreamID())
+			if how == "keepalive" {
+				select {
+				case <-pingSeen:
+				case <-time.After(6 * time.Second):
+					t.Fatal("legacy idle session did not send keepalive")
+				}
+			}
 			switch how {
-			case "stop":
+			case "stop", "keepalive":
 				require.NoError(t, client.StopRTCStream(ctx, ring.StopRTCStreamRequest{StreamID: stream.GetStreamID()}))
 			case "client-close":
 				require.NoError(t, client.Close())
