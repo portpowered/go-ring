@@ -46,8 +46,8 @@ The C1 socket is wss://api.prod.signalling.ring.devices.a2z.com/ws. HTTP upgrade
 
 | Raw message / behavior | Current Go | Python reference | C1 | Target shape and test |
 |---|---|---|---|---|
-| Connect/close signaling socket | OpenSignaling owns shared transport and children; legacy RTCStream remains | Per RingWebRtcStream | 3 upgrades, 497 messages | SignalingConnection owns transport and children |
-| live_view offer | StartDeviceSession with explicit media options; legacy StartRTCStream remains | generate; audio/video enabled | 5 sends | StartDeviceSession with explicit media options; no hardcoded mismatch |
+| Connect/close signaling socket | OpenSignaling owns shared transport and children; RTCStream removed | Per RingWebRtcStream | 3 upgrades, 497 messages | SignalingConnection owns transport and children |
+| live_view offer | StartDeviceSession with explicit media options | generate; audio/video enabled | 5 sends | StartDeviceSession with explicit media options; no hardcoded mismatch |
 | session_created | DeviceSession validates device/dialog/session identity | Stores signaling ID | 5 receives | DeviceSession identity, distinguish from control ID |
 | sdp answer | Typed Answer; parsed MID-based direction normalization and offer validation | Return or callback; normalization | 11 receives including playback | Typed Answer and readiness; validate negotiated profile |
 | ice | SendICE with MID/index validation; Receive supplies remote wire events | Send plus callback/collection | 19 sends, 36 receives | SendICE and typed remote-ICE events; bounded pre-answer buffering |
@@ -61,9 +61,9 @@ The C1 socket is wss://api.prod.signalling.ring.devices.a2z.com/ws. HTTP upgrade
 | Zoom / presets / absolute positioning | — | No corresponding API found | Not observed | Out of supported target until evidenced |
 | ping / pong | Negotiated interval, matching-pong deadline and tested heartbeat failure | 5-second pinger; caller keep_alive age limits sending | 74 / 74, advertised interval 10 | Automatic liveness, deadline-driven failure, no caller ping loop |
 | Session lifetime 60 minutes | DeviceSession hard maximum including negotiation; fake-clock core tests | No 60-minute maximum identified | Not established by short captures | Explicit requested SDK policy, fake-clock expiry tests |
-| close | DeviceSession.Close and parent ownership; legacy StopRTCStream now acts on registered IDs | close and remote-close callback | 10 sends / 1 receive | DeviceSession.Close; typed terminal reason; bounded drain |
-| playback + SDP/ICE | — | No playback WebSocket sender found | 6 sends | Separate PlaybackSession scope, not implicit LiveView mode |
-| push_subscribe / ack / heartbeat / event / unsubscribe | Experimental unrelated /clients_api/ws event API | FCM listener, different transport | All observed | EventSubscription on SignalingConnection; transport parity remains partial |
+| close | DeviceSession.Close and parent ownership; legacy StopRTCStream removed | close and remote-close callback | 10 sends / 1 receive | DeviceSession.Close; typed terminal reason; bounded drain |
+| playback + SDP/ICE | StartPlayback returns PlaybackSession with answer, ICE send/receive, ping and close; focused captured replay | No playback WebSocket sender found | 6 sends | Live media decoding and recovery remain unverified |
+| push_subscribe / ack / heartbeat / event / unsubscribe | SubscribePush returns PushSubscription with typed event and explicit close; focused captured replay | FCM listener, different transport | All observed | Subscription heartbeat cadence and live delivery need field verification |
 | Media reception / decoding | Pion example; core client supplies signaling | Requires external WebRTC client | SDP/ICE, no media capability certification | Caller-owned peer connection; SDK handles signaling/control |
 | Socket/session reconnection | No complete recovery contract | No complete recovery contract | No proven resumability | Explicit reopen; never replay movement automatically |
 
@@ -71,6 +71,6 @@ The C1 socket is wss://api.prod.signalling.ring.devices.a2z.com/ws. HTTP upgrade
 
 Maintain operation, reference function/test, actual recording file, schema, and Go test links in this matrix and [porting progress](porting-progress.md). Keep source support, replay support and live verification separate. No capture manifest or generated metadata registry is required. These reviewed Markdown tables are the mapping.
 
-Release scope: existing HTTP methods, Python-profile snapshots and recording share URLs, and DeviceSession with keepalive, SDP/ICE, PTZ, and controls have offline replay coverage. Playback and push subscriptions remain separate backlog items; their implementation needs focused conversation fixtures. Python-only intercom and group features remain visible rather than being implied by a general parity claim. The C1 app-snaps profile still lacks a response contract.
+Release scope: existing HTTP methods, Python-profile snapshots and recording share URLs, DeviceSession with keepalive, SDP/ICE, PTZ, and controls, plus focused playback and push conversation replay. Python-only intercom and group features remain visible rather than being implied by a general parity claim. The C1 app-snaps profile still lacks a response contract.
 
-Sources: current Go `pkg/ring`, `pkg/dependencies/rest`, `examples/rtc-stream`; pinned Python `ring.py`, `auth.py`, `generic.py`, `doorbot.py`, `chime.py`, `stickup_cam.py`, `group.py`, `other.py`, `webrtcstream.py`, `listen/eventlistener.py`; C1 local flow/message inspection. See [the pinned Python source](https://github.com/python-ring-doorbell/python-ring-doorbell/tree/486193a80e7c924a0ab14b04d47305e1b36e419e/ring_doorbell).
+Sources: current Go `pkg/ring`, `pkg/dependencies/rest`, `examples/device-session`; pinned Python `ring.py`, `auth.py`, `generic.py`, `doorbot.py`, `chime.py`, `stickup_cam.py`, `group.py`, `other.py`, `webrtcstream.py`, `listen/eventlistener.py`; C1 local flow/message inspection. See [the pinned Python source](https://github.com/python-ring-doorbell/python-ring-doorbell/tree/486193a80e7c924a0ab14b04d47305e1b36e419e/ring_doorbell).

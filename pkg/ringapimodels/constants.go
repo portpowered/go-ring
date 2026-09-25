@@ -16,10 +16,10 @@ const (
 	RingDingsHistoryEndpoint = protocol.DingsHistoryPath
 	RingRecordingEndpoint    = protocol.RecordingPath
 
-	// RTC Streaming endpoints
-	RingAppAPIURI                     = protocol.USSolutionsBaseURL
-	RingRTCStreamingTicketEndpoint    = protocol.TicketPath
-	RingRTCStreamingWebSocketEndpoint = protocol.SignalingURL
+	// Shared signaling endpoints for live view, playback and push.
+	RingAppAPIURI             = protocol.USSolutionsBaseURL
+	RingSignalingTicketPath   = protocol.TicketPath
+	RingSignalingWebSocketURL = protocol.SignalingURL
 
 	// Default user agent
 	DefaultUserAgent = "android:com.ringapp"

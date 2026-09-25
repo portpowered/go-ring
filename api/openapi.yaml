@@ -24,8 +24,6 @@ paths:
         in the C1 HTTP captures.
       servers: [{url: https://oauth.ring.com}]
       security: []
-      x-contract-source: existing-go-and-pinned-python
-      x-evidence: [../pkg/dependencies/rest/auth.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
       parameters:
         - {name: redirect_uri, in: query, required: false, schema: {type: string, format: uri}}
         - {name: client_id, in: query, required: false, schema: {type: string}}
@@ -59,8 +57,6 @@ paths:
         form data, never query parameters. No C1 capture establishes this flow.
       servers: [{url: https://oauth.ring.com}]
       security: []
-      x-contract-source: existing-go-and-pinned-python
-      x-evidence: [../pkg/dependencies/rest/auth.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
       requestBody:
         required: true
         content:
@@ -83,8 +79,6 @@ paths:
       description: Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
       servers: [{url: https://oauth.ring.com}]
       security: []
-      x-contract-source: existing-go-and-pinned-python
-      x-evidence: [../pkg/dependencies/rest/auth.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
       requestBody:
         required: true
         content:
@@ -111,8 +105,6 @@ paths:
         endpoint is unavailable. There is no captured OAuth token exchange.
       servers: [{url: https://oauth.ring.com}]
       security: []
-      x-contract-source: existing-go-and-pinned-python
-      x-evidence: [../pkg/dependencies/rest/auth.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
       requestBody:
         required: true
         content:
@@ -133,8 +125,6 @@ paths:
         signaling when a hardware ID is configured. Python exposes the same
         session action. The shape below follows source code; no C1 capture was
         identified.
-      x-contract-source: existing-go-and-pinned-python
-      x-evidence: [../pkg/dependencies/rest/devices.go, ../reference/python-ring-doorbell/ring_doorbell/auth.py]
       requestBody:
         required: true
         content:
@@ -147,8 +137,6 @@ paths:
     put:
       operationId: setChimeVolume
       description: Legacy Python/Go volume update; the query shape is synthetic replay evidence, not a C1 capture.
-      x-contract-source: pinned-python-and-go-synthetic-replay
-      x-evidence: [../test/porting-fixtures/legacy-control-requests.json, ../pkg/dependencies/rest/control.go]
       parameters:
         - {$ref: '#/components/parameters/device_id'}
         - {in: query, name: 'chime[description]', required: true, schema: {type: string}}
@@ -160,8 +148,6 @@ paths:
       description: >-
         Legacy Python/Go doorbell-volume or one in-home chime setting; query
         variants come from portable synthetic fixtures, not a C1 field capture.
-      x-contract-source: pinned-python-and-go-synthetic-replay
-      x-evidence: [../test/porting-fixtures/legacy-control-requests.json, ../test/porting-fixtures/legacy-in-home-chime.json, ../pkg/dependencies/rest/control.go]
       parameters:
         - {$ref: '#/components/parameters/device_id'}
         - {in: query, name: 'doorbot[description]', required: true, schema: {type: string}}
@@ -174,8 +160,6 @@ paths:
     post:
       operationId: testChimeSound
       description: Python/Go legacy sound request from portable synthetic replay.
-      x-contract-source: pinned-python-and-go-synthetic-replay
-      x-evidence: [../test/porting-fixtures/legacy-control-requests.json, ../pkg/dependencies/rest/control.go]
       parameters:
         - {$ref: '#/components/parameters/device_id'}
         - {in: query, name: kind, required: true, schema: {type: string, enum: [ding, motion]}}
@@ -184,16 +168,12 @@ paths:
     put:
       operationId: turnFloodlightOn
       description: Python/Go legacy light-on request from portable synthetic replay.
-      x-contract-source: pinned-python-and-go-synthetic-replay
-      x-evidence: [../test/porting-fixtures/legacy-control-requests.json, ../pkg/dependencies/rest/control.go]
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
   /clients_api/doorbots/{device_id}/floodlight_light_off:
     put:
       operationId: turnFloodlightOff
       description: Python/Go legacy off path; no corresponding C1 or portable request fixture.
-      x-contract-source: pinned-python-and-go
-      x-evidence: [../reference/python-ring-doorbell/ring_doorbell/stickup_cam.py, ../pkg/dependencies/rest/control.go]
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
   /clients_api/ring_devices/{device_id}/health:
@@ -203,8 +183,6 @@ paths:
         Existing Go GetDeviceHealth route. Python uses family-specific doorbot
         and chime health routes. The captured HTTP set has no matching health
         response; SDK tests use local fixtures only.
-      x-contract-source: existing-go
-      x-evidence: [../pkg/dependencies/rest/devices.go, ../reference/python-ring-doorbell/ring_doorbell/doorbot.py, ../reference/python-ring-doorbell/ring_doorbell/chime.py]
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses:
         '200': {$ref: '#/components/responses/Json'}
@@ -217,8 +195,6 @@ paths:
         this doorbot path. The Go API exposes limit and kind; Python additionally
         supports older_than and client-side enforcement/retries. C1 history
         routes use EVM endpoints and are specified separately.
-      x-contract-source: existing-go-and-pinned-python
-      x-evidence: [../pkg/dependencies/rest/recordings.go, ../reference/python-ring-doorbell/ring_doorbell/generic.py]
       parameters:
         - {$ref: '#/components/parameters/device_id'}
         - {$ref: '#/components/parameters/limit'}
@@ -231,8 +207,6 @@ paths:
     get:
       operationId: getActiveDings
       description: Existing Go and Python active-dings route. No matching C1 capture was identified.
-      x-contract-source: existing-go-and-pinned-python
-      x-evidence: [../pkg/dependencies/rest/recordings.go, ../reference/python-ring-doorbell/ring_doorbell/ring.py]
       responses:
         '200': {$ref: '#/components/responses/RecordingArray'}
         default: {$ref: '#/components/responses/HTTPFailure'}
@@ -246,8 +220,6 @@ paths:
         to its CheckRedirect policy; a custom client may change that behavior.
         No sanitized recording response establishes redirect or media-host
         details.
-      x-contract-source: existing-go-and-pinned-python
-      x-evidence: [../pkg/dependencies/rest/recordings.go, ../reference/python-ring-doorbell/ring_doorbell/doorbot.py]
       parameters: [{$ref: '#/components/parameters/recording_id'}]
       responses:
         '200':
@@ -264,8 +236,6 @@ paths:
     get:
       operationId: getLegacyRecordingShareURL
       description: Pinned Python legacy share/play response, replayed synthetically by Go; no matching C1 response.
-      x-contract-source: pinned-python-and-go-synthetic-replay
-      x-evidence: [../reference/python-ring-doorbell/ring_doorbell/doorbot.py, ../test/porting-fixtures/media-variants.json, ../pkg/dependencies/rest/recordings.go]
       parameters: [{$ref: '#/components/parameters/recording_id'}]
       responses:
         '200':
@@ -336,8 +306,6 @@ paths:
         Pinned Python legacy snapshot trigger and poll. The first response may
         omit timestamps. This contract comes from shared synthetic replay, not
         the C1 app-snaps request with missing response.
-      x-contract-source: pinned-python-and-go-synthetic-replay
-      x-evidence: [../reference/python-ring-doorbell/ring_doorbell/doorbot.py, ../test/porting-fixtures/media-variants.json, ../pkg/dependencies/rest/snapshot.go]
       requestBody:
         required: true
         content:
@@ -366,8 +334,6 @@ paths:
     get:
       operationId: getLegacySnapshotImage
       description: Pinned Python legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
-      x-contract-source: pinned-python-and-go-synthetic-replay
-      x-evidence: [../reference/python-ring-doorbell/ring_doorbell/doorbot.py, ../test/porting-fixtures/media-variants.json, ../pkg/dependencies/rest/snapshot.go]
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses:
         '200':
@@ -397,10 +363,6 @@ paths:
         covered by local tests, but was not found in the C1 HTTP recordings.
         It is distinct from the captured GET /api/v1/clap/tickets operation.
       servers: [{url: https://prd-api-us.prd.rings.solutions}]
-      x-evidence:
-        - ../pkg/ring/signaling_connection.go
-        - ../pkg/ring/client_rtc.go
-        - ../test/unit/client_rtc_test.go
       responses: {'200': {$ref: '#/components/responses/Json'}}
   /commands/v1/devices/{device_id}:
     patch:

@@ -42,6 +42,11 @@ func (c *Client) GetDevices(ctx context.Context) (*dependencymodels.RingDevicesR
 func classifyDevice(device dependencymodels.RingDevice) string {
 	kind := strings.ToLower(device.Kind)
 	family := strings.ToLower(device.Family)
+	// The Python reference's model families include opaque hardware names that
+	// cannot be inferred from a substring (notably hp_cam_v1/v2 and jbox_v1).
+	if category, ok := pythonDeviceKinds[kind]; ok {
+		return category
+	}
 	if family == "doorbots" || strings.HasPrefix(kind, "doorbot") || strings.HasPrefix(kind, "doorbell") ||
 		strings.HasPrefix(kind, "lpd_") || strings.HasPrefix(kind, "jbox_") || strings.HasPrefix(kind, "cocoa_doorbell") {
 		return "doorbell"
@@ -55,6 +60,23 @@ func classifyDevice(device dependencymodels.RingDevice) string {
 	}
 	return "other"
 }
+
+// Explicit Python kind parity is kept beside device classification. The
+// service-provided family remains a fallback for newer, unknown model names.
+var pythonDeviceKinds = func() map[string]string {
+	m := map[string]string{}
+	for category, kinds := range map[string][]string{
+		"doorbell": {"doorbot", "doorbell", "doorbell_v3", "doorbell_v4", "doorbell_v5", "doorbell_scallop_lite", "doorbell_oyster", "doorbell_scallop", "lpd_v1", "lpd_v2", "lpd_v3", "lpd_v4", "jbox_v1", "doorbell_graham_cracker", "df_doorbell_clownfish", "doorbell_portal", "cocoa_doorbell", "cocoa_doorbell_v2"},
+		"chime":    {"chime", "chime_v2", "chime_pro", "chime_pro_v2"},
+		"camera":   {"hp_cam_v1", "floodlight_v2", "floodlight_pro", "cocoa_floodlight", "stickup_cam_mini", "stickup_cam_mini_v2", "stickup_cam_mini_ptz_v1", "stickup_cam_v4", "hp_cam_v2", "spotlightw_v2", "cocoa_spotlight", "stickup_cam_longfin", "stickup_cam", "stickup_cam_v3", "stickup_cam_lunar", "stickup_cam_elite", "stickup_cam_wired", "cocoa_camera"},
+		"other":    {"beams_ct200_transformer", "intercom_handset_audio", "intercom_handset_video"},
+	} {
+		for _, kind := range kinds {
+			m[kind] = category
+		}
+	}
+	return m
+}()
 
 // RegisterSession registers the client hardware ID with Ring before API use.
 func (c *Client) RegisterSession(ctx context.Context) error {

@@ -211,7 +211,7 @@ func TestSignalingSessionIntegrationSmoke(t *testing.T) {
 	defer wsPeer.Close()
 	wsURL := "ws" + strings.TrimPrefix(wsPeer.URL, "http") + "?token={token}"
 	dialer := &captureDialer{delegate: websocket.DefaultDialer}
-	client, err := ring.NewClient(ring.WithAccessToken("test-token"), ring.WithHTTPClient(httpPeer.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: httpPeer.URL}), ring.WithRTCWebSocketURL(wsURL), ring.WithWebSocketDialer(dialer))
+	client, err := ring.NewClient(ring.WithAccessToken("test-token"), ring.WithHTTPClient(httpPeer.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: httpPeer.URL}), ring.WithSignalingWebSocketURL(wsURL), ring.WithWebSocketDialer(dialer))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -444,7 +444,7 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 	}))
 	defer ws.Close()
 	url := "ws" + strings.TrimPrefix(ws.URL, "http")
-	client, e := ring.NewClient(ring.WithAccessToken("test-token"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithRTCWebSocketURL(url))
+	client, e := ring.NewClient(ring.WithAccessToken("test-token"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL(url))
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -522,7 +522,7 @@ func TestOpenContextClosesIdleSignalingSocket(t *testing.T) {
 	defer ws.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	url := "ws" + strings.TrimPrefix(ws.URL, "http")
-	client, e := ring.NewClient(ring.WithAccessToken("test-token"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithRTCWebSocketURL(url))
+	client, e := ring.NewClient(ring.WithAccessToken("test-token"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL(url))
 	if e != nil {
 		t.Fatal(e)
 	}

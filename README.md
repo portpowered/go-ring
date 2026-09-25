@@ -137,6 +137,7 @@ unknown, not be treated as unsupported.
 - [Architecture and ownership](docs/architecture.md)
 - [Overall implementation plan](docs/library-improvement-plan.md) and [porting process](docs/internal/process-of-reverse-engineering.md)
 - [OpenAPI HTTP contracts](api/openapi.yaml) and [AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
+- [Generated Go wire contracts](pkg/generatedapi/contracts.gen.go): run `go generate ./pkg/generatedapi` after editing either schema. `Client.CallHTTP` uses the generated HTTP routes; signaling sends use the generated message-method constants. The generated interfaces are transport-level contracts; the public domain API remains `Client`, `SignalingConnection`, `DeviceSession`, `PlaybackSession`, and `PushSubscription`.
 - [Recording formats and verification order](docs/replay-format.md)
 - [Python fixture replay and original-test migration index](docs/python-replay-harness.md)
 - [Remaining migration scope](docs/migration-scope.md)
@@ -164,9 +165,14 @@ behavioral and race tests. The completed offline verification run passed at
 ## Compatibility and license
 
 Intentional API changes are allowed during this improvement work. Existing
-`StartRTCStream`/`StopRTCStream` remain legacy APIs; prefer the new session model
-for new signaling work once its required behavior is verified. See [migration guidance](docs/migration.md) for changed lifecycle, retry, and
+`StartRTCStream`/`StopRTCStream` were removed. Open one signaling connection and create a `DeviceSession` for live view, ICE, PTZ, and controls. The same connection can create a `PlaybackSession` or `PushSubscription`. See [migration guidance](docs/migration.md) for changed lifecycle, retry, and
 error behavior.
+
+The [device-session example](examples/device-session/main.go) accepts `-ptz-demo`:
+it sends `PanContinuous` to the right at speed `0.5`, waits one second, then
+sends `StopPTZ` for the pan axis, even if interrupted. Continuous movement
+must always be stopped explicitly; a successful RPC means the command was
+acknowledged, not that the camera reached a particular position.
 
 Control calls now follow the replayed legacy request profiles. `SetVolume`
 requires `Kind` (`"chime"` or `"doorbell"`) and the device `Description`;

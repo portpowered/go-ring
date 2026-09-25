@@ -356,7 +356,7 @@ func TestSignalingDialerOptionAndFailureAreSafe(t *testing.T) {
 	}
 	tickets := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{"ticket":"private"}`)) }))
 	defer tickets.Close()
-	c, err := NewClient(WithAccessToken("token"), WithHTTPClient(tickets.Client()), WithEndpoints(Endpoints{SolutionsBaseURL: tickets.URL}), WithRTCWebSocketURL("wss://host.invalid/?token={token}"), WithWebSocketDialer(failingSignalingDialer{}))
+	c, err := NewClient(WithAccessToken("token"), WithHTTPClient(tickets.Client()), WithEndpoints(Endpoints{SolutionsBaseURL: tickets.URL}), WithSignalingWebSocketURL("wss://host.invalid/?token={token}"), WithWebSocketDialer(failingSignalingDialer{}))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -72,6 +72,36 @@ components:
                     properties:
                       audio_enabled: {type: boolean}
                       video_enabled: {type: boolean}
+        - if: {properties: {method: {const: playback}}}
+          then:
+            properties:
+              body:
+                type: object
+                required: [doorbot_id, entry_point, sdp, type]
+                properties:
+                  doorbot_id: {type: integer}
+                  entry_point: {type: string}
+                  sdp: {type: string, minLength: 1}
+                  type: {const: cloud}
+        - if: {properties: {method: {const: push_subscribe}}}
+          then:
+            properties:
+              body:
+                type: object
+                required: [requested_notifications]
+                properties:
+                  requested_notifications:
+                    type: array
+                    minItems: 1
+                    items: {$ref: '#/components/schemas/PushFilter'}
+        - if: {properties: {method: {enum: [push_heartbeat, push_unsubscribe]}}}
+          then:
+            properties:
+              body:
+                type: object
+                required: [subscription_id]
+                properties:
+                  subscription_id: {type: string}
     ServerEnvelope:
       type: object
       required: [method, dialog_id, body]
@@ -113,6 +143,39 @@ components:
                         type: object
                         properties:
                           ping_interval: {type: integer, minimum: 1}
+        - if: {properties: {method: {const: push_subscription_ack}}}
+          then:
+            properties:
+              body:
+                type: object
+                required: [status, subscription_id]
+                properties:
+                  status: {type: string}
+                  subscription_id: {type: string}
+        - if: {properties: {method: {const: push_event}}}
+          then:
+            properties:
+              body:
+                type: object
+                required: [notification_scope, notification_type, payload, subscription_id]
+                properties:
+                  filter_identifiers: {type: array, items: {type: string}}
+                  ingestion_time_ms: {type: integer}
+                  notification_scope: {type: string}
+                  notification_type: {type: string}
+                  payload: {type: object}
+                  subscription_id: {type: string}
+    PushFilter:
+      type: object
+      required: [filter_identifier, filters, notification_scope, notification_type]
+      properties:
+        filter_identifier: {type: string}
+        filters:
+          type: object
+          properties:
+            doorbot_ids: {type: array, items: {type: integer}}
+        notification_scope: {type: string}
+        notification_type: {type: string}
     PTZRPC:
       type: object
       required: [jsonrpc, id, method, params]

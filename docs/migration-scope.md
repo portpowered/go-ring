@@ -38,9 +38,9 @@ The live-view `DeviceSession` covers caller SDP/ICE, activation, PTZ, heartbeat,
 and close with focused replay. Remaining protocol surface includes typed
 camera-options/notification handling and focused tests for pre-answer ICE and
 failure ordering. Captured playback conversations and push subscribe/ack/event/
-unsubscribe are different logical sessions on the socket; define independent
-`PlaybackSession` and `EventSubscription` APIs and replay slices before claiming
-support. The existing `/clients_api/ws` event connection is a different,
+unsubscribe are now represented by `PlaybackSession` and `PushSubscription`
+with focused recorded-frame replay. Their live delivery and cadence still need
+field verification. The existing `/clients_api/ws` event connection is a different,
 experimental transport. Reconnection and media transport interoperability
 are not established by offline replay.
 

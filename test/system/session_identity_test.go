@@ -40,7 +40,7 @@ func identityPeer(t *testing.T, script func(*websocket.Conn, string)) *ring.Sign
 		script(c, first.Dialog)
 	}))
 	t.Cleanup(peer.Close)
-	client, err := ring.NewClient(ring.WithAccessToken("synthetic"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithRTCWebSocketURL("ws"+strings.TrimPrefix(peer.URL, "http")))
+	client, err := ring.NewClient(ring.WithAccessToken("synthetic"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL("ws"+strings.TrimPrefix(peer.URL, "http")))
 	if err != nil {
 		t.Fatal(err)
 	}

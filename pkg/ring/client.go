@@ -18,28 +18,27 @@ import (
 
 // Client is the main client for interacting with Ring services
 type Client struct {
-	restClient           *rest.Client
-	accessToken          string
-	refreshToken         string
-	username             string
-	password             string
-	hardwareID           string
-	userAgent            string
-	region               Region
-	endpointOverrides    Endpoints
-	endpoints            Endpoints
-	rtcWebSocketOverride string
-	signalingDialer      WebSocketDialer
+	restClient                 *rest.Client
+	accessToken                string
+	refreshToken               string
+	username                   string
+	password                   string
+	hardwareID                 string
+	userAgent                  string
+	region                     Region
+	endpointOverrides          Endpoints
+	endpoints                  Endpoints
+	signalingWebSocketOverride string
+	signalingDialer            WebSocketDialer
 
-	tokenGetter          func(ctx context.Context) (string, error)
-	rtcWebSocketURL      string
-	eventWebSocketURL    string
-	mu                   sync.RWMutex
-	sessionMu            sync.Mutex
-	sessionRegistered    bool
-	closed               bool
-	signalingConnections map[*SignalingConnection]struct{}
-	legacyStreams        map[*RTCStream]struct{}
+	tokenGetter           func(ctx context.Context) (string, error)
+	signalingWebSocketURL string
+	eventWebSocketURL     string
+	mu                    sync.RWMutex
+	sessionMu             sync.Mutex
+	sessionRegistered     bool
+	closed                bool
+	signalingConnections  map[*SignalingConnection]struct{}
 }
 
 // Option is a function that configures a Client
@@ -200,21 +199,21 @@ func (w withTokenGetter) Apply(c *Client) error {
 	return nil
 }
 
-// WithRTCWebSocketURL explicitly overrides the configured signaling URL. It
+// WithSignalingWebSocketURL explicitly overrides the configured signaling URL. It
 // takes precedence over WithEndpoints and the selected region, regardless of
 // option order.
-func WithRTCWebSocketURL(url string) Option {
-	return withRTCWebSocketURL(url)
+func WithSignalingWebSocketURL(url string) Option {
+	return withSignalingWebSocketURL(url)
 }
 
-type withRTCWebSocketURL string
+type withSignalingWebSocketURL string
 
-func (w withRTCWebSocketURL) Apply(c *Client) error {
+func (w withSignalingWebSocketURL) Apply(c *Client) error {
 	if err := validateEndpoints(Endpoints{SignalingURL: string(w)}); err != nil {
 		return err
 	}
-	c.rtcWebSocketURL = string(w)
-	c.rtcWebSocketOverride = string(w)
+	c.signalingWebSocketURL = string(w)
+	c.signalingWebSocketOverride = string(w)
 	return nil
 }
 
@@ -300,14 +299,7 @@ func (c *Client) Close() error {
 	for conn := range c.signalingConnections {
 		connections = append(connections, conn)
 	}
-	streams := make([]*RTCStream, 0, len(c.legacyStreams))
-	for stream := range c.legacyStreams {
-		streams = append(streams, stream)
-	}
 	c.mu.Unlock()
-	for _, stream := range streams {
-		_ = stream.Close()
-	}
 	for _, conn := range connections {
 		_ = conn.Close()
 	}

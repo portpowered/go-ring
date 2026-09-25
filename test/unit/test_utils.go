@@ -58,8 +58,8 @@ func newTestContext() context.Context {
 	return context.Background()
 }
 
-// newTestClientWithRTCWebSocketURL creates a new Ring client with a token, mock transport, and custom RTC websocket URL
-func newTestClientWithRTCWebSocketURL(token string, wsURL string) (*ring.Client, *mocks.MockTransport) {
+// newTestClientWithSignalingWebSocketURL creates a new Ring client with a token, mock transport, and custom RTC websocket URL
+func newTestClientWithSignalingWebSocketURL(token string, wsURL string) (*ring.Client, *mocks.MockTransport) {
 	fixtureDir := getFixtureDir()
 	mockTransport := mocks.NewMockTransport(fixtureDir)
 	httpClient := &http.Client{
@@ -69,7 +69,7 @@ func newTestClientWithRTCWebSocketURL(token string, wsURL string) (*ring.Client,
 	client, err := ring.NewClient(
 		ring.WithAccessToken(token),
 		ring.WithHTTPClient(httpClient),
-		ring.WithRTCWebSocketURL(wsURL),
+		ring.WithSignalingWebSocketURL(wsURL),
 	)
 	if err != nil {
 		panic(err)

@@ -63,7 +63,7 @@ func TestOpenSignalingRejectsMalformedOrEmptyTicketResponse(t *testing.T) {
 				_, _ = w.Write([]byte(tc.body))
 			}))
 			defer srv.Close()
-			client, err := NewClient(WithAccessToken("access-token"), WithEndpoints(Endpoints{SolutionsBaseURL: srv.URL}), WithRTCWebSocketURL("wss://example.invalid/{token}"))
+			client, err := NewClient(WithAccessToken("access-token"), WithEndpoints(Endpoints{SolutionsBaseURL: srv.URL}), WithSignalingWebSocketURL("wss://example.invalid/{token}"))
 			if err != nil {
 				t.Fatal(err)
 			}

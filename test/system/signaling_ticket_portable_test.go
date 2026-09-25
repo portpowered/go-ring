@@ -28,7 +28,7 @@ func TestPortableLegacyTicketBootstrap(t *testing.T) {
 		ring.WithAccessToken("portable-token"),
 		ring.WithHTTPClient(&http.Client{Transport: transport}),
 		ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: x.Request.Origin}),
-		ring.WithRTCWebSocketURL(peer.URL()+"?token={token}"),
+		ring.WithSignalingWebSocketURL(peer.URL()+"?token={token}"),
 		ring.WithWebSocketDialer(dialer),
 	)
 	if err != nil {

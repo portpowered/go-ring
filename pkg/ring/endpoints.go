@@ -98,11 +98,11 @@ func (c *Client) applyEndpointConfiguration() error {
 	if o.SignalingURL != "" {
 		e.SignalingURL = o.SignalingURL
 	}
-	if c.rtcWebSocketOverride != "" {
-		e.SignalingURL = c.rtcWebSocketOverride
+	if c.signalingWebSocketOverride != "" {
+		e.SignalingURL = c.signalingWebSocketOverride
 	}
 	c.endpoints = e
-	c.rtcWebSocketURL = e.SignalingURL
+	c.signalingWebSocketURL = e.SignalingURL
 	c.restClient.Apply(rest.WithEndpointBases(e.APIBaseURL, e.OAuthBaseURL))
 	return nil
 }

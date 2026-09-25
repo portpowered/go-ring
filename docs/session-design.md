@@ -1,6 +1,6 @@
 # Stateful signaling and device sessions
 
-Implementation contract with current APIs and remaining requirements. The connection/device-session API and bounded priority writer are implemented and locally tested; push/playback and live media interoperability remain separate gaps. The writer prioritizes queued safety messages while preserving bounded access for ordinary commands; it cannot preempt a socket write already in progress. See [porting progress](porting-progress.md) for the test mapping. This document supersedes the earlier plan to retain RTCStream as the primary name. Optimize feature clarity; retain existing authentication mechanisms. Companion: [parity matrix](parity-matrix.md), [implementation plan](library-improvement-plan.md).
+Implementation contract with current APIs and remaining requirements. The connection/device-session API and bounded priority writer are implemented and locally tested; live media interoperability remains a separate gap. The writer prioritizes queued safety messages while preserving bounded access for ordinary commands; it cannot preempt a socket write already in progress. See [porting progress](porting-progress.md) for the test mapping. This document supersedes the earlier plan to retain RTCStream as the primary name. Optimize feature clarity; retain existing authentication mechanisms. Companion: [parity matrix](parity-matrix.md), [implementation plan](library-improvement-plan.md).
 
 ## Public objects and ownership
 
@@ -124,7 +124,31 @@ The writer prioritizes queued close, ping/pong, and zero-speed continuous-PTZ me
 
 ## Breaking migration
 
-Replace StartRTCStream/RTCStream with OpenSignaling -> StartDeviceSession/DeviceSession. The legacy StopRTCStream now closes registered streams and reports unknown IDs; new code closes the session handle. Replace OnICECandidate/GetSDPAnswer with SendICE/Answer. Replace the experimental ConnectEvents path with a documented subscription API when implemented; do not silently relabel it as equivalent. Remove the giant ClientInterface from the new API in favor of concrete types and small consumer-defined interfaces.
+The signaling connection also supports two captured sibling scopes. Call
+`StartPlayback(ctx, StartPlaybackRequest{DeviceID, Offer, EntryPoint})` with a
+caller-created WebRTC offer to obtain `PlaybackSession.Answer()`. Feed remote
+`ice` events from `Receive` into the peer, send local candidates through
+`SendICE`, and close the playback handle to send the captured `close` shape.
+The SDK sends negotiated application pings, accepts pongs only for that device
+and signaling session, terminates after three missed intervals, and ends
+playback after 60 minutes.
+Playback does not expose camera/PTZ controls.
+
+Call `SubscribePush(ctx, []PushFilter{...})` on the same connection. The filter
+uses `filter_identifier`, `notification_scope`, `notification_type`, and
+optional `filters.doorbot_ids`, as seen in both captures. `Receive` returns a
+`PushEvent` with the original JSON payload; `Close` sends
+`push_unsubscribe`. The subscription heartbeat runs every 30 seconds while
+the connection remains open. This interval is SDK policy, pending live cadence
+confirmation; the captures preserve message order but not reliable timing.
+These handles do not imply reconnect/resume behavior after socket failure.
+
+The Go wire definitions in `pkg/generatedapi/contracts.gen.go` come from
+`api/openapi.yaml` and `api/asyncapi.yaml`. Regenerate with
+`go generate ./pkg/generatedapi` when a schema changes; keep the domain
+session types in `pkg/ring`.
+
+Replace StartRTCStream/RTCStream with OpenSignaling -> StartDeviceSession/DeviceSession. StopRTCStream is removed; new code closes the session handle. Replace OnICECandidate/GetSDPAnswer with SendICE/Answer. Use SubscribePush for captured signaling push events. The experimental ConnectEvents path remains a separate protocol. Remove the giant ClientInterface from the new API in favor of concrete types and small consumer-defined interfaces.
 
 Keep the module/import layout stable where it aids migration, but do not add aliases solely to preserve misleading names. Release with explicit breaking-change notes and a method-by-method migration table. If the module has reached v1, follow a new major version/module path; if still pre-v1, announce the incompatible release clearly. Auth remains unchanged. Migrate examples, docs, mocks and tests in the same release.
 

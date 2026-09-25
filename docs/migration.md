@@ -5,9 +5,11 @@ commit containing them; no released-version support is implied.
 
 | Existing behavior | Current behavior / migration |
 |---|---|
-| `StartRTCStream` returns a legacy RTC handle | Still available. New persistent controls use `OpenSignaling` → `StartDeviceSession`. The caller supplies SDP and owns its WebRTC media stack. |
-| `StopRTCStream` ignored its ID | Now closes a registered stream selected by `GetStreamID`; unknown IDs return a typed not-found error. Use the handle's idempotent `Close` when you already own it. |
-| `Client.Close` only set a flag | Closes owned new signaling connections and registered legacy RTC streams. |
+| `StartRTCStream` returns a legacy RTC handle | Removed. Use `OpenSignaling` → `StartDeviceSession`; the caller supplies SDP and owns its WebRTC media stack. |
+| `StopRTCStream` ignored its ID | Removed. Close the `DeviceSession` handle, then the shared `SignalingConnection` when finished. |
+| `Client.Close` only set a flag | Closes owned signaling connections and live device sessions. |
+| Handwritten `ClientInterface` | Removed. Wire operation/message interfaces and constants are generated in `pkg/generatedapi` from OpenAPI and AsyncAPI. Define a small interface at the call site for domain-level mocking. |
+| `WithRTCWebSocketURL` | Renamed to `WithSignalingWebSocketURL`; it configures the shared signaling transport used by live view, playback, and push. |
 | HTTP transport/server errors retried mutations | Automatic retries are restricted to GET/HEAD. A mutation can have succeeded even if its reply was lost; callers decide whether retrying is appropriate. |
 | Error helper classification required the outermost concrete type | `ringapimodels.Is...Error` and `IsHTTPStatusCode` inspect wrapped errors. `errors.Is` / `errors.As` remain available. |
 | HTTP error formatting included raw response bodies | `HTTPError.Error()` omits raw bodies; `Body` remains available for deliberate inspection. |
@@ -25,7 +27,9 @@ PTZ control-session identities. Do not copy a signaling ID into JSON-RPC
 an acknowledgement, not confirmation of a final camera position. The 60-minute
 maximum is SDK policy, with earlier cancellation available to the caller.
 
-Push and playback remain separate planned abstractions. The existing event
-WebSocket implementation remains experimental. See [porting progress](porting-progress.md)
-for tests and explicit gaps; see [session design](session-design.md) for target
-contracts still being completed.
+`SignalingConnection.StartPlayback` negotiates a cloud playback SDP session;
+`SubscribePush` registers filters, sends subscription heartbeats, and receives
+typed push events. Close each handle when finished. The older `/clients_api/ws`
+event connection remains experimental and is a different protocol. Captured
+replay tests cover these new paths; live media decoding and reconnect/resume
+behavior remain unverified. See [session design](session-design.md).

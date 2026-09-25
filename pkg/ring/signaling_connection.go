@@ -15,8 +15,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
+	"github.com/portpowered/go-ring/pkg/generatedapi"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -51,6 +51,8 @@ type SignalingConnection struct {
 	writer     *signalingWriter
 	pending    map[string]chan signaling.Message
 	sessions   map[string]*DeviceSession
+	channels   map[string]chan signaling.Message
+	playbacks  map[string]*PlaybackSession
 }
 
 // OpenSignaling obtains the currently supported legacy signaling ticket and opens its websocket.
@@ -75,18 +77,14 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	if c.endpoints.SolutionsBaseURL == "" {
 		return nil, ringapimodels.NewConnectionError("Solutions bootstrap URL is unverified for selected region; configure WithEndpoints", nil)
 	}
-	u := c.endpoints.SolutionsBaseURL + protocol.TicketPath
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, nil)
-	if err != nil {
-		return nil, ringapimodels.NewNetworkError("failed to create signaling ticket request", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("User-Agent", c.userAgent)
-	req.Header.Set("Content-Type", "application/json")
+	h := http.Header{}
+	h.Set("Authorization", "Bearer "+token)
+	h.Set("User-Agent", c.userAgent)
+	h.Set("Content-Type", "application/json")
 	if c.hardwareID != "" {
-		req.Header.Set("hardware_id", c.hardwareID)
+		h.Set("hardware_id", c.hardwareID)
 	}
-	resp, err := c.restClient.HTTPClient().Do(req)
+	resp, err := c.CallHTTP(ctx, generatedapi.OperationRequestLegacySignalingTicket, generatedapi.HTTPRequest{Headers: h})
 	if err != nil {
 		return nil, ringapimodels.NewNetworkError("failed to request signaling ticket", err)
 	}
@@ -111,19 +109,19 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 		return nil, ringapimodels.NewConnectionError("empty signaling ticket", nil)
 	}
 	clientID := uuid.NewString()
-	wsURL := strings.Replace(c.rtcWebSocketURL, "{client_id}", clientID, 1)
+	wsURL := strings.Replace(c.signalingWebSocketURL, "{client_id}", clientID, 1)
 	wsURL = strings.Replace(wsURL, "{token}", url.QueryEscape(ticket.Ticket), 1)
 	dialer := c.signalingDialer
 	if dialer == nil {
 		d := websocket.Dialer{HandshakeTimeout: signaling.HandshakeTimeout}
 		dialer = &d
 	}
-	h := http.Header{}
-	h.Set("User-Agent", c.userAgent)
+	wsHeaders := http.Header{}
+	wsHeaders.Set("User-Agent", c.userAgent)
 	if c.hardwareID != "" {
-		h.Set("hardware_id", c.hardwareID)
+		wsHeaders.Set("hardware_id", c.hardwareID)
 	}
-	conn, _, err := dialer.DialContext(ctx, wsURL, h)
+	conn, _, err := dialer.DialContext(ctx, wsURL, wsHeaders)
 	if err != nil {
 		return nil, ringapimodels.NewConnectionError("failed to connect to signaling websocket", nil)
 	}
@@ -132,7 +130,7 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	}
 	connCtx, cancel := context.WithCancel(ctx)
 	conn.SetReadLimit(signaling.MaxMessageBytes)
-	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession)}
+	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession)}
 	s.writer = newSignalingWriter(s.done, s.writeFrame, func(err error) { s.fail(fmt.Errorf("signaling write failed")) })
 	c.mu.Lock()
 	if c.closed {
@@ -232,6 +230,8 @@ func (c *SignalingConnection) route(m signaling.Message) {
 	c.mu.Lock()
 	pending := c.pending[m.DialogID]
 	session := c.sessions[m.DialogID]
+	channel := c.channels[m.DialogID]
+	playback := c.playbacks[m.DialogID]
 	c.mu.Unlock()
 	if pending != nil {
 		select {
@@ -243,6 +243,18 @@ func (c *SignalingConnection) route(m signaling.Message) {
 	}
 	if session != nil {
 		session.handle(m)
+		return
+	}
+	if playback != nil {
+		playback.handle(m)
+		return
+	}
+	if channel != nil {
+		select {
+		case channel <- m:
+		default:
+			c.fail(fmt.Errorf("signaling event queue full"))
+		}
 	}
 }
 func (c *SignalingConnection) isClosed() bool { c.mu.Lock(); defer c.mu.Unlock(); return c.closed }

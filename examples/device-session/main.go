@@ -25,6 +25,7 @@ func main() {
 func run() error {
 	audio := flag.Bool("audio", false, "negotiate an audio transceiver as well as receive-only video")
 	trickle := flag.Bool("trickle", false, "queue local ICE candidates during startup and send them after activation")
+	ptzDemo := flag.Bool("ptz-demo", false, "pan right continuously for one second, then stop")
 	flag.Parse()
 	token, device := os.Getenv("RING_ACCESS_TOKEN"), os.Getenv("RING_DEVICE_ID")
 	if token == "" || device == "" {
@@ -95,6 +96,22 @@ func run() error {
 	defer session.Close()
 	if err = pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: session.Answer().SDP}); err != nil {
 		return err
+	}
+	if *ptzDemo {
+		// Continuous movement persists until explicitly stopped. Always send a
+		// stop command, including when the wait is interrupted.
+		if _, err := session.PanContinuous(ctx, ring.PanContinuousRequest{Direction: ring.PanRight, Speed: 0.5}); err != nil {
+			return err
+		}
+		select {
+		case <-time.After(time.Second):
+		case <-ctx.Done():
+		}
+		stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer stopCancel()
+		if _, err := session.StopPTZ(stopCtx, ring.StopPTZRequest{Axis: ring.PanAxis}); err != nil {
+			return err
+		}
 	}
 	if *trickle {
 		senderDone := make(chan struct{})

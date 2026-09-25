@@ -2,7 +2,7 @@
 
 Status: selected implementation scope and local offline acceptance gates completed; see [verification results](verification.md). Optional feature expansion and live interoperability remain separate work. API examples below describe the target design unless explicitly marked current. See [porting progress](porting-progress.md) for the Python baseline, recording comparisons, verified implementation, and outstanding gaps. Follow the execution order in [the porting process](internal/process-of-reverse-engineering.md): reference architecture and tests, shared replay contracts, mapped Go tests, implementation, then verification.
 
-Design supplements: [feature/wire/session parity matrix](parity-matrix.md) and [session API, SDP construction and lifecycle contract](session-design.md). These define the revised public shape: Client -> SignalingConnection -> DeviceSession, with separate EventSubscription and PlaybackSession scopes. Intentional breaking changes are accepted to make the feature set clear; RTCStream is an existing type to migrate away from.
+Design supplements: [feature/wire/session parity matrix](parity-matrix.md) and [session API, SDP construction and lifecycle contract](session-design.md). These define the revised public shape: Client -> SignalingConnection -> DeviceSession, with separate PushSubscription and PlaybackSession scopes. Intentional breaking changes are accepted to make the feature set clear; RTCStream has been removed.
 
 Concrete implementation contracts: [recording/cassette/scenario formats](replay-format.md) and [constants and configuration ownership](constants-and-configuration.md).
 
@@ -209,7 +209,7 @@ Create `api/openapi.yaml`, using a pinned OpenAPI 3.1 version supported by the c
 
 Include the C1 HTTP ticket/bootstrap route and existing supported auth routes unchanged in behavior. Cross-link the resulting stateful signaling/PTZ API to AsyncAPI. The captured PTZ commands are WebSocket messages, so do not invent HTTP `/ptz` endpoints in OpenAPI. The overall operation inventory must still list every PTZ command and link its AsyncAPI operation, so they remain visible from the API overview.
 
-Each operation/schema carries `x-evidence` links, implementation status, and sanitized examples. Enumerate observed statuses; synthetic errors must be marked as test policy, not observed service behavior. Use nullable/optional properties accurately and allow unknown fields where the service is extensible. Document unknown pagination, rate limits, regional behavior, and CORS as unknown instead of making up defaults. This server-side Go SDK makes no browser CORS promise.
+Keep evidence and implementation status in the parity and replay documentation, outside the machine-readable schemas. Include sanitized examples where they clarify a wire shape. Enumerate observed statuses; synthetic errors must be marked as test policy, not observed service behavior. Use nullable/optional properties accurately and allow unknown fields where the service is extensible. Document unknown pagination, rate limits, regional behavior, and CORS as unknown instead of making up defaults. This server-side Go SDK makes no browser CORS promise.
 
 ### AsyncAPI and RPC
 
