@@ -1,6 +1,7 @@
 package ringapimodels
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -33,8 +34,8 @@ func (e *AuthenticationError) Error() string {
 
 // IsAuthenticationError checks if an error is an AuthenticationError
 func IsAuthenticationError(err error) bool {
-	_, ok := err.(*AuthenticationError)
-	return ok
+	var target *AuthenticationError
+	return errors.As(err, &target) && target != nil
 }
 
 // ConnectionError represents a connection failure
@@ -56,8 +57,8 @@ func (e *ConnectionError) Unwrap() error {
 
 // IsConnectionError checks if an error is a ConnectionError
 func IsConnectionError(err error) bool {
-	_, ok := err.(*ConnectionError)
-	return ok
+	var target *ConnectionError
+	return errors.As(err, &target) && target != nil
 }
 
 // NetworkError represents a network-level error
@@ -79,8 +80,8 @@ func (e *NetworkError) Unwrap() error {
 
 // IsNetworkError checks if an error is a NetworkError
 func IsNetworkError(err error) bool {
-	_, ok := err.(*NetworkError)
-	return ok
+	var target *NetworkError
+	return errors.As(err, &target) && target != nil
 }
 
 // TokenError represents a token retrieval or validation error
@@ -102,8 +103,8 @@ func (e *TokenError) Unwrap() error {
 
 // IsTokenError checks if an error is a TokenError
 func IsTokenError(err error) bool {
-	_, ok := err.(*TokenError)
-	return ok
+	var target *TokenError
+	return errors.As(err, &target) && target != nil
 }
 
 // BadRequestError represents a bad request error
@@ -125,8 +126,8 @@ func (e *BadRequestError) Unwrap() error {
 
 // IsBadRequestError checks if an error is a BadRequestError
 func IsBadRequestError(err error) bool {
-	_, ok := err.(*BadRequestError)
-	return ok
+	var target *BadRequestError
+	return errors.As(err, &target) && target != nil
 }
 
 // UnauthorizedError represents an unauthorized error
@@ -148,8 +149,8 @@ func (e *UnauthorizedError) Unwrap() error {
 
 // IsUnauthorizedError checks if an error is a UnauthorizedError
 func IsUnauthorizedError(err error) bool {
-	_, ok := err.(*UnauthorizedError)
-	return ok
+	var target *UnauthorizedError
+	return errors.As(err, &target) && target != nil
 }
 
 // NotFoundError represents a not found error
@@ -171,8 +172,8 @@ func (e *NotFoundError) Unwrap() error {
 
 // IsNotFoundError checks if an error is a NotFoundError
 func IsNotFoundError(err error) bool {
-	_, ok := err.(*NotFoundError)
-	return ok
+	var target *NotFoundError
+	return errors.As(err, &target) && target != nil
 }
 
 // InternalServerError represents an internal server error
@@ -191,8 +192,8 @@ func (e *InternalServerError) Unwrap() error {
 
 // IsInternalServerError checks if an error is a InternalServerError
 func IsInternalServerError(err error) bool {
-	_, ok := err.(*InternalServerError)
-	return ok
+	var target *InternalServerError
+	return errors.As(err, &target) && target != nil
 }
 
 // HTTPError represents an HTTP-level error with status code
@@ -203,26 +204,25 @@ type HTTPError struct {
 	Message    string
 }
 
+// Error excludes the raw response body, which can contain credentials or personal data.
+// Callers may inspect Body explicitly when handling the error securely.
 func (e *HTTPError) Error() string {
 	if e.Message != "" {
 		return fmt.Sprintf("HTTP error %d (%s): %s", e.StatusCode, e.Status, e.Message)
-	}
-	if e.Body != "" {
-		return fmt.Sprintf("HTTP error %d (%s): %s", e.StatusCode, e.Status, e.Body)
 	}
 	return fmt.Sprintf("HTTP error %d (%s)", e.StatusCode, e.Status)
 }
 
 // IsHTTPError checks if an error is an HTTPError
 func IsHTTPError(err error) bool {
-	_, ok := err.(*HTTPError)
-	return ok
+	var target *HTTPError
+	return errors.As(err, &target) && target != nil
 }
 
 // IsHTTPStatusCode checks if an error is an HTTPError with a specific status code
 func IsHTTPStatusCode(err error, code int) bool {
-	httpErr, ok := err.(*HTTPError)
-	if !ok {
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) || httpErr == nil {
 		return false
 	}
 	return httpErr.StatusCode == code
@@ -242,8 +242,8 @@ func (e *ClosedError) Error() string {
 
 // IsClosedError checks if an error is a ClosedError
 func IsClosedError(err error) bool {
-	_, ok := err.(*ClosedError)
-	return ok
+	var target *ClosedError
+	return errors.As(err, &target) && target != nil
 }
 
 // Requires2FAError represents an error when 2FA is required
@@ -271,8 +271,8 @@ func (e *Requires2FAError) Error() string {
 
 // IsRequires2FAError checks if an error is a Requires2FAError
 func IsRequires2FAError(err error) bool {
-	_, ok := err.(*Requires2FAError)
-	return ok
+	var target *Requires2FAError
+	return errors.As(err, &target) && target != nil
 }
 
 // NewAuthenticationError creates a new AuthenticationError
@@ -324,8 +324,8 @@ func NewClosedError(message string) *ClosedError {
 }
 
 func IsRateLimitError(err error) bool {
-	_, ok := err.(*RateLimitError)
-	return ok
+	var target *RateLimitError
+	return errors.As(err, &target) && target != nil
 }
 
 // NewBadRequestError creates a new BadRequestError

@@ -364,3 +364,12 @@ Completion means dependable existing APIs, a published contract, reproducible ev
 - [Python test setup](https://github.com/python-ring-doorbell/python-ring-doorbell/blob/486193a80e7c924a0ab14b04d47305e1b36e419e/tests/conftest.py), [device tests](https://github.com/python-ring-doorbell/python-ring-doorbell/blob/486193a80e7c924a0ab14b04d47305e1b36e419e/tests/test_ring.py), [push tests](https://github.com/python-ring-doorbell/python-ring-doorbell/blob/486193a80e7c924a0ab14b04d47305e1b36e419e/tests/test_listen.py)
 - [Python RTC source](https://github.com/python-ring-doorbell/python-ring-doorbell/blob/486193a80e7c924a0ab14b04d47305e1b36e419e/ring_doorbell/webrtcstream.py), [intercom tests](https://github.com/python-ring-doorbell/python-ring-doorbell/blob/486193a80e7c924a0ab14b04d47305e1b36e419e/tests/test_other.py)
 - [OpenAPI 3.1.1 specification](https://spec.openapis.org/oas/v3.1.1.html), [AsyncAPI 3.0 specification](https://www.asyncapi.com/docs/reference/specification/v3.0.0), [mitmproxy features and HAR export](https://docs.mitmproxy.org/stable/overview/features/)
+
+## Error handling compatibility
+
+The `ringapimodels.Is...Error` helpers inspect wrapped errors, so adding caller
+context with `fmt.Errorf("operation: %w", err)` preserves classification.
+`errors.Is` retains cancellation causes and `errors.As` exposes typed details.
+`HTTPError.Error()` includes status and an explicit message, but omits the raw
+response body. `HTTPError.Body` remains available for deliberate diagnostic
+inspection; callers must handle that data as sensitive.
