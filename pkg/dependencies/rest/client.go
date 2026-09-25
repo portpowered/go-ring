@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"sync"
@@ -212,122 +211,6 @@ func (c *Client) doJSONRequest(ctx context.Context, method, path string, body in
 
 	if result != nil {
 		if err := json.Unmarshal(bodyBytes, result); err != nil {
-			return ringapimodels.NewBadRequestError("failed to decode response", err)
-		}
-	}
-
-	return nil
-}
-
-// doRequestWithFullURL performs an HTTP request with a full URL
-func (c *Client) doRequestWithFullURL(ctx context.Context, method, fullURL string, body interface{}, customHeaders map[string]string) (*http.Response, error) {
-	var bodyReader io.Reader
-	if body != nil {
-		bodyBytes, err := json.Marshal(body)
-		if err != nil {
-			return nil, ringapimodels.NewBadRequestError("failed to marshal request body", err)
-		}
-		bodyReader = bytes.NewReader(bodyBytes)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, fullURL, bodyReader)
-	if err != nil {
-		return nil, ringapimodels.NewNetworkError("failed to create request", err)
-	}
-
-	// Get token and set authorization header
-	token, err := c.getToken(ctx)
-	if err == nil && token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-
-	req.Header.Set("Accept", "application/json")
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	}
-	req.Header.Set("User-Agent", c.userAgent)
-
-	if c.hardwareID != "" {
-		req.Header.Set("hardware_id", c.hardwareID)
-	}
-
-	// Set custom headers if provided
-	for key, value := range customHeaders {
-		req.Header.Set(key, value)
-	}
-
-	// Retry logic
-	maxRetries := 3
-	var resp *http.Response
-	for i := 0; i < maxRetries; i++ {
-		resp, err = c.httpClient.Do(req)
-
-		if resp != nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return resp, nil
-		}
-
-		if err != nil {
-			return nil, ringapimodels.NewNetworkError("request failed", err)
-		}
-
-		if resp.StatusCode == 401 {
-			return nil, ringapimodels.NewUnauthorizedError("unauthorized", errors.New("unauthorized"))
-		}
-
-		if resp.StatusCode == 404 {
-			return nil, ringapimodels.NewNotFoundError("not found", errors.New("not found on API call"))
-		}
-
-		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-			bodyBytes, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			return nil, ringapimodels.NewBadRequestError("bad request", errors.New(string(bodyBytes)))
-		}
-
-		if resp.StatusCode >= 500 {
-			bodyBytes, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			return nil, ringapimodels.NewInternalServerError("internal server error", errors.New(string(bodyBytes)))
-		}
-
-		if i < maxRetries-1 {
-			// Exponential backoff
-			backoff := time.Duration(i+1) * time.Second
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(backoff):
-			}
-		}
-	}
-
-	if err != nil {
-		return nil, ringapimodels.NewNetworkError("request failed after retries", err)
-	}
-
-	return resp, nil
-}
-
-// doJSONRequestWithFullURL performs a request with a full URL and unmarshals the JSON response
-func (c *Client) doJSONRequestWithFullURL(ctx context.Context, method, fullURL string, body interface{}, customHeaders map[string]string, result interface{}) error {
-	resp, err := c.doRequestWithFullURL(ctx, method, fullURL, body, customHeaders)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return ringapimodels.NewBadRequestError("bad request", errors.New(string(bodyBytes)))
-	}
-
-	if resp.StatusCode >= 500 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return ringapimodels.NewInternalServerError("internal server error", errors.New(string(bodyBytes)))
-	}
-
-	if result != nil {
-		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
 			return ringapimodels.NewBadRequestError("failed to decode response", err)
 		}
 	}

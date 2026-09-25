@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/portpowered/go-ring/internal/protocol"
 	"sync"
 	"time"
 )
@@ -125,7 +126,7 @@ func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
 				}
 				// Arm the next tick before sending to make the observable send a barrier.
 				tick = s.clock.After(c.Heartbeat)
-				if err := s.Send(s.ctx, "ping", nil); err != nil {
+				if err := s.Send(s.ctx, protocol.MethodPing, nil); err != nil {
 					s.finish(err)
 					return
 				}
@@ -255,8 +256,8 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 	}
 	p["sessionId"] = s.controlID
 	p["timestamp"] = s.clock.Now().UnixMilli()
-	p["version"] = 1
-	err := s.Send(ctx, "rpc", map[string]any{"command": map[string]any{"jsonrpc": "2.0", "id": id, "method": method, "params": p}})
+	p["version"] = protocol.PTZVersion
+	err := s.Send(ctx, protocol.MethodRPC, map[string]any{"command": map[string]any{"jsonrpc": protocol.JSONRPCVersion, "id": id, "method": method, "params": p}})
 	if err != nil {
 		if cause := context.Cause(callCtx); cause != nil {
 			return nil, cause
@@ -295,11 +296,11 @@ func (s *Session) Handle(m Message) error {
 	if s.closed {
 		return s.terminal
 	}
-	if m.Method == "pong" {
+	if m.Method == protocol.MethodPong {
 		s.lastPong = s.clock.Now()
 		return nil
 	}
-	if m.Method == "rpc" {
+	if m.Method == protocol.MethodRPC {
 		var command struct {
 			ID      string          `json:"id"`
 			Version string          `json:"jsonrpc"`
@@ -307,7 +308,7 @@ func (s *Session) Handle(m Message) error {
 			Result  json.RawMessage `json:"result"`
 			Error   *RPCError       `json:"error"`
 		}
-		if err := json.Unmarshal(body.Command, &command); err != nil || command.Version != "2.0" {
+		if err := json.Unmarshal(body.Command, &command); err != nil || command.Version != protocol.JSONRPCVersion {
 			return fmt.Errorf("invalid RPC envelope")
 		}
 		if command.Method == "" {

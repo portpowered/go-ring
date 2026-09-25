@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"gopkg.in/yaml.v3"
 )
 
@@ -183,4 +184,21 @@ func enumSet(t *testing.T, schema map[string]any) map[string]bool {
 		out[s] = true
 	}
 	return out
+}
+
+func TestRuntimeSignalingRegistryMatchesAsyncAPI(t *testing.T) {
+	doc := loadYAML(t, filepath.Join("..", "..", "api", "asyncapi.yaml"))
+	schemas := object(object(doc["components"])["schemas"])
+	client, server := enumSet(t, object(schemas["ClientEnvelope"])), enumSet(t, object(schemas["ServerEnvelope"]))
+	for _, method := range []string{protocol.MethodLiveView, protocol.MethodPlayback, protocol.MethodSDP, protocol.MethodICE, protocol.MethodSessionCreated, protocol.MethodActivateSession, protocol.MethodCameraStarted, protocol.MethodCameraOptions, protocol.MethodMicEnable, protocol.MethodStreamOptions, protocol.MethodClose, protocol.MethodPing, protocol.MethodPong, protocol.MethodRPC} {
+		if !client[method] && !server[method] {
+			t.Errorf("runtime wire method %s missing from schema", method)
+		}
+	}
+	ptz := enumSet(t, object(schemas["PTZRPC"]))
+	for _, method := range []string{protocol.RPCPanStep, protocol.RPCTiltStep, protocol.RPCPanContinuous, protocol.RPCTiltContinuous} {
+		if !ptz[method] {
+			t.Errorf("runtime PTZ method %s missing from schema", method)
+		}
+	}
 }

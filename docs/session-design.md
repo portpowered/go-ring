@@ -1,6 +1,6 @@
 # Stateful signaling and device sessions
 
-Proposed breaking API design, not implemented behavior. This document supersedes the earlier plan to retain RTCStream as the primary name. Optimize feature clarity; retain existing authentication mechanisms. Companion: [parity matrix](parity-matrix.md), [implementation plan](library-improvement-plan.md).
+Implementation contract with current APIs and remaining requirements. The connection/device-session API is implemented and locally tested; push/playback, priority scheduling, and live media interoperability remain separate gaps. See [porting progress](porting-progress.md) for the test mapping. This document supersedes the earlier plan to retain RTCStream as the primary name. Optimize feature clarity; retain existing authentication mechanisms. Companion: [parity matrix](parity-matrix.md), [implementation plan](library-improvement-plan.md).
 
 ## Public objects and ownership
 
@@ -16,7 +16,7 @@ Proposed breaking API design, not implemented behavior. This document supersedes
 Closing a child leaves siblings and the socket alive. Closing a connection terminates all children; closing the client terminates its owned connections. The session has no claim to own the caller's peer connection. Helpers/examples wire terminal session events to peer cleanup. A socket may stay usable after a device session reaches 60 minutes; this is not a token lifetime or connection timeout.
 
 ```go
-// Proposed public signatures; model definitions belong in the public API package.
+// Implemented public signatures; types live in pkg/ring.
 func (c *Client) OpenSignaling(ctx context.Context, req OpenSignalingRequest) (*SignalingConnection, error)
 func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartDeviceSessionRequest) (*DeviceSession, error)
 func (s *DeviceSession) Answer() SessionDescription
@@ -39,7 +39,7 @@ StartDeviceSessionRequest contains device ID, a typed SDP offer, media options, 
 
 StartDeviceSession sends the offer, obtains a validated answer and signaling ID, and completes the defined signaling activation prerequisites. It returns a handle ready for signaling/control; it does not assert that media is flowing. The caller applies Answer to its peer. Candidate events are buffered until consumed. Trickle candidates produced during start are buffered by the example/adapter and flushed through SendICE after the handle is returned; test this against a scripted peer rather than assuming arbitrary timing works.
 
-The connection routes by dialog/session/subscription IDs; DeviceSession routes RPC replies by nested command ID. PTZ params.sessionId is a separate identity domain from outer body.session_id. The initializer/lifetime of the PTZ ID must be established from sanitized transcripts before implementation. Unknown/stale identifiers cannot complete another session's request.
+The connection routes by dialog/session/subscription IDs; DeviceSession routes RPC replies by nested command ID. PTZ params.sessionId is a separate identity domain from outer body.session_id. The implementation obtains the independent control identity from the answer profile and rejects an answer without it. Unknown/stale identifiers cannot complete another session's request.
 
 ## SDP construction and exchange
 
@@ -84,7 +84,7 @@ Provide complete synthetic SDP fixtures for parser/replay tests and executable e
 
 Connection states: connecting -> open -> closing -> closed/failed. Device-session states: negotiating -> activating -> active -> closing -> closed/expired/failed. Track media readiness separately in the caller peer. Session close must be possible from every state.
 
-The **60-minute maximum is an intended SDK policy requested for this design**. C1's populated socket conversations span approximately 762.79 and 362.88 seconds; they cannot demonstrate a vendor-enforced one-hour lifetime. Python's caller keep_alive timeout (default 30 seconds) is a different concept. No 60-minute maximum was found in current Go/Python RTC implementations.
+The **60-minute maximum is an intended SDK policy requested for this design**. C1's populated socket conversations span approximately 762.79 and 362.88 seconds; they cannot demonstrate a vendor-enforced one-hour lifetime. Python's caller keep_alive timeout (default 30 seconds) is a different concept. The new Go DeviceSession enforces this maximum; the legacy RTC API and Python baseline do not establish a vendor limit.
 
 | Timer | Proposed rule | Evidence / origin |
 |---|---|---|
@@ -100,7 +100,7 @@ The **60-minute maximum is an intended SDK policy requested for this design**. C
 
 Use an injected monotonic clock and one deadline-aware scheduler or equivalent bounded timers. Pongs do not extend the 60-minute expiry. Unrelated messages and WebSocket control pong frames do not refresh the session application-pong deadline. Send heartbeat only for established sessions; validate device/session/dialog association before accepting a pong. Permit only the scheduling/association semantics supported by the capture; no invented ping nonce requirement.
 
-At hard expiry, reject new sends, return a typed SessionExpiredError to Wait and pending commands, and release routing entries/queues/timers. Start any bounded graceful stop/close before the hard deadline; force teardown at the deadline. Parent cancellation, peer close or socket failure may terminate earlier. Do not automatically reauthenticate, reopen, renegotiate or replay PTZ to evade the limit. Applications explicitly create a fresh session/peer as needed.
+At hard expiry, reject new sends, return ErrSessionExpired (inspect with errors.Is) to Wait and pending commands, and release routing entries/queues/timers. Start any bounded graceful stop/close before the hard deadline; force teardown at the deadline. Parent cancellation, peer close or socket failure may terminate earlier. Do not automatically reauthenticate, reopen, renegotiate or replay PTZ to evade the limit. Applications explicitly create a fresh session/peer as needed.
 
 Writer scheduling must prioritize close/stop and heartbeat without starving ordinary commands. Register pending RPC before enqueueing the write. Distinguish canceled-before-send from timeout-after-send; the latter may have moved the camera. Continuous movement stop is a captured zero-speed RPC with the tracked axis/direction; if the connection is gone, do not claim the camera stopped. The reader routes messages without invoking user callbacks or waiting for consumer I/O. Bounded event overflow produces an explicit terminal error rather than blocking heartbeats.
 
@@ -116,6 +116,24 @@ Writer scheduling must prioritize close/stop and heartbeat without starving ordi
 
 ## Breaking migration
 
-Replace StartRTCStream/RTCStream with OpenSignaling -> StartDeviceSession/DeviceSession. Remove the no-op StopRTCStream; close the handle. Replace OnICECandidate/GetSDPAnswer with SendICE/Answer. Replace the experimental ConnectEvents path with a documented subscription API when implemented; do not silently relabel it as equivalent. Remove the giant ClientInterface from the new API in favor of concrete types and small consumer-defined interfaces.
+Replace StartRTCStream/RTCStream with OpenSignaling -> StartDeviceSession/DeviceSession. The legacy StopRTCStream now closes registered streams and reports unknown IDs; new code closes the session handle. Replace OnICECandidate/GetSDPAnswer with SendICE/Answer. Replace the experimental ConnectEvents path with a documented subscription API when implemented; do not silently relabel it as equivalent. Remove the giant ClientInterface from the new API in favor of concrete types and small consumer-defined interfaces.
 
 Keep the module/import layout stable where it aids migration, but do not add aliases solely to preserve misleading names. Release with explicit breaking-change notes and a method-by-method migration table. If the module has reached v1, follow a new major version/module path; if still pre-v1, announce the incompatible release clearly. Auth remains unchanged. Migrate examples, docs, mocks and tests in the same release.
+
+
+## Executable offer example
+
+[examples/device-session](../examples/device-session/main.go) creates a Pion
+peer, adds receive-only video (and optional send/receive audio), gathers ICE,
+and sends the updated local offer in non-trickle mode. Set `RING_ACCESS_TOKEN`
+and `RING_DEVICE_ID`, then explicitly run `go run ./examples/device-session`.
+Use `-audio` for the audio/video profile; attach a microphone track and renderer
+in your application. This example consumes packets but does not render video
+or record audio. `RING_ICE_SERVERS_JSON` optionally supplies application-owned
+ICE configuration; no captured TURN credentials are reused.
+
+The example applies the negotiated answer before consuming remote ICE events
+and separately closes the peer, child session, connection, and client. Its Go
+tests generate both offer profiles using real local Pion objects with no Ring
+credentials or vendor traffic. Trickle wire behavior has scripted session
+tests; a complete local candidate-buffering example remains outstanding.

@@ -48,6 +48,7 @@ func main() {
 }
 ```
 
+The [device session example](examples/device-session) generates its SDP with Pion.
 The [examples](examples) compile with the library. Running them contacts Ring and
 may operate a device; normal tests do not run them.
 

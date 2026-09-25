@@ -42,18 +42,16 @@ func createTestWebSocketServer(t *testing.T, handler func(*websocket.Conn, map[s
 		}
 
 		// Read messages sent by client and send them to channel
-		go func() {
-			for {
-				var msg map[string]interface{}
-				if err := conn.ReadJSON(&msg); err != nil {
-					return
-				}
-				select {
-				case sentMessages <- msg:
-				default:
-				}
+		for {
+			var msg map[string]interface{}
+			if err := conn.ReadJSON(&msg); err != nil {
+				return
 			}
-		}()
+			select {
+			case sentMessages <- msg:
+			default:
+			}
+		}
 	}))
 
 	return server, sentMessages
@@ -201,11 +199,7 @@ func TestStartRTCStream_SuccessWithWebSocketServer(t *testing.T) {
 	})
 
 	// Now the websocket connection should work with the test server
-	if err != nil {
-		// If it still fails, log the error for debugging
-		t.Logf("Websocket connection failed: %v", err)
-		return
-	}
+	require.NoError(t, err)
 
 	// If connection succeeds (e.g., with URL injection), verify stream
 	require.NotNil(t, stream)
@@ -217,7 +211,7 @@ func TestStartRTCStream_SuccessWithWebSocketServer(t *testing.T) {
 	case msg := <-sentMessages:
 		assert.Equal(t, "activate_session", msg["method"])
 	case <-time.After(500 * time.Millisecond):
-		t.Log("No activate_session message received (may be due to connection failure)")
+		t.Fatal("No activate_session message received")
 	}
 
 	// Give handler time to complete writes before closing
