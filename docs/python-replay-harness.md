@@ -92,7 +92,17 @@ is an explicit scope decision, not a passing Go parity test.
 | `test_cli::test_open_door` | Deferred intercom CLI action | No public Go unlock API yet |
 | `test_cli::test_get_device` | Python CLI selection only; inventory replay | `GetDevice` identity lookup |
 
-The next Go migration pass should consume each applicable JSON scenario in a
-Go replay test and compare method, path, query, body, normalized result, and
-error behavior. Python-only and deferred rows must stay visible in the parity
-matrix rather than being counted as Go passes.
+The Go migration now consumes the shared POST ticket fixture, all six legacy
+control fixtures, all three in-home chime fixtures, and the remote ICE/close variants.
+`TestRecordedLiveViewBehaviors` replays the captured offer, session-created,
+answer, and camera-started envelopes as focused establishment, ICE-send,
+ICE-receive, and remote-termination subtests. `TestRecordedPTZCommandsIndividually`,
+`TestRecordedRemoteICEIndividually`, and `TestRecordedHeartbeatPairsIndividually`
+select individual captured frames from both streams; the longer conversation
+test remains as an ordering and notification regression. All dynamic dialog,
+control, and RPC IDs are rebound at the replay boundary.
+
+The Go replay now also consumes the synthetic recording bytes and four HTTP
+failure cases. The Python share URL and snapshot fields have no matching Go
+API; deferred Python-only features remain explicit parity gaps. A passing Go
+test of another route is not counted as migration of one of those fixtures.

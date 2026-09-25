@@ -16,5 +16,13 @@ and snapshot tests. `session-variants.json` holds application messages missing
 from the capture. `session-lifecycle.json` holds SDP/ICE and failure variants.
 
 The Python runner in `tools/reference-replay` consumes these alongside the
-actual captured files. A Go runner should read the same JSON and implement its
-own request/response and session adapters; it should not import Python code.
+actual captured files. Go reads the same files through `internal/testkit/replay`:
+`test/system/signaling_ticket_portable_test.go` exercises the POST ticket;
+`test/system/legacy_controls_portable_test.go` exercises all six legacy control
+requests and three in-home chime options; and `test/system/session_portable_replay_test.go`
+exercises remote ICE and close variants alongside captured live-view SDP.
+`test/system/media_failure_portable_test.go` uses the synthetic recording bytes
+and all four HTTP failure cases. Python's share URL and snapshot values have
+no matching Go API and remain comparison data. Legacy controls without C1
+capture remain synthetic Python-derived evidence;
+the shared fixtures do not establish live service acceptance.

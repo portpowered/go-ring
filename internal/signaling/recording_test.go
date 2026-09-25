@@ -3,6 +3,7 @@ package signaling
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -184,5 +185,220 @@ func TestRecordedPTZConversations(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Each recorded command and its acknowledgement is a separate replay case.
+// The stream test above still checks cross-command ordering and notifications.
+func TestRecordedPTZCommandsIndividually(t *testing.T) {
+	for _, name := range []string{"flow-21.json", "flow-402.json"} {
+		recording := loadConversation(t, name)
+		replies := map[string]Message{}
+		for _, row := range recording.Messages {
+			if row.Direction != "server_to_client" || row.Payload.Method != "rpc" {
+				continue
+			}
+			var body struct {
+				Command struct {
+					ID     string          `json:"id"`
+					Result json.RawMessage `json:"result"`
+				} `json:"command"`
+			}
+			if err := json.Unmarshal(row.Payload.Body, &body); err != nil {
+				t.Fatal(err)
+			}
+			if len(body.Command.Result) > 0 {
+				replies[body.Command.ID] = row.Payload
+			}
+		}
+		count := 0
+		for _, row := range recording.Messages {
+			if row.Direction != "client_to_server" || row.Payload.Method != "rpc" {
+				continue
+			}
+			var body struct {
+				DeviceID int64  `json:"doorbot_id"`
+				SignalID string `json:"session_id"`
+				Command  struct {
+					ID     string         `json:"id"`
+					Method string         `json:"method"`
+					Params map[string]any `json:"params"`
+				} `json:"command"`
+			}
+			if err := json.Unmarshal(row.Payload.Body, &body); err != nil {
+				t.Fatal(err)
+			}
+			reply, ok := replies[body.Command.ID]
+			if !ok {
+				t.Fatalf("%s command %s has no recorded result", name, body.Command.ID)
+			}
+			count++
+			t.Run(fmt.Sprintf("%s/%s/%02d", name, body.Command.Method, count), func(t *testing.T) {
+				control, ok := body.Command.Params["sessionId"].(string)
+				if !ok {
+					t.Fatal("missing control session ID")
+				}
+				out := make(chan Message, 1)
+				s, err := NewSession(context.Background(), SessionConfig{DeviceID: body.DeviceID, DialogID: row.Payload.DialogID, SignalID: body.SignalID, ControlID: control, Heartbeat: 10 * time.Second, Clock: newClock(), Send: func(_ context.Context, m Message) error { out <- m; return nil }})
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer s.Close()
+				params := map[string]any{}
+				for k, v := range body.Command.Params {
+					if k != "sessionId" && k != "timestamp" && k != "version" {
+						params[k] = v
+					}
+				}
+				done := make(chan error, 1)
+				go func() { _, err := s.Call(context.Background(), body.Command.Method, params); done <- err }()
+				actual := nextMessage(t, out)
+				var actualBody struct {
+					Command struct {
+						ID     string         `json:"id"`
+						Method string         `json:"method"`
+						Params map[string]any `json:"params"`
+					} `json:"command"`
+				}
+				if err := json.Unmarshal(actual.Body, &actualBody); err != nil {
+					t.Fatal(err)
+				}
+				if actual.Method != "rpc" || actual.DialogID != row.Payload.DialogID || actualBody.Command.Method != body.Command.Method {
+					t.Fatalf("wrong PTZ request: %+v", actual)
+				}
+				for k, want := range params {
+					if actualBody.Command.Params[k] != want {
+						t.Fatalf("%s = %v, want %v", k, actualBody.Command.Params[k], want)
+					}
+				}
+				if actualBody.Command.Params["sessionId"] != control {
+					t.Fatal("PTZ control session ID changed")
+				}
+				var replyBody map[string]any
+				if err := json.Unmarshal(reply.Body, &replyBody); err != nil {
+					t.Fatal(err)
+				}
+				replyBody["command"].(map[string]any)["id"] = actualBody.Command.ID
+				reply.Body, _ = json.Marshal(replyBody)
+				if err := s.Handle(reply); err != nil {
+					t.Fatal(err)
+				}
+				select {
+				case err := <-done:
+					if err != nil {
+						t.Fatal(err)
+					}
+				case <-time.After(time.Second):
+					t.Fatal("PTZ result not correlated")
+				}
+				if s.Pending() != 0 {
+					t.Fatal("pending PTZ call leaked")
+				}
+			})
+		}
+		if count == 0 {
+			t.Fatalf("%s had no recorded PTZ commands", name)
+		}
+	}
+}
+
+// Captured ping/pong pairs exercise the timer and identity path one pair at a
+// time; the separate virtual-hour test checks the hard 60-minute expiry.
+func TestRecordedHeartbeatPairsIndividually(t *testing.T) {
+	for _, name := range []string{"flow-21.json", "flow-402.json"} {
+		pending := map[string]Message{}
+		count := 0
+		for _, row := range loadConversation(t, name).Messages {
+			m := row.Payload
+			if m.Method == "ping" && row.Direction == "client_to_server" {
+				pending[m.DialogID] = m
+				continue
+			}
+			if m.Method != "pong" || row.Direction != "server_to_client" {
+				continue
+			}
+			ping, ok := pending[m.DialogID]
+			if !ok {
+				continue
+			}
+			delete(pending, m.DialogID)
+			count++
+			t.Run(fmt.Sprintf("%s/pair-%02d", name, count), func(t *testing.T) {
+				var body struct {
+					DeviceID int64  `json:"doorbot_id"`
+					SignalID string `json:"session_id"`
+				}
+				if err := json.Unmarshal(ping.Body, &body); err != nil {
+					t.Fatal(err)
+				}
+				clock := newClock()
+				out := make(chan Message, 1)
+				s, err := NewSession(context.Background(), SessionConfig{DeviceID: body.DeviceID, DialogID: ping.DialogID, SignalID: body.SignalID, ControlID: "control-fixture", Heartbeat: 10 * time.Second, Clock: clock, Send: func(_ context.Context, msg Message) error { out <- msg; return nil }})
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer s.Close()
+				clock.advance(10 * time.Second)
+				actual := nextMessage(t, out)
+				if actual.Method != "ping" || actual.DialogID != ping.DialogID || !replay.SemanticEqual(actual.Body, ping.Body) {
+					t.Fatalf("ping differs from capture: %+v", actual)
+				}
+				if err := s.Handle(m); err != nil {
+					t.Fatal(err)
+				}
+				if err := s.Send(context.Background(), "mic_enable", map[string]any{"enabled": true}); err != nil {
+					t.Fatalf("matching pong did not keep session active: %v", err)
+				}
+			})
+		}
+		if count == 0 {
+			t.Fatalf("%s has no recorded heartbeat pairs", name)
+		}
+	}
+}
+
+// Incoming trickle ICE is an event on the matching signaling session, even
+// when the capture's ICE belongs to a playback dialog rather than live_view.
+func TestRecordedRemoteICEIndividually(t *testing.T) {
+	for _, name := range []string{"flow-21.json", "flow-402.json"} {
+		count := 0
+		for _, row := range loadConversation(t, name).Messages {
+			m := row.Payload
+			if row.Direction != "server_to_client" || m.Method != "ice" {
+				continue
+			}
+			count++
+			t.Run(fmt.Sprintf("%s/candidate-%02d", name, count), func(t *testing.T) {
+				var body struct {
+					DeviceID   int64  `json:"doorbot_id"`
+					SignalID   string `json:"session_id"`
+					Candidate  string `json:"ice"`
+					MLineIndex int    `json:"mlineindex"`
+				}
+				if err := json.Unmarshal(m.Body, &body); err != nil {
+					t.Fatal(err)
+				}
+				if body.Candidate == "" {
+					t.Fatal("empty recorded ICE candidate")
+				}
+				s, err := NewSession(context.Background(), SessionConfig{DeviceID: body.DeviceID, DialogID: m.DialogID, SignalID: body.SignalID, ControlID: "control-fixture", Heartbeat: 10 * time.Second, Clock: newClock(), Send: func(context.Context, Message) error { return nil }})
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer s.Close()
+				if err := s.Handle(m); err != nil {
+					t.Fatal(err)
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				event, err := s.Receive(ctx)
+				if err != nil || event.Method != "ice" || !replay.SemanticEqual(event.Body, m.Body) {
+					t.Fatalf("remote ICE event = %+v, %v", event, err)
+				}
+			})
+		}
+		if count == 0 {
+			t.Fatalf("%s has no captured remote ICE", name)
+		}
 	}
 }

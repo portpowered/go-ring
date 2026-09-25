@@ -147,7 +147,7 @@ environments. The private mitmproxy file is not required for CI.
 
 The maintained library coverage gate requires 90% statement coverage, alongside
 behavioral and race tests. The completed offline verification run passed at
-90.11%; see [verification results](docs/verification.md) for scope and commands. Live tests are opt-in via
+90.10%; see [verification results](docs/verification.md) for scope and commands. Live tests are opt-in via
 `make test-integration` and require explicit credentials and device configuration.
 
 ## Compatibility and license
@@ -156,6 +156,13 @@ Intentional API changes are allowed during this improvement work. Existing
 `StartRTCStream`/`StopRTCStream` remain legacy APIs; prefer the new session model
 for new signaling work once its required behavior is verified. See [migration guidance](docs/migration.md) for changed lifecycle, retry, and
 error behavior.
+
+Control calls now follow the replayed legacy request profiles. `SetVolume`
+requires `Kind` (`"chime"` or `"doorbell"`) and the device `Description`;
+`SetInHomeChime` requires `Description` and exactly one of `type`, `enabled`,
+or `duration` in `Settings`. `SetLights` accepts on/off without a duration;
+`SetMotionDetection` uses the captured settings PATCH. These calls replaced
+unverified generic device routes; see [HTTP request shapes](docs/protocols/http.md).
 
 Go implementation: Apache-2.0, see [LICENSE](LICENSE). The separately vendored
 Python reference retains its own LGPL-3.0-or-later license. Its source and tests

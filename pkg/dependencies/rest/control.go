@@ -3,11 +3,12 @@ package rest
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/portpowered/go-ring/internal/protocol"
-	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 // GetMotionDetectionEnabled reads the one settings field supported by the current
@@ -52,47 +53,47 @@ func settingsPath(deviceID int64) string {
 	return strings.Replace(protocol.DeviceSettingsPath, "{id}", strconv.FormatInt(deviceID, 10), 1)
 }
 
-// SetVolume sets the volume for a device
-func (c *Client) SetVolume(ctx context.Context, deviceID int64, volume int) error {
-	endpoint := ringapimodels.RingDevicesEndpoint + "/" + strconv.FormatInt(deviceID, 10) + "/volume"
-	body := map[string]interface{}{
-		"volume": volume,
-	}
-	return c.doJSONRequest(ctx, "PUT", endpoint, body, nil)
+func legacyPath(pattern string, deviceID int64) string {
+	return strings.Replace(pattern, "{id}", strconv.FormatInt(deviceID, 10), 1)
 }
 
-// SetLights sets the lights for a device (floodlight cams)
-func (c *Client) SetLights(ctx context.Context, deviceID int64, state string, duration *int) error {
-	endpoint := ringapimodels.RingDevicesEndpoint + "/" + strconv.FormatInt(deviceID, 10) + "/lights"
-	body := map[string]interface{}{
-		"state": state,
+// SetVolume uses the Python legacy chime or doorbot update profile.
+func (c *Client) SetVolume(ctx context.Context, deviceID int64, kind, description string, volume int) error {
+	path, prefix := protocol.LegacyDoorbotPath, "doorbot"
+	field := "doorbell_volume"
+	if kind == "chime" {
+		path, prefix, field = protocol.LegacyChimePath, "chime", "volume"
 	}
-	if duration != nil {
-		body["duration"] = *duration
-	}
-	return c.doJSONRequest(ctx, "PUT", endpoint, body, nil)
+	query := url.Values{}
+	query.Set(prefix+"[description]", description)
+	query.Set(prefix+"[settings]["+field+"]", strconv.Itoa(volume))
+	return c.doJSONRequest(ctx, "PUT", legacyPath(path, deviceID)+"?"+query.Encode(), nil, nil)
 }
 
-// SetMotionDetection sets motion detection for a device
+// SetLights uses the captured on route and the corresponding legacy off route.
+func (c *Client) SetLights(ctx context.Context, deviceID int64, state string) error {
+	path := protocol.DoorbotLightOffPath
+	if state == "on" {
+		path = protocol.DoorbotLightOnPath
+	}
+	return c.doJSONRequest(ctx, "PUT", legacyPath(path, deviceID), nil, nil)
+}
+
+// SetMotionDetection shares the recorded typed settings PATCH route.
 func (c *Client) SetMotionDetection(ctx context.Context, deviceID int64, enabled bool) error {
-	endpoint := ringapimodels.RingDevicesEndpoint + "/" + strconv.FormatInt(deviceID, 10) + "/motion_detection"
-	body := map[string]interface{}{
-		"enabled": enabled,
-	}
-	return c.doJSONRequest(ctx, "PUT", endpoint, body, nil)
+	return c.PatchMotionDetectionEnabled(ctx, deviceID, enabled)
 }
 
-// TestSound tests a sound on a chime device
+// TestSound uses the Python legacy chime route and query parameter.
 func (c *Client) TestSound(ctx context.Context, deviceID int64, kind string) error {
-	endpoint := ringapimodels.RingDevicesEndpoint + "/" + strconv.FormatInt(deviceID, 10) + "/test_sound"
-	body := map[string]interface{}{
-		"kind": kind,
-	}
-	return c.doJSONRequest(ctx, "POST", endpoint, body, nil)
+	query := url.Values{"kind": {kind}}
+	return c.doJSONRequest(ctx, "POST", legacyPath(protocol.LegacyChimeSoundPath, deviceID)+"?"+query.Encode(), nil, nil)
 }
 
-// SetInHomeChime sets in-home chime settings for a doorbell
-func (c *Client) SetInHomeChime(ctx context.Context, deviceID int64, settings map[string]interface{}) error {
-	endpoint := ringapimodels.RingDevicesEndpoint + "/" + strconv.FormatInt(deviceID, 10) + "/in_home_chime"
-	return c.doJSONRequest(ctx, "PUT", endpoint, settings, nil)
+// SetInHomeChime changes one legacy chime field, matching the Python fixture.
+func (c *Client) SetInHomeChime(ctx context.Context, deviceID int64, description, field string, value int) error {
+	query := url.Values{}
+	query.Set("doorbot[description]", description)
+	query.Set(fmt.Sprintf("doorbot[settings][chime_settings][%s]", field), strconv.Itoa(value))
+	return c.doJSONRequest(ctx, "PUT", legacyPath(protocol.LegacyDoorbotPath, deviceID)+"?"+query.Encode(), nil, nil)
 }

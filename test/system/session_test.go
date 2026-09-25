@@ -15,7 +15,9 @@ import (
 	"github.com/portpowered/go-ring/pkg/ring"
 )
 
-func TestSignalingSessionNegotiatesRoutesPTZAndCloses(t *testing.T) {
+// Cross-feature smoke; focused captured and portable replay cases live in
+// session_portable_replay_test.go and internal/signaling/recording_test.go.
+func TestSignalingSessionIntegrationSmoke(t *testing.T) {
 	var httpCalls int
 	httpPeer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		httpCalls++

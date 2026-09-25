@@ -143,104 +143,59 @@ paths:
       responses:
         '200': {$ref: '#/components/responses/Json'}
         default: {$ref: '#/components/responses/HTTPFailure'}
-  /clients_api/ring_devices/{device_id}/volume:
+  /clients_api/chimes/{device_id}:
     put:
-      operationId: setLegacyDeviceVolume
-      description: >-
-        Existing Go SDK route and JSON body. The pinned Python doorbell/chime
-        implementation instead PUTs to family-specific resource paths with
-        form-style settings parameters; this spec does not claim route parity.
-      x-contract-source: existing-go
-      x-evidence: [../pkg/dependencies/rest/control.go, ../pkg/ring/client_control.go]
-      parameters: [{$ref: '#/components/parameters/device_id'}]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [volume]
-              properties: {volume: {type: integer, minimum: 0, maximum: 11}}
-      responses:
-        '2XX': {description: Successful update; the Go caller ignores any response body}
-        default: {$ref: '#/components/responses/HTTPFailure'}
-  /clients_api/ring_devices/{device_id}/lights:
+      operationId: setChimeVolume
+      description: Legacy Python/Go volume update; the query shape is synthetic replay evidence, not a C1 capture.
+      x-contract-source: pinned-python-and-go-synthetic-replay
+      x-evidence: [../test/porting-fixtures/legacy-control-requests.json, ../pkg/dependencies/rest/control.go]
+      parameters:
+        - {$ref: '#/components/parameters/device_id'}
+        - {in: query, name: 'chime[description]', required: true, schema: {type: string}}
+        - {in: query, name: 'chime[settings][volume]', required: true, schema: {type: integer, minimum: 0, maximum: 11}}
+      responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
+  /clients_api/doorbots/{device_id}:
     put:
-      operationId: setLegacyDeviceLights
+      operationId: updateLegacyDoorbotControls
       description: >-
-        Existing Go SDK body-based route. Python uses a PUT path suffix of
-        floodlight_light_on or floodlight_light_off with no JSON body.
-      x-contract-source: existing-go
-      x-evidence: [../pkg/dependencies/rest/control.go, ../reference/python-ring-doorbell/ring_doorbell/stickup_cam.py]
-      parameters: [{$ref: '#/components/parameters/device_id'}]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [state]
-              properties:
-                state: {type: string, enum: [on, off]}
-                duration: {type: integer, minimum: 0}
-      responses:
-        '2XX': {description: Successful update; the Go caller ignores any response body}
-        default: {$ref: '#/components/responses/HTTPFailure'}
-  /clients_api/ring_devices/{device_id}/motion_detection:
-    put:
-      operationId: setLegacyMotionDetection
-      description: >-
-        Existing Go compatibility route with an enabled boolean. Python uses
-        PATCH /devices/v1/devices/{id}/settings with motion_settings instead;
-        that newer route is specified separately and is capture-backed.
-      x-contract-source: existing-go
-      x-evidence: [../pkg/dependencies/rest/control.go, ../reference/python-ring-doorbell/ring_doorbell/doorbot.py]
-      parameters: [{$ref: '#/components/parameters/device_id'}]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [enabled]
-              properties: {enabled: {type: boolean}}
-      responses:
-        '2XX': {description: Successful update; the Go caller ignores any response body}
-        default: {$ref: '#/components/responses/HTTPFailure'}
-  /clients_api/ring_devices/{device_id}/test_sound:
+        Legacy Python/Go doorbell-volume or one in-home chime setting; query
+        variants come from portable synthetic fixtures, not a C1 field capture.
+      x-contract-source: pinned-python-and-go-synthetic-replay
+      x-evidence: [../test/porting-fixtures/legacy-control-requests.json, ../test/porting-fixtures/legacy-in-home-chime.json, ../pkg/dependencies/rest/control.go]
+      parameters:
+        - {$ref: '#/components/parameters/device_id'}
+        - {in: query, name: 'doorbot[description]', required: true, schema: {type: string}}
+        - {in: query, name: 'doorbot[settings][doorbell_volume]', schema: {type: integer, minimum: 0, maximum: 11}}
+        - {in: query, name: 'doorbot[settings][chime_settings][type]', schema: {type: integer}}
+        - {in: query, name: 'doorbot[settings][chime_settings][enable]', schema: {type: integer, enum: [0, 1]}}
+        - {in: query, name: 'doorbot[settings][chime_settings][duration]', schema: {type: integer, minimum: 0}}
+      responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
+  /clients_api/chimes/{device_id}/play_sound:
     post:
-      operationId: testLegacyDeviceSound
-      description: >-
-        Existing Go route with JSON kind. Python uses POST
-        /clients_api/chimes/{id}/play_sound with kind as a query parameter.
-      x-contract-source: existing-go
-      x-evidence: [../pkg/dependencies/rest/control.go, ../reference/python-ring-doorbell/ring_doorbell/chime.py]
-      parameters: [{$ref: '#/components/parameters/device_id'}]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [kind]
-              properties: {kind: {type: string, enum: [ding, motion]}}
-      responses:
-        '2XX': {description: Successful sound test; the Go caller ignores any response body}
-        default: {$ref: '#/components/responses/HTTPFailure'}
-  /clients_api/ring_devices/{device_id}/in_home_chime:
+      operationId: testChimeSound
+      description: Python/Go legacy sound request from portable synthetic replay.
+      x-contract-source: pinned-python-and-go-synthetic-replay
+      x-evidence: [../test/porting-fixtures/legacy-control-requests.json, ../pkg/dependencies/rest/control.go]
+      parameters:
+        - {$ref: '#/components/parameters/device_id'}
+        - {in: query, name: kind, required: true, schema: {type: string, enum: [ding, motion]}}
+      responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
+  /clients_api/doorbots/{device_id}/floodlight_light_on:
     put:
-      operationId: setLegacyInHomeChime
-      description: >-
-        Existing Go method sends its caller-provided JSON object directly. The
-        Python implementation updates fields on PUT /clients_api/doorbots/{id};
-        those routes and payloads are not asserted equivalent.
-      x-contract-source: existing-go
-      x-evidence: [../pkg/dependencies/rest/control.go, ../reference/python-ring-doorbell/ring_doorbell/doorbot.py]
+      operationId: turnFloodlightOn
+      description: Python/Go legacy light-on request from portable synthetic replay.
+      x-contract-source: pinned-python-and-go-synthetic-replay
+      x-evidence: [../test/porting-fixtures/legacy-control-requests.json, ../pkg/dependencies/rest/control.go]
       parameters: [{$ref: '#/components/parameters/device_id'}]
-      requestBody: {$ref: '#/components/requestBodies/ExtensibleObject'}
-      responses:
-        '2XX': {description: Successful update; the Go caller ignores any response body}
-        default: {$ref: '#/components/responses/HTTPFailure'}
+      responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
+  /clients_api/doorbots/{device_id}/floodlight_light_off:
+    put:
+      operationId: turnFloodlightOff
+      description: Python/Go legacy off path; no corresponding C1 or portable request fixture.
+      x-contract-source: pinned-python-and-go
+      x-evidence: [../reference/python-ring-doorbell/ring_doorbell/stickup_cam.py, ../pkg/dependencies/rest/control.go]
+      parameters: [{$ref: '#/components/parameters/device_id'}]
+      responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
   /clients_api/ring_devices/{device_id}/health:
     get:
       operationId: getLegacyDeviceHealth

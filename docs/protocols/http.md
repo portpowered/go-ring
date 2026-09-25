@@ -1,6 +1,6 @@
 # HTTP SDK contract and evidence
 
-[`api/openapi.yaml`](../../api/openapi.yaml) brings together two different sources: sanitized C1 captures, which define directly observed wire operations, and existing Go SDK operations, which are documented from implementation/tests. A third source, the pinned Python package, is included where its behavior aligns or helps identify divergence. An operation marked `existing-go` is not proof that Ring currently accepts that request. Captured routes such as EVM timeline/history, v3 settings, and siren remain separate from similarly named legacy SDK routes.
+[`api/openapi.yaml`](../../api/openapi.yaml) brings together sanitized C1 captures, existing Go SDK operations, and pinned Python behavior. Portable synthetic fixtures identify the legacy control requests shared by Python and Go; they are marked separately from captured C1 operations. An operation marked `existing-go` or `pinned-python-and-go-synthetic-replay` is not proof that Ring currently accepts that request. Captured routes such as EVM timeline/history, v3 settings, and siren remain separate from similarly named legacy SDK routes.
 
 ## Authentication and client session
 
@@ -12,14 +12,14 @@ When a hardware ID is configured or recovered from a valid access-token claim, t
 
 | Go operation | Go request shape | Python comparison | C1 status |
 |---|---|---|---|
-| `SetVolume` | `PUT /clients_api/ring_devices/{id}/volume`, JSON `volume` | Doorbell and chime use `/clients_api/doorbots/{id}` or `/clients_api/chimes/{id}` with form-style settings | No matching capture |
-| `SetLights` | `PUT /clients_api/ring_devices/{id}/lights`, JSON `state` and optional `duration` | Python uses `/clients_api/doorbots/{id}/floodlight_light_{on,off}` without JSON body | No matching capture |
-| `SetMotionDetection` | `PUT /clients_api/ring_devices/{id}/motion_detection`, JSON `enabled` | Python uses captured `PATCH /devices/v1/devices/{id}/settings` and nested `motion_settings` | Divergent legacy method; newer typed Go settings methods use the captured route |
-| `TestSound` | `POST /clients_api/ring_devices/{id}/test_sound`, JSON `kind` | Python uses `/clients_api/chimes/{id}/play_sound?kind=...` | No matching capture |
-| `SetInHomeChime` | `PUT /clients_api/ring_devices/{id}/in_home_chime`, caller-provided JSON object | Python updates doorbell settings through `PUT /clients_api/doorbots/{id}` form values | No matching capture; route and field contracts differ |
+| `SetVolume` | Family-specific `PUT /clients_api/{chimes,doorbots}/{id}` with description and setting in query values | Matches Python's shared legacy replay fixtures; caller supplies kind and description | Synthetic Python fixture; no C1 volume-request capture |
+| `SetLights` | `PUT /clients_api/doorbots/{id}/floodlight_light_{on,off}`, no body | Matches Python's legacy control shape; duration is rejected | Synthetic Python on fixture; no C1 light capture |
+| `SetMotionDetection` | `PATCH /devices/v1/devices/{id}/settings` with nested `motion_settings` | Matches Python and the typed Go settings method | C1 settings PATCH and shared replay fixture |
+| `TestSound` | `POST /clients_api/chimes/{id}/play_sound?kind=...`, no body | Matches Python's legacy control shape | Synthetic Python fixture; no C1 sound capture |
+| `SetInHomeChime` | `PUT /clients_api/doorbots/{id}` with description and one chime field in query values | Matches Python's type, enabled, or duration request shapes | Synthetic Python fixtures; no matching C1 chime-field request |
 | `UpdateDeviceHealth` | `GET /clients_api/ring_devices/{id}/health` | Python uses family-specific doorbot or chime health routes | No matching capture; current route is not asserted equivalent |
 
-These SDK shapes are preserved and described as existing behavior. Local fixture success alone does not establish vendor compatibility. Captured settings and siren operations have their own typed methods and explicit recording-backed coverage.
+The control methods above replaced earlier generic `/clients_api/ring_devices/{id}` commands that lacked supporting wire evidence. Local fixture success alone does not establish vendor compatibility. Captured settings and siren operations also have explicit recording-backed coverage.
 
 ## History and media
 

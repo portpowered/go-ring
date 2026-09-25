@@ -21,4 +21,9 @@ const (
 	DeviceSettingsPath            = "/devices/v1/devices/{id}/settings"
 	DoorbotSirenOnPath            = "/clients_api/doorbots/{id}/siren_on"
 	DoorbotSirenOffPath           = "/clients_api/doorbots/{id}/siren_off"
+	LegacyChimePath               = "/clients_api/chimes/{id}"
+	LegacyDoorbotPath             = "/clients_api/doorbots/{id}"
+	LegacyChimeSoundPath          = "/clients_api/chimes/{id}/play_sound"
+	DoorbotLightOnPath            = "/clients_api/doorbots/{id}/floodlight_light_on"
+	DoorbotLightOffPath           = "/clients_api/doorbots/{id}/floodlight_light_off"
 )

@@ -39,7 +39,10 @@ type UpdateDeviceHealthRequest struct {
 // SetVolumeRequest contains parameters for SetVolume
 type SetVolumeRequest struct {
 	DeviceID string
-	Volume   int
+	// Kind is "chime" or "doorbell"; Description is the current device name.
+	Kind        string
+	Description string
+	Volume      int
 }
 
 // SetLightsRequest contains parameters for SetLights
@@ -63,8 +66,9 @@ type TestSoundRequest struct {
 
 // SetInHomeChimeRequest contains parameters for SetInHomeChime
 type SetInHomeChimeRequest struct {
-	DeviceID string
-	Settings map[string]interface{}
+	DeviceID    string
+	Description string
+	Settings    map[string]interface{}
 }
 
 // GetDeviceHistoryRequest contains parameters for GetDeviceHistory

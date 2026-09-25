@@ -348,7 +348,7 @@ func TestCanceledPublicControlDoesNotReachHTTP(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err = client.SetVolume(ctx, ring.SetVolumeRequest{DeviceID: "100", Volume: 5})
+	err = client.SetVolume(ctx, ring.SetVolumeRequest{DeviceID: "100", Kind: "doorbell", Description: "Fixture Device", Volume: 5})
 	require.Error(t, err)
 	require.Empty(t, transport.requests)
 }
