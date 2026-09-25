@@ -150,6 +150,15 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	if maxAge <= 0 || maxAge > signaling.MaxSessionAge {
 		return nil, fmt.Errorf("maximum session age must be between zero and sixty minutes")
 	}
+	negotiationBudget := min(maxAge, signaling.NegotiationTimeout)
+	negotiationCtx, cancel := context.WithDeadline(ctx, started.Add(negotiationBudget))
+	defer cancel()
+	negotiationError := func() error {
+		if !time.Now().Before(started.Add(maxAge)) {
+			return signaling.ErrExpired
+		}
+		return negotiationCtx.Err()
+	}
 	dialog := uuid.NewString()
 	events := make(chan signaling.Message, signaling.NegotiationQueueCapacity)
 	c.mu.Lock()
@@ -163,12 +172,10 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	streamOptions := map[string]bool{"audio_enabled": req.AudioEnabled, "video_enabled": req.VideoEnabled}
 	body := map[string]any{"doorbot_id": id, "stream_options": streamOptions, "sdp": req.Offer.SDP, "type": "offer"}
 	raw, _ := json.Marshal(body)
-	if err = c.send(ctx, signaling.Message{Method: "live_view", DialogID: dialog, Body: raw}); err != nil {
+	if err = c.send(negotiationCtx, signaling.Message{Method: "live_view", DialogID: dialog, Body: raw}); err != nil {
 		cleanup()
 		return nil, err
 	}
-	negotiationCtx, cancel := context.WithTimeout(ctx, signaling.NegotiationTimeout)
-	defer cancel()
 	var signalID, riid, answerSDP, controlID string
 	startedSuccessfully := false
 	defer func() {
@@ -199,8 +206,8 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 					SessionID string `json:"session_id"`
 					SDP       string `json:"sdp"`
 					Info      struct {
-						PingInterval int    `json:"ping_interval"`
-						SessionID    string `json:"session_id"`
+						PingInterval json.RawMessage `json:"ping_interval"`
+						SessionID    string          `json:"session_id"`
 					} `json:"session_info"`
 					Type string `json:"type"`
 				}
@@ -215,8 +222,13 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 				signalID = v.SessionID
 				answerSDP = v.SDP
 				controlID = v.Info.SessionID
-				if v.Info.PingInterval > 0 {
-					heartbeat = time.Duration(v.Info.PingInterval) * time.Second
+				if len(v.Info.PingInterval) > 0 {
+					var seconds int
+					if json.Unmarshal(v.Info.PingInterval, &seconds) != nil || seconds <= 0 || seconds > int(signaling.MaxHeartbeatInterval/time.Second) {
+						cleanup()
+						return nil, fmt.Errorf("invalid negotiated heartbeat interval")
+					}
+					heartbeat = time.Duration(seconds) * time.Second
 				}
 				if m.RIID != "" {
 					riid = m.RIID
@@ -227,7 +239,7 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 			}
 		case <-negotiationCtx.Done():
 			cleanup()
-			return nil, fmt.Errorf("signaling negotiation failed: %w", negotiationCtx.Err())
+			return nil, fmt.Errorf("signaling negotiation failed: %w", negotiationError())
 		case <-c.done:
 			cleanup()
 			return nil, c.Err()
@@ -267,17 +279,17 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 		return nil, err
 	}
 	go created.watch()
-	if err = c.send(ctx, signaling.Message{Method: "activate_session", DialogID: dialog, RIID: riid, Body: mustJSON(map[string]any{"doorbot_id": id, "session_id": signalID})}); err != nil {
+	if err = c.send(negotiationCtx, signaling.Message{Method: "activate_session", DialogID: dialog, RIID: riid, Body: mustJSON(map[string]any{"doorbot_id": id, "session_id": signalID})}); err != nil {
 		created.terminate(err)
 		cleanup()
 		return nil, err
 	}
-	if err = created.core.Send(ctx, "mic_enable", map[string]any{"enabled": req.AudioEnabled}); err != nil {
+	if err = created.core.Send(negotiationCtx, "mic_enable", map[string]any{"enabled": req.AudioEnabled}); err != nil {
 		created.terminate(err)
 		cleanup()
 		return nil, err
 	}
-	if err = created.core.Send(ctx, "stream_options", map[string]any{"audio_enabled": req.AudioEnabled}); err != nil {
+	if err = created.core.Send(negotiationCtx, "stream_options", map[string]any{"audio_enabled": req.AudioEnabled}); err != nil {
 		created.terminate(err)
 		cleanup()
 		return nil, err
@@ -293,14 +305,19 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 				cleanup()
 				return nil, e
 			}
-			if m.Method == "camera_started" {
+			if m.Method == "close" && created.matches(m) {
+				created.terminate(signaling.ErrClosed)
+				cleanup()
+				return nil, signaling.ErrClosed
+			}
+			if m.Method == "camera_started" && created.matches(m) {
 				close(created.ready)
 				goto activated
 			}
 		case <-negotiationCtx.Done():
-			created.terminate(negotiationCtx.Err())
+			created.terminate(negotiationError())
 			cleanup()
-			return nil, fmt.Errorf("session activation failed: %w", negotiationCtx.Err())
+			return nil, fmt.Errorf("session activation failed: %w", negotiationError())
 		case <-ctx.Done():
 			created.terminate(ctx.Err())
 			cleanup()
@@ -356,9 +373,20 @@ func (s *DeviceSession) watch() {
 	s.doneOnce.Do(func() { close(s.done) })
 	s.connection.removeSession(s.dialogID)
 }
+func (s *DeviceSession) matches(m signaling.Message) bool {
+	var body struct {
+		DeviceID  int64  `json:"doorbot_id"`
+		SessionID string `json:"session_id"`
+	}
+	return m.DialogID == s.dialogID && json.Unmarshal(m.Body, &body) == nil && body.DeviceID == s.deviceID && body.SessionID == s.signalID
+}
 func (s *DeviceSession) handle(m signaling.Message) {
 	if err := s.core.Handle(m); err != nil {
 		s.terminate(err)
+		return
+	}
+	if m.Method == "close" && s.matches(m) {
+		s.terminate(signaling.ErrClosed)
 	}
 }
 func (s *DeviceSession) terminate(err error) {
@@ -523,6 +551,12 @@ func (s *DeviceSession) SetStreamOptions(ctx context.Context, r SetStreamOptions
 }
 func (s *DeviceSession) Close() error { return s.close(true) }
 func (s *DeviceSession) close(sendClose bool) error {
+	ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
+	defer cancel()
+	return s.closeWithContext(ctx, sendClose)
+}
+
+func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) error {
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
@@ -536,8 +570,6 @@ func (s *DeviceSession) close(sendClose bool) error {
 	}
 	s.movement = make(map[PTZAxis]string)
 	s.mu.Unlock()
-	ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
-	defer cancel()
 	if sendClose {
 		// Stop each tracked continuous move before closing the signaling session.
 		// Both RPC acknowledgements and the final close share one short best-effort budget.
