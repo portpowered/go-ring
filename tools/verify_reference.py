@@ -1,7 +1,7 @@
-"""Run the pinned Python baseline before shared recording and schema checks.
+"""Run the pinned Python baseline before recording and API contract checks.
 
-Requires uv on PATH. Creates separate ignored environments so the mitmproxy
-extractor cannot change the reference library's locked dependencies.
+Requires uv, Node.js and npm on PATH. Creates separate ignored environments so
+the capture extractor and protocol validators cannot change the locked reference.
 """
 from pathlib import Path
 import os
@@ -31,6 +31,10 @@ def main():
     python = interpreter(reference_env)
     run("uv", "pip", "install", "--python", python, "-r",
         ROOT / "tools/reference-replay/requirements.txt")
+    run("uv", "pip", "install", "--python", python, "-r",
+        ROOT / "tools/protocols/requirements.txt")
+    npm = "npm.cmd" if os.name == "nt" else "npm"
+    run(npm, "ci", "--prefix", ROOT / "tools/protocols", "--ignore-scripts")
     pytest = (python, "-m", "pytest", "-p", "no:socket", "-p",
               "offline_socket_guard", "-o", "addopts=", "-q")
     run(*pytest, "tests", cwd=REFERENCE, env=env)

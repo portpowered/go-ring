@@ -11,3 +11,4 @@ tokens.json
 /docs/internal/*.mitmproxy
 /docs/internal/*.har
 /.venv-capture/
+/tools/protocols/node_modules/

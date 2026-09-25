@@ -1,0 +1,7 @@
+{
+  "name": "go-ring-protocol-document-validation",
+  "private": true,
+  "devDependencies": {
+    "@asyncapi/parser": "3.6.3"
+  }
+}
