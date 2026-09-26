@@ -17,7 +17,7 @@ func (c *SignalingConnection) send(ctx context.Context, m signaling.Message) err
 		return c.Err()
 	default:
 	}
-	return c.writer.send(ctx, m)
+	return c.writer.Send(ctx, m)
 }
 
 func (c *SignalingConnection) writeFrame(ctx context.Context, m signaling.Message) error {
@@ -103,7 +103,7 @@ func (c *SignalingConnection) Close() error {
 	if c.closed {
 		c.mu.Unlock()
 		<-c.readerDone
-		<-c.writer.finished
+		<-c.writer.Finished()
 		return nil
 	}
 	c.closed = true
@@ -124,7 +124,7 @@ func (c *SignalingConnection) Close() error {
 	c.cancel()
 	_ = c.conn.Close()
 	<-c.readerDone
-	<-c.writer.finished
+	<-c.writer.Finished()
 	c.client.removeSignaling(c)
 	return nil
 }

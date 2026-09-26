@@ -86,7 +86,7 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	}
 	connCtx, cancel := context.WithCancel(ctx)
 	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession)}
-	s.writer = newSignalingWriter(s.done, s.writeFrame, func(err error) { s.fail(fmt.Errorf("signaling write failed")) })
+	s.writer = dependencywebsocket.NewSignalingWriter(s.done, s.writeFrame, func(err error) { s.fail(fmt.Errorf("signaling write failed")) })
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()
@@ -100,7 +100,7 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	c.signalingConnections[s] = struct{}{}
 	c.mu.Unlock()
 	go s.readLoop()
-	go s.writer.run()
+	go s.writer.Run()
 	go func() {
 		select {
 		case <-ctx.Done():

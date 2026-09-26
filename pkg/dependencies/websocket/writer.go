@@ -1,4 +1,4 @@
-package ring
+package websocket
 
 import (
 	"context"
@@ -15,7 +15,8 @@ type signalingWriteRequest struct {
 	result  chan error
 }
 
-type signalingWriter struct {
+// SignalingWriter bounds outgoing frames and prioritizes close, heartbeat, and PTZ stop.
+type SignalingWriter struct {
 	done      <-chan struct{}
 	wake      chan struct{}
 	finished  chan struct{}
@@ -27,11 +28,16 @@ type signalingWriter struct {
 	streak    int
 }
 
-func newSignalingWriter(done <-chan struct{}, write func(context.Context, signaling.Message) error, onFailure func(error)) *signalingWriter {
-	return &signalingWriter{done: done, wake: make(chan struct{}, 1), finished: make(chan struct{}), write: write, onFailure: onFailure}
+// NewSignalingWriter constructs a writer that stops when done closes.
+func NewSignalingWriter(done <-chan struct{}, write func(context.Context, signaling.Message) error, onFailure func(error)) *SignalingWriter {
+	return &SignalingWriter{done: done, wake: make(chan struct{}, 1), finished: make(chan struct{}), write: write, onFailure: onFailure}
 }
 
-func (w *signalingWriter) send(ctx context.Context, message signaling.Message) error {
+// Finished closes after Run drains queued requests.
+func (w *SignalingWriter) Finished() <-chan struct{} { return w.finished }
+
+// Send queues one frame and waits for the write or cancellation.
+func (w *SignalingWriter) Send(ctx context.Context, message signaling.Message) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -51,7 +57,7 @@ func (w *signalingWriter) send(ctx context.Context, message signaling.Message) e
 	}
 }
 
-func (w *signalingWriter) queue(request *signalingWriteRequest) bool {
+func (w *SignalingWriter) queue(request *signalingWriteRequest) bool {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if len(w.priority)+len(w.normal) >= signaling.SignalingWriteQueueCapacity {
@@ -69,7 +75,7 @@ func (w *signalingWriter) queue(request *signalingWriteRequest) bool {
 	return true
 }
 
-func (w *signalingWriter) remove(request *signalingWriteRequest) {
+func (w *SignalingWriter) remove(request *signalingWriteRequest) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	for _, queue := range []*[]*signalingWriteRequest{&w.priority, &w.normal} {
@@ -82,7 +88,7 @@ func (w *signalingWriter) remove(request *signalingWriteRequest) {
 	}
 }
 
-func (w *signalingWriter) next() *signalingWriteRequest {
+func (w *SignalingWriter) next() *signalingWriteRequest {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if len(w.priority) == 0 && len(w.normal) == 0 {
@@ -100,7 +106,8 @@ func (w *signalingWriter) next() *signalingWriteRequest {
 	return next
 }
 
-func (w *signalingWriter) run() {
+// Run services the writer queue until done closes.
+func (w *SignalingWriter) Run() {
 	defer close(w.finished)
 	for {
 		select {
@@ -141,7 +148,7 @@ func (w *signalingWriter) run() {
 	}
 }
 
-func (w *signalingWriter) drain() {
+func (w *SignalingWriter) drain() {
 	w.mu.Lock()
 	queued := append(w.priority, w.normal...)
 	w.priority, w.normal = nil, nil

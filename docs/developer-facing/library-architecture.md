@@ -15,7 +15,8 @@ flowchart LR
     Socket --> Reader[One socket reader]
     Socket --> Events[Account event stream]
     Reader --> Sessions[DeviceSession registry]
-    Sessions --> Writer[Bounded priority writer]
+    Socket --> Writer[Bounded priority writer]
+    Sessions --> Writer
     Sessions --> RPC[RPC correlation and heartbeat policy]
     Sessions --> Media[dependencies/webrtc SDP and ICE validation]
     App --> Peer[Caller-owned WebRTC peer]
@@ -35,7 +36,7 @@ The caller owns and closes the media peer separately.
 | `pkg/ring` | Public request/result types, client options, HTTP methods, session orchestration, and child ownership |
 | `pkg/ringapimodels` | OpenAPI-generated public device, auth, event, and recording projections; handwritten behavior and typed errors |
 | `pkg/dependencies/rest` | Existing auth mechanisms and HTTP request/response adaptation; custom HTTP client support; safe-read retries |
-| `pkg/dependencies/websocket` | Event-stream dial/read/close, signaling dial/read/write deadlines, and live-answer negotiation |
+| `pkg/dependencies/websocket` | Event-stream dial/read/close, signaling dial/read/write deadlines, bounded priority writer, and live-answer negotiation |
 | `pkg/dependencies/webrtc` | SDP parsing, answer normalization, and ICE media-identity validation |
 | `pkg/dependencymodels` | OpenAPI-generated legacy device and recording response models |
 | `internal/protocol` | Verified service defaults, endpoint profiles, paths, signaling method and RPC constants |
@@ -48,11 +49,10 @@ The caller owns and closes the media peer separately.
 | `tools/reference-replay`, `tools/protocols`, `tools/capture` | Optional maintainer comparison, validation, and extraction tools |
 
 New callers should depend on `pkg/ring`, not the transport packages. The
-remaining transport work in `pkg/ring` is the signaling priority writer and
-push/playback heartbeat loops. Their public session methods can stay in `ring`
-while their scheduling and queue mechanics move to `dependencies/websocket` in
-a further pass. Session-specific RPC correlation and expiry already live in
-`internal/signaling`.
+remaining transport scheduling in `pkg/ring` is the push/playback heartbeat
+loops. Their public session methods can stay in `ring` while their ticker
+mechanics move to `dependencies/websocket` in a further pass. Session-specific
+RPC correlation and expiry already live in `internal/signaling`.
 
 The pinned Python library uses its Auth object, Ring inventory/cache, family
 models, and per-stream WebRTC helper. The Go port shares the behavioral

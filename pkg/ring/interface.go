@@ -95,7 +95,7 @@ type SignalingConnection struct {
 	terminal   error
 	done       chan struct{}
 	readerDone chan struct{}
-	writer     *signalingWriter
+	writer     *dependencywebsocket.SignalingWriter
 	pending    map[string]chan signaling.Message
 	sessions   map[string]*DeviceSession
 	channels   map[string]chan signaling.Message

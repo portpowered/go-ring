@@ -10,6 +10,7 @@ import (
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/internal/testkit/replay"
+	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
 )
 
 func capturedFrame(t *testing.T, method, direction string) signaling.Message {
@@ -35,9 +36,9 @@ func replayConnection(t *testing.T) (*SignalingConnection, <-chan signaling.Mess
 	writes := make(chan signaling.Message, 256)
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &SignalingConnection{ctx: ctx, cancel: cancel, done: make(chan struct{}), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession), sessions: make(map[string]*DeviceSession), pending: make(map[string]chan signaling.Message)}
-	c.writer = newSignalingWriter(c.done, func(_ context.Context, m signaling.Message) error { writes <- m; return nil }, nil)
-	go c.writer.run()
-	t.Cleanup(func() { close(c.done); cancel(); <-c.writer.finished })
+	c.writer = dependencywebsocket.NewSignalingWriter(c.done, func(_ context.Context, m signaling.Message) error { writes <- m; return nil }, nil)
+	go c.writer.Run()
+	t.Cleanup(func() { close(c.done); cancel(); <-c.writer.Finished() })
 	return c, writes
 }
 func replayReply(t *testing.T, c *SignalingConnection, request signaling.Message, method string) {
