@@ -19,7 +19,7 @@ The Python project is a behavioral reference, not an instruction to duplicate it
 | Area | Inspected state | Planned action |
 |---|---|---|
 | Public API | `pkg/ring/interface.go`, models in `pkg/ringapimodels` | Keep an accessible API index; introduce clear connection/session names with a breaking migration |
-| Transport | `pkg/dependencies/rest`, wire models in `pkg/dependencymodels` | Move implementation details under `internal` with compatibility decisions first |
+| Transport | `pkg/dependencies/rest`, wire models in `pkg/generatedhttp` | Keep wire models at the REST boundary and move implementation details under `internal` where useful |
 | Tests | Auth, controls, devices, recordings, events, RTC; external test packages and local servers | Extend existing tests and make their assertions stricter |
 | Coverage | Verified unit run reported 69.8% with explicit library instrumentation | Establish a repeatable library-only denominator and enforce 90% in CI |
 | RTC lifecycle | `StopRTCStream` ignores its ID and returns nil; `Client.Close` only marks the client closed | Add regression tests and define ownership before refactoring |

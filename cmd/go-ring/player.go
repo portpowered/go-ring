@@ -19,7 +19,7 @@ func playTrack(ctx context.Context, track *webrtc.TrackRemote) error {
 	if name != "H264" && name != "VP8" {
 		return fmt.Errorf("ffplay preview does not support negotiated codec %s", codec.MimeType)
 	}
-	if _, err := exec.LookPath("ffplay"); err != nil {
+	if _, err := exec.LookPath(ffplayCommand); err != nil {
 		return errors.New("ffplay is required for preview; install FFmpeg or use --player none")
 	}
 	address, err := net.ResolveUDPAddr("udp4", "127.0.0.1:0")
@@ -49,7 +49,7 @@ func playTrack(ctx context.Context, track *webrtc.TrackRemote) error {
 	if err := file.Close(); err != nil {
 		return err
 	}
-	command := exec.CommandContext(ctx, "ffplay", "-loglevel", "error", "-protocol_whitelist", "file,udp,rtp", "-fflags", "nobuffer", "-flags", "low_delay", "-i", file.Name())
+	command := exec.CommandContext(ctx, ffplayCommand, "-loglevel", "error", "-protocol_whitelist", "file,udp,rtp", "-fflags", "nobuffer", "-flags", "low_delay", "-i", file.Name())
 	command.Stderr = os.Stderr
 	if err := command.Start(); err != nil {
 		return err

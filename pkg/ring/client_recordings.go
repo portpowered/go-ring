@@ -20,13 +20,13 @@ func (c *Client) GetDeviceHistory(ctx context.Context, req GetDeviceHistoryReque
 	}
 
 	response := &ringapimodels.RecordingHistoryResponse{}
-	for _, raw := range rawResponse.Recordings {
+	for _, raw := range rawResponse {
 		recording := ringapimodels.Recording{
-			ID:        raw.ID,
+			ID:        int64(raw.Id),
 			Kind:      raw.Kind,
 			Answered:  raw.Answered,
 			CreatedAt: raw.CreatedAt,
-			DeviceID:  raw.DeviceID,
+			DeviceID:  int64(raw.Doorbot.Id),
 		}
 		response.Recordings = append(response.Recordings, recording)
 	}
@@ -42,13 +42,13 @@ func (c *Client) GetActiveDings(ctx context.Context) (*ringapimodels.RecordingHi
 	}
 
 	response := &ringapimodels.RecordingHistoryResponse{}
-	for _, raw := range rawResponse.Recordings {
+	for _, raw := range rawResponse {
 		recording := ringapimodels.Recording{
-			ID:        raw.ID,
+			ID:        int64(raw.Id),
 			Kind:      raw.Kind,
 			Answered:  raw.Answered,
 			CreatedAt: raw.CreatedAt,
-			DeviceID:  raw.DeviceID,
+			DeviceID:  int64(raw.Doorbot.Id),
 		}
 		response.Recordings = append(response.Recordings, recording)
 	}

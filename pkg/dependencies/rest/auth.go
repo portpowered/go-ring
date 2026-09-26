@@ -24,6 +24,8 @@ import (
 // TokenResponse is generated from the OAuthToken schema in api/openapi.yaml.
 type TokenResponse = generatedhttp.OAuthToken
 
+const csrfTokenKey = "csrftoken"
+
 type pkceState struct {
 	verifier    string
 	state       string
@@ -229,7 +231,7 @@ func (c *Client) submitCredentials(ctx context.Context, username, password strin
 	var payload generatedhttp.SignInState
 	_ = json.Unmarshal(body, &payload)
 	location := resp.Header.Get("Location")
-	requires2FA := resp.StatusCode == http.StatusPreconditionFailed || wireString(payload.TsvState) != "" || payload.NextTimeInSecs != nil || strings.Contains(location, "/2fa")
+	requires2FA := resp.StatusCode == http.StatusPreconditionFailed || (payload.TsvState != nil && *payload.TsvState != "") || payload.NextTimeInSecs != nil || strings.Contains(location, "/2fa")
 	if requires2FA {
 		return true, nil
 	}
@@ -396,7 +398,7 @@ func extractCSRF(html string, jar http.CookieJar, oauthBase string) string {
 		parsed, _ := url.Parse(rawURL)
 		for _, cookie := range jar.Cookies(parsed) {
 			switch strings.ToLower(cookie.Name) {
-			case "csrf-token", "csrftoken", "csrf_token", "_csrf", "xsrf-token":
+			case "csrf-token", csrfTokenKey, "csrf_token", "_csrf", "xsrf-token":
 				if cookie.Value != "" {
 					return cookie.Value
 				}
@@ -430,7 +432,7 @@ func findCSRF(value any, depth int) string {
 	case map[string]any:
 		for key, child := range typed {
 			normalized := strings.NewReplacer("-", "", "_", "").Replace(strings.ToLower(key))
-			if normalized == "csrftoken" || normalized == "csrf" {
+			if normalized == csrfTokenKey || normalized == "csrf" {
 				if token, ok := child.(string); ok {
 					return token
 				}

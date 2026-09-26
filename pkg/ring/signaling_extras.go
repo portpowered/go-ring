@@ -15,6 +15,8 @@ import (
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
 
+const defaultPlaybackEntryPoint = "timeline"
+
 func (c *SignalingConnection) registerChannel() (string, chan signaling.Message, error) {
 	name := uuid.NewString()
 	ch := make(chan signaling.Message, signaling.NegotiationQueueCapacity)
@@ -161,7 +163,7 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 	}
 	entry := req.EntryPoint
 	if entry == "" {
-		entry = "timeline"
+		entry = defaultPlaybackEntryPoint
 	}
 	dialog, events, err := c.registerChannel()
 	if err != nil {

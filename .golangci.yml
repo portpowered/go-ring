@@ -21,7 +21,7 @@ linters:
       checks: [argument, case, condition, operation, return]
       ignored-numbers: ['0', '1', '2', '10', '64', '100']
     goconst:
-      min-occurrences: 3
+      min-occurrences: 2
     revive:
       rules:
         - name: nested-structs
@@ -37,8 +37,6 @@ linters:
       - path: '(^|/)(pkg/generatedhttp|pkg/generatedsignaling)/'
         linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop]
       - path: '(^|/)pkg/ringapimodels/models\.gen\.go$'
-        linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop]
-      - path: '(^|/)pkg/dependencymodels/models\.gen\.go$'
         linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop]
       - path: '_test\.go$'
         linters: [revive, mnd, goconst, cyclop]

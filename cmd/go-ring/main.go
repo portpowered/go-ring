@@ -16,6 +16,8 @@ import (
 	"github.com/portpowered/go-ring/pkg/ring"
 )
 
+const loopbackHTTPScheme = "http"
+
 func main() {
 	if err := run(context.Background(), os.Args[1:], os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -103,10 +105,10 @@ func safeEndpoint(raw string) error {
 	if u.Scheme == "https" || u.Scheme == "wss" {
 		return nil
 	}
-	if (u.Scheme == "http" || u.Scheme == "ws") && net.ParseIP(u.Hostname()) != nil && net.ParseIP(u.Hostname()).IsLoopback() {
+	if (u.Scheme == loopbackHTTPScheme || u.Scheme == "ws") && net.ParseIP(u.Hostname()) != nil && net.ParseIP(u.Hostname()).IsLoopback() {
 		return nil
 	}
-	if (u.Scheme == "http" || u.Scheme == "ws") && u.Hostname() == "localhost" {
+	if (u.Scheme == loopbackHTTPScheme || u.Scheme == "ws") && u.Hostname() == "localhost" {
 		return nil
 	}
 	return errors.New("insecure endpoint overrides must use loopback")

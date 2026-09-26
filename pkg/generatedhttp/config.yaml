@@ -5,3 +5,4 @@ generate:
 output: pkg/generatedhttp/client.gen.go
 output-options:
   generate-types-for-anonymous-schemas: true
+  skip-prune: true

@@ -10,7 +10,6 @@ import (
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/ringerrors"
 	"github.com/portpowered/go-ring/internal/ringmedia"
-	"github.com/portpowered/go-ring/pkg/dependencymodels"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
 )
 
@@ -29,7 +28,7 @@ func (c *Client) GetRecordingShareURL(ctx context.Context, recordingID int64) (s
 }
 
 // GetDeviceHistory retrieves the history of recordings for a device
-func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int, kind string) (*dependencymodels.RingRecordingHistoryResponse, error) {
+func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int, kind string) (generatedhttp.RecordingArray, error) {
 	endpoint := strings.Replace(protocol.DoorbotHistoryPath, "{id}", strconv.FormatInt(deviceID, 10), 1)
 	params := url.Values{}
 
@@ -49,44 +48,18 @@ func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int
 	if err := c.doJSONRequest(ctx, http.MethodGet, endpoint, nil, &recordings); err != nil {
 		return nil, err
 	}
-	response := &dependencymodels.RingRecordingHistoryResponse{
-		Recordings: projectRecordings(recordings),
-	}
-	return response, nil
+	return recordings, nil
 }
 
 // GetActiveDings retrieves currently active dings
-func (c *Client) GetActiveDings(ctx context.Context) (*dependencymodels.RingRecordingHistoryResponse, error) {
+func (c *Client) GetActiveDings(ctx context.Context) (generatedhttp.RecordingArray, error) {
 	// The API returns an array directly, not wrapped in an object
 	var recordings generatedhttp.RecordingArray
 	if err := c.doJSONRequest(ctx, http.MethodGet, protocol.DingsActivePath, nil, &recordings); err != nil {
 		return nil, err
 	}
 
-	response := &dependencymodels.RingRecordingHistoryResponse{
-		Recordings: projectRecordings(recordings),
-	}
-	return response, nil
-}
-
-func projectRecordings(wire generatedhttp.RecordingArray) []dependencymodels.RingRecording {
-	recordings := make([]dependencymodels.RingRecording, 0, len(wire))
-	for _, item := range wire {
-		deviceID := int64(item.Doorbot.Id)
-		recordings = append(recordings, dependencymodels.RingRecording{
-			ID:        int64(item.Id),
-			Kind:      item.Kind,
-			Answered:  item.Answered,
-			CreatedAt: item.CreatedAt,
-			DeviceID:  deviceID,
-			Doorbot: dependencymodels.RingDoorbot{
-				ID:          deviceID,
-				Description: wireString(item.Doorbot.Description),
-				Type:        wireString(item.Doorbot.Type),
-			},
-		})
-	}
-	return recordings
+	return recordings, nil
 }
 
 // GetRecording retrieves a video stream for a recording

@@ -32,6 +32,96 @@ func (e AuthorizationCodeGrantGrantType) Valid() bool {
 	}
 }
 
+// Defines values for CameraDeviceKind.
+const (
+	CocoaCamera         CameraDeviceKind = "cocoa_camera"
+	CocoaFloodlight     CameraDeviceKind = "cocoa_floodlight"
+	CocoaSpotlight      CameraDeviceKind = "cocoa_spotlight"
+	FloodlightPro       CameraDeviceKind = "floodlight_pro"
+	FloodlightV2        CameraDeviceKind = "floodlight_v2"
+	HpCamV1             CameraDeviceKind = "hp_cam_v1"
+	HpCamV2             CameraDeviceKind = "hp_cam_v2"
+	SpotlightwV2        CameraDeviceKind = "spotlightw_v2"
+	StickupCam          CameraDeviceKind = "stickup_cam"
+	StickupCamElite     CameraDeviceKind = "stickup_cam_elite"
+	StickupCamLongfin   CameraDeviceKind = "stickup_cam_longfin"
+	StickupCamLunar     CameraDeviceKind = "stickup_cam_lunar"
+	StickupCamMini      CameraDeviceKind = "stickup_cam_mini"
+	StickupCamMiniPtzV1 CameraDeviceKind = "stickup_cam_mini_ptz_v1"
+	StickupCamMiniV2    CameraDeviceKind = "stickup_cam_mini_v2"
+	StickupCamV3        CameraDeviceKind = "stickup_cam_v3"
+	StickupCamV4        CameraDeviceKind = "stickup_cam_v4"
+	StickupCamWired     CameraDeviceKind = "stickup_cam_wired"
+)
+
+// Valid indicates whether the value is a known member of the CameraDeviceKind enum.
+func (e CameraDeviceKind) Valid() bool {
+	switch e {
+	case CocoaCamera:
+		return true
+	case CocoaFloodlight:
+		return true
+	case CocoaSpotlight:
+		return true
+	case FloodlightPro:
+		return true
+	case FloodlightV2:
+		return true
+	case HpCamV1:
+		return true
+	case HpCamV2:
+		return true
+	case SpotlightwV2:
+		return true
+	case StickupCam:
+		return true
+	case StickupCamElite:
+		return true
+	case StickupCamLongfin:
+		return true
+	case StickupCamLunar:
+		return true
+	case StickupCamMini:
+		return true
+	case StickupCamMiniPtzV1:
+		return true
+	case StickupCamMiniV2:
+		return true
+	case StickupCamV3:
+		return true
+	case StickupCamV4:
+		return true
+	case StickupCamWired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChimeDeviceKind.
+const (
+	Chime      ChimeDeviceKind = "chime"
+	ChimePro   ChimeDeviceKind = "chime_pro"
+	ChimeProV2 ChimeDeviceKind = "chime_pro_v2"
+	ChimeV2    ChimeDeviceKind = "chime_v2"
+)
+
+// Valid indicates whether the value is a known member of the ChimeDeviceKind enum.
+func (e ChimeDeviceKind) Valid() bool {
+	switch e {
+	case Chime:
+		return true
+	case ChimePro:
+		return true
+	case ChimeProV2:
+		return true
+	case ChimeV2:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ClientSessionRegistrationDeviceMetadataApiVersion.
 const (
 	N11 ClientSessionRegistrationDeviceMetadataApiVersion = 11
@@ -77,6 +167,96 @@ func (e DeviceCommandCommandName) Valid() bool {
 	}
 }
 
+// Defines values for DeviceFamilyCode.
+const (
+	Chimes      DeviceFamilyCode = "chimes"
+	Doorbots    DeviceFamilyCode = "doorbots"
+	Other       DeviceFamilyCode = "other"
+	StickupCams DeviceFamilyCode = "stickup_cams"
+)
+
+// Valid indicates whether the value is a known member of the DeviceFamilyCode enum.
+func (e DeviceFamilyCode) Valid() bool {
+	switch e {
+	case Chimes:
+		return true
+	case Doorbots:
+		return true
+	case Other:
+		return true
+	case StickupCams:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DoorbellDeviceKind.
+const (
+	CocoaDoorbell         DoorbellDeviceKind = "cocoa_doorbell"
+	CocoaDoorbellV2       DoorbellDeviceKind = "cocoa_doorbell_v2"
+	DfDoorbellClownfish   DoorbellDeviceKind = "df_doorbell_clownfish"
+	Doorbell              DoorbellDeviceKind = "doorbell"
+	DoorbellGrahamCracker DoorbellDeviceKind = "doorbell_graham_cracker"
+	DoorbellOyster        DoorbellDeviceKind = "doorbell_oyster"
+	DoorbellPortal        DoorbellDeviceKind = "doorbell_portal"
+	DoorbellScallop       DoorbellDeviceKind = "doorbell_scallop"
+	DoorbellScallopLite   DoorbellDeviceKind = "doorbell_scallop_lite"
+	DoorbellV3            DoorbellDeviceKind = "doorbell_v3"
+	DoorbellV4            DoorbellDeviceKind = "doorbell_v4"
+	DoorbellV5            DoorbellDeviceKind = "doorbell_v5"
+	Doorbot               DoorbellDeviceKind = "doorbot"
+	JboxV1                DoorbellDeviceKind = "jbox_v1"
+	LpdV1                 DoorbellDeviceKind = "lpd_v1"
+	LpdV2                 DoorbellDeviceKind = "lpd_v2"
+	LpdV3                 DoorbellDeviceKind = "lpd_v3"
+	LpdV4                 DoorbellDeviceKind = "lpd_v4"
+)
+
+// Valid indicates whether the value is a known member of the DoorbellDeviceKind enum.
+func (e DoorbellDeviceKind) Valid() bool {
+	switch e {
+	case CocoaDoorbell:
+		return true
+	case CocoaDoorbellV2:
+		return true
+	case DfDoorbellClownfish:
+		return true
+	case Doorbell:
+		return true
+	case DoorbellGrahamCracker:
+		return true
+	case DoorbellOyster:
+		return true
+	case DoorbellPortal:
+		return true
+	case DoorbellScallop:
+		return true
+	case DoorbellScallopLite:
+		return true
+	case DoorbellV3:
+		return true
+	case DoorbellV4:
+		return true
+	case DoorbellV5:
+		return true
+	case Doorbot:
+		return true
+	case JboxV1:
+		return true
+	case LpdV1:
+		return true
+	case LpdV2:
+		return true
+	case LpdV3:
+		return true
+	case LpdV4:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LegacyPasswordGrantGrantType.
 const (
 	Password LegacyPasswordGrantGrantType = "password"
@@ -86,6 +266,27 @@ const (
 func (e LegacyPasswordGrantGrantType) Valid() bool {
 	switch e {
 	case Password:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OtherDeviceKind.
+const (
+	BeamsCt200Transformer OtherDeviceKind = "beams_ct200_transformer"
+	IntercomHandsetAudio  OtherDeviceKind = "intercom_handset_audio"
+	IntercomHandsetVideo  OtherDeviceKind = "intercom_handset_video"
+)
+
+// Valid indicates whether the value is a known member of the OtherDeviceKind enum.
+func (e OtherDeviceKind) Valid() bool {
+	switch e {
+	case BeamsCt200Transformer:
+		return true
+	case IntercomHandsetAudio:
+		return true
+	case IntercomHandsetVideo:
 		return true
 	default:
 		return false
@@ -200,6 +401,9 @@ type AuthorizationCodeGrant struct {
 // AuthorizationCodeGrantGrantType defines model for AuthorizationCodeGrant.GrantType.
 type AuthorizationCodeGrantGrantType string
 
+// CameraDeviceKind Known camera kinds from captured and Python legacy inventories.
+type CameraDeviceKind string
+
 // CapturedTickets defines model for CapturedTickets.
 type CapturedTickets struct {
 	Assets               *[]JsonValue           `json:"assets,omitempty"`
@@ -208,6 +412,9 @@ type CapturedTickets struct {
 	Ticket               string                 `json:"ticket"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// ChimeDeviceKind Known chime kinds from captured and Python legacy inventories.
+type ChimeDeviceKind string
 
 // ChimeSettings defines model for ChimeSettings.
 type ChimeSettings struct {
@@ -299,6 +506,9 @@ type DeviceDetail struct {
 	DeviceOperationSet   *map[string]DeviceOperationSet `json:"device_operation_set,omitempty"`
 	AdditionalProperties map[string]interface{}         `json:"-"`
 }
+
+// DeviceFamilyCode Observed legacy family labels. The device family field itself remains open to future values.
+type DeviceFamilyCode string
 
 // DeviceFeatures defines model for DeviceFeatures.
 type DeviceFeatures struct {
@@ -394,6 +604,12 @@ type DeviceTimeline struct {
 	PaginationKey        *string                `json:"pagination_key,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// DoorbellDeviceKind Known doorbell kinds from captured and Python legacy inventories; unknown kinds remain valid on Device.kind.
+type DoorbellDeviceKind string
+
+// ExtensibleObject defines model for ExtensibleObject.
+type ExtensibleObject map[string]JsonValue
 
 // FeatureAvailability defines model for FeatureAvailability.
 type FeatureAvailability struct {
@@ -594,6 +810,9 @@ type OAuthToken struct {
 type OAuthTokenGrant struct {
 	union json.RawMessage
 }
+
+// OtherDeviceKind Known devices with no doorbell, chime, or camera projection.
+type OtherDeviceKind string
 
 // PTZAutoScan defines model for PTZAutoScan.
 type PTZAutoScan struct {

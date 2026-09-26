@@ -96,7 +96,6 @@ func main() {
 - [OpenAPI Library structs](api/client-models.openapi.yaml)
 - [Recording formats and verification order](docs/developer-facing/replay-format.md)
 - [Replay, unit, and live integration coverage](docs/developer-facing/coverage.md)
-- [Generated dependency models](api/dependency-models.openapi.yaml)
 
 
 ### Reverse engineering

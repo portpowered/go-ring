@@ -144,8 +144,7 @@ func excludeGeneratedModels(profile []byte) []byte {
 	lines := bytes.Split(profile, []byte{'\n'})
 	filtered := make([][]byte, 0, len(lines))
 	for _, line := range lines {
-		if !bytes.Contains(line, []byte("/pkg/ringapimodels/models.gen.go:")) &&
-			!bytes.Contains(line, []byte("/pkg/dependencymodels/models.gen.go:")) {
+		if !bytes.Contains(line, []byte("/pkg/ringapimodels/models.gen.go:")) {
 			filtered = append(filtered, line)
 		}
 	}

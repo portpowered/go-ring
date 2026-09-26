@@ -17,6 +17,8 @@ import (
 	"golang.org/x/term"
 )
 
+const ffplayCommand = "ffplay"
+
 type viewOptions struct {
 	player     string
 	iceFile    string
@@ -30,14 +32,14 @@ func viewCommand(parent context.Context, store tokenStore, args []string, in io.
 	}
 	flags := flag.NewFlagSet("view", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	player := flags.String("player", "ffplay", "ffplay or none")
+	player := flags.String("player", ffplayCommand, "ffplay or none")
 	iceFile := flags.String("ice-servers", "", "JSON array of ICE servers")
 	continuous := flags.Bool("continuous", false, "continuous PTZ with inactivity stop")
 	speed := flags.Float64("speed", defaultPTZSpeed, "continuous PTZ speed from 0 to 1")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
-	if flags.NArg() != 0 || (*player != "none" && *player != "ffplay") || *speed <= 0 || *speed > 1 {
+	if flags.NArg() != 0 || (*player != "none" && *player != ffplayCommand) || *speed <= 0 || *speed > 1 {
 		return errors.New("invalid view options")
 	}
 	interrupts := make(chan os.Signal, 1)
@@ -72,7 +74,7 @@ func view(parent context.Context, client *ring.Client, deviceID string, opts vie
 	mediaErr := make(chan error, 1)
 	pc.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 		_, _ = fmt.Fprintf(out, "Video track: %s\n", track.Codec().MimeType)
-		if opts.player == "ffplay" {
+		if opts.player == ffplayCommand {
 			if err := playTrack(ctx, track); err != nil && ctx.Err() == nil {
 				select {
 				case mediaErr <- err:

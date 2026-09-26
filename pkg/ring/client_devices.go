@@ -3,8 +3,8 @@ package ring
 import (
 	"context"
 	"strconv"
+	"strings"
 
-	"github.com/portpowered/go-ring/pkg/dependencymodels"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
@@ -21,35 +21,17 @@ func (c *Client) ListDevices(ctx context.Context) (*ringapimodels.DevicesRespons
 
 	response := &ringapimodels.DevicesResponse{}
 
-	// Convert doorbells
-	for _, raw := range rawResponse.Doorbots {
-		doorbell := convertToDoorbell(raw)
-		response.Doorbells = append(response.Doorbells, *doorbell)
-	}
-
-	// Convert authorized doorbells (shared doorbells) and merge with doorbells
-	for _, raw := range rawResponse.AuthorizedDoorbots {
-		doorbell := convertToDoorbell(raw)
-		response.Doorbells = append(response.Doorbells, *doorbell)
-	}
-
-	// Convert chimes
-	for _, raw := range rawResponse.Chimes {
-		chime := convertToChime(raw)
-		response.Chimes = append(response.Chimes, *chime)
-	}
-
-	// Convert stickup cams
-	for _, raw := range rawResponse.StickupCams {
-		stickupCam := convertToStickUpCam(raw)
-		response.StickUpCams = append(response.StickUpCams, *stickupCam)
-	}
-
-	// Preserve unrecognized device kinds as generic devices so callers can
-	// inspect their identifiers and raw family/kind metadata without guessed
-	// capabilities.
-	for _, raw := range rawResponse.Other {
-		response.Other = append(response.Other, *convertToOther(raw))
+	for _, raw := range rawResponse.Devices {
+		switch classifyDevice(raw) {
+		case generatedhttp.Doorbots:
+			response.Doorbells = append(response.Doorbells, *convertToDoorbell(raw))
+		case generatedhttp.Chimes:
+			response.Chimes = append(response.Chimes, *convertToChime(raw))
+		case generatedhttp.StickupCams:
+			response.StickUpCams = append(response.StickUpCams, *convertToStickUpCam(raw))
+		default:
+			response.Other = append(response.Other, *convertToOther(raw))
+		}
 	}
 
 	return response, nil
@@ -90,35 +72,66 @@ func (c *Client) UpdateDeviceHealth(ctx context.Context, req UpdateDeviceHealthR
 }
 
 // getDeviceName returns the device name, using Description if Name is empty
-func getDeviceName(raw dependencymodels.RingDevice) string {
-	if raw.Name != "" {
-		return raw.Name
+func getDeviceName(raw generatedhttp.Device) string {
+	if raw.Name != nil && *raw.Name != "" {
+		return *raw.Name
 	}
 	return raw.Description
 }
 
 // getDeviceTimezone returns the device timezone, using TimeZone if Timezone is empty
-func getDeviceTimezone(raw dependencymodels.RingDevice) string {
-	if raw.Timezone != "" {
-		return raw.Timezone
+func getDeviceTimezone(raw generatedhttp.Device) string {
+	if raw.Timezone != nil && *raw.Timezone != "" {
+		return *raw.Timezone
 	}
-	return raw.TimeZone
+	return wireValue(raw.TimeZone)
+}
+
+func wireValue[T any](value *T) T {
+	if value != nil {
+		return *value
+	}
+	var zero T
+	return zero
+}
+
+// classifyDevice uses the kind catalog generated from OpenAPI. The wire kind
+// and family fields stay open so unknown hardware is still decoded.
+func classifyDevice(raw generatedhttp.Device) generatedhttp.DeviceFamilyCode {
+	kind := strings.ToLower(raw.Kind)
+	switch {
+	case generatedhttp.DoorbellDeviceKind(kind).Valid():
+		return generatedhttp.Doorbots
+	case generatedhttp.ChimeDeviceKind(kind).Valid():
+		return generatedhttp.Chimes
+	case generatedhttp.CameraDeviceKind(kind).Valid():
+		return generatedhttp.StickupCams
+	case generatedhttp.OtherDeviceKind(kind).Valid():
+		return generatedhttp.Other
+	}
+	if raw.Family != nil {
+		family := generatedhttp.DeviceFamilyCode(strings.ToLower(*raw.Family))
+		if family.Valid() {
+			return family
+		}
+	}
+	return generatedhttp.Other
 }
 
 // convertToDoorbell converts a raw device to a Doorbell
-func convertToDoorbell(raw dependencymodels.RingDevice) *ringapimodels.Doorbell {
+func convertToDoorbell(raw generatedhttp.Device) *ringapimodels.Doorbell {
 	doorbell := &ringapimodels.Doorbell{
-		ID:                     strconv.FormatInt(raw.ID, 10),
+		ID:                     strconv.FormatInt(raw.Id, 10),
 		Name:                   getDeviceName(raw),
-		Family:                 raw.Family,
-		Address:                raw.Address,
+		Family:                 wireValue(raw.Family),
+		Address:                wireValue(raw.Address),
 		Timezone:               getDeviceTimezone(raw),
-		WifiName:               raw.WifiName,
-		WifiSignalStrength:     raw.WifiSignalStrength,
-		Volume:                 raw.Volume,
-		HasLight:               raw.HasLight,
+		WifiName:               wireValue(raw.WifiName),
+		WifiSignalStrength:     wireValue(raw.WifiSignalStrength),
+		Volume:                 wireValue(raw.Volume),
+		HasLight:               wireValue(raw.HasLight),
 		LightBrightness:        raw.LightBrightness,
-		MotionDetectionEnabled: raw.MotionDetectionEnabled,
+		MotionDetectionEnabled: wireValue(raw.MotionDetectionEnabled),
 	}
 
 	if raw.Health != nil {
@@ -129,16 +142,16 @@ func convertToDoorbell(raw dependencymodels.RingDevice) *ringapimodels.Doorbell 
 }
 
 // convertToChime converts a raw device to a Chime
-func convertToChime(raw dependencymodels.RingDevice) *ringapimodels.Chime {
+func convertToChime(raw generatedhttp.Device) *ringapimodels.Chime {
 	chime := &ringapimodels.Chime{
-		ID:                 strconv.FormatInt(raw.ID, 10),
+		ID:                 strconv.FormatInt(raw.Id, 10),
 		Name:               getDeviceName(raw),
-		Family:             raw.Family,
-		Address:            raw.Address,
+		Family:             wireValue(raw.Family),
+		Address:            wireValue(raw.Address),
 		Timezone:           getDeviceTimezone(raw),
-		WifiName:           raw.WifiName,
-		WifiSignalStrength: raw.WifiSignalStrength,
-		Volume:             raw.Volume,
+		WifiName:           wireValue(raw.WifiName),
+		WifiSignalStrength: wireValue(raw.WifiSignalStrength),
+		Volume:             wireValue(raw.Volume),
 	}
 
 	if raw.Health != nil {
@@ -149,20 +162,20 @@ func convertToChime(raw dependencymodels.RingDevice) *ringapimodels.Chime {
 }
 
 // convertToStickUpCam converts a raw device to a StickUpCam
-func convertToStickUpCam(raw dependencymodels.RingDevice) *ringapimodels.StickUpCam {
+func convertToStickUpCam(raw generatedhttp.Device) *ringapimodels.StickUpCam {
 	stickupCam := &ringapimodels.StickUpCam{
-		ID:                     strconv.FormatInt(raw.ID, 10),
+		ID:                     strconv.FormatInt(raw.Id, 10),
 		Name:                   getDeviceName(raw),
 		Description:            raw.Kind,
-		Family:                 raw.Family,
-		Address:                raw.Address,
+		Family:                 wireValue(raw.Family),
+		Address:                wireValue(raw.Address),
 		Timezone:               getDeviceTimezone(raw),
-		WifiName:               raw.WifiName,
-		WifiSignalStrength:     raw.WifiSignalStrength,
-		Volume:                 raw.Volume,
-		HasLight:               raw.HasLight,
+		WifiName:               wireValue(raw.WifiName),
+		WifiSignalStrength:     wireValue(raw.WifiSignalStrength),
+		Volume:                 wireValue(raw.Volume),
+		HasLight:               wireValue(raw.HasLight),
 		LightBrightness:        raw.LightBrightness,
-		MotionDetectionEnabled: raw.MotionDetectionEnabled,
+		MotionDetectionEnabled: wireValue(raw.MotionDetectionEnabled),
 	}
 
 	if raw.Health != nil {
@@ -173,12 +186,12 @@ func convertToStickUpCam(raw dependencymodels.RingDevice) *ringapimodels.StickUp
 }
 
 // convertToOther converts a raw device to an Other device (e.g., Intercom)
-func convertToOther(raw dependencymodels.RingDevice) *ringapimodels.Other {
+func convertToOther(raw generatedhttp.Device) *ringapimodels.Other {
 	other := &ringapimodels.Other{
-		ID:       strconv.FormatInt(raw.ID, 10),
+		ID:       strconv.FormatInt(raw.Id, 10),
 		Name:     getDeviceName(raw),
-		Family:   raw.Family,
-		Address:  raw.Address,
+		Family:   wireValue(raw.Family),
+		Address:  wireValue(raw.Address),
 		Timezone: getDeviceTimezone(raw),
 		Kind:     raw.Kind,
 	}
@@ -191,7 +204,7 @@ func convertToOther(raw dependencymodels.RingDevice) *ringapimodels.Other {
 }
 
 // convertInventoryHealth maps typed inventory health into the public projection.
-func convertInventoryHealth(raw *dependencymodels.RingDeviceHealth) *ringapimodels.DeviceHealth {
+func convertInventoryHealth(raw *generatedhttp.DeviceHealth) *ringapimodels.DeviceHealth {
 	return &ringapimodels.DeviceHealth{
 		BatteryLevel:    raw.BatteryLevel,
 		BatteryStatus:   raw.BatteryStatus,

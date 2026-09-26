@@ -7,6 +7,8 @@ import (
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
+const inHomeChimeEnableField = "enable"
+
 // SetVolume sets the volume for a device
 func (c *Client) SetVolume(ctx context.Context, req SetVolumeRequest) error {
 	if req.Volume < 0 || req.Volume > 11 {
@@ -77,9 +79,9 @@ func (c *Client) SetInHomeChime(ctx context.Context, req SetInHomeChimeRequest) 
 	for key, raw := range req.Settings {
 		field := key
 		if key == "enabled" {
-			field = "enable"
+			field = inHomeChimeEnableField
 		}
-		if field != "type" && field != "enable" && field != "duration" {
+		if field != "type" && field != inHomeChimeEnableField && field != "duration" {
 			return ringapimodels.NewBadRequestError("unsupported in-home chime setting", nil)
 		}
 		value := 0

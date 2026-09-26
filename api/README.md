@@ -4,9 +4,7 @@ The model boundary is explicit: `openapi.yaml` generates `pkg/generatedhttp`
 for Ring HTTP request and response bodies, and `asyncapi.yaml` generates
 `pkg/generatedsignaling` for signaling frames. REST and signaling adapters
 decode these wire models, then project them into SDK-facing types where needed.
-`dependency-models.openapi.yaml` generates adapter results such as grouped
-device families and recording histories; those groupings are not Ring HTTP
-response envelopes. `client-models.openapi.yaml` generates only the public
+`client-models.openapi.yaml` generates only the public
 types in `pkg/ringapimodels`. Internal transport errors and recording body
 ownership live below the public package, with public aliases for callers.
 
@@ -15,8 +13,8 @@ repository and remains separate from the captured signaling protocol. Its
 transport passes through decoded JSON; `pkg/ring` projects that data into the
 public `Event` model.
 
-The OpenAPI files describe captured HTTP responses, dependency projections, and
-public SDK models. `asyncapi.yaml` describes signaling frames. Each schema
+The OpenAPI files describe captured HTTP responses and public SDK models.
+`asyncapi.yaml` describes signaling frames. Each schema
 names observed values without treating one recording as the complete set of
 possible future vendor values.
 
@@ -41,3 +39,9 @@ The observed values come from `tests/replay/fixtures/recordings`, while the
 Python legacy fixtures establish additional device families and history kinds.
 The schema contract tests check captured payloads, open-enum behavior, and
 bounded invalid variants.
+
+`Device.kind` and `Device.family` remain open strings on the wire. The named
+`DeviceFamilyCode` and device-kind enums are a generated catalog of known
+values used to select public device projections. Add new known hardware to
+those OpenAPI enums, regenerate, and add a replay case. Unknown kinds retain
+their raw identity and are exposed as generic devices; no prefix guess is made.
