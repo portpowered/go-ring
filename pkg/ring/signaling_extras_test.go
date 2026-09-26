@@ -371,7 +371,43 @@ func TestPlaybackMissingPongTerminates(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("missing pong did not terminate")
 	}
-	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
+	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrHeartbeat) {
 		t.Fatalf("timeout receive=%v", err)
+	}
+}
+
+func TestPushBackpressureIsolatesDialog(t *testing.T) {
+	c, writes := replayConnection(t)
+	ready := make(chan *PushSubscription, 1)
+	go func() {
+		s, _ := c.SubscribePush(context.Background(), []PushFilter{{FilterIdentifier: "one", NotificationScope: "event", NotificationType: "shoulder_tap"}})
+		ready <- s
+	}()
+	request := <-writes
+	replayReply(t, c, request, "push_subscription_ack")
+	push := <-ready
+	event := capturedFrame(t, "push_event", "server_to_client")
+	event.DialogID = request.DialogID
+	for i := 0; i < cap(push.events); i++ {
+		c.route(event)
+	}
+	c.route(event)
+	if _, err := push.Receive(context.Background()); !errors.Is(err, signaling.ErrBackpressure) {
+		t.Fatalf("full push queue error = %v", err)
+	}
+	select {
+	case <-c.done:
+		t.Fatal("push backpressure closed shared signaling connection")
+	default:
+	}
+	other := make(chan signaling.Message, 1)
+	c.mu.Lock()
+	c.channels["unrelated"] = other
+	c.mu.Unlock()
+	c.route(signaling.Message{Method: "notification", DialogID: "unrelated"})
+	select {
+	case <-other:
+	default:
+		t.Fatal("other dialog stopped receiving after push backpressure")
 	}
 }

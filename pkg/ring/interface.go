@@ -40,7 +40,6 @@ type Client struct {
 // A caller that needs only part of it may define a smaller local interface.
 // OpenSignaling creates a connection that can start live and playback sessions.
 type ClientAPI interface {
-	Apply(...Option) error
 	Close() error
 
 	// Authentication and authorization
@@ -67,6 +66,7 @@ type ClientAPI interface {
 	PatchDeviceSettings(context.Context, PatchDeviceSettingsRequest) error
 	GetSnapshot(context.Context, GetSnapshotRequest) (*Snapshot, error)
 	SetVolume(context.Context, SetVolumeRequest) error
+	SetVolumeForDevice(context.Context, SetVolumeForDeviceRequest) error
 	SetLights(context.Context, SetLightsRequest) error
 	SetMotionDetection(context.Context, SetMotionDetectionRequest) error
 	SetSiren(context.Context, SetSirenRequest) error
@@ -106,6 +106,7 @@ type SignalingConnection struct {
 	sessions   map[string]*DeviceSession
 	channels   map[string]chan signaling.Message
 	playbacks  map[string]*PlaybackSession
+	pushes     map[string]*PushSubscription
 }
 
 // SignalingConnectionAPI creates sessions and push subscriptions on one socket.
@@ -130,6 +131,8 @@ type DeviceSession struct {
 	riid       string
 	iceMode    ICECandidateMode
 	mu         sync.Mutex
+	panMu      sync.Mutex
+	tiltMu     sync.Mutex
 	closed     bool
 	terminal   error
 	movement   map[PTZAxis]string
@@ -155,9 +158,6 @@ type DeviceSessionAPI interface {
 	Close() error
 }
 
-// DeviceSessionInterfaceAPI is kept as an alias for existing callers.
-type DeviceSessionInterfaceAPI = DeviceSessionAPI
-
 // PlaybackSession is a cloud playback negotiation on a signaling connection.
 // Live camera controls remain on DeviceSession.
 type PlaybackSession struct {
@@ -170,6 +170,7 @@ type PlaybackSession struct {
 	events     chan signaling.Message
 	done       chan struct{}
 	once       sync.Once
+	terminal   error
 	lastPong   atomic.Int64
 }
 
@@ -189,6 +190,7 @@ type PushSubscription struct {
 	events     chan signaling.Message
 	done       chan struct{}
 	once       sync.Once
+	terminal   error
 }
 
 // PushSubscriptionAPI receives push notifications until closed.
@@ -330,6 +332,14 @@ type SetVolumeRequest struct {
 	Volume      int
 }
 
+// SetVolumeForDeviceRequest uses a device returned by ListDevices or GetDevice
+// so callers need not repeat its family, ID, and current name.
+type SetVolumeForDeviceRequest struct {
+	Auth   AuthContext
+	Device ringapimodels.Device
+	Volume int
+}
+
 // SetLightsRequest contains parameters for SetLights
 type SetLightsRequest struct {
 	Auth     AuthContext
@@ -389,9 +399,9 @@ type GetLastRecordingIDRequest struct {
 }
 
 // Client configuration
-// Option is a function that configures a Client
+// Option configures a Client only during NewClient construction.
 type Option interface {
-	Apply(c *Client) error
+	apply(c *Client) error
 }
 
 // Signaling dialer configuration
@@ -399,7 +409,6 @@ type Option interface {
 type WebSocketDialer interface {
 	DialContext(context.Context, string, http.Header) (*websocket.Conn, *http.Response, error)
 }
-type WithSignalingDialerOption struct{ Dialer WebSocketDialer }
 
 // Regional endpoints
 // Region selects a Ring account region. Regional Solutions bootstrap origins

@@ -37,6 +37,7 @@ func (c *SignalingConnection) route(m signaling.Message) {
 	session := c.sessions[m.DialogID]
 	channel := c.channels[m.DialogID]
 	playback := c.playbacks[m.DialogID]
+	push := c.pushes[m.DialogID]
 	c.mu.Unlock()
 	if pending != nil {
 		select {
@@ -58,7 +59,13 @@ func (c *SignalingConnection) route(m signaling.Message) {
 		select {
 		case channel <- m:
 		default:
-			c.fail(ringapimodels.NewConnectionError("signaling event queue full", nil))
+			if push != nil {
+				push.terminate(ringapimodels.NewConnectionError("push event queue full", signaling.ErrBackpressure))
+			} else {
+				// An unowned channel is still negotiating. Its waiter cannot
+				// recover from a dropped protocol message.
+				c.fail(ringapimodels.NewConnectionError("signaling negotiation queue full", signaling.ErrBackpressure))
+			}
 		}
 	}
 }
@@ -76,9 +83,23 @@ func (c *SignalingConnection) fail(err error) {
 	for _, s := range c.sessions {
 		sessions = append(sessions, s)
 	}
+	playbacks := make([]*PlaybackSession, 0, len(c.playbacks))
+	for _, s := range c.playbacks {
+		playbacks = append(playbacks, s)
+	}
+	pushes := make([]*PushSubscription, 0, len(c.pushes))
+	for _, s := range c.pushes {
+		pushes = append(pushes, s)
+	}
 	c.mu.Unlock()
 	c.cancel()
 	for _, s := range sessions {
+		s.terminate(err)
+	}
+	for _, s := range playbacks {
+		s.terminate(err)
+	}
+	for _, s := range pushes {
 		s.terminate(err)
 	}
 	_ = c.conn.Close()
@@ -111,6 +132,14 @@ func (c *SignalingConnection) Close() error {
 	for _, s := range c.sessions {
 		children = append(children, s)
 	}
+	playbacks := make([]*PlaybackSession, 0, len(c.playbacks))
+	for _, s := range c.playbacks {
+		playbacks = append(playbacks, s)
+	}
+	pushes := make([]*PushSubscription, 0, len(c.pushes))
+	for _, s := range c.pushes {
+		pushes = append(pushes, s)
+	}
 	c.mu.Unlock()
 	closeCtx, closeCancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 	defer closeCancel()
@@ -121,6 +150,12 @@ func (c *SignalingConnection) Close() error {
 	c.terminal = signaling.ErrClosed
 	close(c.done)
 	c.mu.Unlock()
+	for _, s := range playbacks {
+		s.terminate(signaling.ErrClosed)
+	}
+	for _, s := range pushes {
+		s.terminate(signaling.ErrClosed)
+	}
 	c.cancel()
 	_ = c.conn.Close()
 	<-c.readerDone

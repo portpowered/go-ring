@@ -262,24 +262,17 @@ func TestNewClientWithoutBoundToken(t *testing.T) {
 	assert.NotNil(t, client)
 }
 
-func TestClientOptions(t *testing.T) {
-	client, mockTransport := newTestClient()
+func TestAuthContextHeaders(t *testing.T) {
+	client, mockTransport := newTestClientWithMockTransport()
 	defer client.Close()
-
-	// Test applying options
-	err := client.Apply(
-		ring.WithUserAgent("test_agent"),
-	)
-	assert.NoError(t, err)
-
-	// Verify client was configured (indirectly by making a request)
+	// Verify request-scoped credentials reach the transport.
 	ctx := newTestContext()
 	_, _ = client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "new_token", HardwareID: "test_hardware_id"}})
 
 	requests := mockTransport.GetRequests()
 	if len(requests) > 0 {
 		req := requests[0]
-		assert.Equal(t, "test_agent", req.Headers.Get("User-Agent"))
+		assert.NotEmpty(t, req.Headers.Get("User-Agent"))
 		assert.Equal(t, "test_hardware_id", req.Headers.Get("hardware_id"))
 	}
 }

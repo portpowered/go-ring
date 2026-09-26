@@ -3,10 +3,10 @@ package websocket
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
@@ -30,11 +30,14 @@ func AwaitLiveAnswer(ctx context.Context, parentDone <-chan struct{}, parentErr 
 			switch m.Method {
 			case protocol.MethodSessionCreated:
 				var body generatedsignaling.SessionCreatedBody
-				if json.Unmarshal(m.Body, &body) != nil || int64(body.DoorbotId) != deviceID || body.SessionId == "" {
-					return state, fmt.Errorf("invalid session_created response")
+				if err := json.Unmarshal(m.Body, &body); err != nil {
+					return state, ringerrors.NewConnectionError("invalid session_created response", err)
+				}
+				if int64(body.DoorbotId) != deviceID || body.SessionId == "" {
+					return state, ringerrors.NewConnectionError("invalid session_created response", nil)
 				}
 				if created && (body.SessionId != state.SignalID || (m.RIID != "" && state.RIID != "" && m.RIID != state.RIID)) {
-					return state, fmt.Errorf("conflicting session_created response")
+					return state, ringerrors.NewConnectionError("conflicting session_created response", nil)
 				}
 				created = true
 				state.SignalID = body.SessionId
@@ -43,7 +46,7 @@ func AwaitLiveAnswer(ctx context.Context, parentDone <-chan struct{}, parentErr 
 				}
 			case protocol.MethodSDP:
 				if !created {
-					return state, fmt.Errorf("SDP answer before session_created")
+					return state, ringerrors.NewConnectionError("SDP answer before session_created", nil)
 				}
 				var err error
 				state, err = acceptLiveAnswer(state, m, deviceID)
@@ -51,10 +54,10 @@ func AwaitLiveAnswer(ctx context.Context, parentDone <-chan struct{}, parentErr 
 					return state, err
 				}
 			case protocol.MethodClose:
-				return state, fmt.Errorf("signaling peer closed during negotiation")
+				return state, ringerrors.NewClosedError("signaling peer closed during negotiation")
 			}
 		case <-ctx.Done():
-			return state, fmt.Errorf("signaling negotiation failed: %w", deadlineError())
+			return state, ringerrors.NewConnectionError("signaling negotiation failed", deadlineError())
 		case <-parentDone:
 			return state, parentErr()
 		}
@@ -65,22 +68,31 @@ func AwaitLiveAnswer(ctx context.Context, parentDone <-chan struct{}, parentErr 
 func acceptLiveAnswer(state LiveNegotiation, message signaling.Message, deviceID int64) (LiveNegotiation, error) {
 	var envelope map[string]json.RawMessage
 	var info map[string]json.RawMessage
-	if json.Unmarshal(message.Body, &envelope) != nil || json.Unmarshal(envelope["session_info"], &info) != nil {
-		return state, fmt.Errorf("invalid SDP answer")
+	if err := json.Unmarshal(message.Body, &envelope); err != nil {
+		return state, ringerrors.NewConnectionError("invalid SDP answer", err)
+	}
+	if err := json.Unmarshal(envelope["session_info"], &info); err != nil {
+		return state, ringerrors.NewConnectionError("invalid SDP answer", err)
 	}
 	if raw, present := info["ping_interval"]; present {
 		var seconds int
-		if json.Unmarshal(raw, &seconds) != nil || seconds <= 0 || seconds > int(signaling.MaxHeartbeatInterval/time.Second) {
-			return state, fmt.Errorf("invalid negotiated heartbeat interval")
+		if err := json.Unmarshal(raw, &seconds); err != nil {
+			return state, ringerrors.NewConnectionError("invalid negotiated heartbeat interval", err)
+		}
+		if seconds <= 0 || seconds > int(signaling.MaxHeartbeatInterval/time.Second) {
+			return state, ringerrors.NewConnectionError("invalid negotiated heartbeat interval", nil)
 		}
 		state.Heartbeat = time.Duration(seconds) * time.Second
 	}
 	var body generatedsignaling.LiveAnswerBody
-	if json.Unmarshal(message.Body, &body) != nil || int64(body.DoorbotId) != deviceID || body.ReservedType != protocol.SDPTypeAnswer || body.Sdp == "" || body.SessionInfo == nil {
-		return state, fmt.Errorf("invalid SDP answer")
+	if err := json.Unmarshal(message.Body, &body); err != nil {
+		return state, ringerrors.NewConnectionError("invalid SDP answer", err)
+	}
+	if int64(body.DoorbotId) != deviceID || body.ReservedType != protocol.SDPTypeAnswer || body.Sdp == "" || body.SessionInfo == nil {
+		return state, ringerrors.NewConnectionError("invalid SDP answer", nil)
 	}
 	if state.SignalID != "" && body.SessionId != state.SignalID {
-		return state, fmt.Errorf("SDP signaling session mismatch")
+		return state, ringerrors.NewConnectionError("SDP signaling session mismatch", nil)
 	}
 	state.SignalID, state.AnswerSDP, state.ControlID = body.SessionId, body.Sdp, body.SessionInfo.SessionId
 	if message.RIID != "" {

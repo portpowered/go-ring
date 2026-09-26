@@ -12,7 +12,7 @@ func WithRegion(region Region) Option { return withRegion(region) }
 
 type withRegion Region
 
-func (w withRegion) Apply(c *Client) error {
+func (w withRegion) apply(c *Client) error {
 	region := Region(w)
 	if region != RegionUS && region != RegionEU && region != RegionFE {
 		return ringapimodels.NewBadRequestError(fmt.Sprintf("unsupported region %q", region), nil)
@@ -27,7 +27,7 @@ func WithEndpoints(endpoints Endpoints) Option { return withEndpoints(endpoints)
 
 type withEndpoints Endpoints
 
-func (w withEndpoints) Apply(c *Client) error {
+func (w withEndpoints) apply(c *Client) error {
 	if err := validateEndpoints(Endpoints(w)); err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ type withHTTPClient struct {
 	httpClient *http.Client
 }
 
-func (w withHTTPClient) Apply(c *Client) error {
+func (w withHTTPClient) apply(c *Client) error {
 	if w.httpClient == nil {
 		return ringapimodels.NewBadRequestError("HTTP client must not be nil", nil)
 	}
@@ -62,7 +62,7 @@ func WithUserAgent(userAgent string) Option {
 
 type withUserAgent string
 
-func (w withUserAgent) Apply(c *Client) error {
+func (w withUserAgent) apply(c *Client) error {
 	ua := string(w)
 	c.userAgent = ua
 	c.restClient.Apply(
@@ -71,12 +71,15 @@ func (w withUserAgent) Apply(c *Client) error {
 	return nil
 }
 
-func WithWebSocketDialer(d WebSocketDialer) Option { return WithSignalingDialerOption{Dialer: d} }
-func (o WithSignalingDialerOption) Apply(c *Client) error {
-	if o.Dialer == nil {
+func WithWebSocketDialer(d WebSocketDialer) Option { return withWebSocketDialer{dialer: d} }
+
+type withWebSocketDialer struct{ dialer WebSocketDialer }
+
+func (o withWebSocketDialer) apply(c *Client) error {
+	if o.dialer == nil {
 		return ringapimodels.NewBadRequestError("WebSocket dialer must not be nil", nil)
 	}
-	c.signalingDialer = o.Dialer
+	c.signalingDialer = o.dialer
 	return nil
 }
 
@@ -89,7 +92,7 @@ func WithSignalingWebSocketURL(url string) Option {
 
 type withSignalingWebSocketURL string
 
-func (w withSignalingWebSocketURL) Apply(c *Client) error {
+func (w withSignalingWebSocketURL) apply(c *Client) error {
 	if err := validateEndpoints(Endpoints{SignalingURL: string(w)}); err != nil {
 		return err
 	}
@@ -108,7 +111,7 @@ type withEventWebSocketURL string
 
 var _ Option = withEventWebSocketURL("")
 
-func (w withEventWebSocketURL) Apply(c *Client) error {
+func (w withEventWebSocketURL) apply(c *Client) error {
 	c.eventWebSocketURL = string(w)
 	return nil
 }

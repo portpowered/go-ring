@@ -30,6 +30,7 @@ func (c *SignalingConnection) registerChannel() (string, chan signaling.Message,
 func (c *SignalingConnection) removeChannel(name string) {
 	c.mu.Lock()
 	delete(c.channels, name)
+	delete(c.pushes, name)
 	c.mu.Unlock()
 }
 func (c *SignalingConnection) sendTyped(ctx context.Context, method string, dialog, riid string, body any) error {
@@ -83,6 +84,16 @@ func (c *SignalingConnection) SubscribePush(ctx context.Context, filters []PushF
 				return nil, ringapimodels.NewConnectionError("push subscription rejected", nil)
 			}
 			s := &PushSubscription{connection: c, dialog: dialog, id: ack.SubscriptionId, events: events, done: make(chan struct{})}
+			c.mu.Lock()
+			if c.closed {
+				c.mu.Unlock()
+				return nil, c.Err()
+			}
+			if c.pushes == nil {
+				c.pushes = make(map[string]*PushSubscription)
+			}
+			c.pushes[dialog] = s
+			c.mu.Unlock()
 			go s.heartbeat()
 			return s, nil
 		}
@@ -112,14 +123,14 @@ func (s *PushSubscription) Receive(ctx context.Context) (PushEvent, error) {
 	for {
 		select {
 		case <-s.done:
-			return PushEvent{}, ringapimodels.NewClosedError("push subscription is closed", signaling.ErrClosed)
+			return PushEvent{}, sessionError("push subscription ended", s.terminal)
 		default:
 		}
 		select {
 		case <-ctx.Done():
 			return PushEvent{}, ringapimodels.NewConnectionError("push receive canceled", ctx.Err())
 		case <-s.done:
-			return PushEvent{}, ringapimodels.NewClosedError("push subscription is closed", signaling.ErrClosed)
+			return PushEvent{}, sessionError("push subscription ended", s.terminal)
 		case <-s.connection.done:
 			return PushEvent{}, s.connection.Err()
 		case m := <-s.events:
@@ -140,6 +151,7 @@ func (s *PushSubscription) Receive(ctx context.Context) (PushEvent, error) {
 func (s *PushSubscription) Close() error {
 	var err error
 	s.once.Do(func() {
+		s.terminal = signaling.ErrClosed
 		close(s.done)
 		s.connection.removeChannel(s.dialog)
 		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
@@ -147,6 +159,14 @@ func (s *PushSubscription) Close() error {
 		err = s.connection.sendTyped(ctx, protocol.MethodPushUnsubscribe, s.dialog, "", generatedsignaling.PushSubscriptionBody{SubscriptionId: s.id})
 	})
 	return err
+}
+
+func (s *PushSubscription) terminate(err error) {
+	s.once.Do(func() {
+		s.terminal = err
+		close(s.done)
+		s.connection.removeChannel(s.dialog)
+	})
 }
 
 func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlaybackRequest) (*PlaybackSession, error) {
@@ -194,6 +214,10 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 			s := &PlaybackSession{connection: c, dialog: dialog, riid: m.RIID, id: body.SessionId, deviceID: id, answer: SessionDescription{Type: SDPTypeAnswer, SDP: body.Sdp}, events: events, done: make(chan struct{})}
 			s.lastPong.Store(time.Now().UnixNano())
 			c.mu.Lock()
+			if c.closed {
+				c.mu.Unlock()
+				return nil, c.Err()
+			}
 			c.playbacks[dialog] = s
 			c.mu.Unlock()
 			interval := signaling.DefaultHeartbeatInterval
@@ -218,17 +242,18 @@ func (s *PlaybackSession) handle(m signaling.Message) {
 		return
 	}
 	if m.Method == protocol.MethodClose {
-		s.terminate()
+		s.terminate(signaling.ErrClosed)
 		return
 	}
 	select {
 	case s.events <- m:
 	default:
-		s.terminate()
+		s.terminate(signaling.ErrBackpressure)
 	}
 }
-func (s *PlaybackSession) terminate() {
+func (s *PlaybackSession) terminate(err error) {
 	s.once.Do(func() {
+		s.terminal = err
 		close(s.done)
 		s.connection.mu.Lock()
 		delete(s.connection.playbacks, s.dialog)
@@ -252,7 +277,7 @@ func (s *PlaybackSession) keepalive(interval time.Duration) {
 			return
 		case <-ping.C:
 			if time.Since(time.Unix(0, s.lastPong.Load())) > 3*interval {
-				s.terminate()
+				s.terminate(signaling.ErrHeartbeat)
 				return
 			}
 			ctx, cancel := context.WithTimeout(s.connection.ctx, signaling.SendTimeout)
@@ -272,7 +297,7 @@ func (s *PlaybackSession) Receive(ctx context.Context) (SessionEvent, error) {
 	case <-ctx.Done():
 		return SessionEvent{}, ringapimodels.NewConnectionError("playback receive canceled", ctx.Err())
 	case <-s.done:
-		return SessionEvent{}, ringapimodels.NewClosedError("playback session is closed", signaling.ErrClosed)
+		return SessionEvent{}, sessionError("playback session ended", s.terminal)
 	case <-s.connection.done:
 		return SessionEvent{}, s.connection.Err()
 	case m := <-s.events:
@@ -282,6 +307,7 @@ func (s *PlaybackSession) Receive(ctx context.Context) (SessionEvent, error) {
 func (s *PlaybackSession) Close() error {
 	var err error
 	s.once.Do(func() {
+		s.terminal = signaling.ErrClosed
 		close(s.done)
 		s.connection.mu.Lock()
 		delete(s.connection.playbacks, s.dialog)

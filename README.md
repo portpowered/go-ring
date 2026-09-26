@@ -218,12 +218,12 @@ These are the public SDK methods.
 
 | Feature | Object and Go calls | Notes |
 | --- | --- | --- |
-| Client setup and shutdown | `ring.NewClient`, `Client.Apply`, `Client.Close` | One client can own several signaling connections. |
+| Client setup and shutdown | `ring.NewClient`, `Client.Close` | Configuration is fixed at construction; one client can own several signaling connections. |
 | Login and tokens | `Client.NewLoginSession`, `LoginSession.Request2FACode`, `LoginSession.Authenticate`, `Client.RefreshToken` | Login state stays in one session; refresh tokens are passed per request. See [token exchange](examples/token-exchange/main.go). |
 | Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail` | `GetDeviceDetail` returns the captured v3 wire envelope. |
 | Device health and settings | `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Health can select a doorbell or chime family route. |
 | Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Returns OpenAPI-generated wire models. |
-| Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolume`, `Client.SetInHomeChime` | Device and family support varies. |
+| Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolumeForDevice`, `Client.SetVolume`, `Client.SetInHomeChime` | `SetVolumeForDevice` uses an enumerated chime or doorbell; `SetVolume` accepts explicit wire fields. |
 | Chime sound and reboot | `Client.TestSound`, `Client.RebootDevice` | See the inline code below. |
 | Snapshot | `Client.GetSnapshot` | Returns image bytes and metadata. |
 | Recording history | `Client.GetDeviceHistory`, `Client.GetHistoryDevices`, `Client.GetDeviceTimeline`, `Client.GetActiveDings`, `Client.GetLastRecordingID` | Legacy history and captured EVM history/timeline are separate APIs. |

@@ -85,8 +85,8 @@ func (c *Client) OpenSignaling(ctx context.Context, req OpenSignalingRequest) (*
 		return nil, ringapimodels.NewConnectionError("failed to connect to signaling websocket", nil)
 	}
 	connCtx, cancel := context.WithCancel(ctx)
-	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession)}
-	s.writer = dependencywebsocket.NewSignalingWriter(s.done, s.writeFrame, func(error) { s.fail(ringapimodels.NewConnectionError("signaling write failed", nil)) })
+	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession), pushes: make(map[string]*PushSubscription)}
+	s.writer = dependencywebsocket.NewSignalingWriter(s.done, s.writeFrame, func(err error) { s.fail(ringapimodels.NewConnectionError("signaling write failed", err)) })
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()

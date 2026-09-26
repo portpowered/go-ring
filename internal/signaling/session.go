@@ -3,18 +3,22 @@ package signaling
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 	"sync"
 	"time"
 )
 
+type terminalReason string
+
+func (r terminalReason) Error() string { return string(r) }
+
 var (
-	ErrClosed       = errors.New("session closed")
-	ErrExpired      = errors.New("session reached maximum age")
-	ErrHeartbeat    = errors.New("session heartbeat timed out")
-	ErrBackpressure = errors.New("session event queue full")
+	ErrClosed       error = terminalReason("session closed")
+	ErrExpired      error = terminalReason("session reached maximum age")
+	ErrHeartbeat    error = terminalReason("session heartbeat timed out")
+	ErrBackpressure error = terminalReason("session event queue full")
 )
 
 // Clock allows deterministic deadlines without waiting real session lifetimes.
@@ -102,16 +106,16 @@ type SessionConfig struct {
 
 func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
 	if c.DeviceID <= 0 || c.DialogID == "" || c.SignalID == "" || c.ControlID == "" || c.SignalID == c.ControlID || c.Send == nil {
-		return nil, fmt.Errorf("invalid session configuration")
+		return nil, ringerrors.NewBadRequestError("invalid session configuration", nil)
 	}
 	if c.Heartbeat <= 0 || c.Heartbeat > MaxHeartbeatInterval {
-		return nil, fmt.Errorf("invalid heartbeat interval")
+		return nil, ringerrors.NewBadRequestError("invalid heartbeat interval", nil)
 	}
 	if c.MaxAge == 0 {
 		c.MaxAge = MaxSessionAge
 	}
 	if c.MaxAge <= 0 || c.MaxAge > MaxSessionAge {
-		return nil, fmt.Errorf("invalid maximum session age")
+		return nil, ringerrors.NewBadRequestError("invalid maximum session age", nil)
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -162,15 +166,20 @@ func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
 
 func (s *Session) finish(err error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.closed {
+		s.mu.Unlock()
 		return
 	}
 	s.closed = true
 	s.terminal = err
-	for id, ch := range s.pending {
-		ch <- rpcReply{err: err}
-		delete(s.pending, id)
+	pending := s.pending
+	s.pending = make(map[string]chan rpcReply)
+	s.mu.Unlock()
+	for _, ch := range pending {
+		select {
+		case ch <- rpcReply{err: err}:
+		default:
+		}
 	}
 	s.cancel()
 	close(s.done)
@@ -221,7 +230,7 @@ func (s *Session) Send(ctx context.Context, method string, fields map[string]any
 	body[protocol.FieldSessionID] = s.signalID
 	encoded, err := json.Marshal(body)
 	if err != nil {
-		return fmt.Errorf("invalid session payload")
+		return ringerrors.NewInternalServerError("invalid session payload", err)
 	}
 	writeCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -307,7 +316,7 @@ func (s *Session) Handle(m Message) error {
 	}
 	var body sessionMessageBody
 	if err := json.Unmarshal(m.Body, &body); err != nil {
-		return fmt.Errorf("invalid session body")
+		return ringerrors.NewConnectionError("invalid session body", err)
 	}
 	if body.DeviceID != s.deviceID || body.SignalID != s.signalID {
 		return nil
@@ -323,17 +332,23 @@ func (s *Session) Handle(m Message) error {
 	}
 	if m.Method == protocol.MethodRPC {
 		var command rpcCommandReply
-		if err := json.Unmarshal(body.Command, &command); err != nil || command.Version != protocol.JSONRPCVersion {
-			return fmt.Errorf("invalid RPC envelope")
+		if err := json.Unmarshal(body.Command, &command); err != nil {
+			return ringerrors.NewConnectionError("invalid RPC envelope", err)
+		}
+		if command.Version != protocol.JSONRPCVersion {
+			return ringerrors.NewConnectionError("invalid RPC envelope", nil)
 		}
 		if command.Method == "" {
 			if (len(command.Result) == 0) == (command.Error == nil) {
-				return fmt.Errorf("RPC reply must have exactly one result or error")
+				return ringerrors.NewConnectionError("RPC reply must have exactly one result or error", nil)
 			}
 			if command.Error == nil {
 				var result rpcResultIdentity
-				if err := json.Unmarshal(command.Result, &result); err != nil || result.SessionID == "" {
-					return fmt.Errorf("invalid RPC result identity")
+				if err := json.Unmarshal(command.Result, &result); err != nil {
+					return ringerrors.NewConnectionError("invalid RPC result identity", err)
+				}
+				if result.SessionID == "" {
+					return ringerrors.NewConnectionError("invalid RPC result identity", nil)
 				}
 				if result.SessionID != s.controlID {
 					return nil

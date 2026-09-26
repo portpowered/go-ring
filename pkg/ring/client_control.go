@@ -29,6 +29,27 @@ func (c *Client) SetVolume(ctx context.Context, req SetVolumeRequest) error {
 	return c.restClient.SetDoorbellVolume(ctx, deviceIDInt, req.Description, req.Volume)
 }
 
+// SetVolumeForDevice uses a previously retrieved chime or doorbell. It does not
+// fetch or cache device metadata; pass a fresh device if its name has changed.
+func (c *Client) SetVolumeForDevice(ctx context.Context, req SetVolumeForDeviceRequest) error {
+	var kind ringapimodels.VolumeKind
+	switch device := req.Device.(type) {
+	case *ringapimodels.Chime:
+		if device == nil {
+			return ringapimodels.NewBadRequestError("device must not be nil", nil)
+		}
+		kind = ringapimodels.VolumeKindChime
+	case *ringapimodels.Doorbell:
+		if device == nil {
+			return ringapimodels.NewBadRequestError("device must not be nil", nil)
+		}
+		kind = ringapimodels.VolumeKindDoorbell
+	default:
+		return ringapimodels.NewBadRequestError("volume requires a chime or doorbell device", nil)
+	}
+	return c.SetVolume(ctx, SetVolumeRequest{Auth: req.Auth, DeviceID: req.Device.GetID(), Kind: kind, Description: req.Device.GetName(), Volume: req.Volume})
+}
+
 // SetLights sets the lights for a device (floodlight cams)
 // req.State can be "on" or "off"
 // req.Duration is optional and specifies how long to keep lights on (in seconds)

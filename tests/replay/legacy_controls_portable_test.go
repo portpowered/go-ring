@@ -58,9 +58,9 @@ func TestPortableLegacyHTTPControls(t *testing.T) {
 			}
 			switch tc.Case {
 			case "chime-volume":
-				err = client.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Kind: "chime", Description: "Fixture Device", Volume: 2})
+				err = client.SetVolumeForDevice(context.Background(), ring.SetVolumeForDeviceRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, Device: &ringapimodels.Chime{ID: "12345", Name: "Fixture Device"}, Volume: 2})
 			case "doorbell-volume":
-				err = client.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Kind: "doorbell", Description: "Fixture Device", Volume: 3})
+				err = client.SetVolumeForDevice(context.Background(), ring.SetVolumeForDeviceRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, Device: &ringapimodels.Doorbell{ID: "12345", Name: "Fixture Device"}, Volume: 3})
 			case "chime-test":
 				err = client.TestSound(context.Background(), ring.TestSoundRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Kind: "ding"})
 			case "camera-light-on":

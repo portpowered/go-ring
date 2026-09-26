@@ -14,7 +14,14 @@ linters:
     - mnd
     - goconst
     - cyclop
+    - forbidigo
   settings:
+    forbidigo:
+      forbid:
+        - pattern: '^fmt\.Errorf$'
+          msg: Use a typed error that preserves the underlying cause.
+        - pattern: '^errors\.New$'
+          msg: Use a typed error or a named terminal reason.
     cyclop:
       max-complexity: 25
     mnd:
@@ -35,15 +42,15 @@ linters:
   exclusions:
     rules:
       - path: '(^|/)(pkg/generatedhttp|pkg/generatedsignaling)/'
-        linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop]
+        linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop, forbidigo]
       - path: '(^|/)pkg/ringapimodels/models\.gen\.go$'
-        linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop]
+        linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop, forbidigo]
       - path: '_test\.go$'
-        linters: [revive, mnd, goconst, cyclop]
+        linters: [revive, mnd, goconst, cyclop, forbidigo]
       - path: '(^|/)(test|tools|internal/testkit)/'
-        linters: [revive, mnd, goconst, unused, staticcheck, cyclop]
+        linters: [revive, mnd, goconst, unused, staticcheck, cyclop, forbidigo]
       - path: '(^|/)examples/'
-        linters: [mnd, cyclop]
+        linters: [mnd, cyclop, forbidigo]
 
 formatters:
   enable:

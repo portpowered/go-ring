@@ -31,6 +31,12 @@ func TestLegacyControlValidationBeforeHTTP(t *testing.T) {
 		{"volume invalid device", func(c *ring.Client) error {
 			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "0", Kind: "chime", Description: "Bell", Volume: 2})
 		}},
+		{"volume device missing", func(c *ring.Client) error {
+			return c.SetVolumeForDevice(context.Background(), ring.SetVolumeForDeviceRequest{Volume: 2})
+		}},
+		{"volume device unsupported", func(c *ring.Client) error {
+			return c.SetVolumeForDevice(context.Background(), ring.SetVolumeForDeviceRequest{Device: &ringapimodels.StickUpCam{ID: "123", Name: "Camera"}, Volume: 2})
+		}},
 		{"light invalid state", func(c *ring.Client) error {
 			return c.SetLights(context.Background(), ring.SetLightsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", State: "blink"})
 		}},

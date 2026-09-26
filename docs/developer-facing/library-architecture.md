@@ -35,6 +35,17 @@ consume an event. Each child has a bounded event queue; overflow is observable
 as a terminal backpressure error. Application contexts cancel their owned work.
 The caller owns and closes the media peer separately.
 
+An established playback or push dialog terminates on its own queue overflow;
+other dialogs on that socket continue. Overflow during negotiation is fatal to
+the connection because the negotiating child has not taken ownership and a
+dropped protocol reply cannot be recovered. Connection failure publishes the
+same terminal cause to every owned live, playback, and push child. A live
+session's internal signaling state may finish first; its public `Wait` returns
+only after wrapper cleanup has published the final result. Pan and tilt
+continuous commands are serialized independently. A failed replacement command
+retains the last acknowledged movement so `StopPTZ` and `Close` can still send
+the corresponding zero-speed safety command.
+
 | Code | Responsibility |
 |---|---|
 | `pkg/ring` | Public request/result types, client options, HTTP methods, session orchestration, and child ownership |

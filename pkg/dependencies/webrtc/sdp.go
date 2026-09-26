@@ -2,11 +2,11 @@
 package webrtc
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/pion/sdp/v3"
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 )
 
 const maxSDPBytes = 1 << 20
@@ -15,7 +15,7 @@ const maxSDPBytes = 1 << 20
 // certify codec interoperability or replace a peer connection's SDP validation.
 func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 	if len(raw) > maxSDPBytes {
-		return nil, fmt.Errorf("SDP exceeds size limit")
+		return nil, ringerrors.NewBadRequestError("SDP exceeds size limit", nil)
 	}
 	var description sdp.SessionDescription
 	// The recorded Android offers omit a final line ending. Pion's parser
@@ -24,10 +24,10 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 		raw += "\r\n"
 	}
 	if err := description.UnmarshalString(raw); err != nil {
-		return nil, fmt.Errorf("invalid SDP syntax")
+		return nil, ringerrors.NewBadRequestError("invalid SDP syntax", err)
 	}
 	if len(description.MediaDescriptions) == 0 {
-		return nil, fmt.Errorf("SDP has no media sections")
+		return nil, ringerrors.NewBadRequestError("SDP has no media sections", nil)
 	}
 	sessionDirections := 0
 	for _, attribute := range description.Attributes {
@@ -37,13 +37,13 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 		}
 	}
 	if sessionDirections > 1 {
-		return nil, fmt.Errorf("SDP has conflicting session directions")
+		return nil, ringerrors.NewBadRequestError("SDP has conflicting session directions", nil)
 	}
 	mids := make(map[string]bool)
 	for _, media := range description.MediaDescriptions {
 		mid, ok := media.Attribute("mid")
 		if !ok || mid == "" || mids[mid] {
-			return nil, fmt.Errorf("SDP requires unique media IDs")
+			return nil, ringerrors.NewBadRequestError("SDP requires unique media IDs", nil)
 		}
 		mids[mid] = true
 		count, midCount := 0, 0
@@ -57,10 +57,10 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 			}
 		}
 		if midCount != 1 {
-			return nil, fmt.Errorf("SDP section must have exactly one media ID")
+			return nil, ringerrors.NewBadRequestError("SDP section must have exactly one media ID", nil)
 		}
 		if count > 1 {
-			return nil, fmt.Errorf("SDP has conflicting media directions")
+			return nil, ringerrors.NewBadRequestError("SDP has conflicting media directions", nil)
 		}
 	}
 	for _, attribute := range description.Attributes {
@@ -74,7 +74,7 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 		seen := make(map[string]bool)
 		for _, mid := range fields[1:] {
 			if !mids[mid] || seen[mid] {
-				return nil, fmt.Errorf("SDP bundle references invalid media ID")
+				return nil, ringerrors.NewBadRequestError("SDP bundle references invalid media ID", nil)
 			}
 			seen[mid] = true
 		}
@@ -106,7 +106,7 @@ func NormalizeAnswer(offer, answer string) (string, error) {
 		return "", err
 	}
 	if len(o.MediaDescriptions) != len(a.MediaDescriptions) {
-		return "", fmt.Errorf("SDP answer media count differs")
+		return "", ringerrors.NewBadRequestError("SDP answer media count differs", nil)
 	}
 	changed := false
 	for i, media := range a.MediaDescriptions {
@@ -114,13 +114,13 @@ func NormalizeAnswer(offer, answer string) (string, error) {
 		mid, _ := media.Attribute("mid")
 		offeredMID, _ := original.Attribute("mid")
 		if mid != offeredMID || media.MediaName.Media != original.MediaName.Media {
-			return "", fmt.Errorf("SDP answer media order differs")
+			return "", ringerrors.NewBadRequestError("SDP answer media order differs", nil)
 		}
 		if media.MediaName.Port.Value == 0 {
 			continue
 		}
 		if original.MediaName.Port.Value == 0 {
-			return "", fmt.Errorf("SDP answer reactivates a rejected offer section")
+			return "", ringerrors.NewBadRequestError("SDP answer reactivates a rejected offer section", nil)
 		}
 		if direction(o, original) == protocol.SDPRecvOnly && direction(a, media) == protocol.SDPSendRecv {
 			found := false
@@ -141,7 +141,7 @@ func NormalizeAnswer(offer, answer string) (string, error) {
 		invalid = invalid || offerDirection == protocol.SDPSendOnly && answerDirection != protocol.SDPRecvOnly && answerDirection != protocol.SDPInactive
 		invalid = invalid || offerDirection == protocol.SDPInactive && answerDirection != protocol.SDPInactive
 		if invalid {
-			return "", fmt.Errorf("SDP answer direction incompatible with offer")
+			return "", ringerrors.NewBadRequestError("SDP answer direction incompatible with offer", nil)
 		}
 	}
 	if !changed {
@@ -149,7 +149,7 @@ func NormalizeAnswer(offer, answer string) (string, error) {
 	}
 	encoded, err := a.Marshal()
 	if err != nil {
-		return "", fmt.Errorf("cannot encode SDP answer")
+		return "", ringerrors.NewInternalServerError("cannot encode SDP answer", err)
 	}
 	return string(encoded), nil
 }
@@ -158,11 +158,11 @@ func NormalizeAnswer(offer, answer string) (string, error) {
 // same media section. Candidate grammar remains the peer implementation's job.
 func ValidateICE(description *sdp.SessionDescription, mid string, index int) error {
 	if description == nil || index < 0 || index >= len(description.MediaDescriptions) {
-		return fmt.Errorf("ICE media index out of range")
+		return ringerrors.NewBadRequestError("ICE media index out of range", nil)
 	}
 	expected, _ := description.MediaDescriptions[index].Attribute("mid")
 	if mid != "" && mid != expected {
-		return fmt.Errorf("ICE media ID and index differ")
+		return ringerrors.NewBadRequestError("ICE media ID and index differ", nil)
 	}
 	return nil
 }

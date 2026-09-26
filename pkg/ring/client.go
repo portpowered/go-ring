@@ -14,16 +14,6 @@ import (
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-// Apply options to the client.
-func (c *Client) Apply(opts ...Option) error {
-	for _, opt := range opts {
-		if err := opt.Apply(c); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // NewClient creates a new Ring client
 func NewClient(opts ...Option) (*Client, error) {
 	client := &Client{
@@ -38,7 +28,7 @@ func NewClient(opts ...Option) (*Client, error) {
 	}
 
 	for _, opt := range opts {
-		if err := opt.Apply(client); err != nil {
+		if err := opt.apply(client); err != nil {
 			return nil, err
 		}
 	}

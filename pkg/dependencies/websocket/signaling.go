@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 	"github.com/portpowered/go-ring/internal/signaling"
 )
 
@@ -28,7 +28,7 @@ func DialSignaling(ctx context.Context, wsURL string, headers http.Header, diale
 		return nil, err
 	}
 	if conn == nil {
-		return nil, fmt.Errorf("signaling dialer returned an empty connection")
+		return nil, ringerrors.NewConnectionError("signaling dialer returned an empty connection", nil)
 	}
 	conn.SetReadLimit(signaling.MaxMessageBytes)
 	return conn, nil
@@ -75,14 +75,14 @@ func ReadSignaling(conn *websocket.Conn, route func(signaling.Message)) error {
 	for {
 		typ, encoded, err := conn.ReadMessage()
 		if err != nil {
-			return fmt.Errorf("signaling read failed")
+			return ringerrors.NewConnectionError("signaling read failed", err)
 		}
 		if typ != websocket.TextMessage {
 			continue
 		}
 		var message signaling.Message
 		if err := json.Unmarshal(encoded, &message); err != nil {
-			return fmt.Errorf("invalid signaling message")
+			return ringerrors.NewConnectionError("invalid signaling message", err)
 		}
 		route(message)
 	}

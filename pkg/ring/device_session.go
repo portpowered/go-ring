@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -324,13 +325,24 @@ func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousReques
 	if r.Speed < 0 || r.Speed > protocol.PTZMaxSpeed || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
 		return nil, ringapimodels.NewBadRequestError("invalid pan speed", nil)
 	}
+	s.panMu.Lock()
+	defer s.panMu.Unlock()
 	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return nil, ringapimodels.NewClosedError("device session is closed", signaling.ErrClosed)
+	}
+	previousDirection, hadPrevious := s.movement[PanAxis]
 	s.movement[PanAxis] = string(r.Direction)
 	s.mu.Unlock()
 	v, e := s.call(ctx, protocol.RPCPanContinuous, map[string]any{protocol.FieldDirection: r.Direction, protocol.FieldSpeed: r.Speed})
 	if e != nil {
 		s.mu.Lock()
-		delete(s.movement, PanAxis)
+		if hadPrevious {
+			s.movement[PanAxis] = previousDirection
+		} else {
+			delete(s.movement, PanAxis)
+		}
 		s.mu.Unlock()
 	}
 	return v, e
@@ -342,19 +354,45 @@ func (s *DeviceSession) TiltContinuous(ctx context.Context, r TiltContinuousRequ
 	if r.Speed < 0 || r.Speed > protocol.PTZMaxSpeed || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
 		return nil, ringapimodels.NewBadRequestError("invalid tilt speed", nil)
 	}
+	s.tiltMu.Lock()
+	defer s.tiltMu.Unlock()
 	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return nil, ringapimodels.NewClosedError("device session is closed", signaling.ErrClosed)
+	}
+	previousDirection, hadPrevious := s.movement[TiltAxis]
 	s.movement[TiltAxis] = string(r.Direction)
 	s.mu.Unlock()
 	v, e := s.call(ctx, protocol.RPCTiltContinuous, map[string]any{protocol.FieldDirection: r.Direction, protocol.FieldSpeed: r.Speed})
 	if e != nil {
 		s.mu.Lock()
-		delete(s.movement, TiltAxis)
+		if hadPrevious {
+			s.movement[TiltAxis] = previousDirection
+		} else {
+			delete(s.movement, TiltAxis)
+		}
 		s.mu.Unlock()
 	}
 	return v, e
 }
 func (s *DeviceSession) StopPTZ(ctx context.Context, r StopPTZRequest) (*PTZResult, error) {
+	var axisMu *sync.Mutex
+	switch r.Axis {
+	case PanAxis:
+		axisMu = &s.panMu
+	case TiltAxis:
+		axisMu = &s.tiltMu
+	default:
+		return nil, ringapimodels.NewBadRequestError("invalid PTZ axis", nil)
+	}
+	axisMu.Lock()
+	defer axisMu.Unlock()
 	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		return nil, ringapimodels.NewClosedError("device session is closed", signaling.ErrClosed)
+	}
 	direction := s.movement[r.Axis]
 	s.mu.Unlock()
 	if direction == "" {
@@ -396,9 +434,13 @@ func (s *DeviceSession) close(sendClose bool) error {
 }
 
 func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) error {
+	s.panMu.Lock()
+	s.tiltMu.Lock()
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
+		s.tiltMu.Unlock()
+		s.panMu.Unlock()
 		return nil
 	}
 	s.closed = true
@@ -409,6 +451,8 @@ func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) er
 	}
 	s.movement = make(map[PTZAxis]string)
 	s.mu.Unlock()
+	s.tiltMu.Unlock()
+	s.panMu.Unlock()
 	if sendClose {
 		// Stop each tracked continuous move before closing the signaling session.
 		// Both RPC acknowledgements and the final close share one short best-effort budget.
