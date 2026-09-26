@@ -28,14 +28,14 @@ paths:
         - {name: redirect_uri, in: query, required: false, schema: {type: string, format: uri}}
         - {name: client_id, in: query, required: false, schema: {type: string}}
         - {name: response_type, in: query, required: false, schema: {type: string, enum: [code]}}
-        - {name: prompt, in: query, required: false, schema: {type: string}}
+        - {name: prompt, in: query, required: false, description: The implemented PKCE flow sends login; other OAuth prompts may exist., schema: {type: string, x-extensible-enum: [login]}}
         - {name: state, in: query, required: false, schema: {type: string}}
-        - {name: scope, in: query, required: false, schema: {type: string}}
+        - {name: scope, in: query, required: false, description: The implemented client requests the client scope., schema: {type: string, x-extensible-enum: [client]}}
         - {name: code_challenge, in: query, required: false, schema: {type: string}}
         - {name: code_challenge_method, in: query, required: false, schema: {type: string, enum: [S256]}}
         - {name: device_model, in: query, required: false, schema: {type: string}}
         - {name: app_version, in: query, required: false, schema: {type: string}}
-        - {name: dark_mode, in: query, required: false, schema: {type: string}}
+        - {name: dark_mode, in: query, required: false, description: Boolean serialized as a query string., schema: {type: boolean}}
         - {name: device_brand, in: query, required: false, schema: {type: string}}
         - {name: device_os_version, in: query, required: false, schema: {type: string}}
         - {name: app_brand, in: query, required: false, schema: {type: string}}
@@ -403,24 +403,24 @@ components:
         recordings do not capture OAuth token exchange, so no grant flow or
         token lifetime is specified here.
   parameters:
-    device_id: {name: device_id, in: path, required: true, schema: {type: string}}
+    device_id: {name: device_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
     location_id: {name: location_id, in: path, required: true, schema: {type: string}}
-    recording_id: {name: recording_id, in: path, required: true, schema: {type: string}}
-    start_time: {name: start_time, in: query, required: false, description: Observed query name; requiredness is not established., schema: {type: string}}
-    end_time: {name: end_time, in: query, required: false, description: Observed query name; requiredness is not established., schema: {type: string}}
-    order: {name: order, in: query, required: false, description: Observed query name; value shown is desc., schema: {type: string}}
-    limit: {name: limit, in: query, required: false, description: Observed query name; value shown is 20 in a capture., schema: {type: integer}}
-    capabilities: {name: capabilities, in: query, required: false, description: Observed on timeline and history-device requests; cardinality is not established., schema: {type: string}}
+    recording_id: {name: recording_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    start_time: {name: start_time, in: query, required: false, description: Inclusive timeline start in RFC 3339 format; requiredness is not established., schema: {type: string, format: date-time}}
+    end_time: {name: end_time, in: query, required: false, description: Timeline end in RFC 3339 format; requiredness is not established., schema: {type: string, format: date-time}}
+    order: {name: order, in: query, required: false, description: Descending order was recorded; other values may be accepted., schema: {type: string, x-extensible-enum: [desc]}}
+    limit: {name: limit, in: query, required: false, description: Positive maximum number of results; 20 was recorded., schema: {type: integer, minimum: 1}}
+    capabilities: {name: capabilities, in: query, required: false, description: "Comma-separated capability tokens. Observed tokens are offline_event, vehicle and ringtercom; future tokens are possible.", schema: {type: string, x-known-tokens: [offline_event, vehicle, ringtercom]}}
     source_ids: {name: source_ids, in: query, required: false, description: Observed query name; value is sanitized in the capture., schema: {type: string}}
-    allowUserOnly: {name: allowUserOnly, in: query, required: false, schema: {type: string}}
+    allowUserOnly: {name: allowUserOnly, in: query, required: false, description: Boolean encoded as a query string; false was recorded., schema: {type: boolean}}
     locationID: {name: locationID, in: query, required: false, schema: {type: string}}
     locationSubscription: {name: locationSubscription, in: query, required: false, schema: {type: string}}
-    enableExtendedEmergencyCellUsage: {name: enableExtendedEmergencyCellUsage, in: query, required: false, schema: {type: string}}
-    requestedTransport: {name: requestedTransport, in: query, required: false, schema: {type: string}}
-    include: {name: include, in: query, required: false, description: Observed comma-separated value; accepted values are not exhaustively established., schema: {type: string}}
-    confirm_delete_favorite: {name: confirm_delete_favorite, in: query, required: false, description: Observed value is false; server-side requiredness is not established., schema: {type: string}}
-    kind: {name: kind, in: query, required: false, description: Go forwards this value without restricting it; Python filters returned entries client-side., schema: {type: string}}
-    older_than: {name: older_than, in: query, required: false, description: Supported by the pinned Python history helper; not currently sent by Go., schema: {type: integer}}
+    enableExtendedEmergencyCellUsage: {name: enableExtendedEmergencyCellUsage, in: query, required: false, description: Boolean encoded as a query string; true was recorded., schema: {type: boolean}}
+    requestedTransport: {name: requestedTransport, in: query, required: false, description: WebSocket transport ws was recorded; other transports remain possible., schema: {type: string, x-extensible-enum: [ws]}}
+    include: {name: include, in: query, required: false, description: "Comma-separated location expansions. Observed tokens are capabilities, presentation and status; future tokens are possible.", schema: {type: string, x-known-tokens: [capabilities, presentation, status]}}
+    confirm_delete_favorite: {name: confirm_delete_favorite, in: query, required: false, description: Boolean encoded as a query string; false was recorded and requiredness is not established., schema: {type: boolean}}
+    kind: {name: kind, in: query, required: false, description: "Go forwards this value without restricting it; known history kinds are ding, motion and on_demand.", schema: {type: string, x-extensible-enum: [ding, motion, on_demand]}}
+    older_than: {name: older_than, in: query, required: false, description: Positive history cursor timestamp supported by the pinned Python helper; not currently sent by Go., schema: {type: integer, format: int64, minimum: 0}}
   requestBodies:
     Json: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
     DeviceSettingsPatch:
@@ -619,7 +619,7 @@ components:
       required: [id, kind, answered, created_at, doorbot]
       properties:
         id: {type: integer}
-        kind: {type: string}
+        kind: {type: string, description: "Known recording kinds include ding, motion and on_demand; future kinds remain valid.", x-extensible-enum: [ding, motion, on_demand]}
         answered: {type: boolean}
         created_at: {type: string}
         doorbot:
@@ -656,10 +656,10 @@ components:
       properties:
         id: {type: integer, format: int64}
         device_id: {type: string}
-        kind: {type: string}
+        kind: {type: string, description: "Observed v3 kind is stickup_cam_mini_ptz_v1; Python legacy fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.", x-extensible-enum: [stickup_cam_mini_ptz_v1, lpd_v1, chime, intercom_handset_audio]}
         description: {type: string}
         location_id: {type: string}
-        family: {type: string, description: Python legacy devices may include family; absent in the v3 capture.}
+        family: {type: string, description: "Python legacy families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.", x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         owned: {type: boolean}
         created_at: {type: string, format: date-time}
         deactivated_at: {type: [string, 'null'], format: date-time}
@@ -682,10 +682,10 @@ components:
       properties:
         connected: {type: boolean}
         rssi: {type: number}
-        ptz_connected: {type: [string, 'null']}
+        ptz_connected: {type: [string, 'null'], description: Observed non-null PTZ connection label is emperor; other hardware labels remain valid., x-extensible-enum: [emperor]}
         supported_rpc_commands: {type: array, items: {type: string}}
         firmware_version: {type: string}
-        battery_percentage_category: {type: string}
+        battery_percentage_category: {type: string, description: The capture reports unknown; other battery categories remain valid., x-extensible-enum: [unknown]}
       additionalProperties: true
     DeviceFeatures:
       type: object
@@ -720,13 +720,13 @@ components:
     VideoRenderingFeature:
       type: object
       properties:
-        max_digital_zoom_level: {type: number}
+        max_digital_zoom_level: {type: number, minimum: 0, description: Device-reported maximum digital zoom level; units beyond the capture are not established.}
       additionalProperties: true
     DeviceLegacySettings:
       type: object
       properties:
         motion_detection_enabled: {type: boolean}
-        doorbell_volume: {type: integer}
+        doorbell_volume: {type: integer, minimum: 0, maximum: 11, description: Legacy doorbell volume accepted by the Go client.}
         live_view_disabled: {type: boolean}
       additionalProperties: true
     DeviceOperationSet:
@@ -753,7 +753,7 @@ components:
     PTZSettings:
       type: object
       properties:
-        mode: {type: string}
+        mode: {type: string, description: Observed PTZ mode is user; other device modes remain valid., x-extensible-enum: [user]}
         auto_scan: {$ref: '#/components/schemas/PTZAutoScan'}
         pan_settings: {$ref: '#/components/schemas/PTZAxisSettings'}
         tilt_settings: {$ref: '#/components/schemas/PTZAxisSettings'}
@@ -761,8 +761,8 @@ components:
     PTZAutoScan:
       type: object
       properties:
-        pause_ms: {type: integer}
-        step_size: {type: number}
+        pause_ms: {type: integer, minimum: 0, description: Auto-scan pause in milliseconds.}
+        step_size: {type: number, minimum: 0, description: Device-reported auto-scan step size; units are not established by the capture.}
       additionalProperties: true
     PTZAxisSettings:
       type: object
@@ -773,9 +773,9 @@ components:
     PTZMovement:
       type: object
       properties:
-        max_acceleration: {type: number}
-        max_speed: {type: number}
-        step_size: {type: number}
+        max_acceleration: {type: number, minimum: 0, description: Non-negative device-reported acceleration limit; its scale is not established.}
+        max_speed: {type: number, minimum: 0, maximum: 1, description: "Device-reported normalized maximum PTZ speed, distinct from a command's requested speed."}
+        step_size: {type: number, minimum: 0, description: Device-reported movement step size; units are not established by the capture.}
       additionalProperties: true
     PTZPositions:
       type: object
@@ -789,23 +789,23 @@ components:
       properties:
         hdr_enable: {type: boolean}
         hevc_enabled: {type: boolean}
-        brightness: {type: integer}
-        clip_length_max: {type: integer}
-        clip_length_min: {type: integer}
+        brightness: {type: integer, minimum: 0, description: Device-reported brightness level; the capture does not establish a maximum.}
+        clip_length_max: {type: integer, minimum: 0, description: Maximum clip duration in seconds.}
+        clip_length_min: {type: integer, minimum: 0, description: Minimum clip duration in seconds.}
       additionalProperties: true
     VolumeSettings:
       type: object
       properties:
-        doorbell_volume: {type: integer}
-        mic_volume: {type: integer}
-        voice_volume: {type: integer}
+        doorbell_volume: {type: integer, minimum: 0, maximum: 11, description: Legacy doorbell volume accepted by the Go client.}
+        mic_volume: {type: integer, minimum: 0, description: Non-negative device-reported microphone volume; upper bound is not established.}
+        voice_volume: {type: integer, minimum: 0, description: Non-negative device-reported voice volume; upper bound is not established.}
       additionalProperties: true
     ChimeSettings:
       type: object
       properties:
-        duration: {type: integer}
+        duration: {type: integer, minimum: 0, description: Chime duration in seconds.}
         enable: {type: boolean}
-        type: {type: integer}
+        type: {type: integer, description: Captured chime type code is 2; other numeric codes remain valid., x-extensible-enum: [2]}
       additionalProperties: true
     DeviceSettingsPatch:
       type: object
@@ -834,8 +834,8 @@ components:
       properties:
         started_at: {type: string, format: date-time}
         ends_at: {type: string, format: date-time}
-        duration: {type: integer}
-        seconds_remaining: {type: integer}
+        duration: {type: integer, minimum: 0, description: Server-reported siren duration in seconds.}
+        seconds_remaining: {type: integer, minimum: 0, description: Server-reported remaining siren time in seconds.}
       additionalProperties: true
     LegacySignalingTicket:
       type: object
@@ -861,11 +861,11 @@ components:
         event_id: {type: string}
         start_time: {type: string, format: date-time}
         end_time: {type: [string, 'null'], format: date-time}
-        event_type: {type: string}
-        state: {type: string}
-        duration_ms: {type: integer}
+        event_type: {type: string, description: Captured type is on_demand; other event kinds remain valid., x-extensible-enum: [on_demand]}
+        state: {type: string, description: Captured event state is completed; other states remain valid., x-extensible-enum: [completed]}
+        duration_ms: {type: integer, minimum: 0, description: Event duration in milliseconds.}
         is_favorite: {type: boolean}
-        recording_status: {type: string}
+        recording_status: {type: string, description: Captured recording status is ready; other statuses remain valid., x-extensible-enum: [ready]}
         device: {$ref: '#/components/schemas/TimelineDevice'}
       additionalProperties: true
     TimelineDevice:
@@ -895,7 +895,7 @@ components:
       type: object
       properties:
         id: {type: string}
-        type: {type: string}
+        type: {type: string, description: Captured feed item type is EVENT; other types remain valid., x-extensible-enum: [EVENT]}
       additionalProperties: true
     LocationGroupDevices:
       type: object

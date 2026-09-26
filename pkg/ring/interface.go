@@ -437,11 +437,13 @@ type PanStepRequest struct{ Direction PanDirection }
 type TiltStepRequest struct{ Direction TiltDirection }
 type PanContinuousRequest struct {
 	Direction PanDirection
-	Speed     float64
+	// Speed is normalized from 0 (stop) to 1 (full requested speed).
+	Speed float64
 }
 type TiltContinuousRequest struct {
 	Direction TiltDirection
-	Speed     float64
+	// Speed is normalized from 0 (stop) to 1 (full requested speed).
+	Speed float64
 }
 type PTZAxis string
 

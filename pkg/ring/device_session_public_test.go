@@ -72,6 +72,10 @@ func TestDeviceSessionInputValidation(t *testing.T) {
 			_, err := s.PanContinuous(context.Background(), PanContinuousRequest{Direction: PanLeft, Speed: -1})
 			return err
 		}},
+		{"pan speed above one", func() error {
+			_, err := s.PanContinuous(context.Background(), PanContinuousRequest{Direction: PanLeft, Speed: 1.01})
+			return err
+		}},
 		{"pan NaN speed", func() error {
 			_, err := s.PanContinuous(context.Background(), PanContinuousRequest{Direction: PanLeft, Speed: math.NaN()})
 			return err
@@ -86,6 +90,10 @@ func TestDeviceSessionInputValidation(t *testing.T) {
 		}},
 		{"tilt negative speed", func() error {
 			_, err := s.TiltContinuous(context.Background(), TiltContinuousRequest{Direction: TiltUp, Speed: -1})
+			return err
+		}},
+		{"tilt speed above one", func() error {
+			_, err := s.TiltContinuous(context.Background(), TiltContinuousRequest{Direction: TiltUp, Speed: 1.01})
 			return err
 		}},
 		{"tilt NaN speed", func() error {

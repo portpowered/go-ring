@@ -24,7 +24,7 @@ components:
       properties:
         id: {type: string, x-go-name: ID}
         name: {type: string}
-        family: {type: string}
+        family: {type: string, description: Known family is doorbots; unknown families remain valid., x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         address: {type: string}
         timezone: {type: string}
         wifi_name: {type: string}
@@ -40,7 +40,7 @@ components:
       properties:
         id: {type: string, x-go-name: ID}
         name: {type: string}
-        family: {type: string}
+        family: {type: string, description: Known family is chimes; unknown families remain valid., x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         address: {type: string}
         timezone: {type: string}
         wifi_name: {type: string}
@@ -54,7 +54,7 @@ components:
         id: {type: string, x-go-name: ID}
         name: {type: string}
         description: {type: string}
-        family: {type: string}
+        family: {type: string, description: Known family is stickup_cams; unknown families remain valid., x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         address: {type: string}
         timezone: {type: string}
         wifi_name: {type: string}
@@ -70,10 +70,10 @@ components:
       properties:
         id: {type: string, x-go-name: ID}
         name: {type: string}
-        family: {type: string}
+        family: {type: string, description: Known families include other; unknown families remain valid., x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         address: {type: string}
         timezone: {type: string}
-        kind: {type: string}
+        kind: {type: string, description: Known legacy kinds include intercom_handset_audio; unfamiliar hardware kinds remain valid., x-extensible-enum: [intercom_handset_audio, intercom_handset_video, stickup_cam_mini_ptz_v1]}
         health: {$ref: '#/components/schemas/DeviceHealth'}
     DevicesResponse:
       type: object
@@ -90,10 +90,11 @@ components:
         access_token: {type: string}
         refresh_token: {type: string}
         expires_in: {type: integer}
-        token_type: {type: string}
+        token_type: {type: string, description: Bearer is used by the implemented OAuth flow; unknown token types remain representable., x-extensible-enum: [Bearer]}
     EventKind:
       type: string
-      enum: [motion, ding, on_demand]
+      description: Known event kinds are motion, ding and on_demand. Preserve future values from the service.
+      x-extensible-enum: [motion, ding, on_demand]
     Event:
       type: object
       required: [kind, device_id, timestamp, data]
@@ -107,7 +108,7 @@ components:
       required: [id, kind, answered, created_at, device_id]
       properties:
         id: {type: integer, format: int64, x-go-name: ID}
-        kind: {type: string}
+        kind: {type: string, description: "Known recording kinds are motion, ding and on_demand; future values remain valid.", x-extensible-enum: [motion, ding, on_demand]}
         answered: {type: boolean}
         created_at: {type: string}
         device_id: {type: integer, format: int64, x-go-name: DeviceID}

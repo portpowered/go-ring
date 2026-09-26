@@ -62,6 +62,22 @@ class SignalingContracts(unittest.TestCase):
         for value in variants:
             self.assertFalse(self.validators["client_to_server"].is_valid(value))
 
+    def test_ptz_speed_range_and_open_notification_values(self):
+        continuous = next(row["payload"] for row in self.messages if row["direction"] == "client_to_server" and
+                          row["payload"].get("body", {}).get("command", {}).get("method") == "PTZ.Pan.Continuous")
+        for speed, accepted in [(-0.01, False), (0, True), (0.5, True), (1, True), (1.01, False)]:
+            with self.subTest(speed=speed):
+                frame = copy.deepcopy(continuous)
+                frame["body"]["command"]["params"]["speed"] = speed
+                self.assertEqual(self.validators["client_to_server"].is_valid(frame), accepted)
+        event = next(row["payload"] for row in self.messages if row["payload"]["method"] == "push_event")
+        future = copy.deepcopy(event)
+        future["body"]["notification_type"] = "future_event"
+        self.assertTrue(self.validators["server_to_client"].is_valid(future))
+        field = self.doc["components"]["schemas"]["PushEventBody"]["properties"]["notification_type"]
+        self.assertIn("shoulder_tap", field["x-extensible-enum"])
+        self.assertNotIn("enum", field)
+
     def test_rpc_result_and_error_are_exclusive(self):
         result = next(row["payload"] for row in self.messages if row["direction"] == "server_to_client" and
                       "result" in row["payload"].get("body", {}).get("command", {}))
@@ -156,6 +172,27 @@ class HTTPContracts(unittest.TestCase):
         self.assertTrue(response.is_valid(missing))
         self.assertTrue(response.is_valid(null_value))
         self.assertTrue(response.is_valid(null_settings))
+
+    def test_device_speed_bounds_and_extensible_kinds(self):
+        movement = validator(self.doc, {"$ref": "#/components/schemas/PTZMovement"})
+        for speed, accepted in [(-0.01, False), (0, True), (0.63, True), (1, True), (1.01, False)]:
+            with self.subTest(max_speed=speed):
+                self.assertEqual(movement.is_valid({"max_speed": speed}), accepted)
+        device = validator(self.doc, {"$ref": "#/components/schemas/Device"})
+        self.assertTrue(device.is_valid({"id": 1001, "kind": "future_camera", "description": "Future"}))
+        kind = self.doc["components"]["schemas"]["Device"]["properties"]["kind"]
+        self.assertIn("stickup_cam_mini_ptz_v1", kind["x-extensible-enum"])
+        self.assertNotIn("enum", kind)
+
+    def test_query_semantics_are_described(self):
+        parameters = self.doc["components"]["parameters"]
+        self.assertEqual(parameters["order"]["schema"]["x-extensible-enum"], ["desc"])
+        self.assertEqual(parameters["requestedTransport"]["schema"]["x-extensible-enum"], ["ws"])
+        self.assertEqual(parameters["capabilities"]["schema"]["x-known-tokens"],
+                         ["offline_event", "vehicle", "ringtercom"])
+        for name in ("allowUserOnly", "enableExtendedEmergencyCellUsage", "confirm_delete_favorite"):
+            self.assertEqual(parameters[name]["schema"]["type"], "boolean")
+        self.assertEqual(parameters["limit"]["schema"]["minimum"], 1)
 
 
 if __name__ == "__main__":

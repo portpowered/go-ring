@@ -27,12 +27,16 @@ Session methods include `Answer`, `SendICE`, `PanStep`, `TiltStep`,
 `PanContinuous`, `TiltContinuous`, `StopPTZ`, `SetMicrophone`, `SetStreamOptions`,
 `Receive`, `Wait`, and `Close`. PTZ results acknowledge commands; they do not
 prove physical positioning. Device capabilities vary. Zoom is not verified.
+Continuous pan and tilt speeds are normalized numbers from `0` to `1`,
+inclusive. `0` requests a stop; `StopPTZ` also uses a zero-speed command for a
+tracked movement. Values above `1`, negative values, NaN, and infinities are
+rejected before sending. Step commands take only a direction.
 
 Close the session when finished, close the connection to release its children,
 and close the client when its work is done. Keep the connection and session
 contexts alive for their intended lifetime. Cancellation ends owned work.
 Sessions have a maximum lifetime of 60 minutes, an SDK policy rather than a
-proven vendor timeout. See [session design](docs/session-design.md) for SDP
+proven vendor timeout. See [session design](../plans/session-design.md) for SDP
 construction, identity domains, heartbeat and teardown rules; sections marked
 as target behavior remain implementation requirements.
 

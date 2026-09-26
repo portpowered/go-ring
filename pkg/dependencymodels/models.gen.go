@@ -12,22 +12,28 @@ import (
 type RingDevice struct {
 	Address     string `json:"address,omitempty"`
 	Description string `json:"description,omitempty"`
-	Family      string `json:"family,omitempty"`
-	HasLight    bool   `json:"has_light,omitempty"`
+
+	// Family Known legacy device families; unknown families remain valid.
+	Family   string `json:"family,omitempty"`
+	HasLight bool   `json:"has_light,omitempty"`
 
 	// Health Known legacy health fields; unrecognized hardware fields stay extensible.
-	Health                 *RingDeviceHealth `json:"health,omitempty"`
-	ID                     int64             `json:"id"`
-	Kind                   string            `json:"kind,omitempty"`
-	LightBrightness        *int              `json:"light_brightness,omitempty"`
-	MotionDetectionEnabled bool              `json:"motion_detection_enabled,omitempty"`
-	Name                   string            `json:"name,omitempty"`
-	Owned                  *bool             `json:"owned,omitempty"`
-	TimeZone               string            `json:"time_zone,omitempty"`
-	Timezone               string            `json:"timezone,omitempty"`
-	Volume                 int               `json:"volume,omitempty"`
-	WifiName               string            `json:"wifi_name,omitempty"`
-	WifiSignalStrength     int               `json:"wifi_signal_strength,omitempty"`
+	Health *RingDeviceHealth `json:"health,omitempty"`
+	ID     int64             `json:"id"`
+
+	// Kind Known hardware kinds include these captured and Python legacy examples; unknown kinds remain valid.
+	Kind                   string `json:"kind,omitempty"`
+	LightBrightness        *int   `json:"light_brightness,omitempty"`
+	MotionDetectionEnabled bool   `json:"motion_detection_enabled,omitempty"`
+	Name                   string `json:"name,omitempty"`
+	Owned                  *bool  `json:"owned,omitempty"`
+	TimeZone               string `json:"time_zone,omitempty"`
+	Timezone               string `json:"timezone,omitempty"`
+
+	// Volume Legacy device volume range accepted by the Go client.
+	Volume             int    `json:"volume,omitempty"`
+	WifiName           string `json:"wifi_name,omitempty"`
+	WifiSignalStrength int    `json:"wifi_signal_strength,omitempty"`
 }
 
 // RingDeviceHealth Known legacy health fields; unrecognized hardware fields stay extensible.
@@ -63,7 +69,9 @@ type RingRecording struct {
 	DeviceID  int64       `json:"-"`
 	Doorbot   RingDoorbot `json:"doorbot"`
 	ID        int64       `json:"id"`
-	Kind      string      `json:"kind,omitempty"`
+
+	// Kind Known recording kinds are ding, motion and on_demand; unknown kinds remain valid.
+	Kind string `json:"kind,omitempty"`
 }
 
 // RingRecordingHistoryResponse Adapter result; the HTTP response itself is an array.

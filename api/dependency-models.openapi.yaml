@@ -16,15 +16,15 @@ components:
         id: {type: integer, format: int64, x-go-name: ID}
         name: {type: string, x-go-type-skip-optional-pointer: true}
         description: {type: string, x-go-type-skip-optional-pointer: true}
-        kind: {type: string, x-go-type-skip-optional-pointer: true}
-        family: {type: string, x-go-type-skip-optional-pointer: true}
+        kind: {type: string, x-go-type-skip-optional-pointer: true, description: Known hardware kinds include these captured and Python legacy examples; unknown kinds remain valid., x-extensible-enum: [stickup_cam_mini_ptz_v1, lpd_v1, chime, intercom_handset_audio]}
+        family: {type: string, x-go-type-skip-optional-pointer: true, description: Known legacy device families; unknown families remain valid., x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         owned: {type: boolean}
         address: {type: string, x-go-type-skip-optional-pointer: true}
         timezone: {type: string, x-go-type-skip-optional-pointer: true}
         time_zone: {type: string, x-go-name: TimeZone, x-go-type-skip-optional-pointer: true}
         wifi_name: {type: string, x-go-name: WifiName, x-go-type-skip-optional-pointer: true}
         wifi_signal_strength: {type: integer, x-go-name: WifiSignalStrength, x-go-type-skip-optional-pointer: true}
-        volume: {type: integer, x-go-type-skip-optional-pointer: true}
+        volume: {type: integer, minimum: 0, maximum: 11, x-go-type-skip-optional-pointer: true, description: Legacy device volume range accepted by the Go client.}
         has_light: {type: boolean, x-go-type-skip-optional-pointer: true}
         light_brightness: {type: integer}
         motion_detection_enabled: {type: boolean, x-go-type-skip-optional-pointer: true}
@@ -61,7 +61,7 @@ components:
       required: [id, doorbot, device_id]
       properties:
         id: {type: integer, format: int64, x-go-name: ID}
-        kind: {type: string, x-go-type-skip-optional-pointer: true}
+        kind: {type: string, x-go-type-skip-optional-pointer: true, description: "Known recording kinds are ding, motion and on_demand; unknown kinds remain valid.", x-extensible-enum: [ding, motion, on_demand]}
         answered: {type: boolean, x-go-type-skip-optional-pointer: true}
         created_at: {type: string, x-go-type-skip-optional-pointer: true}
         device_id: {type: integer, format: int64, x-go-name: DeviceID, x-go-json-ignore: true}

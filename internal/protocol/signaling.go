@@ -30,6 +30,7 @@ const (
 	RPCPanHalted              = "PTZ.Pan.Halted"
 	JSONRPCVersion            = "2.0"
 	PTZVersion                = 1
+	PTZMaxSpeed               = 1.0
 	PanLeft                   = "LEFT"
 	PanRight                  = "RIGHT"
 	TiltUp                    = "UP"

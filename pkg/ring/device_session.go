@@ -382,7 +382,7 @@ func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousReques
 	if r.Direction != PanLeft && r.Direction != PanRight {
 		return nil, fmt.Errorf("invalid pan direction %q", r.Direction)
 	}
-	if r.Speed < 0 || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
+	if r.Speed < 0 || r.Speed > protocol.PTZMaxSpeed || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
 		return nil, fmt.Errorf("invalid pan speed")
 	}
 	s.mu.Lock()
@@ -400,7 +400,7 @@ func (s *DeviceSession) TiltContinuous(ctx context.Context, r TiltContinuousRequ
 	if r.Direction != TiltUp && r.Direction != TiltDown {
 		return nil, fmt.Errorf("invalid tilt direction %q", r.Direction)
 	}
-	if r.Speed < 0 || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
+	if r.Speed < 0 || r.Speed > protocol.PTZMaxSpeed || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
 		return nil, fmt.Errorf("invalid tilt speed")
 	}
 	s.mu.Lock()

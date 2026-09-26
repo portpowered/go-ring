@@ -227,6 +227,14 @@ func TestRecordedSessionRejectsInvalidControlsBeforeWire(t *testing.T) {
 			_, err := session.TiltContinuous(ctx, ring.TiltContinuousRequest{Direction: ring.TiltUp, Speed: math.Inf(1)})
 			return err
 		}},
+		{"pan speed above normalized range", func() error {
+			_, err := session.PanContinuous(ctx, ring.PanContinuousRequest{Direction: ring.PanLeft, Speed: 1.01})
+			return err
+		}},
+		{"tilt speed above normalized range", func() error {
+			_, err := session.TiltContinuous(ctx, ring.TiltContinuousRequest{Direction: ring.TiltUp, Speed: 1.01})
+			return err
+		}},
 		{"bad tilt movement direction", func() error {
 			_, err := session.TiltContinuous(ctx, ring.TiltContinuousRequest{Direction: "SIDEWAYS", Speed: 0.5})
 			return err

@@ -257,18 +257,24 @@ components:
       properties:
         jsonrpc: {type: string, const: '2.0'}
         id: {type: string}
-        method: {type: string}
+        method: {$ref: '#/components/schemas/PTZCommandMethod'}
         params: {$ref: '#/components/schemas/PTZWireParams'}
+    PTZCommandMethod:
+      type: string
+      enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Tilt.Step, PTZ.Tilt.Continuous]
+    PTZDirection:
+      type: string
+      enum: [LEFT, RIGHT, UP, DOWN]
     PTZWireParams:
       type: object
       required: [sessionId, timestamp, version, direction]
       properties:
         sessionId: {type: string}
-        timestamp: {type: number}
-        version: {type: number, const: 1}
-        direction: {type: string}
-        speed: {type: number}
-        reason: {type: string}
+        timestamp: {type: integer, format: int64, minimum: 0, description: Client-generated Unix time in milliseconds.}
+        version: {type: integer, const: 1}
+        direction: {$ref: '#/components/schemas/PTZDirection'}
+        speed: {type: number, minimum: 0, maximum: 1, description: Normalized continuous PTZ speed; zero stops motion and one is full requested speed.}
+        reason: {type: string, description: Observed halt reason is LIMIT_REACHED; other server reasons may appear., x-extensible-enum: [LIMIT_REACHED]}
     PushSubscriptionAckFrame:
       type: object
       required: [method, dialog_id, body]
@@ -281,7 +287,7 @@ components:
       type: object
       required: [status, subscription_id]
       properties:
-        status: {type: string}
+        status: {type: string, description: Observed successful status is ok; unknown server statuses remain valid., x-extensible-enum: [ok]}
         subscription_id: {type: string}
     PushHeartbeatFrame:
       type: object
@@ -380,9 +386,9 @@ components:
       required: [notification_scope, notification_type, payload, subscription_id]
       properties:
         filter_identifiers: {type: array, items: {type: string}}
-        ingestion_time_ms: {type: integer}
-        notification_scope: {type: string}
-        notification_type: {type: string}
+        ingestion_time_ms: {type: integer, format: int64, minimum: 0, description: Unix time in milliseconds.}
+        notification_scope: {type: string, description: Observed scope is event; future scopes remain valid., x-extensible-enum: [event]}
+        notification_type: {type: string, description: Observed type is shoulder_tap; future types remain valid., x-extensible-enum: [shoulder_tap]}
         payload: {$ref: '#/components/schemas/PushEventPayload'}
         subscription_id: {type: string}
     PushEventPayload:
@@ -407,7 +413,7 @@ components:
       required: [doorbot_id, entry_point, sdp, type]
       properties:
         doorbot_id: {type: integer}
-        entry_point: {type: string}
+        entry_point: {type: string, description: Observed entry point is timeline; other playback entries may be supported., x-extensible-enum: [timeline]}
         sdp: {type: string, minLength: 1}
         type: {type: string, const: cloud}
     PlaybackAnswerFrame:
@@ -431,7 +437,7 @@ components:
     PlaybackSessionInfo:
       type: object
       properties:
-        ping_interval: {type: integer, minimum: 1}
+        ping_interval: {type: integer, minimum: 1, description: Server-provided application heartbeat interval in seconds.}
         region: {type: string}
       additionalProperties: true
     ClientEnvelope:
@@ -481,7 +487,7 @@ components:
                 required: [doorbot_id, entry_point, sdp, type]
                 properties:
                   doorbot_id: {type: integer}
-                  entry_point: {type: string}
+                  entry_point: {type: string, description: Observed entry point is timeline; other playback entries may be supported., x-extensible-enum: [timeline]}
                   sdp: {type: string, minLength: 1}
                   type: {const: cloud}
         - if: {properties: {method: {const: push_subscribe}}}
@@ -543,7 +549,7 @@ components:
                       session_info:
                         type: object
                         properties:
-                          ping_interval: {type: integer, minimum: 1}
+                          ping_interval: {type: integer, minimum: 1, description: Server-provided heartbeat interval in seconds.}
         - if: {properties: {method: {const: push_subscription_ack}}}
           then:
             properties:
@@ -551,7 +557,7 @@ components:
                 type: object
                 required: [status, subscription_id]
                 properties:
-                  status: {type: string}
+                  status: {type: string, description: Observed successful status is ok; unknown server statuses remain valid., x-extensible-enum: [ok]}
                   subscription_id: {type: string}
         - if: {properties: {method: {const: push_event}}}
           then:
@@ -561,9 +567,9 @@ components:
                 required: [notification_scope, notification_type, payload, subscription_id]
                 properties:
                   filter_identifiers: {type: array, items: {type: string}}
-                  ingestion_time_ms: {type: integer}
-                  notification_scope: {type: string}
-                  notification_type: {type: string}
+                  ingestion_time_ms: {type: integer, format: int64, minimum: 0, description: Unix time in milliseconds.}
+                  notification_scope: {type: string, description: Observed scope is event; future scopes remain valid., x-extensible-enum: [event]}
+                  notification_type: {type: string, description: Observed type is shoulder_tap; future types remain valid., x-extensible-enum: [shoulder_tap]}
                   payload: {type: object}
                   subscription_id: {type: string}
     PushFilter:
@@ -572,8 +578,8 @@ components:
       properties:
         filter_identifier: {type: string}
         filters: {$ref: '#/components/schemas/PushFilters'}
-        notification_scope: {type: string}
-        notification_type: {type: string}
+        notification_scope: {type: string, description: Observed scope is event; future scopes remain valid., x-extensible-enum: [event]}
+        notification_type: {type: string, description: Observed type is shoulder_tap; future types remain valid., x-extensible-enum: [shoulder_tap]}
     PushFilters:
       type: object
       properties:
@@ -592,11 +598,11 @@ components:
           required: [sessionId, timestamp, version, direction]
           properties:
             sessionId: {type: string}
-            timestamp: {type: number}
-            version: {type: number, const: 1}
+            timestamp: {type: integer, format: int64, minimum: 0, description: Client-generated Unix time in milliseconds.}
+            version: {type: integer, const: 1}
             direction: {type: string, enum: [LEFT, RIGHT, UP, DOWN]}
-            speed: {type: number}
-            reason: {type: string}
+            speed: {type: number, minimum: 0, maximum: 1, description: Normalized continuous PTZ speed; zero stops motion and one is full requested speed.}
+            reason: {type: string, description: Observed halt reason is LIMIT_REACHED; other server reasons may appear., x-extensible-enum: [LIMIT_REACHED]}
       allOf:
         - if: {properties: {method: {enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Pan.Halted]}}}
           then: {properties: {params: {properties: {direction: {enum: [LEFT, RIGHT]}}}}}

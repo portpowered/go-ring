@@ -211,8 +211,11 @@ type CapturedTickets struct {
 
 // ChimeSettings defines model for ChimeSettings.
 type ChimeSettings struct {
-	Duration             *int                   `json:"duration,omitempty"`
-	Enable               *bool                  `json:"enable,omitempty"`
+	// Duration Chime duration in seconds.
+	Duration *int  `json:"duration,omitempty"`
+	Enable   *bool `json:"enable,omitempty"`
+
+	// Type Captured chime type code is 2; other numeric codes remain valid.
 	Type                 *int                   `json:"type,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -251,11 +254,13 @@ type Device struct {
 	Description   string     `json:"description"`
 	DeviceId      *string    `json:"device_id,omitempty"`
 
-	// Family Python legacy devices may include family; absent in the v3 capture.
-	Family               *string                `json:"family,omitempty"`
-	Features             *DeviceFeatures        `json:"features,omitempty"`
-	Health               *DeviceHealth          `json:"health,omitempty"`
-	Id                   int64                  `json:"id"`
+	// Family Python legacy families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.
+	Family   *string         `json:"family,omitempty"`
+	Features *DeviceFeatures `json:"features,omitempty"`
+	Health   *DeviceHealth   `json:"health,omitempty"`
+	Id       int64           `json:"id"`
+
+	// Kind Observed v3 kind is stickup_cam_mini_ptz_v1; Python legacy fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.
 	Kind                 string                 `json:"kind"`
 	LocationId           *string                `json:"location_id,omitempty"`
 	OperationSet         *string                `json:"operation_set,omitempty"`
@@ -292,17 +297,21 @@ type DeviceFeatures struct {
 
 // DeviceHealth defines model for DeviceHealth.
 type DeviceHealth struct {
-	BatteryPercentageCategory *string                `json:"battery_percentage_category,omitempty"`
-	Connected                 *bool                  `json:"connected,omitempty"`
-	FirmwareVersion           *string                `json:"firmware_version,omitempty"`
-	PtzConnected              *string                `json:"ptz_connected,omitempty"`
-	Rssi                      *float32               `json:"rssi,omitempty"`
-	SupportedRpcCommands      *[]string              `json:"supported_rpc_commands,omitempty"`
-	AdditionalProperties      map[string]interface{} `json:"-"`
+	// BatteryPercentageCategory The capture reports unknown; other battery categories remain valid.
+	BatteryPercentageCategory *string `json:"battery_percentage_category,omitempty"`
+	Connected                 *bool   `json:"connected,omitempty"`
+	FirmwareVersion           *string `json:"firmware_version,omitempty"`
+
+	// PtzConnected Observed non-null PTZ connection label is emperor; other hardware labels remain valid.
+	PtzConnected         *string                `json:"ptz_connected,omitempty"`
+	Rssi                 *float32               `json:"rssi,omitempty"`
+	SupportedRpcCommands *[]string              `json:"supported_rpc_commands,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // DeviceLegacySettings defines model for DeviceLegacySettings.
 type DeviceLegacySettings struct {
+	// DoorbellVolume Legacy doorbell volume accepted by the Go client.
 	DoorbellVolume         *int                   `json:"doorbell_volume,omitempty"`
 	LiveViewDisabled       *bool                  `json:"live_view_disabled,omitempty"`
 	MotionDetectionEnabled *bool                  `json:"motion_detection_enabled,omitempty"`
@@ -394,7 +403,9 @@ type HistoryDevices struct {
 
 // HistoryFeedItem defines model for HistoryFeedItem.
 type HistoryFeedItem struct {
-	Id                   *string                `json:"id,omitempty"`
+	Id *string `json:"id,omitempty"`
+
+	// Type Captured feed item type is EVENT; other types remain valid.
 	Type                 *string                `json:"type,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -544,7 +555,10 @@ type OAuthTokenGrant struct {
 
 // PTZAutoScan defines model for PTZAutoScan.
 type PTZAutoScan struct {
-	PauseMs              *int                   `json:"pause_ms,omitempty"`
+	// PauseMs Auto-scan pause in milliseconds.
+	PauseMs *int `json:"pause_ms,omitempty"`
+
+	// StepSize Device-reported auto-scan step size; units are not established by the capture.
 	StepSize             *float32               `json:"step_size,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -558,8 +572,13 @@ type PTZAxisSettings struct {
 
 // PTZMovement defines model for PTZMovement.
 type PTZMovement struct {
-	MaxAcceleration      *float32               `json:"max_acceleration,omitempty"`
-	MaxSpeed             *float32               `json:"max_speed,omitempty"`
+	// MaxAcceleration Non-negative device-reported acceleration limit; its scale is not established.
+	MaxAcceleration *float32 `json:"max_acceleration,omitempty"`
+
+	// MaxSpeed Device-reported normalized maximum PTZ speed, distinct from a command's requested speed.
+	MaxSpeed *float32 `json:"max_speed,omitempty"`
+
+	// StepSize Device-reported movement step size; units are not established by the capture.
 	StepSize             *float32               `json:"step_size,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -574,7 +593,9 @@ type PTZPositions struct {
 
 // PTZSettings defines model for PTZSettings.
 type PTZSettings struct {
-	AutoScan             *PTZAutoScan           `json:"auto_scan,omitempty"`
+	AutoScan *PTZAutoScan `json:"auto_scan,omitempty"`
+
+	// Mode Observed PTZ mode is user; other device modes remain valid.
 	Mode                 *string                `json:"mode,omitempty"`
 	PanSettings          *PTZAxisSettings       `json:"pan_settings,omitempty"`
 	TiltSettings         *PTZAxisSettings       `json:"tilt_settings,omitempty"`
@@ -583,10 +604,12 @@ type PTZSettings struct {
 
 // Recording defines model for Recording.
 type Recording struct {
-	Answered             bool                   `json:"answered"`
-	CreatedAt            string                 `json:"created_at"`
-	Doorbot              Recording_Doorbot      `json:"doorbot"`
-	Id                   int                    `json:"id"`
+	Answered  bool              `json:"answered"`
+	CreatedAt string            `json:"created_at"`
+	Doorbot   Recording_Doorbot `json:"doorbot"`
+	Id        int               `json:"id"`
+
+	// Kind Known recording kinds include ding, motion and on_demand; future kinds remain valid.
 	Kind                 string                 `json:"kind"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -625,8 +648,11 @@ type SignInForm struct {
 
 // SirenStatus defines model for SirenStatus.
 type SirenStatus struct {
-	Duration             int                    `json:"duration"`
-	EndsAt               time.Time              `json:"ends_at"`
+	// Duration Server-reported siren duration in seconds.
+	Duration int       `json:"duration"`
+	EndsAt   time.Time `json:"ends_at"`
+
+	// SecondsRemaining Server-reported remaining siren time in seconds.
 	SecondsRemaining     int                    `json:"seconds_remaining"`
 	StartedAt            time.Time              `json:"started_at"`
 	AdditionalProperties map[string]interface{} `json:"-"`
@@ -657,16 +683,24 @@ type TimelineDevice struct {
 
 // TimelineEvent defines model for TimelineEvent.
 type TimelineEvent struct {
-	Device               *TimelineDevice        `json:"device,omitempty"`
-	DurationMs           *int                   `json:"duration_ms,omitempty"`
-	EndTime              *time.Time             `json:"end_time,omitempty"`
-	EventId              string                 `json:"event_id"`
-	EventType            string                 `json:"event_type"`
-	IsFavorite           *bool                  `json:"is_favorite,omitempty"`
-	RecordingStatus      *string                `json:"recording_status,omitempty"`
-	Schema               *string                `json:"schema,omitempty"`
-	SourceId             *string                `json:"source_id,omitempty"`
-	StartTime            time.Time              `json:"start_time"`
+	Device *TimelineDevice `json:"device,omitempty"`
+
+	// DurationMs Event duration in milliseconds.
+	DurationMs *int       `json:"duration_ms,omitempty"`
+	EndTime    *time.Time `json:"end_time,omitempty"`
+	EventId    string     `json:"event_id"`
+
+	// EventType Captured type is on_demand; other event kinds remain valid.
+	EventType  string `json:"event_type"`
+	IsFavorite *bool  `json:"is_favorite,omitempty"`
+
+	// RecordingStatus Captured recording status is ready; other statuses remain valid.
+	RecordingStatus *string   `json:"recording_status,omitempty"`
+	Schema          *string   `json:"schema,omitempty"`
+	SourceId        *string   `json:"source_id,omitempty"`
+	StartTime       time.Time `json:"start_time"`
+
+	// State Captured event state is completed; other states remain valid.
 	State                *string                `json:"state,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -683,14 +717,20 @@ type TwoFactorFormRememberMe string
 
 // VideoRenderingFeature defines model for VideoRenderingFeature.
 type VideoRenderingFeature struct {
+	// MaxDigitalZoomLevel Device-reported maximum digital zoom level; units beyond the capture are not established.
 	MaxDigitalZoomLevel  *float32               `json:"max_digital_zoom_level,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // VideoSettings defines model for VideoSettings.
 type VideoSettings struct {
-	Brightness           *int                   `json:"brightness,omitempty"`
-	ClipLengthMax        *int                   `json:"clip_length_max,omitempty"`
+	// Brightness Device-reported brightness level; the capture does not establish a maximum.
+	Brightness *int `json:"brightness,omitempty"`
+
+	// ClipLengthMax Maximum clip duration in seconds.
+	ClipLengthMax *int `json:"clip_length_max,omitempty"`
+
+	// ClipLengthMin Minimum clip duration in seconds.
 	ClipLengthMin        *int                   `json:"clip_length_min,omitempty"`
 	HdrEnable            *bool                  `json:"hdr_enable,omitempty"`
 	HevcEnabled          *bool                  `json:"hevc_enabled,omitempty"`
@@ -699,29 +739,34 @@ type VideoSettings struct {
 
 // VolumeSettings defines model for VolumeSettings.
 type VolumeSettings struct {
-	DoorbellVolume       *int                   `json:"doorbell_volume,omitempty"`
-	MicVolume            *int                   `json:"mic_volume,omitempty"`
+	// DoorbellVolume Legacy doorbell volume accepted by the Go client.
+	DoorbellVolume *int `json:"doorbell_volume,omitempty"`
+
+	// MicVolume Non-negative device-reported microphone volume; upper bound is not established.
+	MicVolume *int `json:"mic_volume,omitempty"`
+
+	// VoiceVolume Non-negative device-reported voice volume; upper bound is not established.
 	VoiceVolume          *int                   `json:"voice_volume,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // AllowUserOnly defines model for allowUserOnly.
-type AllowUserOnly = string
+type AllowUserOnly = bool
 
 // Capabilities defines model for capabilities.
 type Capabilities = string
 
 // ConfirmDeleteFavorite defines model for confirm_delete_favorite.
-type ConfirmDeleteFavorite = string
+type ConfirmDeleteFavorite = bool
 
 // DeviceId defines model for device_id.
-type DeviceId = string
+type DeviceId = int64
 
 // EnableExtendedEmergencyCellUsage defines model for enableExtendedEmergencyCellUsage.
-type EnableExtendedEmergencyCellUsage = string
+type EnableExtendedEmergencyCellUsage = bool
 
 // EndTime defines model for end_time.
-type EndTime = string
+type EndTime = time.Time
 
 // Include defines model for include.
 type Include = string
@@ -742,13 +787,13 @@ type LocationSubscription = string
 type LocationId = string
 
 // OlderThan defines model for older_than.
-type OlderThan = int
+type OlderThan = int64
 
 // Order defines model for order.
 type Order = string
 
 // RecordingId defines model for recording_id.
-type RecordingId = string
+type RecordingId = int64
 
 // RequestedTransport defines model for requestedTransport.
 type RequestedTransport = string
@@ -757,7 +802,7 @@ type RequestedTransport = string
 type SourceIds = string
 
 // StartTime defines model for start_time.
-type StartTime = string
+type StartTime = time.Time
 
 // AuthFailure Explicit escape hatch for fields without observed structure or typed error responses.
 type AuthFailure = JsonValue
@@ -782,11 +827,16 @@ type TwoFactorRequired = JsonValue
 
 // GetCapturedLocationTicketsParams defines parameters for GetCapturedLocationTickets.
 type GetCapturedLocationTicketsParams struct {
-	AllowUserOnly                    *AllowUserOnly                    `form:"allowUserOnly,omitempty" json:"allowUserOnly,omitempty"`
-	LocationID                       *LocationID                       `form:"locationID,omitempty" json:"locationID,omitempty"`
-	LocationSubscription             *LocationSubscription             `form:"locationSubscription,omitempty" json:"locationSubscription,omitempty"`
+	// AllowUserOnly Boolean encoded as a query string; false was recorded.
+	AllowUserOnly        *AllowUserOnly        `form:"allowUserOnly,omitempty" json:"allowUserOnly,omitempty"`
+	LocationID           *LocationID           `form:"locationID,omitempty" json:"locationID,omitempty"`
+	LocationSubscription *LocationSubscription `form:"locationSubscription,omitempty" json:"locationSubscription,omitempty"`
+
+	// EnableExtendedEmergencyCellUsage Boolean encoded as a query string; true was recorded.
 	EnableExtendedEmergencyCellUsage *EnableExtendedEmergencyCellUsage `form:"enableExtendedEmergencyCellUsage,omitempty" json:"enableExtendedEmergencyCellUsage,omitempty"`
-	RequestedTransport               *RequestedTransport               `form:"requestedTransport,omitempty" json:"requestedTransport,omitempty"`
+
+	// RequestedTransport WebSocket transport ws was recorded; other transports remain possible.
+	RequestedTransport *RequestedTransport `form:"requestedTransport,omitempty" json:"requestedTransport,omitempty"`
 }
 
 // SetChimeVolumeParams defines parameters for SetChimeVolume.
@@ -805,7 +855,7 @@ type TestChimeSoundParamsKind string
 
 // DeleteRecordingParams defines parameters for DeleteRecording.
 type DeleteRecordingParams struct {
-	// ConfirmDeleteFavorite Observed value is false; server-side requiredness is not established.
+	// ConfirmDeleteFavorite Boolean encoded as a query string; false was recorded and requiredness is not established.
 	ConfirmDeleteFavorite *ConfirmDeleteFavorite `form:"confirm_delete_favorite,omitempty" json:"confirm_delete_favorite,omitempty"`
 }
 
@@ -823,31 +873,31 @@ type UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnable int
 
 // GetLegacyDeviceHistoryParams defines parameters for GetLegacyDeviceHistory.
 type GetLegacyDeviceHistoryParams struct {
-	// Limit Observed query name; value shown is 20 in a capture.
+	// Limit Positive maximum number of results; 20 was recorded.
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Kind Go forwards this value without restricting it; Python filters returned entries client-side.
+	// Kind Go forwards this value without restricting it; known history kinds are ding, motion and on_demand.
 	Kind *Kind `form:"kind,omitempty" json:"kind,omitempty"`
 
-	// OlderThan Supported by the pinned Python history helper; not currently sent by Go.
+	// OlderThan Positive history cursor timestamp supported by the pinned Python helper; not currently sent by Go.
 	OlderThan *OlderThan `form:"older_than,omitempty" json:"older_than,omitempty"`
 }
 
 // GetDeviceTimelineParams defines parameters for GetDeviceTimeline.
 type GetDeviceTimelineParams struct {
-	// StartTime Observed query name; requiredness is not established.
+	// StartTime Inclusive timeline start in RFC 3339 format; requiredness is not established.
 	StartTime *StartTime `form:"start_time,omitempty" json:"start_time,omitempty"`
 
-	// EndTime Observed query name; requiredness is not established.
+	// EndTime Timeline end in RFC 3339 format; requiredness is not established.
 	EndTime *EndTime `form:"end_time,omitempty" json:"end_time,omitempty"`
 
-	// Order Observed query name; value shown is desc.
+	// Order Descending order was recorded; other values may be accepted.
 	Order *Order `form:"order,omitempty" json:"order,omitempty"`
 
-	// Limit Observed query name; value shown is 20 in a capture.
+	// Limit Positive maximum number of results; 20 was recorded.
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Capabilities Observed on timeline and history-device requests; cardinality is not established.
+	// Capabilities Comma-separated capability tokens. Observed tokens are offline_event, vehicle and ringtercom; future tokens are possible.
 	Capabilities *Capabilities `form:"capabilities,omitempty" json:"capabilities,omitempty"`
 }
 
@@ -856,33 +906,39 @@ type GetHistoryDevicesParams struct {
 	// SourceIds Observed query name; value is sanitized in the capture.
 	SourceIds *SourceIds `form:"source_ids,omitempty" json:"source_ids,omitempty"`
 
-	// Capabilities Observed on timeline and history-device requests; cardinality is not established.
+	// Capabilities Comma-separated capability tokens. Observed tokens are offline_event, vehicle and ringtercom; future tokens are possible.
 	Capabilities *Capabilities `form:"capabilities,omitempty" json:"capabilities,omitempty"`
 }
 
 // GetLocationParams defines parameters for GetLocation.
 type GetLocationParams struct {
-	// Include Observed comma-separated value; accepted values are not exhaustively established.
+	// Include Comma-separated location expansions. Observed tokens are capabilities, presentation and status; future tokens are possible.
 	Include *Include `form:"include,omitempty" json:"include,omitempty"`
 }
 
 // BeginOrContinueOAuthAuthorizationParams defines parameters for BeginOrContinueOAuthAuthorization.
 type BeginOrContinueOAuthAuthorizationParams struct {
-	RedirectUri         *string                                                     `form:"redirect_uri,omitempty" json:"redirect_uri,omitempty"`
-	ClientId            *string                                                     `form:"client_id,omitempty" json:"client_id,omitempty"`
-	ResponseType        *BeginOrContinueOAuthAuthorizationParamsResponseType        `form:"response_type,omitempty" json:"response_type,omitempty"`
-	Prompt              *string                                                     `form:"prompt,omitempty" json:"prompt,omitempty"`
-	State               *string                                                     `form:"state,omitempty" json:"state,omitempty"`
+	RedirectUri  *string                                              `form:"redirect_uri,omitempty" json:"redirect_uri,omitempty"`
+	ClientId     *string                                              `form:"client_id,omitempty" json:"client_id,omitempty"`
+	ResponseType *BeginOrContinueOAuthAuthorizationParamsResponseType `form:"response_type,omitempty" json:"response_type,omitempty"`
+
+	// Prompt The implemented PKCE flow sends login; other OAuth prompts may exist.
+	Prompt *string `form:"prompt,omitempty" json:"prompt,omitempty"`
+	State  *string `form:"state,omitempty" json:"state,omitempty"`
+
+	// Scope The implemented client requests the client scope.
 	Scope               *string                                                     `form:"scope,omitempty" json:"scope,omitempty"`
 	CodeChallenge       *string                                                     `form:"code_challenge,omitempty" json:"code_challenge,omitempty"`
 	CodeChallengeMethod *BeginOrContinueOAuthAuthorizationParamsCodeChallengeMethod `form:"code_challenge_method,omitempty" json:"code_challenge_method,omitempty"`
 	DeviceModel         *string                                                     `form:"device_model,omitempty" json:"device_model,omitempty"`
 	AppVersion          *string                                                     `form:"app_version,omitempty" json:"app_version,omitempty"`
-	DarkMode            *string                                                     `form:"dark_mode,omitempty" json:"dark_mode,omitempty"`
-	DeviceBrand         *string                                                     `form:"device_brand,omitempty" json:"device_brand,omitempty"`
-	DeviceOsVersion     *string                                                     `form:"device_os_version,omitempty" json:"device_os_version,omitempty"`
-	AppBrand            *string                                                     `form:"app_brand,omitempty" json:"app_brand,omitempty"`
-	HardwareId          *string                                                     `form:"hardware_id,omitempty" json:"hardware_id,omitempty"`
+
+	// DarkMode Boolean serialized as a query string.
+	DarkMode        *bool   `form:"dark_mode,omitempty" json:"dark_mode,omitempty"`
+	DeviceBrand     *string `form:"device_brand,omitempty" json:"device_brand,omitempty"`
+	DeviceOsVersion *string `form:"device_os_version,omitempty" json:"device_os_version,omitempty"`
+	AppBrand        *string `form:"app_brand,omitempty" json:"app_brand,omitempty"`
+	HardwareId      *string `form:"hardware_id,omitempty" json:"hardware_id,omitempty"`
 }
 
 // BeginOrContinueOAuthAuthorizationParamsResponseType defines parameters for BeginOrContinueOAuthAuthorization.
@@ -6905,7 +6961,7 @@ func NewGetCapturedLocationTicketsRequest(server string, params *GetCapturedLoca
 
 		if params.AllowUserOnly != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowUserOnly", *params.AllowUserOnly, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "allowUserOnly", *params.AllowUserOnly, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -6941,7 +6997,7 @@ func NewGetCapturedLocationTicketsRequest(server string, params *GetCapturedLoca
 
 		if params.EnableExtendedEmergencyCellUsage != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "enableExtendedEmergencyCellUsage", *params.EnableExtendedEmergencyCellUsage, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "enableExtendedEmergencyCellUsage", *params.EnableExtendedEmergencyCellUsage, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -6983,7 +7039,7 @@ func NewSetChimeVolumeRequest(server string, deviceId DeviceId, params *SetChime
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7048,7 +7104,7 @@ func NewTestChimeSoundRequest(server string, deviceId DeviceId, params *TestChim
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7132,7 +7188,7 @@ func NewDeleteRecordingRequest(server string, recordingId RecordingId, params *D
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recording_id", recordingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recording_id", recordingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7163,7 +7219,7 @@ func NewDeleteRecordingRequest(server string, recordingId RecordingId, params *D
 
 		if params.ConfirmDeleteFavorite != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "confirm_delete_favorite", *params.ConfirmDeleteFavorite, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "confirm_delete_favorite", *params.ConfirmDeleteFavorite, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -7193,7 +7249,7 @@ func NewFavoriteRecordingRequest(server string, recordingId RecordingId) (*http.
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recording_id", recordingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recording_id", recordingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7227,7 +7283,7 @@ func NewStreamRecordingRequest(server string, recordingId RecordingId) (*http.Re
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recording_id", recordingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recording_id", recordingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7261,7 +7317,7 @@ func NewGetLegacyRecordingShareURLRequest(server string, recordingId RecordingId
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recording_id", recordingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "recording_id", recordingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7295,7 +7351,7 @@ func NewUpdateLegacyDoorbotControlsRequest(server string, deviceId DeviceId, par
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7400,7 +7456,7 @@ func NewTurnFloodlightOffRequest(server string, deviceId DeviceId) (*http.Reques
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7434,7 +7490,7 @@ func NewTurnFloodlightOnRequest(server string, deviceId DeviceId) (*http.Request
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7468,7 +7524,7 @@ func NewGetLegacyDeviceHistoryRequest(server string, deviceId DeviceId, params *
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7523,7 +7579,7 @@ func NewGetLegacyDeviceHistoryRequest(server string, deviceId DeviceId, params *
 
 		if params.OlderThan != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "older_than", *params.OlderThan, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "older_than", *params.OlderThan, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -7553,7 +7609,7 @@ func NewTurnSirenOffRequest(server string, deviceId DeviceId) (*http.Request, er
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7587,7 +7643,7 @@ func NewTurnSirenOnRequest(server string, deviceId DeviceId) (*http.Request, err
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7621,7 +7677,7 @@ func NewGetLegacyDeviceHealthRequest(server string, deviceId DeviceId) (*http.Re
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7695,7 +7751,7 @@ func NewGetLegacySnapshotImageRequest(server string, deviceId DeviceId) (*http.R
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7780,7 +7836,7 @@ func NewSendDeviceCommandRequestWithBody(server string, deviceId DeviceId, conte
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7843,7 +7899,7 @@ func NewGetDeviceRequest(server string, deviceId DeviceId) (*http.Request, error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7877,7 +7933,7 @@ func NewGetDeviceSettingsRequest(server string, deviceId DeviceId) (*http.Reques
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7922,7 +7978,7 @@ func NewPatchDeviceSettingsRequestWithBody(server string, deviceId DeviceId, con
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -7969,7 +8025,7 @@ func NewSetLiveViewEnabledRequestWithBody(server string, deviceId DeviceId, cont
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -8005,7 +8061,7 @@ func NewGetDeviceTimelineRequest(server string, deviceId DeviceId, params *GetDe
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
 	if err != nil {
 		return nil, err
 	}
@@ -8036,7 +8092,7 @@ func NewGetDeviceTimelineRequest(server string, deviceId DeviceId, params *GetDe
 
 		if params.StartTime != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "start_time", *params.StartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "start_time", *params.StartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -8048,7 +8104,7 @@ func NewGetDeviceTimelineRequest(server string, deviceId DeviceId, params *GetDe
 
 		if params.EndTime != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "end_time", *params.EndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "end_time", *params.EndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -8560,7 +8616,7 @@ func NewBeginOrContinueOAuthAuthorizationRequest(server string, params *BeginOrC
 
 		if params.DarkMode != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "dark_mode", *params.DarkMode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "dark_mode", *params.DarkMode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
