@@ -21,3 +21,11 @@ baseline `reference/python-ring-doorbell` tests do not exercise live signaling
 or WebSocket PTZ. The fixtures establish observed message shapes and order;
 they do not specify unobserved handshake variants, media success, or SDK timer
 policy.
+
+`playback_peer_replay_test.go` takes the recorded playback SDP/ICE/close
+envelopes and substitutes fresh descriptions and candidates from two local
+WebRTC peers. It removes candidates from both descriptions, delivers them
+through playback signaling, and requires an RTP video packet before closing.
+This verifies the local playback negotiation path; the packet is synthetic and
+does not establish compatibility with Ring's live media servers or selection
+of a particular saved recording.
