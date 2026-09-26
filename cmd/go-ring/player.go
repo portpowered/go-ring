@@ -61,7 +61,7 @@ func playTrack(ctx context.Context, track *webrtc.TrackRemote) error {
 	if err != nil {
 		return err
 	}
-	command := exec.CommandContext(ctx, ffplayCommand, "-loglevel", "error", "-fflags", "nobuffer", "-flags", "low_delay", "-f", format, "-i", "pipe:0")
+	command := exec.CommandContext(ctx, ffplayCommand, "-loglevel", "error", "-f", format, "-i", "pipe:0")
 	command.Stderr = os.Stderr
 	input, err := command.StdinPipe()
 	if err != nil {
