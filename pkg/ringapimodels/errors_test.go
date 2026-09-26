@@ -42,7 +42,7 @@ func TestErrorClassificationSurvivesCallerWrapping(t *testing.T) {
 			if !strings.Contains(wrapped.Error(), "load device:") {
 				t.Fatal("lost caller context")
 			}
-			if _, ok := tc.err.(interface{ Unwrap() error }); ok && !errors.Is(wrapped, context.Canceled) {
+			if unwrapped, ok := tc.err.(interface{ Unwrap() error }); ok && unwrapped.Unwrap() != nil && !errors.Is(wrapped, context.Canceled) {
 				t.Fatal("lost cancellation cause")
 			}
 		})

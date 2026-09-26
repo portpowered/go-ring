@@ -611,6 +611,29 @@ type DoorbellDeviceKind string
 // ExtensibleObject defines model for ExtensibleObject.
 type ExtensibleObject map[string]JsonValue
 
+// FamilyHealth defines model for FamilyHealth.
+type FamilyHealth struct {
+	AverageSignalCategory     *string                `json:"average_signal_category,omitempty"`
+	AverageSignalStrength     *int                   `json:"average_signal_strength,omitempty"`
+	BatteryPercentage         *int                   `json:"battery_percentage,omitempty"`
+	BatteryPercentageCategory *string                `json:"battery_percentage_category,omitempty"`
+	Firmware                  *string                `json:"firmware,omitempty"`
+	FirmwareOutOfDate         *bool                  `json:"firmware_out_of_date,omitempty"`
+	Id                        *int64                 `json:"id,omitempty"`
+	LatestSignalCategory      *string                `json:"latest_signal_category,omitempty"`
+	LatestSignalStrength      *int                   `json:"latest_signal_strength,omitempty"`
+	UpdatedAt                 *time.Time             `json:"updated_at,omitempty"`
+	WifiIsRingNetwork         *bool                  `json:"wifi_is_ring_network,omitempty"`
+	WifiName                  *string                `json:"wifi_name,omitempty"`
+	AdditionalProperties      map[string]interface{} `json:"-"`
+}
+
+// FamilyHealthResponse defines model for FamilyHealthResponse.
+type FamilyHealthResponse struct {
+	DeviceHealth         FamilyHealth           `json:"device_health"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // FeatureAvailability defines model for FeatureAvailability.
 type FeatureAvailability struct {
 	Eligibility          *FeatureEligibility    `json:"eligibility,omitempty"`
@@ -3101,6 +3124,305 @@ func (a DeviceTimeline) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'pagination_key': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for FamilyHealth. Returns the specified
+// element and whether it was found
+func (a FamilyHealth) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for FamilyHealth
+func (a *FamilyHealth) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for FamilyHealth to handle AdditionalProperties
+func (a *FamilyHealth) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["average_signal_category"]; found {
+		err = json.Unmarshal(raw, &a.AverageSignalCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'average_signal_category': %w", err)
+		}
+		delete(object, "average_signal_category")
+	}
+
+	if raw, found := object["average_signal_strength"]; found {
+		err = json.Unmarshal(raw, &a.AverageSignalStrength)
+		if err != nil {
+			return fmt.Errorf("error reading 'average_signal_strength': %w", err)
+		}
+		delete(object, "average_signal_strength")
+	}
+
+	if raw, found := object["battery_percentage"]; found {
+		err = json.Unmarshal(raw, &a.BatteryPercentage)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_percentage': %w", err)
+		}
+		delete(object, "battery_percentage")
+	}
+
+	if raw, found := object["battery_percentage_category"]; found {
+		err = json.Unmarshal(raw, &a.BatteryPercentageCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_percentage_category': %w", err)
+		}
+		delete(object, "battery_percentage_category")
+	}
+
+	if raw, found := object["firmware"]; found {
+		err = json.Unmarshal(raw, &a.Firmware)
+		if err != nil {
+			return fmt.Errorf("error reading 'firmware': %w", err)
+		}
+		delete(object, "firmware")
+	}
+
+	if raw, found := object["firmware_out_of_date"]; found {
+		err = json.Unmarshal(raw, &a.FirmwareOutOfDate)
+		if err != nil {
+			return fmt.Errorf("error reading 'firmware_out_of_date': %w", err)
+		}
+		delete(object, "firmware_out_of_date")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["latest_signal_category"]; found {
+		err = json.Unmarshal(raw, &a.LatestSignalCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'latest_signal_category': %w", err)
+		}
+		delete(object, "latest_signal_category")
+	}
+
+	if raw, found := object["latest_signal_strength"]; found {
+		err = json.Unmarshal(raw, &a.LatestSignalStrength)
+		if err != nil {
+			return fmt.Errorf("error reading 'latest_signal_strength': %w", err)
+		}
+		delete(object, "latest_signal_strength")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if raw, found := object["wifi_is_ring_network"]; found {
+		err = json.Unmarshal(raw, &a.WifiIsRingNetwork)
+		if err != nil {
+			return fmt.Errorf("error reading 'wifi_is_ring_network': %w", err)
+		}
+		delete(object, "wifi_is_ring_network")
+	}
+
+	if raw, found := object["wifi_name"]; found {
+		err = json.Unmarshal(raw, &a.WifiName)
+		if err != nil {
+			return fmt.Errorf("error reading 'wifi_name': %w", err)
+		}
+		delete(object, "wifi_name")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for FamilyHealth to handle AdditionalProperties
+func (a FamilyHealth) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AverageSignalCategory != nil {
+		object["average_signal_category"], err = json.Marshal(a.AverageSignalCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'average_signal_category': %w", err)
+		}
+	}
+
+	if a.AverageSignalStrength != nil {
+		object["average_signal_strength"], err = json.Marshal(a.AverageSignalStrength)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'average_signal_strength': %w", err)
+		}
+	}
+
+	if a.BatteryPercentage != nil {
+		object["battery_percentage"], err = json.Marshal(a.BatteryPercentage)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_percentage': %w", err)
+		}
+	}
+
+	if a.BatteryPercentageCategory != nil {
+		object["battery_percentage_category"], err = json.Marshal(a.BatteryPercentageCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_percentage_category': %w", err)
+		}
+	}
+
+	if a.Firmware != nil {
+		object["firmware"], err = json.Marshal(a.Firmware)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'firmware': %w", err)
+		}
+	}
+
+	if a.FirmwareOutOfDate != nil {
+		object["firmware_out_of_date"], err = json.Marshal(a.FirmwareOutOfDate)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'firmware_out_of_date': %w", err)
+		}
+	}
+
+	if a.Id != nil {
+		object["id"], err = json.Marshal(a.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'id': %w", err)
+		}
+	}
+
+	if a.LatestSignalCategory != nil {
+		object["latest_signal_category"], err = json.Marshal(a.LatestSignalCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'latest_signal_category': %w", err)
+		}
+	}
+
+	if a.LatestSignalStrength != nil {
+		object["latest_signal_strength"], err = json.Marshal(a.LatestSignalStrength)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'latest_signal_strength': %w", err)
+		}
+	}
+
+	if a.UpdatedAt != nil {
+		object["updated_at"], err = json.Marshal(a.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+		}
+	}
+
+	if a.WifiIsRingNetwork != nil {
+		object["wifi_is_ring_network"], err = json.Marshal(a.WifiIsRingNetwork)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wifi_is_ring_network': %w", err)
+		}
+	}
+
+	if a.WifiName != nil {
+		object["wifi_name"], err = json.Marshal(a.WifiName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wifi_name': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for FamilyHealthResponse. Returns the specified
+// element and whether it was found
+func (a FamilyHealthResponse) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for FamilyHealthResponse
+func (a *FamilyHealthResponse) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for FamilyHealthResponse to handle AdditionalProperties
+func (a *FamilyHealthResponse) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["device_health"]; found {
+		err = json.Unmarshal(raw, &a.DeviceHealth)
+		if err != nil {
+			return fmt.Errorf("error reading 'device_health': %w", err)
+		}
+		delete(object, "device_health")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for FamilyHealthResponse to handle AdditionalProperties
+func (a FamilyHealthResponse) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["device_health"], err = json.Marshal(a.DeviceHealth)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'device_health': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -6874,6 +7196,11 @@ type ClientInterface interface {
 	// Legacy Python/Go volume update; the query shape is synthetic replay evidence, not a C1 capture.
 	SetChimeVolume(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetChimeHealth performs a GET /clients_api/chimes/{device_id}/health (the `GetChimeHealth` operationId) request.
+	//
+	// Python chime family route, covered by the portable Python fixture.
+	GetChimeHealth(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// TestChimeSound performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
 	//
 	// Python/Go legacy sound request from portable synthetic replay.
@@ -6914,6 +7241,11 @@ type ClientInterface interface {
 	//
 	// Python/Go legacy light-on request from portable synthetic replay.
 	TurnFloodlightOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDoorbotHealth performs a GET /clients_api/doorbots/{device_id}/health (the `GetDoorbotHealth` operationId) request.
+	//
+	// Python doorbell family route, covered by the portable Python fixture.
+	GetDoorbotHealth(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetLegacyDeviceHistory performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
 	//
@@ -7106,6 +7438,21 @@ func (c *Client) SetChimeVolume(ctx context.Context, deviceId DeviceId, params *
 	return c.Client.Do(req)
 }
 
+// GetChimeHealth performs a GET /clients_api/chimes/{device_id}/health (the `GetChimeHealth` operationId) request.
+//
+// Python chime family route, covered by the portable Python fixture.
+func (c *Client) GetChimeHealth(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetChimeHealthRequest(c.Server, deviceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // TestChimeSound performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
 //
 // Python/Go legacy sound request from portable synthetic replay.
@@ -7227,6 +7574,21 @@ func (c *Client) TurnFloodlightOff(ctx context.Context, deviceId DeviceId, reqEd
 // Python/Go legacy light-on request from portable synthetic replay.
 func (c *Client) TurnFloodlightOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnFloodlightOnRequest(c.Server, deviceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetDoorbotHealth performs a GET /clients_api/doorbots/{device_id}/health (the `GetDoorbotHealth` operationId) request.
+//
+// Python doorbell family route, covered by the portable Python fixture.
+func (c *Client) GetDoorbotHealth(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDoorbotHealthRequest(c.Server, deviceId)
 	if err != nil {
 		return nil, err
 	}
@@ -7886,6 +8248,40 @@ func NewSetChimeVolumeRequest(server string, deviceId DeviceId, params *SetChime
 	return req, nil
 }
 
+// NewGetChimeHealthRequest constructs an http.Request for the GetChimeHealth method
+func NewGetChimeHealthRequest(server string, deviceId DeviceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/clients_api/chimes/%s/health", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewTestChimeSoundRequest constructs an http.Request for the TestChimeSound method
 func NewTestChimeSoundRequest(server string, deviceId DeviceId, params *TestChimeSoundParams) (*http.Request, error) {
 	var err error
@@ -8299,6 +8695,40 @@ func NewTurnFloodlightOnRequest(server string, deviceId DeviceId) (*http.Request
 	}
 
 	req, err := http.NewRequest(http.MethodPut, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDoorbotHealthRequest constructs an http.Request for the GetDoorbotHealth method
+func NewGetDoorbotHealthRequest(server string, deviceId DeviceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/clients_api/doorbots/%s/health", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -9581,6 +10011,13 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	SetChimeVolumeWithResponse(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*SetChimeVolumeResponse, error)
 
+	// GetChimeHealthWithResponse performs a GET /clients_api/chimes/{device_id}/health (the `GetChimeHealth` operationId) request.
+	//
+	// Python chime family route, covered by the portable Python fixture.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetChimeHealthWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetChimeHealthResponse, error)
+
 	// TestChimeSoundWithResponse performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
 	//
 	// Python/Go legacy sound request from portable synthetic replay.
@@ -9639,6 +10076,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	TurnFloodlightOnWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOnResponse, error)
+
+	// GetDoorbotHealthWithResponse performs a GET /clients_api/doorbots/{device_id}/health (the `GetDoorbotHealth` operationId) request.
+	//
+	// Python doorbell family route, covered by the portable Python fixture.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetDoorbotHealthWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDoorbotHealthResponse, error)
 
 	// GetLegacyDeviceHistoryWithResponse performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
 	//
@@ -9956,6 +10400,54 @@ func (r SetChimeVolumeResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SetChimeVolumeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetChimeHealthResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FamilyHealthResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *HTTPFailure
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetChimeHealthResponse) GetJSON200() *FamilyHealthResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetChimeHealthResponse) GetJSONDefault() *HTTPFailure {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetChimeHealthResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetChimeHealthResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetChimeHealthResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetChimeHealthResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -10360,6 +10852,54 @@ func (r TurnFloodlightOnResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r TurnFloodlightOnResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetDoorbotHealthResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FamilyHealthResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *HTTPFailure
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetDoorbotHealthResponse) GetJSON200() *FamilyHealthResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetDoorbotHealthResponse) GetJSONDefault() *HTTPFailure {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetDoorbotHealthResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDoorbotHealthResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDoorbotHealthResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDoorbotHealthResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11446,6 +11986,19 @@ func (c *ClientWithResponses) SetChimeVolumeWithResponse(ctx context.Context, de
 	return ParseSetChimeVolumeResponse(rsp)
 }
 
+// GetChimeHealthWithResponse performs a GET /clients_api/chimes/{device_id}/health (the `GetChimeHealth` operationId) request.
+//
+// Python chime family route, covered by the portable Python fixture.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetChimeHealthWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetChimeHealthResponse, error) {
+	rsp, err := c.GetChimeHealth(ctx, deviceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetChimeHealthResponse(rsp)
+}
+
 // TestChimeSoundWithResponse performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
 //
 // Python/Go legacy sound request from portable synthetic replay.
@@ -11557,6 +12110,19 @@ func (c *ClientWithResponses) TurnFloodlightOnWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseTurnFloodlightOnResponse(rsp)
+}
+
+// GetDoorbotHealthWithResponse performs a GET /clients_api/doorbots/{device_id}/health (the `GetDoorbotHealth` operationId) request.
+//
+// Python doorbell family route, covered by the portable Python fixture.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetDoorbotHealthWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDoorbotHealthResponse, error) {
+	rsp, err := c.GetDoorbotHealth(ctx, deviceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDoorbotHealthResponse(rsp)
 }
 
 // GetLegacyDeviceHistoryWithResponse performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
@@ -12021,6 +12587,39 @@ func ParseSetChimeVolumeResponse(rsp *http.Response) (*SetChimeVolumeResponse, e
 	return response, nil
 }
 
+// ParseGetChimeHealthResponse parses an HTTP response from a GetChimeHealthWithResponse call
+func ParseGetChimeHealthResponse(rsp *http.Response) (*GetChimeHealthResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetChimeHealthResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FamilyHealthResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest HTTPFailure
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseTestChimeSoundResponse parses an HTTP response from a TestChimeSoundWithResponse call
 func ParseTestChimeSoundResponse(rsp *http.Response) (*TestChimeSoundResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -12276,6 +12875,39 @@ func ParseTurnFloodlightOnResponse(rsp *http.Response) (*TurnFloodlightOnRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Json
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest HTTPFailure
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDoorbotHealthResponse parses an HTTP response from a GetDoorbotHealthWithResponse call
+func ParseGetDoorbotHealthResponse(rsp *http.Response) (*GetDoorbotHealthResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDoorbotHealthResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FamilyHealthResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

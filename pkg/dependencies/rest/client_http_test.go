@@ -214,8 +214,8 @@ func TestDoJSONRequestDecodesAndPreservesHTTPFailure(t *testing.T) {
 		})}))
 		var result map[string]any
 		err := client.doJSONRequest(context.Background(), http.MethodGet, "/malformed", nil, &result)
-		if !ringapimodels.IsBadRequestError(err) {
-			t.Fatalf("doJSONRequest() error = %v, want BadRequestError", err)
+		if !ringapimodels.IsInternalServerError(err) {
+			t.Fatalf("doJSONRequest() error = %v, want InternalServerError", err)
 		}
 	})
 

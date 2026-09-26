@@ -7,8 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -244,7 +242,7 @@ func (c *Client) submitCredentials(ctx context.Context, username, password strin
 func (c *Client) verify2FA(ctx context.Context, code string) error {
 	pending := c.pendingPKCE
 	form := url.Values{"2fa_code": {code}, "csrf-token": {pending.csrfToken}, "remember_me": {"false"}}
-	resp, body, err := c.authFormRequest(ctx, pending.client, "/oauth/v2/2fa/verify", form)
+	resp, _, err := c.authFormRequest(ctx, pending.client, "/oauth/v2/2fa/verify", form)
 	if err != nil {
 		return err
 	}
@@ -252,7 +250,7 @@ func (c *Client) verify2FA(ctx context.Context, code string) error {
 		return ringerrors.NewAuthenticationError("verification code is invalid or expired", resp.StatusCode)
 	}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return ringerrors.NewAuthenticationError(fmt.Sprintf("2FA verification failed: %s", strings.TrimSpace(string(body))), resp.StatusCode)
+		return ringerrors.NewAuthenticationError("2FA verification failed", resp.StatusCode)
 	}
 	return nil
 }
@@ -369,14 +367,17 @@ func decodeTokenResponse(resp *http.Response) (*TokenResponse, error) {
 		return nil, ringerrors.NewRateLimitError("rate limit exceeded")
 	}
 	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, ringerrors.NewAuthenticationError(string(body), resp.StatusCode)
+		return nil, ringerrors.NewAuthenticationError("token request rejected", resp.StatusCode)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, ringerrors.NewBadRequestError(string(body), errors.New(string(body)))
+		return nil, ringerrors.ClassifyHTTPError(resp, string(body))
 	}
 	var tokenResponse TokenResponse
 	if err := json.Unmarshal(body, &tokenResponse); err != nil {
 		return nil, ringerrors.NewInternalServerError("failed to parse token response", err)
+	}
+	if tokenResponse.AccessToken == "" {
+		return nil, ringerrors.NewInternalServerError("token response missing access token", nil)
 	}
 	return &tokenResponse, nil
 }

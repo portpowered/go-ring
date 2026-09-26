@@ -53,14 +53,14 @@ func (c *Client) GetSnapshotImage(ctx context.Context, deviceID int64) ([]byte, 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, "", ringerrors.NewHTTPError(resp, "")
+		return nil, "", ringerrors.ClassifyHTTPError(resp, "")
 	}
 	data, err := io.ReadAll(io.LimitReader(resp.Body, maxSnapshotBytes+1))
 	if err != nil {
 		return nil, "", ringerrors.NewNetworkError("failed to read snapshot image", err)
 	}
 	if len(data) > maxSnapshotBytes {
-		return nil, "", ringerrors.NewBadRequestError(fmt.Sprintf("snapshot exceeds %d bytes", maxSnapshotBytes), nil)
+		return nil, "", ringerrors.NewInternalServerError(fmt.Sprintf("snapshot exceeds %d bytes", maxSnapshotBytes), nil)
 	}
 	return data, resp.Header.Get("Content-Type"), nil
 }

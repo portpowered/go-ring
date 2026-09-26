@@ -231,7 +231,10 @@ func IsHTTPStatusCode(err error, code int) bool {
 // ClosedError represents an error when trying to use a closed connection
 type ClosedError struct {
 	Message string
+	Err     error
 }
+
+func (e *ClosedError) Unwrap() error { return e.Err }
 
 func (e *ClosedError) Error() string {
 	if e.Message != "" {
@@ -253,7 +256,10 @@ type Requires2FAError struct {
 
 type RateLimitError struct {
 	Message string
+	Err     error
 }
+
+func (e *RateLimitError) Unwrap() error { return e.Err }
 
 func (e *RateLimitError) Error() string {
 	if e.Message != "" {
@@ -316,10 +322,36 @@ func NewHTTPError(resp *http.Response, body string) *HTTPError {
 	}
 }
 
+// ClassifyHTTPError preserves the status-bearing HTTPError while also exposing
+// the most specific public error family for common response codes.
+func ClassifyHTTPError(resp *http.Response, body string) error {
+	httpErr := NewHTTPError(resp, body)
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusUnprocessableEntity:
+		return NewBadRequestError("request rejected", httpErr)
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return NewUnauthorizedError("request not authorized", httpErr)
+	case http.StatusNotFound:
+		return NewNotFoundError("resource not found", httpErr)
+	case http.StatusTooManyRequests:
+		return &RateLimitError{Message: "request rate limited", Err: httpErr}
+	default:
+		if resp.StatusCode >= http.StatusInternalServerError {
+			return NewInternalServerError("server request failed", httpErr)
+		}
+		return httpErr
+	}
+}
+
 // NewClosedError creates a new ClosedError
-func NewClosedError(message string) *ClosedError {
+func NewClosedError(message string, cause ...error) *ClosedError {
+	var err error
+	if len(cause) > 0 {
+		err = cause[0]
+	}
 	return &ClosedError{
 		Message: message,
+		Err:     err,
 	}
 }
 

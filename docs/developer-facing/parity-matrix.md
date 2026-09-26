@@ -12,9 +12,9 @@ Paths below are relative to api.ring.com unless another host is given. “Diverg
 | POST /clients_api/session | RegisterSession via ensureSession | async_create_session | Not identified | Keep registration separate from signaling session |
 | GET /device_info/v3/devices | ListDevices already uses v3 | Uses legacy discovery | 16 responses | Preserve v3; improve normalization, do not reimplement it as a new feature |
 | GET /clients_api/ring_devices | Constant exists; current discovery uses v3 | async_update_devices | Browser-proxy route only | Python legacy adapter for parity comparison; no blind fallback |
-| GET /device_info/v3/devices/{id} | GetDevice currently searches list | No corresponding v3 operation found | 42 responses | Client.GetDevice direct lookup after schema verification |
-| GET /location_info/v3/locations; /location_info/v4/locations/{id} | — | No matching routes found | 3 / 8 responses | Location APIs, explicitly versioned wire schemas |
-| GET /clients_api/doorbots/{id}/health; /clients_api/chimes/{id}/health | Divergent: uses /clients_api/ring_devices/{id}/health | Family-specific health routes | No matching health response identified | Correct/verify GetDeviceHealth routing per family |
+| GET /device_info/v3/devices/{id} | `GetDeviceDetail` returns the captured v3 envelope; `GetDevice` retains list lookup | No corresponding v3 operation found | 42 responses | Separate direct detail from legacy projected lookup |
+| GET /location_info/v3/locations; /location_info/v4/locations/{id} | `ListLocations`, `GetLocation` | No matching routes found | 3 / 8 responses | Captured wire models and replay |
+| GET /clients_api/doorbots/{id}/health; /clients_api/chimes/{id}/health | `UpdateDeviceHealth` selects family route when `Family` is set; empty family retains generic route | Family-specific health routes | No matching health response identified | Python fixture replay passes; live route unverified |
 | PUT /clients_api/doorbots/{id}; /clients_api/chimes/{id} for volume | `SetVolume` uses family-specific route and query settings | Family-specific updates replayed | No matching C1 volume request | Shared synthetic fixture passes; live vendor acceptance unverified |
 | PUT /clients_api/doorbots/{id}/floodlight_light_{on,off} | `SetLights` uses family-specific no-body route | async_set_lights / async_set_light | Not identified | Shared synthetic on fixture passes; off lacks capture |
 | PATCH /devices/v1/devices/{id}/settings for motion | `GetDeviceSettings`, `PatchDeviceSettings`, and `SetMotionDetection` use captured settings route | async_set_motion_detection | Settings PATCH captured | Shared fixture and captured replay pass |
@@ -22,23 +22,23 @@ Paths below are relative to api.ring.com unless another host is given. “Diverg
 | PUT /clients_api/doorbots/{id} for in-home chime | `SetInHomeChime` sends one typed query field and description | Existing-doorbell type/enabled/duration setters | Doorbot update observed; chime fields not established | Three shared synthetic fixture cases pass; no matching C1 field capture |
 | GET /clients_api/chimes/{id}/linked_doorbots | — | async_get_linked_tree | Not identified | Explicit backlog |
 | PUT /clients_api/doorbots/{id}/siren_{on,off} | SetSiren; captured requests replayed | async_set_siren | One each | Keep SetSiren; on-request duration semantics remain unverified because the capture has no query pair while Python sends `duration=30` |
-| GET /clients_api/doorbots/{id}/history | GetDeviceHistory | async_history | New history/timeline routes instead | Preserve legacy and compare normalized results |
+| GET /clients_api/doorbots/{id}/history | `GetDeviceHistory` supports `older_than`, limit, kind | async_history | New history/timeline routes instead | Preserve legacy; EVM exposed separately |
 | GET /clients_api/dings/active | GetActiveDings | async_update_dings | Not identified | Keep; distinct from push events |
 | GET /clients_api/dings/{id}/recording | GetRecording streams body | recording URL/download helpers | Not identified | Document streaming vs file-writing API distinction |
 | GET /clients_api/dings/{id}/share/play | GetRecordingShareURL returns URL | async_recording_url | No matching C1 response | Shared synthetic media fixture passes; server acceptance unverified |
-| GET /evm/v3/history/devices; /evm/v2/timeline/devices/{id} | — | No matching routes found | 6 / 38 responses | New history/timeline adapters |
-| PUT /clients_api/dings/{id}/favorite; DELETE /clients_api/dings/{id} | — | No matching helpers found | One each | Separate candidate recording mutations |
+| GET /evm/v3/history/devices; /evm/v2/timeline/devices/{id} | `GetHistoryDevices`, `GetDeviceTimeline` | No matching routes found | 6 / 38 responses | Public recorded wire contracts |
+| PUT /clients_api/dings/{id}/favorite; DELETE /clients_api/dings/{id} | `FavoriteRecording`, `DeleteRecording` | No matching helpers found | One each | Public recorded mutations |
 | POST /clients_api/snapshots/timestamps; GET /clients_api/snapshots/image/{id} | GetSnapshot triggers, polls freshness, then returns bounded image bytes | async_get_snapshot | C1 instead requests app-snaps /snapshots/next/{id}, with missing responses | Shared synthetic Python-profile replay passes; C1 profile remains separate and unverified |
-| GET /groups/v1/locations/{id}/groups | — | async_update_groups | 34 responses | Group discovery backlog |
+| GET /groups/v1/locations/{id}/groups | `ListLocationGroups` and separate `ListLocationDevices` | async_update_groups | 34 responses | Group discovery exposed |
 | Location /devices vs group /groups/{id}/devices | — | Group-device retrieval/control | Location /devices observed | Separate operations, not equivalent routes |
 | PUT /commands/v1/devices/{id}/device_rpc | — | Intercom async_open_door, JSON-RPC | Not identified | Separate intercom scope; not PTZ transport |
 | Location users/invitations; intercom settings/history | — | RingOther helpers | No complete matching conversations identified | Explicit intercom parity backlog |
-| PATCH /commands/v1/devices/{id}, command_name=reboot | — | No matching helper found | Flow 178 | Optional explicit RebootDevice operation |
-| PUT /duos/v1/devices/{id}/update, entity.live_view_enabled | — | No matching helper found | Flows 349/352 | Persistent setting; distinct from opening a live session |
+| PATCH /commands/v1/devices/{id}, command_name=reboot | `RebootDevice` | No matching helper found | Flow 178 | Public captured command |
+| PUT /duos/v1/devices/{id}/update, entity.live_view_enabled | `SetPersistentLiveViewEnabled` | No matching helper found | Flows 349/352 | Persistent setting; distinct from opening a live session |
 | POST prd-api-us.prd.rings.solutions/api/v1/clap/ticket/request/signalsocket | RTC ticket request | RTC ticket request | Different GET route below | Preserve supported bootstrap; compare ticket response families |
-| GET prd-api-us.prd.rings.solutions/api/v1/clap/tickets | — | No matching route found | Three responses | Document C1 bootstrap separately; don't assume interchangeability |
+| GET prd-api-us.prd.rings.solutions/api/v1/clap/tickets | `GetCapturedTickets` | No matching route found | Three responses | Public C1 bootstrap, separate from POST signaling ticket |
 
-Remaining divergent health routing is a source-level finding in `pkg/dependencies/rest/devices.go`, compared with Python's family-specific helpers. Shared synthetic replay proves exact Python-profile request shapes for controls, snapshots, and share URLs, but does not establish live vendor compatibility. Successful current/captured routes take precedence over Python alternatives.
+Shared synthetic replay proves the Python-profile request shapes for health, controls, snapshots, and share URLs, but does not establish live vendor compatibility. Successful current/captured routes take precedence over Python alternatives.
 
 ## Signaling, RPC and RTC behavior
 

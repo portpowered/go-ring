@@ -61,6 +61,23 @@ func TestGetDeviceHistory_WithKind(t *testing.T) {
 	assert.Contains(t, req.URL, "limit=10")
 }
 
+func TestGetDeviceHistory_OlderThan(t *testing.T) {
+	client, transport := newTestClientWithToken("test_token")
+	defer client.Close()
+	cursor := int64(1720000000)
+	history, err := client.GetDeviceHistory(newTestContext(), ring.GetDeviceHistoryRequest{DeviceID: "987652", Limit: 20, Kind: "motion", OlderThan: &cursor})
+	require.NoError(t, err)
+	require.NotNil(t, history)
+	requests := transport.GetRequests()
+	require.Len(t, requests, 1)
+	assert.Contains(t, requests[0].URL, "older_than=1720000000")
+	assert.Contains(t, requests[0].URL, "kind=motion")
+	negative := int64(-1)
+	_, err = client.GetDeviceHistory(newTestContext(), ring.GetDeviceHistoryRequest{DeviceID: "987652", OlderThan: &negative})
+	assert.True(t, ringapimodels.IsBadRequestError(err))
+	assert.Len(t, transport.GetRequests(), 1)
+}
+
 func TestGetDeviceHistory_NoDeviceID(t *testing.T) {
 	client, mockTransport := newTestClientWithToken("test_token")
 	defer client.Close()

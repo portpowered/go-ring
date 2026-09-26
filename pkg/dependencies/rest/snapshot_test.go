@@ -42,7 +42,7 @@ func TestSnapshotImageBoundsAndReadErrors(t *testing.T) {
 			if tc.wantNetwork && !ringapimodels.IsNetworkError(err) {
 				t.Fatalf("read failure = %v", err)
 			}
-			if !tc.wantNetwork && !ringapimodels.IsBadRequestError(err) {
+			if !tc.wantNetwork && !ringapimodels.IsInternalServerError(err) {
 				t.Fatalf("oversize response = %v", err)
 			}
 		})

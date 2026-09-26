@@ -2,14 +2,12 @@ package ring
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-var ErrSnapshotNotReady = errors.New("fresh snapshot not available")
+var ErrSnapshotNotReady = ringapimodels.NewNotFoundError("fresh snapshot not available", nil)
 
 // GetSnapshot triggers a fresh legacy snapshot, polls its timestamp, then
 // fetches the image. This follows pinned Python behavior; it is not the C1
@@ -36,7 +34,7 @@ func (c *Client) GetSnapshot(ctx context.Context, req GetSnapshotRequest) (*Snap
 			select {
 			case <-ctx.Done():
 				timer.Stop()
-				return nil, ctx.Err()
+				return nil, ringapimodels.NewNetworkError("snapshot polling canceled", ctx.Err())
 			case <-timer.C:
 			}
 		}
@@ -52,7 +50,7 @@ func (c *Client) GetSnapshot(ctx context.Context, req GetSnapshotRequest) (*Snap
 			return nil, err
 		}
 		if len(data) == 0 {
-			return nil, fmt.Errorf("snapshot image was empty")
+			return nil, ringapimodels.NewInternalServerError("snapshot image was empty", nil)
 		}
 		return &Snapshot{Bytes: data, Timestamp: time.UnixMilli(timestamp), ContentType: contentType}, nil
 	}

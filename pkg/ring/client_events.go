@@ -52,13 +52,13 @@ func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallbac
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return ringapimodels.NewConnectionError("event listener canceled", ctx.Err())
 		default:
 			event, err := conn.Receive()
 			if err != nil {
 				if ringapimodels.IsClosedError(err) {
 					if ctxErr := ctx.Err(); ctxErr != nil {
-						return ctxErr
+						return ringapimodels.NewConnectionError("event listener canceled", ctxErr)
 					}
 					return nil
 				}

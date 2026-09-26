@@ -126,7 +126,7 @@ func TestRecordingHistoryPropagatesHTTPAndDecodeErrors(t *testing.T) {
 			Body:       io.NopCloser(strings.NewReader(`{"recordings":[]}`)),
 		})
 		_, err := client.GetDeviceHistory(context.Background(), ring.GetDeviceHistoryRequest{DeviceID: "987652"})
-		require.True(t, ringapimodels.IsBadRequestError(err))
+		require.True(t, ringapimodels.IsInternalServerError(err))
 	})
 }
 

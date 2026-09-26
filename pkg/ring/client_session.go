@@ -3,7 +3,6 @@ package ring
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,7 +19,7 @@ import (
 // The captured C1 GET /api/v1/clap/tickets profile is intentionally not substituted for this POST route.
 func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*SignalingConnection, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, ringapimodels.NewConnectionError("signaling open canceled", err)
 	}
 	c.mu.Lock()
 	if c.closed {
@@ -60,13 +59,13 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 		return nil, ringapimodels.NewNetworkError("failed to read signaling ticket response", readErr)
 	}
 	if len(b) > signaling.MaxTicketResponseBytes {
-		return nil, ringapimodels.NewBadRequestError("signaling ticket response exceeds size limit", nil)
+		return nil, ringapimodels.NewInternalServerError("signaling ticket response exceeds size limit", nil)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, ringapimodels.NewHTTPError(resp, "signaling ticket request failed")
+		return nil, ringapimodels.ClassifyHTTPError(resp, string(b))
 	}
 	if err = json.Unmarshal(b, &ticket); err != nil {
-		return nil, ringapimodels.NewBadRequestError("failed to decode signaling ticket response", err)
+		return nil, ringapimodels.NewInternalServerError("invalid signaling ticket response", err)
 	}
 	if ticket.Ticket == "" {
 		return nil, ringapimodels.NewConnectionError("empty signaling ticket", nil)
@@ -86,7 +85,7 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	}
 	connCtx, cancel := context.WithCancel(ctx)
 	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession)}
-	s.writer = dependencywebsocket.NewSignalingWriter(s.done, s.writeFrame, func(err error) { s.fail(fmt.Errorf("signaling write failed")) })
+	s.writer = dependencywebsocket.NewSignalingWriter(s.done, s.writeFrame, func(error) { s.fail(ringapimodels.NewConnectionError("signaling write failed", nil)) })
 	c.mu.Lock()
 	if c.closed {
 		c.mu.Unlock()

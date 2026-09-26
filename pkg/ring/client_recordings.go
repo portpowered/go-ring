@@ -13,8 +13,11 @@ func (c *Client) GetDeviceHistory(ctx context.Context, req GetDeviceHistoryReque
 	if err != nil {
 		return nil, ringapimodels.NewBadRequestError("invalid device ID format", err)
 	}
+	if req.OlderThan != nil && *req.OlderThan < 0 {
+		return nil, ringapimodels.NewBadRequestError("older-than cursor must be nonnegative", nil)
+	}
 
-	rawResponse, err := c.restClient.GetDeviceHistory(ctx, deviceIDInt, req.Limit, req.Kind)
+	rawResponse, err := c.restClient.GetDeviceHistory(ctx, deviceIDInt, req.Limit, req.Kind, req.OlderThan)
 	if err != nil {
 		return nil, err
 	}

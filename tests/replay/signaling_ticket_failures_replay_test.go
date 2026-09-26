@@ -67,6 +67,10 @@ func TestPortableLegacyTicketFailureResponses(t *testing.T) {
 				if !ringapimodels.IsBadRequestError(got) {
 					t.Fatalf("ticket error = %v", got)
 				}
+			case "internal-server":
+				if !ringapimodels.IsInternalServerError(got) {
+					t.Fatalf("ticket error = %v", got)
+				}
 			case "connection":
 				if !ringapimodels.IsConnectionError(got) {
 					t.Fatalf("ticket error = %v", got)

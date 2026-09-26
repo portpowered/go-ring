@@ -22,13 +22,13 @@ func (c *Client) GetRecordingShareURL(ctx context.Context, recordingID int64) (s
 		return "", err
 	}
 	if response.Url == "" {
-		return "", ringerrors.NewBadRequestError("recording share response lacks URL", nil)
+		return "", ringerrors.NewInternalServerError("recording share response lacks URL", nil)
 	}
 	return response.Url, nil
 }
 
 // GetDeviceHistory retrieves the history of recordings for a device
-func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int, kind string) (generatedhttp.RecordingArray, error) {
+func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int, kind string, olderThan *int64) (generatedhttp.RecordingArray, error) {
 	endpoint := strings.Replace(protocol.DoorbotHistoryPath, "{id}", strconv.FormatInt(deviceID, 10), 1)
 	params := url.Values{}
 
@@ -37,6 +37,9 @@ func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int
 	}
 	if kind != "" {
 		params.Set("kind", kind)
+	}
+	if olderThan != nil {
+		params.Set("older_than", strconv.FormatInt(*olderThan, 10))
 	}
 
 	if encoded := params.Encode(); encoded != "" {
@@ -95,7 +98,7 @@ func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringmedi
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		resp.Body.Close()
-		return nil, ringerrors.NewHTTPError(resp, "")
+		return nil, ringerrors.ClassifyHTTPError(resp, "")
 	}
 
 	// Extract content length from header if available

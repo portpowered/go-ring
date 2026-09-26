@@ -11,8 +11,8 @@ measure offline implementation behavior, not live Ring compatibility.
 
 | Remaining behavior | Current gap | Next evidence and test |
 |---|---|---|
-| Device health | Go's `UpdateDeviceHealth` still uses a generic `/clients_api/ring_devices/{id}/health`; Python uses family-specific doorbot/chime paths. C1 has no matching health response. | Replay Python family-specific health fixtures through Go, choose an explicit family-aware request, and check missing/null fields. Do not claim C1 confirmation. |
-| Legacy history | Go exposes a basic per-doorbot history call; Python also has pagination, `older_than`, filtering, and timezone behavior. C1 uses different EVM history/timeline resources. | Use the existing Python history replay cases as the baseline, add Go pagination/error tests, and keep EVM mapping separate. |
+| Device health | Go now offers explicit family-specific doorbot/chime paths alongside the generic legacy route; Python fixtures replay through both family methods. C1 has no matching health response. | Check missing/null family health fields and verify the route on live devices before claiming C1 parity. |
+| Legacy history | Go supports `older_than`, limit, and kind on the legacy doorbot route. C1 uses distinct EVM history/timeline resources, now exposed separately. | Add multi-page traversal and timezone normalization tests if these become part of the public contract. |
 | Chime linkage | Python exposes linked doorbots for a chime; Go has no corresponding method. | Add a portable legacy fixture and a focused Go method/test if chime topology is in the supported device scope. |
 | Device family mapping | C1 v3 inventory confirms one PTZ camera; other Go family mapping uses a synthetic inventory fixture. | Add captured family variants or explicit synthetic contract tests for missing/null/unknown fields and shared devices before claiming full model parity. |
 

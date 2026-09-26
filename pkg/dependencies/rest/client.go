@@ -109,7 +109,11 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 		return c.accessToken, nil
 	}
 	if c.tokenGetter != nil {
-		return c.tokenGetter(ctx)
+		token, err := c.tokenGetter(ctx)
+		if err != nil {
+			return "", ringerrors.NewTokenError("token getter failed", err)
+		}
+		return token, nil
 	}
 	return "", ringerrors.NewTokenError("no token available", nil)
 }
@@ -117,7 +121,7 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 // doRequest performs an HTTP request with retry logic
 func (c *Client) doRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, ringerrors.NewNetworkError("request canceled", err)
 	}
 	var bodyReader io.Reader
 	if body != nil {
@@ -181,7 +185,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 			backoff := time.Duration(i+1) * time.Second
 			select {
 			case <-ctx.Done():
-				return nil, ctx.Err()
+				return nil, ringerrors.NewNetworkError("request canceled during retry", ctx.Err())
 			case <-time.After(backoff):
 			}
 		}
@@ -209,12 +213,12 @@ func (c *Client) doJSONRequest(ctx context.Context, method, path string, body in
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return ringerrors.NewHTTPError(resp, string(bodyBytes))
+		return ringerrors.ClassifyHTTPError(resp, string(bodyBytes))
 	}
 
 	if result != nil {
 		if err := json.Unmarshal(bodyBytes, result); err != nil {
-			return ringerrors.NewBadRequestError("failed to decode response", err)
+			return ringerrors.NewInternalServerError("failed to decode response", err)
 		}
 	}
 

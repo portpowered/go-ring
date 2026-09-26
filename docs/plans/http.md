@@ -17,13 +17,13 @@ When a hardware ID is configured or recovered from a valid access-token claim, t
 | `SetMotionDetection` | `PATCH /devices/v1/devices/{id}/settings` with nested `motion_settings` | Matches Python and the typed Go settings method | C1 settings PATCH and shared replay fixture |
 | `TestSound` | `POST /clients_api/chimes/{id}/play_sound?kind=...`, no body | Matches Python's legacy control shape | Synthetic Python fixture; no C1 sound capture |
 | `SetInHomeChime` | `PUT /clients_api/doorbots/{id}` with description and one chime field in query values | Matches Python's type, enabled, or duration request shapes | Synthetic Python fixtures; no matching C1 chime-field request |
-| `UpdateDeviceHealth` | `GET /clients_api/ring_devices/{id}/health` | Python uses family-specific doorbot or chime health routes | No matching capture; current route is not asserted equivalent |
+| `UpdateDeviceHealth` | Explicit `Family` selects `GET /clients_api/{doorbots,chimes}/{id}/health`; empty family keeps the generic legacy route | Family-specific response envelopes are mapped from the pinned Python fixtures | No matching C1 health capture; family routes are Python-profile replay only |
 
 The control methods above replaced earlier generic `/clients_api/ring_devices/{id}` commands that lacked supporting wire evidence. Local fixture success alone does not establish vendor compatibility. Captured settings and siren operations also have explicit recording-backed coverage.
 
 ## History and media
 
-`GetDeviceHistory` calls the legacy doorbot history path and decodes a direct JSON array. Go exposes optional `limit` and `kind`; Python additionally supports pagination via `older_than` and client-side retries/enforcement. C1 instead records `/evm/v3/history/devices` and `/evm/v2/timeline/devices/{id}` with distinct envelopes and query names. The OpenAPI document preserves these as separate contracts.
+`GetDeviceHistory` calls the legacy doorbot history path and decodes a direct JSON array. Go exposes optional `limit`, `kind`, and `OlderThan` (a Unix timestamp cursor); the cursor is included as `older_than` in the request. C1 instead records `/evm/v3/history/devices` and `/evm/v2/timeline/devices/{id}` with distinct envelopes and query names. The OpenAPI document preserves these as separate contracts.
 
 `GetActiveDings` uses `/clients_api/dings/active`; the path is also present in Python, but it has no matching checked-in C1 response. `GetRecording` requests `/clients_api/dings/{id}/recording` with `Accept: video/mp4` and returns a live response body. The caller must close that body. It does not buffer the recording or save a file. The default Go `http.Client` follows redirects according to its redirect policy; a custom client can change that behavior. No sanitized response establishes a redirect target, media host, or signed URL shape.
 
@@ -31,4 +31,6 @@ The control methods above replaced earlier generic `/clients_api/ring_devices/{i
 
 ## Error boundaries
 
-Client-side request validation can return `BadRequestError` before any HTTP request. Token-provider failures return `TokenError`; OAuth responses can map to `AuthenticationError`, `Requires2FAError`, or `RateLimitError`. Non-success API responses are represented as `HTTPError`, while transport failures are `NetworkError` or `ConnectionError`. These are existing Go error categories, not a claim that each status/body shape has been observed for every operation. Captured successful response schemas remain authoritative where available; generic error response schemas are intentionally non-specific.
+Client-side request validation returns `BadRequestError` before any HTTP request. Token-provider failures return `TokenError`; OAuth responses can map to `AuthenticationError`, `Requires2FAError`, or `RateLimitError`. API status failures map to typed `BadRequestError` (400/422), `UnauthorizedError` (401/403), `NotFoundError` (404), `RateLimitError` (429), or `InternalServerError` (5xx). Each wraps `HTTPError`, so callers can still inspect the status with `IsHTTPStatusCode` or `errors.As`. Transport failures return `NetworkError` or `ConnectionError`; malformed successful JSON is an `InternalServerError`. Captured successful response schemas remain authoritative where available; generic error response schemas are intentionally non-specific.
+
+Captured v3 device detail, locations, groups, EVM timeline/history, reboot, persistent live-view setting, recording favorite/delete, and the separate GET ticket route have public methods on `ClientAPI`. Their request and response types come from the OpenAPI-generated wire package. The GET ticket is distinct from the POST ticket used for a signaling connection.

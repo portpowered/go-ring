@@ -2,6 +2,7 @@ package ring
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,7 +17,7 @@ func TestOpenSignalingRejectsLocalPreconditions(t *testing.T) {
 	defer client.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := client.OpenSignaling(ctx, OpenSignalingRequest{}); err != context.Canceled {
+	if _, err := client.OpenSignaling(ctx, OpenSignalingRequest{}); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled OpenSignaling error = %v", err)
 	}
 	if err := client.Close(); err != nil {

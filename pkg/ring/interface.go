@@ -15,6 +15,7 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
 	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
+	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -59,6 +60,14 @@ type ClientAPI interface {
 	ListDevices(context.Context) (*ringapimodels.DevicesResponse, error)
 	GetDevice(context.Context, GetDeviceRequest) (ringapimodels.Device, error)
 	GetDeviceSettings(context.Context, GetDeviceSettingsRequest) (DeviceSettings, error)
+	GetDeviceDetail(context.Context, GetDeviceDetailRequest) (*generatedhttp.DeviceDetail, error)
+	ListLocations(context.Context) (*generatedhttp.LocationList, error)
+	GetLocation(context.Context, GetLocationRequest) (*generatedhttp.LocationDetail, error)
+	ListLocationGroups(context.Context, LocationRequest) (*generatedhttp.LocationGroups, error)
+	ListLocationDevices(context.Context, LocationRequest) (*generatedhttp.LocationGroupDevices, error)
+	GetDeviceTimeline(context.Context, GetDeviceTimelineRequest) (*generatedhttp.DeviceTimeline, error)
+	GetHistoryDevices(context.Context, GetHistoryDevicesRequest) (*generatedhttp.HistoryDevices, error)
+	GetCapturedTickets(context.Context, GetCapturedTicketsRequest) (*generatedhttp.CapturedTickets, error)
 
 	// APIs for modifying or sending requests to a device
 	UpdateDeviceHealth(context.Context, UpdateDeviceHealthRequest) (*ringapimodels.DeviceHealth, error)
@@ -70,6 +79,8 @@ type ClientAPI interface {
 	SetSiren(context.Context, SetSirenRequest) error
 	TestSound(context.Context, TestSoundRequest) error
 	SetInHomeChime(context.Context, SetInHomeChimeRequest) error
+	RebootDevice(context.Context, DeviceIDRequest) error
+	SetPersistentLiveViewEnabled(context.Context, SetPersistentLiveViewEnabledRequest) error
 
 	// Various recording APIs
 	GetDeviceHistory(context.Context, GetDeviceHistoryRequest) (*ringapimodels.RecordingHistoryResponse, error)
@@ -77,6 +88,8 @@ type ClientAPI interface {
 	GetRecording(context.Context, GetRecordingRequest) (*ringapimodels.VideoStream, error)
 	GetRecordingShareURL(context.Context, GetRecordingShareURLRequest) (string, error)
 	GetLastRecordingID(context.Context, GetLastRecordingIDRequest) (int64, error)
+	FavoriteRecording(context.Context, RecordingIDRequest) error
+	DeleteRecording(context.Context, DeleteRecordingRequest) error
 
 	// Event and signaling connections
 	OpenSignaling(context.Context, OpenSignalingRequest) (*SignalingConnection, error)
@@ -233,9 +246,41 @@ type GetDeviceRequest struct {
 	DeviceID string
 }
 
+// Captured HTTP operations return generated wire models without an additional projection.
+type DeviceIDRequest struct{ DeviceID string }
+type GetDeviceDetailRequest struct{ DeviceID string }
+type LocationRequest struct{ LocationID string }
+type GetLocationRequest struct {
+	LocationID string
+	Params     generatedhttp.GetLocationParams
+}
+type GetDeviceTimelineRequest struct {
+	DeviceID string
+	Params   generatedhttp.GetDeviceTimelineParams
+}
+type GetHistoryDevicesRequest struct {
+	Params generatedhttp.GetHistoryDevicesParams
+}
+
+// GetCapturedTickets is the recorded GET profile, separate from OpenSignaling's POST ticket.
+type GetCapturedTicketsRequest struct {
+	Params generatedhttp.GetCapturedLocationTicketsParams
+}
+type SetPersistentLiveViewEnabledRequest struct {
+	DeviceID string
+	Enabled  bool
+}
+type RecordingIDRequest struct{ RecordingID int64 }
+type DeleteRecordingRequest struct {
+	RecordingID           int64
+	ConfirmDeleteFavorite *bool
+}
+
 // UpdateDeviceHealthRequest contains parameters for UpdateDeviceHealth
 type UpdateDeviceHealthRequest struct {
 	DeviceID string
+	// Family selects the Python-compatible family endpoint; an empty value uses the legacy generic route.
+	Family generatedhttp.DeviceFamilyCode
 }
 
 // SetVolumeRequest contains parameters for SetVolume
@@ -277,6 +322,8 @@ type SetInHomeChimeRequest struct {
 type GetDeviceHistoryRequest struct {
 	DeviceID string
 	Limit    int
+	// OlderThan is an optional Unix timestamp cursor for older recordings.
+	OlderThan *int64
 	// Kind is an open server value; unfamiliar history kinds are forwarded.
 	Kind string
 }

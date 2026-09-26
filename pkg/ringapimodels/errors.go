@@ -40,7 +40,12 @@ func NewTokenError(message string, err error) *TokenError {
 func NewHTTPError(resp *http.Response, body string) *HTTPError {
 	return ringerrors.NewHTTPError(resp, body)
 }
-func NewClosedError(message string) *ClosedError { return ringerrors.NewClosedError(message) }
+func ClassifyHTTPError(resp *http.Response, body string) error {
+	return ringerrors.ClassifyHTTPError(resp, body)
+}
+func NewClosedError(message string, cause ...error) *ClosedError {
+	return ringerrors.NewClosedError(message, cause...)
+}
 func NewBadRequestError(message string, err error) *BadRequestError {
 	return ringerrors.NewBadRequestError(message, err)
 }

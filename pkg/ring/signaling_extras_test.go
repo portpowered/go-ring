@@ -3,6 +3,7 @@ package ring
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -217,7 +218,7 @@ func TestPushReplayIdentityAndReceiveCancellation(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := s.Receive(ctx); err != context.Canceled {
+	if _, err := s.Receive(ctx); !errors.Is(err, context.Canceled) {
 		t.Fatalf("receive cancellation=%v", err)
 	}
 	wrong := capturedFrame(t, "push_event", "server_to_client")
@@ -234,7 +235,7 @@ func TestPushReplayIdentityAndReceiveCancellation(t *testing.T) {
 	}
 	<-heartbeatDone
 	<-writes
-	if _, err := s.Receive(context.Background()); err != signaling.ErrClosed {
+	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
 		t.Fatalf("closed receive=%v", err)
 	}
 }
@@ -266,7 +267,7 @@ func TestPlaybackReplayReceiveCancellation(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := s.Receive(ctx); err != context.Canceled {
+	if _, err := s.Receive(ctx); !errors.Is(err, context.Canceled) {
 		t.Fatalf("receive cancellation=%v", err)
 	}
 	if err := s.Close(); err != nil {
@@ -274,7 +275,7 @@ func TestPlaybackReplayReceiveCancellation(t *testing.T) {
 	}
 	<-keepaliveDone
 	<-writes
-	if _, err := s.Receive(context.Background()); err != signaling.ErrClosed {
+	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
 		t.Fatalf("closed receive=%v", err)
 	}
 }
@@ -287,7 +288,7 @@ func TestSignalingExtraValidationBeforeWire(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	filter := PushFilter{FilterIdentifier: "one", NotificationScope: "event", NotificationType: "shoulder_tap"}
-	if _, err := c.SubscribePush(ctx, []PushFilter{filter}); err != context.Canceled {
+	if _, err := c.SubscribePush(ctx, []PushFilter{filter}); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled subscribe=%v", err)
 	}
 	frame := capturedFrame(t, "playback", "client_to_server")
@@ -295,7 +296,7 @@ func TestSignalingExtraValidationBeforeWire(t *testing.T) {
 		SDP string `json:"sdp"`
 	}
 	_ = json.Unmarshal(frame.Body, &offer)
-	if _, err := c.StartPlayback(ctx, StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}}); err != context.Canceled {
+	if _, err := c.StartPlayback(ctx, StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}}); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled playback=%v", err)
 	}
 	select {
@@ -342,7 +343,7 @@ func TestPlaybackCapturedPongAndRemoteClose(t *testing.T) {
 	}
 	closeFrame := signaling.Message{Method: "close", DialogID: request.DialogID}
 	c.route(closeFrame)
-	if _, err := s.Receive(context.Background()); err != signaling.ErrClosed {
+	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
 		t.Fatalf("remote close=%v", err)
 	}
 }
@@ -370,7 +371,7 @@ func TestPlaybackMissingPongTerminates(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("missing pong did not terminate")
 	}
-	if _, err := s.Receive(context.Background()); err != signaling.ErrClosed {
+	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
 		t.Fatalf("timeout receive=%v", err)
 	}
 }

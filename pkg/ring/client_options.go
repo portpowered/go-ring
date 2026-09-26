@@ -2,11 +2,11 @@ package ring
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func WithRegion(region Region) Option { return withRegion(region) }
@@ -16,7 +16,7 @@ type withRegion Region
 func (w withRegion) Apply(c *Client) error {
 	region := Region(w)
 	if region != RegionUS && region != RegionEU && region != RegionFE {
-		return fmt.Errorf("unsupported region %q", region)
+		return ringapimodels.NewBadRequestError(fmt.Sprintf("unsupported region %q", region), nil)
 	}
 	c.region = region
 	return c.applyEndpointConfiguration()
@@ -115,7 +115,7 @@ type withHTTPClient struct {
 
 func (w withHTTPClient) Apply(c *Client) error {
 	if w.httpClient == nil {
-		return errors.New("HTTP client must not be nil")
+		return ringapimodels.NewBadRequestError("HTTP client must not be nil", nil)
 	}
 	c.restClient.Apply(rest.WithHTTPClient(w.httpClient))
 	return nil
@@ -157,7 +157,7 @@ func (w withTokenGetter) Apply(c *Client) error {
 func WithWebSocketDialer(d WebSocketDialer) Option { return WithSignalingDialerOption{Dialer: d} }
 func (o WithSignalingDialerOption) Apply(c *Client) error {
 	if o.Dialer == nil {
-		return errors.New("WebSocket dialer must not be nil")
+		return ringapimodels.NewBadRequestError("WebSocket dialer must not be nil", nil)
 	}
 	c.signalingDialer = o.Dialer
 	return nil

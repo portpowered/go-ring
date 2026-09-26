@@ -2,22 +2,22 @@ package ring
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/portpowered/go-ring/internal/signaling"
 	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func (c *SignalingConnection) send(ctx context.Context, m signaling.Message) error {
 	if err := ctx.Err(); err != nil {
-		return err
+		return sessionError("signaling send canceled", err)
 	}
 	select {
 	case <-c.done:
 		return c.Err()
 	default:
 	}
-	return c.writer.Send(ctx, m)
+	return sessionError("signaling send failed", c.writer.Send(ctx, m))
 }
 
 func (c *SignalingConnection) writeFrame(ctx context.Context, m signaling.Message) error {
@@ -28,7 +28,7 @@ func (c *SignalingConnection) readLoop() {
 	defer close(c.readerDone)
 	err := dependencywebsocket.ReadSignaling(c.conn, c.route)
 	if err != nil && !c.isClosed() {
-		c.fail(err)
+		c.fail(sessionError("signaling read failed", err))
 	}
 }
 func (c *SignalingConnection) route(m signaling.Message) {
@@ -42,7 +42,7 @@ func (c *SignalingConnection) route(m signaling.Message) {
 		select {
 		case pending <- m:
 		default:
-			c.fail(fmt.Errorf("signaling negotiation queue full"))
+			c.fail(ringapimodels.NewConnectionError("signaling negotiation queue full", nil))
 		}
 		return
 	}
@@ -58,7 +58,7 @@ func (c *SignalingConnection) route(m signaling.Message) {
 		select {
 		case channel <- m:
 		default:
-			c.fail(fmt.Errorf("signaling event queue full"))
+			c.fail(ringapimodels.NewConnectionError("signaling event queue full", nil))
 		}
 	}
 }
@@ -90,7 +90,7 @@ func (c *SignalingConnection) Err() error {
 	if c.terminal != nil {
 		return c.terminal
 	}
-	return signaling.ErrClosed
+	return ringapimodels.NewClosedError("signaling connection is closed", signaling.ErrClosed)
 }
 func (c *SignalingConnection) removeSession(dialog string) {
 	c.mu.Lock()

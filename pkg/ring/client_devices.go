@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
@@ -61,6 +62,16 @@ func (c *Client) UpdateDeviceHealth(ctx context.Context, req UpdateDeviceHealthR
 	deviceIDInt, err := strconv.ParseInt(req.DeviceID, 10, 64)
 	if err != nil {
 		return nil, ringapimodels.NewBadRequestError("invalid device ID format", err)
+	}
+	if req.Family != "" {
+		if req.Family != generatedhttp.Doorbots && req.Family != generatedhttp.Chimes {
+			return nil, ringapimodels.NewBadRequestError("unsupported health device family", nil)
+		}
+		response, healthErr := c.restClient.GetFamilyDeviceHealth(ctx, deviceIDInt, req.Family)
+		if healthErr != nil {
+			return nil, healthErr
+		}
+		return convertFamilyDeviceHealth(response), nil
 	}
 
 	health, err := c.restClient.GetDeviceHealth(ctx, deviceIDInt)
@@ -223,4 +234,19 @@ func convertToDeviceHealth(raw *generatedhttp.LegacyDeviceHealth) *ringapimodels
 		FirmwareVersion: raw.FirmwareVersion,
 		LastUpdate:      raw.LastUpdate,
 	}
+}
+
+func convertFamilyDeviceHealth(response *generatedhttp.FamilyHealthResponse) *ringapimodels.DeviceHealth {
+	raw := response.DeviceHealth
+	health := &ringapimodels.DeviceHealth{
+		BatteryLevel:    raw.BatteryPercentage,
+		BatteryStatus:   raw.BatteryPercentageCategory,
+		SignalStrength:  raw.LatestSignalStrength,
+		FirmwareVersion: raw.Firmware,
+	}
+	if raw.UpdatedAt != nil {
+		updated := raw.UpdatedAt.Format(time.RFC3339)
+		health.LastUpdate = &updated
+	}
+	return health
 }

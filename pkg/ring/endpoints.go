@@ -7,6 +7,7 @@ import (
 
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 type endpointValidation struct {
@@ -32,7 +33,7 @@ func validateEndpoints(e Endpoints) error {
 			validScheme = validScheme || (u != nil && u.Scheme == scheme)
 		}
 		if err != nil || u == nil || u.Host == "" || u.User != nil || (!endpoint.queryOK && u.RawQuery != "") || u.Fragment != "" || u.Opaque != "" || !validScheme {
-			return fmt.Errorf("invalid %s URL %q", name, raw)
+			return ringapimodels.NewBadRequestError(fmt.Sprintf("invalid %s URL %q", name, raw), err)
 		}
 	}
 	return nil

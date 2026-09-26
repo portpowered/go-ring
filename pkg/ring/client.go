@@ -38,10 +38,7 @@ func NewClient(opts ...Option) (*Client, error) {
 
 	for _, opt := range opts {
 		if err := opt.Apply(client); err != nil {
-			return nil, &ringapimodels.ConnectionError{
-				Message: "failed to apply option",
-				Err:     err,
-			}
+			return nil, err
 		}
 	}
 
@@ -100,7 +97,11 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 		return c.accessToken, nil
 	}
 	if c.tokenGetter != nil {
-		return c.tokenGetter(ctx)
+		token, err := c.tokenGetter(ctx)
+		if err != nil {
+			return "", ringapimodels.NewTokenError("token getter failed", err)
+		}
+		return token, nil
 	}
 	return "", ringapimodels.NewTokenError("no token available", nil)
 }

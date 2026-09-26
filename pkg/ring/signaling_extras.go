@@ -3,8 +3,6 @@ package ring
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -13,6 +11,7 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 const defaultPlaybackEntryPoint = "timeline"
@@ -39,7 +38,7 @@ func (c *SignalingConnection) sendTyped(ctx context.Context, method string, dial
 	}
 	raw, err := json.Marshal(body)
 	if err != nil {
-		return err
+		return ringapimodels.NewInternalServerError("failed to encode signaling message", err)
 	}
 	return c.send(ctx, signaling.Message{Method: method, DialogID: dialog, RIID: riid, Body: raw})
 }
@@ -48,7 +47,7 @@ func (c *SignalingConnection) sendTyped(ctx context.Context, method string, dial
 // It keeps the subscription alive until Close or its parent connection ends.
 func (c *SignalingConnection) SubscribePush(ctx context.Context, filters []PushFilter) (*PushSubscription, error) {
 	if len(filters) == 0 {
-		return nil, errors.New("at least one push filter is required")
+		return nil, ringapimodels.NewBadRequestError("at least one push filter is required", nil)
 	}
 	dialog, events, err := c.registerChannel()
 	if err != nil {
@@ -70,7 +69,7 @@ func (c *SignalingConnection) SubscribePush(ctx context.Context, filters []PushF
 		select {
 		case <-ctx.Done():
 			c.removeChannel(dialog)
-			return nil, ctx.Err()
+			return nil, ringapimodels.NewConnectionError("push subscription canceled", ctx.Err())
 		case <-c.done:
 			c.removeChannel(dialog)
 			return nil, c.Err()
@@ -81,7 +80,7 @@ func (c *SignalingConnection) SubscribePush(ctx context.Context, filters []PushF
 			var ack generatedsignaling.PushSubscriptionAckBody
 			if json.Unmarshal(m.Body, &ack) != nil || ack.Status != protocol.SubscriptionStatusOK || ack.SubscriptionId == "" {
 				c.removeChannel(dialog)
-				return nil, fmt.Errorf("push subscription rejected: %s", m.Body)
+				return nil, ringapimodels.NewConnectionError("push subscription rejected", nil)
 			}
 			s := &PushSubscription{connection: c, dialog: dialog, id: ack.SubscriptionId, events: events, done: make(chan struct{})}
 			go s.heartbeat()
@@ -113,14 +112,14 @@ func (s *PushSubscription) Receive(ctx context.Context) (PushEvent, error) {
 	for {
 		select {
 		case <-s.done:
-			return PushEvent{}, signaling.ErrClosed
+			return PushEvent{}, ringapimodels.NewClosedError("push subscription is closed", signaling.ErrClosed)
 		default:
 		}
 		select {
 		case <-ctx.Done():
-			return PushEvent{}, ctx.Err()
+			return PushEvent{}, ringapimodels.NewConnectionError("push receive canceled", ctx.Err())
 		case <-s.done:
-			return PushEvent{}, signaling.ErrClosed
+			return PushEvent{}, ringapimodels.NewClosedError("push subscription is closed", signaling.ErrClosed)
 		case <-s.connection.done:
 			return PushEvent{}, s.connection.Err()
 		case m := <-s.events:
@@ -129,10 +128,10 @@ func (s *PushSubscription) Receive(ctx context.Context) (PushEvent, error) {
 			}
 			var event PushEvent
 			if err := json.Unmarshal(m.Body, &event); err != nil {
-				return PushEvent{}, err
+				return PushEvent{}, ringapimodels.NewConnectionError("invalid push event", err)
 			}
 			if event.SubscriptionID != s.id {
-				return PushEvent{}, fmt.Errorf("push subscription ID mismatch")
+				return PushEvent{}, ringapimodels.NewConnectionError("push subscription ID mismatch", nil)
 			}
 			return event, nil
 		}
@@ -153,13 +152,13 @@ func (s *PushSubscription) Close() error {
 func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlaybackRequest) (*PlaybackSession, error) {
 	id, err := strconv.ParseInt(req.DeviceID, 10, 64)
 	if err != nil || id <= 0 {
-		return nil, errors.New("device ID must be a positive integer")
+		return nil, ringapimodels.NewBadRequestError("device ID must be a positive integer", err)
 	}
 	if req.Offer.Type != SDPTypeOffer || req.Offer.SDP == "" {
-		return nil, errors.New("playback requires an SDP offer")
+		return nil, ringapimodels.NewBadRequestError("playback requires an SDP offer", nil)
 	}
 	if _, err = webrtc.ParseSDP(req.Offer.SDP); err != nil {
-		return nil, fmt.Errorf("invalid SDP offer: %w", err)
+		return nil, ringapimodels.NewBadRequestError("invalid SDP offer", err)
 	}
 	entry := req.EntryPoint
 	if entry == "" {
@@ -179,7 +178,7 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 		select {
 		case <-deadline.Done():
 			c.removeChannel(dialog)
-			return nil, deadline.Err()
+			return nil, ringapimodels.NewConnectionError("playback negotiation timed out or was canceled", deadline.Err())
 		case <-c.done:
 			c.removeChannel(dialog)
 			return nil, c.Err()
@@ -190,7 +189,7 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 			var body generatedsignaling.PlaybackAnswerBody
 			if json.Unmarshal(m.Body, &body) != nil || int64(body.DoorbotId) != id || body.SessionId == "" || body.ReservedType != protocol.SDPTypeAnswer || body.Sdp == "" {
 				c.removeChannel(dialog)
-				return nil, errors.New("invalid playback SDP answer")
+				return nil, ringapimodels.NewConnectionError("invalid playback SDP answer", nil)
 			}
 			s := &PlaybackSession{connection: c, dialog: dialog, riid: m.RIID, id: body.SessionId, deviceID: id, answer: SessionDescription{Type: SDPTypeAnswer, SDP: body.Sdp}, events: events, done: make(chan struct{})}
 			s.lastPong.Store(time.Now().UnixNano())
@@ -263,14 +262,17 @@ func (s *PlaybackSession) keepalive(interval time.Duration) {
 	}
 }
 func (s *PlaybackSession) SendICE(ctx context.Context, candidate ICECandidateRequest) error {
+	if candidate.Candidate == "" || candidate.MLineIndex < 0 {
+		return ringapimodels.NewBadRequestError("invalid playback ICE candidate", nil)
+	}
 	return s.connection.sendTyped(ctx, protocol.MethodICE, s.dialog, s.riid, generatedsignaling.IceCandidateBody{DoorbotId: int(s.deviceID), SessionId: s.id, Ice: candidate.Candidate, Mlineindex: candidate.MLineIndex})
 }
 func (s *PlaybackSession) Receive(ctx context.Context) (SessionEvent, error) {
 	select {
 	case <-ctx.Done():
-		return SessionEvent{}, ctx.Err()
+		return SessionEvent{}, ringapimodels.NewConnectionError("playback receive canceled", ctx.Err())
 	case <-s.done:
-		return SessionEvent{}, signaling.ErrClosed
+		return SessionEvent{}, ringapimodels.NewClosedError("playback session is closed", signaling.ErrClosed)
 	case <-s.connection.done:
 		return SessionEvent{}, s.connection.Err()
 	case m := <-s.events:

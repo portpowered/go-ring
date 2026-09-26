@@ -15,6 +15,7 @@ import (
 	"github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func (c *SignalingConnection) waitForCameraStarted(ctx, negotiationCtx context.Context, events <-chan signaling.Message, session *DeviceSession, deadlineError func() error) error {
@@ -25,19 +26,19 @@ func (c *SignalingConnection) waitForCameraStarted(ctx, negotiationCtx context.C
 				continue
 			}
 			if err := session.core.Handle(message); err != nil {
-				return err
+				return sessionError("session activation message rejected", err)
 			}
 			if message.Method == protocol.MethodClose && session.matches(message) {
-				return signaling.ErrClosed
+				return ringapimodels.NewClosedError("device session closed before activation", signaling.ErrClosed)
 			}
 			if message.Method == protocol.MethodCameraStarted && session.matches(message) {
 				close(session.ready)
 				return nil
 			}
 		case <-negotiationCtx.Done():
-			return fmt.Errorf("session activation failed: %w", deadlineError())
+			return ringapimodels.NewConnectionError("session activation failed", deadlineError())
 		case <-ctx.Done():
-			return ctx.Err()
+			return sessionError("session activation canceled", ctx.Err())
 		case <-c.done:
 			return c.Err()
 		case <-session.done:
@@ -49,23 +50,23 @@ func (c *SignalingConnection) waitForCameraStarted(ctx, negotiationCtx context.C
 func validateSessionRequest(req StartDeviceSessionRequest) (int64, time.Duration, error) {
 	id, err := strconv.ParseInt(req.DeviceID, 10, 64)
 	if err != nil || id <= 0 {
-		return 0, 0, fmt.Errorf("device ID must be a positive integer")
+		return 0, 0, ringapimodels.NewBadRequestError("device ID must be a positive integer", err)
 	}
 	if req.Offer.Type != SDPTypeOffer || req.Offer.SDP == "" {
-		return 0, 0, fmt.Errorf("offer must contain type offer and SDP")
+		return 0, 0, ringapimodels.NewBadRequestError("offer must contain type offer and SDP", nil)
 	}
 	if req.ICEMode != "" && req.ICEMode != ICETrickle && req.ICEMode != ICENonTrickle {
-		return 0, 0, fmt.Errorf("unsupported ICE candidate mode %q", req.ICEMode)
+		return 0, 0, ringapimodels.NewBadRequestError(fmt.Sprintf("unsupported ICE candidate mode %q", req.ICEMode), nil)
 	}
 	if _, err = webrtc.ParseSDP(req.Offer.SDP); err != nil {
-		return 0, 0, fmt.Errorf("invalid SDP offer: %w", err)
+		return 0, 0, ringapimodels.NewBadRequestError("invalid SDP offer", err)
 	}
 	maxAge := req.MaxAge
 	if maxAge == 0 {
 		maxAge = signaling.MaxSessionAge
 	}
 	if maxAge <= 0 || maxAge > signaling.MaxSessionAge {
-		return 0, 0, fmt.Errorf("maximum session age must be between zero and sixty minutes")
+		return 0, 0, ringapimodels.NewBadRequestError("maximum session age must be between zero and sixty minutes", nil)
 	}
 	return id, maxAge, nil
 }
@@ -73,7 +74,7 @@ func validateSessionRequest(req StartDeviceSessionRequest) (int64, time.Duration
 func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartDeviceSessionRequest) (*DeviceSession, error) {
 	started := time.Now()
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, ringapimodels.NewConnectionError("session start canceled", err)
 	}
 	id, maxAge, err := validateSessionRequest(req)
 	if err != nil {
@@ -102,7 +103,7 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	raw, _ := json.Marshal(body)
 	if err = c.send(negotiationCtx, signaling.Message{Method: protocol.MethodLiveView, DialogID: dialog, Body: raw}); err != nil {
 		cleanup()
-		return nil, err
+		return nil, sessionError("failed to send live-view offer", err)
 	}
 	var signalID, riid string
 	startedSuccessfully := false
@@ -117,21 +118,21 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	signalID, riid = negotiated.SignalID, negotiated.RIID
 	if err != nil {
 		cleanup()
-		return nil, err
+		return nil, sessionError("live-view negotiation failed", err)
 	}
 	answerSDP, controlID, heartbeat := negotiated.AnswerSDP, negotiated.ControlID, negotiated.Heartbeat
 	if controlID == "" || controlID == signalID {
 		cleanup()
-		return nil, fmt.Errorf("answer is missing an independent PTZ session identity")
+		return nil, ringapimodels.NewConnectionError("answer is missing an independent PTZ session identity", nil)
 	}
 	answer, err := webrtc.NormalizeAnswer(req.Offer.SDP, answerSDP)
 	if err != nil {
 		cleanup()
-		return nil, fmt.Errorf("invalid SDP answer: %w", err)
+		return nil, ringapimodels.NewConnectionError("invalid SDP answer", err)
 	}
 	if _, err = webrtc.ParseSDP(answer); err != nil {
 		cleanup()
-		return nil, err
+		return nil, ringapimodels.NewConnectionError("invalid SDP answer", err)
 	}
 	iceMode := req.ICEMode
 	if iceMode == "" {
@@ -141,7 +142,7 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	remaining := maxAge - time.Since(started)
 	if remaining <= 0 {
 		cleanup()
-		return nil, signaling.ErrExpired
+		return nil, ringapimodels.NewConnectionError("session expired during negotiation", signaling.ErrExpired)
 	}
 	created.core, err = signaling.NewSession(ctx, signaling.SessionConfig{DeviceID: id, DialogID: dialog, SignalID: signalID, ControlID: controlID, Heartbeat: heartbeat, MaxAge: remaining, Send: func(ctx context.Context, m signaling.Message) error {
 		if m.RIID == "" {
@@ -151,28 +152,28 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	}})
 	if err != nil {
 		cleanup()
-		return nil, err
+		return nil, sessionError("failed to create device session", err)
 	}
 	go created.watch()
 	if err = c.send(negotiationCtx, signaling.Message{Method: protocol.MethodActivateSession, DialogID: dialog, RIID: riid, Body: mustJSON(generatedsignaling.SessionBody{DoorbotId: int(id), SessionId: signalID})}); err != nil {
 		created.terminate(err)
 		cleanup()
-		return nil, err
+		return nil, sessionError("failed to activate device session", err)
 	}
 	if err = created.core.Send(negotiationCtx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: req.AudioEnabled}); err != nil {
 		created.terminate(err)
 		cleanup()
-		return nil, err
+		return nil, sessionError("failed to set microphone state", err)
 	}
 	if err = created.core.Send(negotiationCtx, protocol.MethodStreamOptions, map[string]any{protocol.FieldAudioEnabled: req.AudioEnabled}); err != nil {
 		created.terminate(err)
 		cleanup()
-		return nil, err
+		return nil, sessionError("failed to set stream options", err)
 	}
 	if err = c.waitForCameraStarted(ctx, negotiationCtx, events, created, negotiationError); err != nil {
 		created.terminate(err)
 		cleanup()
-		return nil, err
+		return nil, sessionError("device session did not become ready", err)
 	}
 	c.mu.Lock()
 	delete(c.pending, dialog)
@@ -207,7 +208,7 @@ func (s *DeviceSession) watch() {
 	s.mu.Lock()
 	if !s.closed {
 		s.closed = true
-		s.terminal = err
+		s.terminal = sessionError("device session ended", err)
 	}
 	s.mu.Unlock()
 	s.doneOnce.Do(func() { close(s.done) })
@@ -233,7 +234,7 @@ func (s *DeviceSession) terminate(err error) {
 		return
 	}
 	s.closed = true
-	s.terminal = err
+	s.terminal = sessionError("device session ended", err)
 	s.mu.Unlock()
 	s.core.Fail(err)
 }
@@ -256,37 +257,37 @@ func (s *DeviceSession) State() SessionState {
 func (s *DeviceSession) Wait(ctx context.Context) error {
 	err := s.core.Wait(ctx)
 	if ctx.Err() != nil {
-		return ctx.Err()
+		return sessionError("device session wait canceled", ctx.Err())
 	}
 	// Wait for the public wrapper to publish the terminal state and finish its
 	// bounded signaling close after the core has observed expiry or failure.
 	select {
 	case <-s.done:
 	case <-ctx.Done():
-		return ctx.Err()
+		return sessionError("device session wait canceled", ctx.Err())
 	}
-	return err
+	return sessionError("device session ended", err)
 }
 func (s *DeviceSession) Receive(ctx context.Context) (*SessionEvent, error) {
 	m, e := s.core.Receive(ctx)
 	if e != nil {
-		return nil, e
+		return nil, sessionError("device session receive failed", e)
 	}
 	return &SessionEvent{Method: m.Method, Body: m.Body}, nil
 }
 func (s *DeviceSession) SendICE(ctx context.Context, req ICECandidateRequest) error {
 	if s.iceMode != ICETrickle {
-		return fmt.Errorf("SendICE requires trickle ICE mode")
+		return ringapimodels.NewBadRequestError("SendICE requires trickle ICE mode", nil)
 	}
 	desc, e := webrtc.ParseSDP(s.offerSDP)
 	if e != nil {
-		return e
+		return ringapimodels.NewInternalServerError("stored offer SDP is invalid", e)
 	}
 	if e = webrtc.ValidateICE(desc, req.MID, req.MLineIndex); e != nil {
-		return e
+		return ringapimodels.NewBadRequestError("invalid ICE candidate media identity", e)
 	}
 	if req.Candidate == "" {
-		return fmt.Errorf("ICE candidate must not be empty")
+		return ringapimodels.NewBadRequestError("ICE candidate must not be empty", nil)
 	}
 	body := generatedsignaling.LiveIceBody{DoorbotId: int(s.deviceID), Ice: req.Candidate, Mid: req.MID, Mlineindex: req.MLineIndex}
 	return s.connection.send(ctx, signaling.Message{Method: protocol.MethodICE, DialogID: s.dialogID, RIID: s.riid, Body: mustJSON(body)})
@@ -295,33 +296,33 @@ func (s *DeviceSession) SendICE(ctx context.Context, req ICECandidateRequest) er
 func (s *DeviceSession) call(ctx context.Context, method string, params map[string]any) (*PTZResult, error) {
 	b, e := s.core.Call(ctx, method, params)
 	if e != nil {
-		return nil, e
+		return nil, sessionError("PTZ command failed", e)
 	}
 	var result PTZResult
 	if err := json.Unmarshal(b, &result); err != nil {
-		return nil, fmt.Errorf("decode PTZ result: %w", err)
+		return nil, ringapimodels.NewConnectionError("invalid PTZ result", err)
 	}
 	result.Raw = append(json.RawMessage(nil), b...)
 	return &result, nil
 }
 func (s *DeviceSession) PanStep(ctx context.Context, r PanStepRequest) (*PTZResult, error) {
 	if r.Direction != PanLeft && r.Direction != PanRight {
-		return nil, fmt.Errorf("invalid pan direction %q", r.Direction)
+		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid pan direction %q", r.Direction), nil)
 	}
 	return s.call(ctx, protocol.RPCPanStep, map[string]any{protocol.FieldDirection: r.Direction})
 }
 func (s *DeviceSession) TiltStep(ctx context.Context, r TiltStepRequest) (*PTZResult, error) {
 	if r.Direction != TiltUp && r.Direction != TiltDown {
-		return nil, fmt.Errorf("invalid tilt direction %q", r.Direction)
+		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid tilt direction %q", r.Direction), nil)
 	}
 	return s.call(ctx, protocol.RPCTiltStep, map[string]any{protocol.FieldDirection: r.Direction})
 }
 func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousRequest) (*PTZResult, error) {
 	if r.Direction != PanLeft && r.Direction != PanRight {
-		return nil, fmt.Errorf("invalid pan direction %q", r.Direction)
+		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid pan direction %q", r.Direction), nil)
 	}
 	if r.Speed < 0 || r.Speed > protocol.PTZMaxSpeed || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
-		return nil, fmt.Errorf("invalid pan speed")
+		return nil, ringapimodels.NewBadRequestError("invalid pan speed", nil)
 	}
 	s.mu.Lock()
 	s.movement[PanAxis] = string(r.Direction)
@@ -336,10 +337,10 @@ func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousReques
 }
 func (s *DeviceSession) TiltContinuous(ctx context.Context, r TiltContinuousRequest) (*PTZResult, error) {
 	if r.Direction != TiltUp && r.Direction != TiltDown {
-		return nil, fmt.Errorf("invalid tilt direction %q", r.Direction)
+		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid tilt direction %q", r.Direction), nil)
 	}
 	if r.Speed < 0 || r.Speed > protocol.PTZMaxSpeed || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
-		return nil, fmt.Errorf("invalid tilt speed")
+		return nil, ringapimodels.NewBadRequestError("invalid tilt speed", nil)
 	}
 	s.mu.Lock()
 	s.movement[TiltAxis] = string(r.Direction)
@@ -357,7 +358,7 @@ func (s *DeviceSession) StopPTZ(ctx context.Context, r StopPTZRequest) (*PTZResu
 	direction := s.movement[r.Axis]
 	s.mu.Unlock()
 	if direction == "" {
-		return nil, fmt.Errorf("no tracked continuous movement for axis %q", r.Axis)
+		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("no tracked continuous movement for axis %q", r.Axis), nil)
 	}
 	method := protocol.RPCPanContinuous
 	if r.Axis == TiltAxis {
@@ -372,7 +373,7 @@ func (s *DeviceSession) StopPTZ(ctx context.Context, r StopPTZRequest) (*PTZResu
 	return result, e
 }
 func (s *DeviceSession) SetMicrophone(ctx context.Context, r SetMicrophoneRequest) error {
-	return s.core.Send(ctx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: r.Enabled})
+	return sessionError("microphone command failed", s.core.Send(ctx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: r.Enabled}))
 }
 func (s *DeviceSession) SetStreamOptions(ctx context.Context, r SetStreamOptionsRequest) error {
 	body := map[string]any{}
@@ -383,9 +384,9 @@ func (s *DeviceSession) SetStreamOptions(ctx context.Context, r SetStreamOptions
 		body[protocol.FieldVideoEnabled] = *r.VideoEnabled
 	}
 	if len(body) == 0 {
-		return fmt.Errorf("at least one stream option is required")
+		return ringapimodels.NewBadRequestError("at least one stream option is required", nil)
 	}
-	return s.core.Send(ctx, protocol.MethodStreamOptions, body)
+	return sessionError("stream-options command failed", s.core.Send(ctx, protocol.MethodStreamOptions, body))
 }
 func (s *DeviceSession) Close() error { return s.close(true) }
 func (s *DeviceSession) close(sendClose bool) error {
