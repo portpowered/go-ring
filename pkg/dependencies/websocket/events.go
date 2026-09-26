@@ -1,12 +1,52 @@
-package ring
+package websocket
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"sync"
+	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-// Note: ConnectEvents is implemented in client_events.go to avoid circular dependencies
+// EventConnection owns the transport, read loop, and event queue.
+type EventConnection struct {
+	conn        *websocket.Conn
+	ctx         context.Context
+	cancel      context.CancelFunc
+	wg          sync.WaitGroup
+	mu          sync.RWMutex
+	closed      bool
+	messageChan chan *ringapimodels.Event
+	errChan     chan error
+}
+
+// OpenEvents connects the account event stream and starts its read loop.
+func OpenEvents(ctx context.Context, wsURL, token, hardwareID string) (*EventConnection, error) {
+	header := http.Header{}
+	header.Set("Authorization", "Bearer "+token)
+	if hardwareID != "" {
+		header.Set("hardware_id", hardwareID)
+	}
+	dialer := websocket.Dialer{HandshakeTimeout: 10 * time.Second}
+	conn, _, err := dialer.DialContext(ctx, wsURL, header)
+	if err != nil {
+		return nil, err
+	}
+	eventCtx, cancel := context.WithCancel(ctx)
+	ec := &EventConnection{conn: conn, ctx: eventCtx, cancel: cancel, messageChan: make(chan *ringapimodels.Event, 100), errChan: make(chan error, 10)}
+	ec.wg.Add(1)
+	go ec.processMessages()
+	ec.wg.Add(1)
+	go func() {
+		defer ec.wg.Done()
+		<-eventCtx.Done()
+		_ = conn.Close()
+	}()
+	return ec, nil
+}
 
 // processMessages processes incoming WebSocket messages
 func (ec *EventConnection) processMessages() {

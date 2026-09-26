@@ -12,72 +12,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
+	"github.com/portpowered/go-ring/pkg/dependencies/webrtc"
+	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
-
-type liveAnswerInfo struct {
-	PingInterval json.RawMessage `json:"ping_interval"`
-	SessionID    string          `json:"session_id"`
-}
-
-type liveAnswerBody struct {
-	DeviceID  int64          `json:"doorbot_id"`
-	SessionID string         `json:"session_id"`
-	SDP       string         `json:"sdp"`
-	Info      liveAnswerInfo `json:"session_info"`
-	Type      string         `json:"type"`
-}
-
-type liveNegotiation struct {
-	signalID  string
-	riid      string
-	answerSDP string
-	controlID string
-	heartbeat time.Duration
-}
-
-func (c *SignalingConnection) waitForLiveAnswer(ctx context.Context, events <-chan signaling.Message, id int64, deadlineError func() error) (liveNegotiation, error) {
-	state := liveNegotiation{heartbeat: signaling.DefaultHeartbeatInterval}
-	for state.answerSDP == "" || state.signalID == "" {
-		select {
-		case m := <-events:
-			switch m.Method {
-			case protocol.MethodSessionCreated:
-				var body generatedsignaling.SessionCreatedBody
-				if json.Unmarshal(m.Body, &body) != nil || int64(body.DoorbotId) != id || body.SessionId == "" {
-					return state, fmt.Errorf("invalid session_created response")
-				}
-				state.signalID, state.riid = body.SessionId, m.RIID
-			case protocol.MethodSDP:
-				var body liveAnswerBody
-				if json.Unmarshal(m.Body, &body) != nil || body.DeviceID != id || body.Type != protocol.SDPTypeAnswer || body.SDP == "" {
-					return state, fmt.Errorf("invalid SDP answer")
-				}
-				if state.signalID != "" && body.SessionID != state.signalID {
-					return state, fmt.Errorf("SDP signaling session mismatch")
-				}
-				state.signalID, state.answerSDP, state.controlID = body.SessionID, body.SDP, body.Info.SessionID
-				if len(body.Info.PingInterval) > 0 {
-					var seconds int
-					if json.Unmarshal(body.Info.PingInterval, &seconds) != nil || seconds <= 0 || seconds > int(signaling.MaxHeartbeatInterval/time.Second) {
-						return state, fmt.Errorf("invalid negotiated heartbeat interval")
-					}
-					state.heartbeat = time.Duration(seconds) * time.Second
-				}
-				if m.RIID != "" {
-					state.riid = m.RIID
-				}
-			case protocol.MethodClose:
-				return state, fmt.Errorf("signaling peer closed during negotiation")
-			}
-		case <-ctx.Done():
-			return state, fmt.Errorf("signaling negotiation failed: %w", deadlineError())
-		case <-c.done:
-			return state, c.Err()
-		}
-	}
-	return state, nil
-}
 
 func (c *SignalingConnection) waitForCameraStarted(ctx, negotiationCtx context.Context, events <-chan signaling.Message, session *DeviceSession, deadlineError func() error) error {
 	for {
@@ -119,7 +57,7 @@ func validateSessionRequest(req StartDeviceSessionRequest) (int64, time.Duration
 	if req.ICEMode != "" && req.ICEMode != ICETrickle && req.ICEMode != ICENonTrickle {
 		return 0, 0, fmt.Errorf("unsupported ICE candidate mode %q", req.ICEMode)
 	}
-	if _, err = signaling.ParseSDP(req.Offer.SDP); err != nil {
+	if _, err = webrtc.ParseSDP(req.Offer.SDP); err != nil {
 		return 0, 0, fmt.Errorf("invalid SDP offer: %w", err)
 	}
 	maxAge := req.MaxAge
@@ -175,23 +113,23 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 			cancel()
 		}
 	}()
-	negotiated, err := c.waitForLiveAnswer(negotiationCtx, events, id, negotiationError)
-	signalID, riid = negotiated.signalID, negotiated.riid
+	negotiated, err := dependencywebsocket.AwaitLiveAnswer(negotiationCtx, c.done, c.Err, events, id, negotiationError)
+	signalID, riid = negotiated.SignalID, negotiated.RIID
 	if err != nil {
 		cleanup()
 		return nil, err
 	}
-	answerSDP, controlID, heartbeat := negotiated.answerSDP, negotiated.controlID, negotiated.heartbeat
+	answerSDP, controlID, heartbeat := negotiated.AnswerSDP, negotiated.ControlID, negotiated.Heartbeat
 	if controlID == "" || controlID == signalID {
 		cleanup()
 		return nil, fmt.Errorf("answer is missing an independent PTZ session identity")
 	}
-	answer, err := signaling.NormalizeAnswer(req.Offer.SDP, answerSDP)
+	answer, err := webrtc.NormalizeAnswer(req.Offer.SDP, answerSDP)
 	if err != nil {
 		cleanup()
 		return nil, fmt.Errorf("invalid SDP answer: %w", err)
 	}
-	if _, err = signaling.ParseSDP(answer); err != nil {
+	if _, err = webrtc.ParseSDP(answer); err != nil {
 		cleanup()
 		return nil, err
 	}
@@ -340,11 +278,11 @@ func (s *DeviceSession) SendICE(ctx context.Context, req ICECandidateRequest) er
 	if s.iceMode != ICETrickle {
 		return fmt.Errorf("SendICE requires trickle ICE mode")
 	}
-	desc, e := signaling.ParseSDP(s.offerSDP)
+	desc, e := webrtc.ParseSDP(s.offerSDP)
 	if e != nil {
 		return e
 	}
-	if e = signaling.ValidateICE(desc, req.MID, req.MLineIndex); e != nil {
+	if e = webrtc.ValidateICE(desc, req.MID, req.MLineIndex); e != nil {
 		return e
 	}
 	if req.Candidate == "" {

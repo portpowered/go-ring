@@ -1,6 +1,8 @@
 # Architecture and ownership
 
-The public entry point is `pkg/ring`. Go owns its public API, concurrency, and resource lifecycle.
+The public entry point is `pkg/ring`. It owns the client-facing API and the
+association between account connections and child sessions. Transport I/O and
+media validation live in dependency packages.
 
 ```mermaid
 flowchart LR
@@ -9,11 +11,13 @@ flowchart LR
     HTTP --> OAuth[OAuth and session registration]
     HTTP --> API[Device, settings and recording APIs]
     Client --> Connection[SignalingConnection]
-    Connection --> Reader[One socket reader]
-    Connection --> Writer[Bounded priority writer]
+    Connection --> Socket[dependencies/websocket]
+    Socket --> Reader[One socket reader]
+    Socket --> Events[Account event stream]
     Reader --> Sessions[DeviceSession registry]
-    Sessions --> Writer
+    Sessions --> Writer[Bounded priority writer]
     Sessions --> RPC[RPC correlation and heartbeat policy]
+    Sessions --> Media[dependencies/webrtc SDP and ICE validation]
     App --> Peer[Caller-owned WebRTC peer]
     Sessions -. SDP and ICE .-> Peer
 ```
@@ -28,12 +32,14 @@ The caller owns and closes the media peer separately.
 
 | Code | Responsibility |
 |---|---|
-| `pkg/ring` | Public request/result types, client options, device normalization, HTTP methods, connection and session ownership |
+| `pkg/ring` | Public request/result types, client options, HTTP methods, session orchestration, and child ownership |
 | `pkg/ringapimodels` | OpenAPI-generated public device, auth, event, and recording projections; handwritten behavior and typed errors |
 | `pkg/dependencies/rest` | Existing auth mechanisms and HTTP request/response adaptation; custom HTTP client support; safe-read retries |
+| `pkg/dependencies/websocket` | Event-stream dial/read/close, signaling dial/read/write deadlines, and live-answer negotiation |
+| `pkg/dependencies/webrtc` | SDP parsing, answer normalization, and ICE media-identity validation |
 | `pkg/dependencymodels` | OpenAPI-generated legacy device and recording response models |
 | `internal/protocol` | Verified service defaults, endpoint profiles, paths, signaling method and RPC constants |
-| `internal/signaling` | SDP validation/normalization, active-session RPC correlation, liveness/expiry and named policy defaults |
+| `internal/signaling` | Active-session RPC correlation, liveness/expiry and named policy defaults |
 | `internal/testkit/replay` | Strict offline HTTP transport and scripted local WebSocket peers |
 | `api` | Validated OpenAPI and AsyncAPI contracts; raw captured operations can exist without a public wrapper |
 | `tests/replay/fixtures/recordings` | Actual sanitized exchanges, conversations, and schemas |
@@ -41,10 +47,12 @@ The caller owns and closes the media peer separately.
 | `tests/integration` | Opt-in full end-to-end tests against real endpoints and hardware |
 | `tools/reference-replay`, `tools/protocols`, `tools/capture` | Optional maintainer comparison, validation, and extraction tools |
 
-The existing REST/wire packages remain in place for compatibility. New callers
-should depend on `pkg/ring`, not the transport packages. Moving legacy packages
-under `internal` is not required to establish tested lifecycle ownership and
-would be a separate removal/migration decision.
+New callers should depend on `pkg/ring`, not the transport packages. The
+remaining transport work in `pkg/ring` is the signaling priority writer and
+push/playback heartbeat loops. Their public session methods can stay in `ring`
+while their scheduling and queue mechanics move to `dependencies/websocket` in
+a further pass. Session-specific RPC correlation and expiry already live in
+`internal/signaling`.
 
 The pinned Python library uses its Auth object, Ring inventory/cache, family
 models, and per-stream WebRTC helper. The Go port shares the behavioral

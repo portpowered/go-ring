@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 	"github.com/portpowered/go-ring/internal/signaling"
+	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
@@ -74,25 +74,17 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	clientID := uuid.NewString()
 	wsURL := strings.Replace(c.signalingWebSocketURL, "{client_id}", clientID, 1)
 	wsURL = strings.Replace(wsURL, "{token}", url.QueryEscape(ticket.Ticket), 1)
-	dialer := c.signalingDialer
-	if dialer == nil {
-		d := websocket.Dialer{HandshakeTimeout: signaling.HandshakeTimeout}
-		dialer = &d
-	}
 	wsHeaders := http.Header{}
 	wsHeaders.Set("User-Agent", c.userAgent)
 	if c.hardwareID != "" {
 		wsHeaders.Set("hardware_id", c.hardwareID)
 	}
-	conn, _, err := dialer.DialContext(ctx, wsURL, wsHeaders)
+	conn, err := dependencywebsocket.DialSignaling(ctx, wsURL, wsHeaders, c.signalingDialer)
 	if err != nil {
+		// Dialer errors may contain the ticket-bearing URL.
 		return nil, ringapimodels.NewConnectionError("failed to connect to signaling websocket", nil)
 	}
-	if conn == nil {
-		return nil, ringapimodels.NewConnectionError("signaling dialer returned an empty connection", nil)
-	}
 	connCtx, cancel := context.WithCancel(ctx)
-	conn.SetReadLimit(signaling.MaxMessageBytes)
 	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession)}
 	s.writer = newSignalingWriter(s.done, s.writeFrame, func(err error) { s.fail(fmt.Errorf("signaling write failed")) })
 	c.mu.Lock()

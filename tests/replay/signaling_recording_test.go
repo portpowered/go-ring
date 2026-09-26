@@ -12,6 +12,7 @@ import (
 
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/internal/testkit/replay"
+	mediavalidation "github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 )
 
 type recordedMessages struct {
@@ -40,12 +41,12 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 			if tc.sdp == offer {
 				t.Fatal("fixture mutation did not change offer")
 			}
-			if _, err := signaling.ParseSDP(tc.sdp); err == nil {
+			if _, err := mediavalidation.ParseSDP(tc.sdp); err == nil {
 				t.Fatal("ambiguous captured SDP mutation accepted")
 			}
 		})
 	}
-	parsed, err := signaling.ParseSDP(offer)
+	parsed, err := mediavalidation.ParseSDP(offer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +56,7 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 	}{
 		{"0", -1}, {"0", 99}, {"unknown", 0},
 	} {
-		if err := signaling.ValidateICE(parsed, tc.mid, tc.index); err == nil {
+		if err := mediavalidation.ValidateICE(parsed, tc.mid, tc.index); err == nil {
 			t.Fatalf("invalid candidate media identity accepted: %+v", tc)
 		}
 	}
@@ -77,7 +78,7 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 		{"changed media kind", strings.Replace(answer, "m=audio", "m=video", 1)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := signaling.NormalizeAnswer(offer, tc.sdp); err == nil {
+			if _, err := mediavalidation.NormalizeAnswer(offer, tc.sdp); err == nil {
 				t.Fatal("incompatible answer accepted")
 			}
 		})
@@ -117,7 +118,7 @@ func TestRecordedSDPOfferAnswers(t *testing.T) {
 					continue
 				}
 				if row.Direction == "client_to_server" {
-					if _, err := signaling.ParseSDP(body.SDP); err != nil {
+					if _, err := mediavalidation.ParseSDP(body.SDP); err != nil {
 						t.Fatalf("%s offer: %v", m.Method, err)
 					}
 					offers[m.DialogID] = body.SDP
@@ -127,7 +128,7 @@ func TestRecordedSDPOfferAnswers(t *testing.T) {
 				if !ok {
 					t.Fatal("answer without corresponding offer")
 				}
-				if _, err := signaling.NormalizeAnswer(offer, body.SDP); err != nil {
+				if _, err := mediavalidation.NormalizeAnswer(offer, body.SDP); err != nil {
 					t.Fatalf("answer: %v", err)
 				}
 				answers++

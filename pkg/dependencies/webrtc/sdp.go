@@ -1,5 +1,5 @@
-// Package signaling implements wire-level session validation and lifecycle rules.
-package signaling
+// Package webrtc validates captured SDP and ICE media identities.
+package webrtc
 
 import (
 	"fmt"
@@ -9,10 +9,12 @@ import (
 	"github.com/portpowered/go-ring/internal/protocol"
 )
 
+const maxSDPBytes = 1 << 20
+
 // ParseSDP validates the media identities used to route trickled ICE. It does not
 // certify codec interoperability or replace a peer connection's SDP validation.
 func ParseSDP(raw string) (*sdp.SessionDescription, error) {
-	if len(raw) > MaxMessageBytes {
+	if len(raw) > maxSDPBytes {
 		return nil, fmt.Errorf("SDP exceeds size limit")
 	}
 	var description sdp.SessionDescription

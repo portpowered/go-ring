@@ -2,14 +2,10 @@ package ring
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"net"
-	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/portpowered/go-ring/internal/signaling"
+	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
 )
 
 func (c *SignalingConnection) send(ctx context.Context, m signaling.Message) error {
@@ -25,61 +21,14 @@ func (c *SignalingConnection) send(ctx context.Context, m signaling.Message) err
 }
 
 func (c *SignalingConnection) writeFrame(ctx context.Context, m signaling.Message) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	deadline := time.Now().Add(signaling.SendTimeout)
-	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
-		deadline = d
-	}
-	netConn := c.conn.NetConn()
-	// Gorilla caches write deadlines on Conn and reapplies the cached value
-	// inside WriteMessage, so set both the cached deadline and the net.Conn.
-	_ = c.conn.SetWriteDeadline(deadline)
-	_ = netConn.SetWriteDeadline(deadline)
-	cancelWriteDone := make(chan struct{})
-	stopCancel := context.AfterFunc(ctx, func() { _ = netConn.SetWriteDeadline(time.Now()); close(cancelWriteDone) })
-	b, err := json.Marshal(m)
-	if err == nil {
-		err = c.conn.WriteMessage(websocket.TextMessage, b)
-	}
-	if !stopCancel() {
-		<-cancelWriteDone
-	}
-	_ = c.conn.SetWriteDeadline(time.Time{})
-	_ = netConn.SetWriteDeadline(time.Time{})
-	if err != nil {
-		if cause := ctx.Err(); cause != nil {
-			return cause
-		}
-		// The socket deadline may fire before the context timer is scheduled.
-		var timeout net.Error
-		if d, ok := ctx.Deadline(); ok && !time.Now().Before(d) && errors.As(err, &timeout) && timeout.Timeout() {
-			return context.DeadlineExceeded
-		}
-	}
-	return err
+	return dependencywebsocket.WriteSignaling(ctx, c.conn, m)
 }
 
 func (c *SignalingConnection) readLoop() {
 	defer close(c.readerDone)
-	for {
-		typ, b, err := c.conn.ReadMessage()
-		if err != nil {
-			if !c.isClosed() {
-				c.fail(fmt.Errorf("signaling read failed"))
-			}
-			return
-		}
-		if typ != websocket.TextMessage {
-			continue
-		}
-		var m signaling.Message
-		if err = json.Unmarshal(b, &m); err != nil {
-			c.fail(fmt.Errorf("invalid signaling message"))
-			return
-		}
-		c.route(m)
+	err := dependencywebsocket.ReadSignaling(c.conn, c.route)
+	if err != nil && !c.isClosed() {
+		c.fail(err)
 	}
 }
 func (c *SignalingConnection) route(m signaling.Message) {

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
+	"github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
 
@@ -160,7 +161,7 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 	if req.Offer.Type != SDPTypeOffer || req.Offer.SDP == "" {
 		return nil, errors.New("playback requires an SDP offer")
 	}
-	if _, err = signaling.ParseSDP(req.Offer.SDP); err != nil {
+	if _, err = webrtc.ParseSDP(req.Offer.SDP); err != nil {
 		return nil, fmt.Errorf("invalid SDP offer: %w", err)
 	}
 	entry := req.EntryPoint

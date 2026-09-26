@@ -1,4 +1,4 @@
-package signaling
+package webrtc
 
 import (
 	"strings"

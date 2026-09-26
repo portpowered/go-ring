@@ -14,6 +14,7 @@ import (
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
+	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -190,17 +191,8 @@ type PushSubscriptionAPI interface {
 	Close() error
 }
 
-// EventConnection represents a WebSocket connection for receiving events.
-type EventConnection struct {
-	conn        *websocket.Conn
-	ctx         context.Context
-	cancel      context.CancelFunc
-	wg          sync.WaitGroup
-	mu          sync.RWMutex
-	closed      bool
-	messageChan chan *ringapimodels.Event
-	errChan     chan error
-}
+// EventConnection is the account event stream managed by the WebSocket dependency.
+type EventConnection = dependencywebsocket.EventConnection
 
 // EventConnectionAPI receives account events until closed.
 type EventConnectionAPI interface {

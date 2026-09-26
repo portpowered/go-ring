@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/portpowered/go-ring/internal/signaling"
+	mediavalidation "github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 )
 
 func recordedAnswerSDP(t *testing.T) (string, string) {
@@ -43,7 +43,7 @@ func TestRecordedSDPAnswerDirectionVariants(t *testing.T) {
 			if tc.offer == offer && tc.answer == answer && tc.name != "captured answer" {
 				t.Fatal("mutation missed capture")
 			}
-			got, err := signaling.NormalizeAnswer(tc.offer, tc.answer)
+			got, err := mediavalidation.NormalizeAnswer(tc.offer, tc.answer)
 			if tc.valid && err != nil {
 				t.Fatal(err)
 			}

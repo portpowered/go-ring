@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/pion/webrtc/v3"
-	"github.com/portpowered/go-ring/internal/signaling"
+	mediavalidation "github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 )
 
 func TestOfferProfilesUseLocalPeerDescriptions(t *testing.T) {
@@ -22,7 +22,7 @@ func TestOfferProfilesUseLocalPeerDescriptions(t *testing.T) {
 			pc.Close()
 			t.Fatal(err)
 		}
-		if _, err = signaling.ParseSDP(offer); err != nil {
+		if _, err = mediavalidation.ParseSDP(offer); err != nil {
 			pc.Close()
 			t.Fatal(err)
 		}
@@ -73,7 +73,7 @@ func TestTrickleProfileBuffersPeerCandidatesWithMIDAndIndex(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	parsed, err := signaling.ParseSDP(offer)
+	parsed, err := mediavalidation.ParseSDP(offer)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestTrickleProfileBuffersPeerCandidatesWithMIDAndIndex(t *testing.T) {
 		if candidate.SDPMid == nil || candidate.SDPMLineIndex == nil {
 			t.Fatal("missing candidate identity")
 		}
-		if err = signaling.ValidateICE(parsed, *candidate.SDPMid, int(*candidate.SDPMLineIndex)); err != nil {
+		if err = mediavalidation.ValidateICE(parsed, *candidate.SDPMid, int(*candidate.SDPMLineIndex)); err != nil {
 			t.Fatal(err)
 		}
 	}
