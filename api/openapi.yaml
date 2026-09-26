@@ -124,7 +124,10 @@ paths:
   /clients_api/chimes/{device_id}:
     put:
       operationId: setChimeVolume
-      description: Legacy Python/Go volume update; the query shape is synthetic replay evidence, not a C1 capture.
+      description: >-
+        Legacy Python/Go volume update. The client requires description to
+        reproduce Python's tested request shape; no capture proves the server
+        requires that query field for volume changes.
       parameters:
         - {$ref: '#/components/parameters/device_id'}
         - {in: query, name: 'chime[description]', required: true, schema: {type: string}}
@@ -136,6 +139,9 @@ paths:
       description: >-
         Legacy Python/Go doorbell-volume or one in-home chime setting; query
         variants come from portable synthetic fixtures, not a C1 field capture.
+        The client requires description to reproduce Python's tested shape;
+        server necessity is unverified. A separate captured doorbot PUT sent a
+        description and an empty settings object.
       parameters:
         - {$ref: '#/components/parameters/device_id'}
         - {in: query, name: 'doorbot[description]', required: true, schema: {type: string}}

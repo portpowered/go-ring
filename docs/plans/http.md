@@ -12,14 +12,14 @@ When a hardware ID is configured or recovered from a valid access-token claim, t
 
 | Go operation | Go request shape | Python comparison | C1 status |
 |---|---|---|---|
-| `SetVolume` | Family-specific `PUT /clients_api/{chimes,doorbots}/{id}` with description and setting in query values | Matches Python's shared legacy replay fixtures; caller supplies kind and description | Synthetic Python fixture; no C1 volume-request capture |
-| `SetLights` | `PUT /clients_api/doorbots/{id}/floodlight_light_{on,off}`, no body | Matches Python's legacy control shape; duration is rejected | Synthetic Python on fixture; no C1 light capture |
+| `SetVolume` | Family-specific `PUT /clients_api/{chimes,doorbots}/{id}` with description and setting in query values | Caller supplies generated `VolumeKind` and current description; matches Python's tested request shape without an inventory lookup | Synthetic Python fixture; no C1 volume-request capture or proof that the server requires description |
+| `SetLights` | `PUT /clients_api/doorbots/{id}/floodlight_light_{on,off}`, no body | `Enabled` selects the Python-compatible on/off route; no duration parameter is exposed | Synthetic Python on fixture; no C1 light capture |
 | `SetMotionDetection` | `PATCH /devices/v1/devices/{id}/settings` with nested `motion_settings` | Matches Python and the typed Go settings method | C1 settings PATCH and shared replay fixture |
 | `TestSound` | `POST /clients_api/chimes/{id}/play_sound?kind=...`, no body | Matches Python's legacy control shape | Synthetic Python fixture; no C1 sound capture |
 | `SetInHomeChime` | `PUT /clients_api/doorbots/{id}` with description and one chime field in query values | Matches Python's type, enabled, or duration request shapes | Synthetic Python fixtures; no matching C1 chime-field request |
-| `UpdateDeviceHealth` | Explicit `Family` selects `GET /clients_api/{doorbots,chimes}/{id}/health`; empty family keeps the generic legacy route | Family-specific response envelopes are mapped from the pinned Python fixtures | No matching C1 health capture; family routes are Python-profile replay only |
+| `UpdateDeviceHealth` | `GET /clients_api/ring_devices/{id}/health` with only a device ID | Diverges from Python's family-specific health routes | No matching C1 health request; captured v3 device detail embeds health instead |
 
-The control methods above replaced earlier generic `/clients_api/ring_devices/{id}` commands that lacked supporting wire evidence. Local fixture success alone does not establish vendor compatibility. Captured settings and siren operations also have explicit recording-backed coverage.
+The control methods above replaced earlier generic `/clients_api/ring_devices/{id}` commands that lacked supporting wire evidence. Local fixture success alone does not establish vendor compatibility. The raw capture has one doorbot PUT with a description and an empty settings object; it does not establish whether description is required for volume or in-home chime writes. Captured settings and siren operations have separate recording-backed coverage.
 
 ## History and media
 

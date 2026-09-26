@@ -223,7 +223,7 @@ These are the public SDK methods.
 | Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail` | `GetDeviceDetail` returns a typed client projection of the captured v3 response. |
 | Device health and settings | `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Health uses the generic device route and needs only a device ID. |
 | Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Requests and results use client-owned types; the generated HTTP models stay inside the transport. |
-| Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolume`, `Client.SetInHomeChime` | Requests take a device ID; volume and in-home chime resolve legacy wire fields from the current device list. |
+| Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolume`, `Client.SetInHomeChime` | Volume needs a device ID, `VolumeKind`, and current description; in-home chime needs a device ID and current description. These values are sent to Python-compatible legacy routes without an inventory lookup. |
 | Chime sound and reboot | `Client.TestSound`, `Client.RebootDevice` | See the inline code below. |
 | Snapshot | `Client.GetSnapshot` | Returns image bytes and metadata. |
 | Recording history | `Client.GetDeviceHistory`, `Client.GetHistoryDevices`, `Client.GetDeviceTimeline`, `Client.GetActiveDings`, `Client.GetLastRecordingID` | Legacy history and captured EVM history/timeline are separate APIs. |

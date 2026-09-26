@@ -318,12 +318,13 @@ type UpdateDeviceHealthRequest struct {
 	DeviceID string
 }
 
-// SetVolumeRequest identifies a chime or doorbell by ID. The client resolves
-// legacy wire fields internally.
+// SetVolumeRequest carries the legacy chime or doorbell update fields.
 type SetVolumeRequest struct {
-	Auth     AuthContext
-	DeviceID string
-	Volume   int
+	Auth        AuthContext
+	DeviceID    string
+	Kind        ringapimodels.VolumeKind
+	Description string
+	Volume      int
 }
 
 // SetLightsRequest sets a device's floodlight state.
@@ -347,11 +348,12 @@ type TestSoundRequest struct {
 	Sound    ringapimodels.SoundKind
 }
 
-// SetInHomeChimeRequest identifies a doorbell by ID.
+// SetInHomeChimeRequest carries the legacy doorbell update fields.
 type SetInHomeChimeRequest struct {
-	Auth     AuthContext
-	DeviceID string
-	Settings ringapimodels.InHomeChimeSettings
+	Auth        AuthContext
+	DeviceID    string
+	Description string
+	Settings    ringapimodels.InHomeChimeSettings
 }
 
 // GetDeviceHistoryRequest contains parameters for GetDeviceHistory

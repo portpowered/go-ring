@@ -7,7 +7,7 @@ decode these wire models, then project them into SDK-facing types where needed.
 `client-models.openapi.yaml` generates only the public
 types in `pkg/ringapimodels`. Internal transport errors and recording body
 ownership live below the public package, with public aliases for callers.
-Closed public control choices (volume target, light state, and test sound)
+Closed public control choices (volume target and test sound)
 also come from this schema and are used directly by public request fields.
 The in-home chime update uses generated typed optional fields instead of an
 arbitrary settings map. History kind stays an open string because the server

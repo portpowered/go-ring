@@ -6871,7 +6871,7 @@ type ClientInterface interface {
 
 	// SetChimeVolume performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
 	//
-	// Legacy Python/Go volume update; the query shape is synthetic replay evidence, not a C1 capture.
+	// Legacy Python/Go volume update. The client requires description to reproduce Python's tested request shape; no capture proves the server requires that query field for volume changes.
 	SetChimeVolume(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// TestChimeSound performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
@@ -6902,7 +6902,7 @@ type ClientInterface interface {
 
 	// UpdateLegacyDoorbotControls performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
 	//
-	// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture.
+	// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce Python's tested shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
 	UpdateLegacyDoorbotControls(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// TurnFloodlightOff performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
@@ -7093,7 +7093,7 @@ func (c *Client) GetCapturedLocationTickets(ctx context.Context, params *GetCapt
 
 // SetChimeVolume performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
 //
-// Legacy Python/Go volume update; the query shape is synthetic replay evidence, not a C1 capture.
+// Legacy Python/Go volume update. The client requires description to reproduce Python's tested request shape; no capture proves the server requires that query field for volume changes.
 func (c *Client) SetChimeVolume(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetChimeVolumeRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -7194,7 +7194,7 @@ func (c *Client) GetLegacyRecordingShareURL(ctx context.Context, recordingId Rec
 
 // UpdateLegacyDoorbotControls performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
 //
-// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture.
+// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce Python's tested shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
 func (c *Client) UpdateLegacyDoorbotControls(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateLegacyDoorbotControlsRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -9576,7 +9576,7 @@ type ClientWithResponsesInterface interface {
 
 	// SetChimeVolumeWithResponse performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
 	//
-	// Legacy Python/Go volume update; the query shape is synthetic replay evidence, not a C1 capture.
+	// Legacy Python/Go volume update. The client requires description to reproduce Python's tested request shape; no capture proves the server requires that query field for volume changes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	SetChimeVolumeWithResponse(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*SetChimeVolumeResponse, error)
@@ -9621,7 +9621,7 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateLegacyDoorbotControlsWithResponse performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
 	//
-	// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture.
+	// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce Python's tested shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	UpdateLegacyDoorbotControlsWithResponse(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*UpdateLegacyDoorbotControlsResponse, error)
@@ -11435,7 +11435,7 @@ func (c *ClientWithResponses) GetCapturedLocationTicketsWithResponse(ctx context
 
 // SetChimeVolumeWithResponse performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
 //
-// Legacy Python/Go volume update; the query shape is synthetic replay evidence, not a C1 capture.
+// Legacy Python/Go volume update. The client requires description to reproduce Python's tested request shape; no capture proves the server requires that query field for volume changes.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) SetChimeVolumeWithResponse(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*SetChimeVolumeResponse, error) {
@@ -11522,7 +11522,7 @@ func (c *ClientWithResponses) GetLegacyRecordingShareURLWithResponse(ctx context
 
 // UpdateLegacyDoorbotControlsWithResponse performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
 //
-// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture.
+// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce Python's tested shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) UpdateLegacyDoorbotControlsWithResponse(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*UpdateLegacyDoorbotControlsResponse, error) {

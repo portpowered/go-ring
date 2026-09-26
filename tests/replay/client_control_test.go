@@ -17,16 +17,22 @@ func TestLegacyControlValidationBeforeHTTP(t *testing.T) {
 		call func(*ring.Client) error
 	}{
 		{"volume below range", func(c *ring.Client) error {
-			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Volume: -1})
+			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Kind: ringapimodels.VolumeKindChime, Description: "Bell", Volume: -1})
 		}},
 		{"volume above range", func(c *ring.Client) error {
-			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Volume: 12})
+			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Kind: ringapimodels.VolumeKindChime, Description: "Bell", Volume: 12})
 		}},
 		{"volume missing device", func(c *ring.Client) error {
-			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, Volume: 2})
+			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, Kind: ringapimodels.VolumeKindChime, Description: "Bell", Volume: 2})
 		}},
 		{"volume invalid device", func(c *ring.Client) error {
-			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "0", Volume: 2})
+			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "0", Kind: ringapimodels.VolumeKindChime, Description: "Bell", Volume: 2})
+		}},
+		{"volume missing kind", func(c *ring.Client) error {
+			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Description: "Bell", Volume: 2})
+		}},
+		{"volume missing description", func(c *ring.Client) error {
+			return c.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Kind: ringapimodels.VolumeKindDoorbell, Volume: 2})
 		}},
 		{"light invalid device", func(c *ring.Client) error {
 			return c.SetLights(context.Background(), ring.SetLightsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "bad", Enabled: true})
@@ -35,22 +41,25 @@ func TestLegacyControlValidationBeforeHTTP(t *testing.T) {
 			return c.TestSound(context.Background(), ring.TestSoundRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Sound: "alarm"})
 		}},
 		{"chime missing device", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1)}})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, Description: "Bell", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1)}})
 		}},
 		{"chime invalid device", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "bad", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1)}})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "bad", Description: "Bell", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1)}})
+		}},
+		{"chime missing description", func(c *ring.Client) error {
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1)}})
 		}},
 		{"chime multiple settings", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1), Duration: chimePointer(5)}})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Description: "Bell", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1), Duration: chimePointer(5)}})
 		}},
 		{"chime missing setting", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123"})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Description: "Bell"})
 		}},
 		{"chime negative type", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(-1)}})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Description: "Bell", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(-1)}})
 		}},
 		{"chime negative duration", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Settings: ringapimodels.InHomeChimeSettings{Duration: chimePointer(-1)}})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "123", Description: "Bell", Settings: ringapimodels.InHomeChimeSettings{Duration: chimePointer(-1)}})
 		}},
 		{"health missing device", func(c *ring.Client) error {
 			_, err := c.UpdateDeviceHealth(context.Background(), ring.UpdateDeviceHealthRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})

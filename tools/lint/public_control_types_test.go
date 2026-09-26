@@ -9,9 +9,12 @@ import (
 // an untyped string or an arbitrary settings map.
 var (
 	_ string                            = ring.SetVolumeRequest{}.DeviceID
+	_ ringapimodels.VolumeKind          = ring.SetVolumeRequest{}.Kind
+	_ string                            = ring.SetVolumeRequest{}.Description
 	_ string                            = ring.UpdateDeviceHealthRequest{}.DeviceID
 	_ bool                              = ring.SetLightsRequest{}.Enabled
 	_ ringapimodels.SoundKind           = ring.TestSoundRequest{}.Sound
 	_ string                            = ring.SetInHomeChimeRequest{}.DeviceID
+	_ string                            = ring.SetInHomeChimeRequest{}.Description
 	_ ringapimodels.InHomeChimeSettings = ring.SetInHomeChimeRequest{}.Settings
 )

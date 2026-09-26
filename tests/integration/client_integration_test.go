@@ -299,15 +299,17 @@ func TestDeviceControl(t *testing.T) {
 
 	t.Logf("Testing device control on: %s (ID: %s)", deviceName, testDeviceID)
 
-	// Test volume control
-	err = client.SetVolume(ctx, ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: accessToken},
-		DeviceID: testDeviceID,
-		Volume:   5,
-	})
-	if err != nil {
-		t.Logf("Warning: Failed to set volume: %v", err)
-	} else {
-		t.Log("Successfully set volume")
+	// Volume uses a legacy chime or doorbell route, not a camera route.
+	if len(devices.Doorbells) > 0 {
+		err = client.SetVolume(ctx, ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: accessToken},
+			DeviceID: testDeviceID, Kind: ringapimodels.VolumeKindDoorbell,
+			Description: deviceName, Volume: 5,
+		})
+		if err != nil {
+			t.Logf("Warning: Failed to set volume: %v", err)
+		} else {
+			t.Log("Successfully set volume")
+		}
 	}
 
 	// Test motion detection (if supported)

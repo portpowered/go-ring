@@ -294,9 +294,9 @@ func TestInvalidPublicDeviceRequestsDoNotReachHTTP(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 	ctx := context.Background()
 	volume := []ring.SetVolumeRequest{
-		{DeviceID: "not-a-number", Volume: 4},
-		{DeviceID: "100", Volume: -1},
-		{DeviceID: "100", Volume: 12},
+		{DeviceID: "not-a-number", Kind: ringapimodels.VolumeKindDoorbell, Description: "Fixture Device", Volume: 4},
+		{DeviceID: "100", Kind: ringapimodels.VolumeKindDoorbell, Description: "Fixture Device", Volume: -1},
+		{DeviceID: "100", Kind: ringapimodels.VolumeKindDoorbell, Description: "Fixture Device", Volume: 12},
 	}
 	for _, req := range volume {
 		require.Error(t, client.SetVolume(ctx, req))
@@ -325,7 +325,7 @@ func TestCanceledPublicControlDoesNotReachHTTP(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err = client.SetVolume(ctx, ring.SetVolumeRequest{DeviceID: "100", Volume: 5})
+	err = client.SetVolume(ctx, ring.SetVolumeRequest{DeviceID: "100", Kind: ringapimodels.VolumeKindDoorbell, Description: "Fixture Device", Volume: 5})
 	require.Error(t, err)
 	require.Empty(t, transport.requests)
 }
