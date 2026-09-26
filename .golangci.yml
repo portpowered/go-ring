@@ -51,6 +51,8 @@ linters:
         linters: [revive, mnd, goconst, unused, staticcheck, cyclop, forbidigo]
       - path: '(^|/)examples/'
         linters: [mnd, cyclop, forbidigo]
+      - path: '(^|/)cmd/go-ring/'
+        linters: [forbidigo]
 
 formatters:
   enable:

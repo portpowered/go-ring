@@ -15,7 +15,6 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
 	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
-	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -52,14 +51,14 @@ type ClientAPI interface {
 	ListDevices(context.Context, ListDevicesRequest) (*ringapimodels.DevicesResponse, error)
 	GetDevice(context.Context, GetDeviceRequest) (ringapimodels.Device, error)
 	GetDeviceSettings(context.Context, GetDeviceSettingsRequest) (DeviceSettings, error)
-	GetDeviceDetail(context.Context, GetDeviceDetailRequest) (*generatedhttp.DeviceDetail, error)
-	ListLocations(context.Context, ListLocationsRequest) (*generatedhttp.LocationList, error)
-	GetLocation(context.Context, GetLocationRequest) (*generatedhttp.LocationDetail, error)
-	ListLocationGroups(context.Context, LocationRequest) (*generatedhttp.LocationGroups, error)
-	ListLocationDevices(context.Context, LocationRequest) (*generatedhttp.LocationGroupDevices, error)
-	GetDeviceTimeline(context.Context, GetDeviceTimelineRequest) (*generatedhttp.DeviceTimeline, error)
-	GetHistoryDevices(context.Context, GetHistoryDevicesRequest) (*generatedhttp.HistoryDevices, error)
-	GetCapturedTickets(context.Context, GetCapturedTicketsRequest) (*generatedhttp.CapturedTickets, error)
+	GetDeviceDetail(context.Context, GetDeviceDetailRequest) (*DeviceDetail, error)
+	ListLocations(context.Context, ListLocationsRequest) (*LocationList, error)
+	GetLocation(context.Context, GetLocationRequest) (*LocationDetail, error)
+	ListLocationGroups(context.Context, LocationRequest) (*LocationGroups, error)
+	ListLocationDevices(context.Context, LocationRequest) (*LocationGroupDevices, error)
+	GetDeviceTimeline(context.Context, GetDeviceTimelineRequest) (*DeviceTimeline, error)
+	GetHistoryDevices(context.Context, GetHistoryDevicesRequest) (*HistoryDevices, error)
+	GetCapturedTickets(context.Context, GetCapturedTicketsRequest) (*CapturedTickets, error)
 
 	// APIs for modifying or sending requests to a device
 	UpdateDeviceHealth(context.Context, UpdateDeviceHealthRequest) (*ringapimodels.DeviceHealth, error)
@@ -266,7 +265,7 @@ type ListLocationsRequest struct{ Auth AuthContext }
 type GetActiveDingsRequest struct{ Auth AuthContext }
 type ConnectEventsRequest struct{ Auth AuthContext }
 
-// Captured HTTP operations return generated wire models without an additional projection.
+// Captured HTTP operations keep wire query encodings inside the transport.
 type DeviceIDRequest struct {
 	Auth     AuthContext
 	DeviceID string
@@ -282,22 +281,22 @@ type LocationRequest struct {
 type GetLocationRequest struct {
 	Auth       AuthContext
 	LocationID string
-	Params     generatedhttp.GetLocationParams
+	Params     LocationParams
 }
 type GetDeviceTimelineRequest struct {
 	Auth     AuthContext
 	DeviceID string
-	Params   generatedhttp.GetDeviceTimelineParams
+	Params   TimelineParams
 }
 type GetHistoryDevicesRequest struct {
 	Auth   AuthContext
-	Params generatedhttp.GetHistoryDevicesParams
+	Params HistoryDevicesParams
 }
 
 // GetCapturedTickets is the recorded GET profile, separate from OpenSignaling's POST ticket.
 type GetCapturedTicketsRequest struct {
 	Auth   AuthContext
-	Params generatedhttp.GetCapturedLocationTicketsParams
+	Params CapturedTicketsParams
 }
 type SetPersistentLiveViewEnabledRequest struct {
 	Auth     AuthContext
@@ -319,7 +318,7 @@ type UpdateDeviceHealthRequest struct {
 	Auth     AuthContext
 	DeviceID string
 	// Family selects the Python-compatible family endpoint; an empty value uses the legacy generic route.
-	Family generatedhttp.DeviceFamilyCode
+	Family DeviceFamily
 }
 
 // SetVolumeRequest contains parameters for SetVolume
@@ -378,7 +377,7 @@ type GetDeviceHistoryRequest struct {
 	// OlderThan is an optional Unix timestamp cursor for older recordings.
 	OlderThan *int64
 	// Kind is an open server value; unfamiliar history kinds are forwarded.
-	Kind string
+	Kind HistoryKind
 }
 
 // GetRecordingRequest contains parameters for GetRecording

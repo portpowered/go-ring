@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,8 +31,7 @@ func capturedPublicCalls() []capturedPublicCall {
 			return err
 		}},
 		{"location-detail", func(ctx context.Context, c ring.ClientAPI, x replay.Exchange) error {
-			include := capturedQueryValue(x, "include")
-			_, err := c.GetLocation(ctx, ring.GetLocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, LocationID: "location-1", Params: generatedhttp.GetLocationParams{Include: &include}})
+			_, err := c.GetLocation(ctx, ring.GetLocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, LocationID: "location-1", Params: ring.LocationParams{Include: capturedLocationExpansions(x)}})
 			return err
 		}},
 		{"groups", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
@@ -51,8 +51,8 @@ func capturedPublicCalls() []capturedPublicCall {
 			return err
 		}},
 		{"history-devices", func(ctx context.Context, c ring.ClientAPI, x replay.Exchange) error {
-			sourceIDs, capabilities := capturedQueryValue(x, "source_ids"), capturedQueryValue(x, "capabilities")
-			_, err := c.GetHistoryDevices(ctx, ring.GetHistoryDevicesRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, Params: generatedhttp.GetHistoryDevicesParams{SourceIds: &sourceIDs, Capabilities: &capabilities}})
+			sourceIDs := strings.Split(capturedQueryValue(x, "source_ids"), ",")
+			_, err := c.GetHistoryDevices(ctx, ring.GetHistoryDevicesRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, Params: ring.HistoryDevicesParams{SourceIDs: sourceIDs, Capabilities: capturedCapabilities(x)}})
 			return err
 		}},
 		{"device-reboot", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
@@ -73,25 +73,25 @@ func capturedPublicCalls() []capturedPublicCall {
 			return c.DeleteRecording(ctx, ring.DeleteRecordingRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, RecordingID: 1000, ConfirmDeleteFavorite: &confirm})
 		}},
 		{"bootstrap-ticket", func(ctx context.Context, c ring.ClientAPI, x replay.Exchange) error {
-			locationID, subscription, transport := capturedQueryValue(x, "locationID"), capturedQueryValue(x, "locationSubscription"), capturedQueryValue(x, "requestedTransport")
+			locationID, subscription, transport := capturedQueryValue(x, "locationID"), capturedQueryValue(x, "locationSubscription"), ring.SignalingTransport(capturedQueryValue(x, "requestedTransport"))
 			allow, extended := false, true
-			_, err := c.GetCapturedTickets(ctx, ring.GetCapturedTicketsRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, Params: generatedhttp.GetCapturedLocationTicketsParams{LocationID: &locationID, LocationSubscription: &subscription, RequestedTransport: &transport, AllowUserOnly: &allow, EnableExtendedEmergencyCellUsage: &extended}})
+			_, err := c.GetCapturedTickets(ctx, ring.GetCapturedTicketsRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, Params: ring.CapturedTicketsParams{LocationID: &locationID, LocationSubscription: &subscription, RequestedTransport: &transport, AllowUserOnly: &allow, EnableExtendedEmergencyCellUsage: &extended}})
 			return err
 		}},
 	}
 }
 
-func capturedTimelineParamsForCall(x replay.Exchange) (generatedhttp.GetDeviceTimelineParams, error) {
+func capturedTimelineParamsForCall(x replay.Exchange) (ring.TimelineParams, error) {
 	start, err := time.Parse(time.RFC3339, capturedQueryValue(x, "start_time"))
 	if err != nil {
-		return generatedhttp.GetDeviceTimelineParams{}, err
+		return ring.TimelineParams{}, err
 	}
 	end, err := time.Parse(time.RFC3339, capturedQueryValue(x, "end_time"))
 	if err != nil {
-		return generatedhttp.GetDeviceTimelineParams{}, err
+		return ring.TimelineParams{}, err
 	}
-	order, capabilities, limit := capturedQueryValue(x, "order"), capturedQueryValue(x, "capabilities"), 20
-	return generatedhttp.GetDeviceTimelineParams{StartTime: &start, EndTime: &end, Order: &order, Capabilities: &capabilities, Limit: &limit}, nil
+	order, limit := ring.TimelineOrder(capturedQueryValue(x, "order")), 20
+	return ring.TimelineParams{StartTime: &start, EndTime: &end, Order: &order, Capabilities: capturedCapabilities(x), Limit: &limit}, nil
 }
 
 func TestCapturedPublicHTTPNotFoundForEveryOperation(t *testing.T) {
@@ -142,7 +142,7 @@ func TestCapturedPublicHTTPValidationNeverSends(t *testing.T) {
 			return err
 		}},
 		{"timeline-limit", func() error {
-			_, err := client.GetDeviceTimeline(context.Background(), ring.GetDeviceTimelineRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000", Params: generatedhttp.GetDeviceTimelineParams{Limit: chimePointer(-1)}})
+			_, err := client.GetDeviceTimeline(context.Background(), ring.GetDeviceTimelineRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000", Params: ring.TimelineParams{Limit: chimePointer(-1)}})
 			return err
 		}},
 		{"reboot", func() error {
@@ -181,9 +181,9 @@ func TestCapturedTicketReplayFailureBoundaries(t *testing.T) {
 		client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}))
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = client.Close() })
-		locationID, subscription, requestedTransport := capturedQueryValue(fixture, "locationID"), capturedQueryValue(fixture, "locationSubscription"), capturedQueryValue(fixture, "requestedTransport")
+		locationID, subscription, requestedTransport := capturedQueryValue(fixture, "locationID"), capturedQueryValue(fixture, "locationSubscription"), ring.SignalingTransport(capturedQueryValue(fixture, "requestedTransport"))
 		allow, extended := false, true
-		_, err = client.GetCapturedTickets(context.Background(), ring.GetCapturedTicketsRequest{Params: generatedhttp.GetCapturedLocationTicketsParams{LocationID: &locationID, LocationSubscription: &subscription, RequestedTransport: &requestedTransport, AllowUserOnly: &allow, EnableExtendedEmergencyCellUsage: &extended}})
+		_, err = client.GetCapturedTickets(context.Background(), ring.GetCapturedTicketsRequest{Params: ring.CapturedTicketsParams{LocationID: &locationID, LocationSubscription: &subscription, RequestedTransport: &requestedTransport, AllowUserOnly: &allow, EnableExtendedEmergencyCellUsage: &extended}})
 		require.True(t, ringapimodels.IsTokenError(err), "error = %v", err)
 		require.NoError(t, transport.AssertConsumed())
 	})
@@ -220,7 +220,7 @@ func TestCapturedHTTPRetryReadButNeverReboot(t *testing.T) {
 		t.Cleanup(func() { _ = client.Close() })
 		detail, err := client.GetDeviceDetail(context.Background(), ring.GetDeviceDetailRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
 		require.NoError(t, err)
-		require.Equal(t, int64(1000), detail.Device.Id)
+		require.Equal(t, int64(1000), detail.Device.ID)
 		require.NoError(t, transport.AssertConsumed())
 	})
 	t.Run("reboot is not retried", func(t *testing.T) {

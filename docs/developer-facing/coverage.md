@@ -14,7 +14,15 @@ go test -race ./... -timeout 120s
 go vet ./...
 go build ./examples/...
 make lint
+make test-stress
 ```
+
+`make test-stress` repeats the adversarial state-machine cases under the race
+detector. They race RPC correlation, expiry, explicit close, connection
+failure, push backpressure, playback/push heartbeat, and continuous PTZ
+controls. The assertions require bounded completion and released child/RPC
+registries; a higher statement percentage alone does not establish those
+properties.
 
 Set `GOWORK=off` when testing this module independently of a surrounding workspace.
 The fixture-contract checks use `tools/protocols` and `tools/capture`. Install
@@ -24,8 +32,8 @@ a Python reference checkout. The private mitmproxy file is not required.
 
 `make test-cover` measures replay, unit, and their combined coverage separately.
 Replay is the primary compatibility metric: the local account-scope replay run
-reaches 86.84% of maintained Go statements; unit tests reach 51.70%, and their
-union reaches 93.06%. These suites have separate CI floors and profiles. The retired Python
+reaches 85.97% of maintained Go statements; unit tests reach 55.72%, and their
+union reaches 92.93%. These suites have separate CI floors and profiles. The retired Python
 replay gate covered 96.13% of selected Python lines, a different denominator;
 compare ported behavior through the [test mapping](../plans/porting-progress.md). Live tests
 are opt-in via `make test-integration`, with separate coverage through
@@ -42,14 +50,14 @@ handwritten library statements reached by `tests/replay` alone, using
 sanitized captured and labeled synthetic fixtures. A passing replay test proves the behavior of that fixture and local
 transport, not compatibility with an unrecorded device or live service.
 
-Run `make test-cover` to produce three separate reports with the same 2,467
+Run `make test-cover` to produce three separate reports with the same 2,559
 statement denominator:
 
 | Suite | Test targets | Profile | Current coverage | CI floor |
 | --- | --- | --- | ---: | ---: |
-| Replay | `tests/replay` only | `coverage.replay.out` | 2,066/2,379 (86.84%) | 85% |
-| Unit | Co-located tests in `pkg` and `internal` | `coverage.unit.out` | 1,230/2,379 (51.70%) | 50% |
-| Combined | Replay and unit targets together | `coverage.combined.out` | 2,214/2,379 (93.06%) | 90%, plus per-package floors |
+| Replay | `tests/replay` only | `coverage.replay.out` | 2,200/2,559 (85.97%) | 85% |
+| Unit | Co-located tests in `pkg` and `internal` | `coverage.unit.out` | 1,426/2,559 (55.72%) | 50% |
+| Combined | Replay and unit targets together | `coverage.combined.out` | 2,378/2,559 (92.93%) | 90%, plus per-package floors |
 
 The replay floor preserves the current baseline; it is not the desired endpoint.
 Replay coverage should rise as captured and synthetic interactions become

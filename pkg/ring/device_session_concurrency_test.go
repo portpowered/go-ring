@@ -153,6 +153,61 @@ func TestFailedReplacementPTZKeepsAcknowledgedMovement(t *testing.T) {
 	}
 }
 
+func TestCloseWaitsForInFlightPTZAndSendsSafetyStop(t *testing.T) {
+	writes := make(chan signaling.Message, 3)
+	core, err := signaling.NewSession(context.Background(), signaling.SessionConfig{
+		DeviceID: 7, DialogID: "dialog", SignalID: "signal", ControlID: "control", Heartbeat: time.Minute,
+		Send: func(_ context.Context, m signaling.Message) error { writes <- m; return nil },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = core.Close() })
+	connection := &SignalingConnection{done: make(chan struct{}), sessions: make(map[string]*DeviceSession)}
+	s := &DeviceSession{connection: connection, core: core, dialogID: "dialog", deviceID: 7, signalID: "signal", movement: make(map[PTZAxis]string), done: make(chan struct{})}
+	connection.sessions[s.dialogID] = s
+	go s.watch()
+	moveDone := make(chan error, 1)
+	go func() {
+		_, err := s.PanContinuous(context.Background(), PanContinuousRequest{Direction: PanRight, Speed: 0.5})
+		moveDone <- err
+	}()
+	move := nextPTZWrite(t, writes)
+	closeDone := make(chan error, 1)
+	go func() { closeDone <- s.Close() }()
+	select {
+	case premature := <-writes:
+		t.Fatalf("close sent %s before the pending move was acknowledged", premature.Method)
+	default:
+	}
+	replyPTZSuccess(t, core, move)
+	if err := <-moveDone; err != nil {
+		t.Fatal(err)
+	}
+	stop := nextPTZWrite(t, writes)
+	var body struct {
+		Command struct {
+			Params struct {
+				Direction string  `json:"direction"`
+				Speed     float64 `json:"speed"`
+			} `json:"params"`
+		} `json:"command"`
+	}
+	if err := json.Unmarshal(stop.Body, &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Command.Params.Direction != "RIGHT" || body.Command.Params.Speed != 0 {
+		t.Fatalf("close safety stop = %+v", body.Command.Params)
+	}
+	replyPTZSuccess(t, core, stop)
+	if final := nextPTZWrite(t, writes); final.Method != protocol.MethodClose {
+		t.Fatalf("final method = %s", final.Method)
+	}
+	if err := <-closeDone; err != nil {
+		t.Fatal(err)
+	}
+}
+
 func nextPTZWrite(t *testing.T, writes <-chan signaling.Message) signaling.Message {
 	t.Helper()
 	select {

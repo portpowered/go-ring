@@ -212,8 +212,8 @@ func (s *DeviceSession) watch() {
 		s.terminal = sessionError("device session ended", err)
 	}
 	s.mu.Unlock()
-	s.doneOnce.Do(func() { close(s.done) })
 	s.connection.removeSession(s.dialogID)
+	s.doneOnce.Do(func() { close(s.done) })
 }
 func (s *DeviceSession) matches(m signaling.Message) bool {
 	var body generatedsignaling.SessionBody

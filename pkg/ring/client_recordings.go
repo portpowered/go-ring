@@ -18,7 +18,7 @@ func (c *Client) GetDeviceHistory(ctx context.Context, req GetDeviceHistoryReque
 		return nil, ringapimodels.NewBadRequestError("older-than cursor must be nonnegative", nil)
 	}
 
-	rawResponse, err := c.restClient.GetDeviceHistory(ctx, deviceIDInt, req.Limit, req.Kind, req.OlderThan)
+	rawResponse, err := c.restClient.GetDeviceHistory(ctx, deviceIDInt, req.Limit, string(req.Kind), req.OlderThan)
 	if err != nil {
 		return nil, err
 	}

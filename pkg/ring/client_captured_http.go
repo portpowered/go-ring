@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-func (c *Client) GetDeviceDetail(ctx context.Context, req GetDeviceDetailRequest) (*generatedhttp.DeviceDetail, error) {
+func (c *Client) GetDeviceDetail(ctx context.Context, req GetDeviceDetailRequest) (*DeviceDetail, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
@@ -20,15 +21,47 @@ func (c *Client) GetDeviceDetail(ctx context.Context, req GetDeviceDetailRequest
 	if err = c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
-	return c.restClient.GetDeviceDetail(ctx, id)
+	wire, err := c.restClient.GetDeviceDetail(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	detail, err := projectCaptured[DeviceDetail](wire)
+	if err != nil {
+		return nil, err
+	}
+	detail.OperationSets = operationNames(wire.DeviceOperationSet)
+	return detail, nil
 }
 
-func (c *Client) ListLocations(ctx context.Context, req ListLocationsRequest) (*generatedhttp.LocationList, error) {
+func (c *Client) ListLocations(ctx context.Context, req ListLocationsRequest) (*LocationList, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	if err := c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
-	return c.restClient.ListLocations(ctx)
+	wire, err := c.restClient.ListLocations(ctx)
+	if err != nil {
+		return nil, err
+	}
+	locations, err := projectCaptured[LocationList](wire)
+	if err != nil {
+		return nil, err
+	}
+	locations.OperationSets = operationNames(wire.LocationOperationSets)
+	return locations, nil
+}
+
+func operationNames(sets *map[string]generatedhttp.DeviceOperationSet) map[string][]string {
+	if sets == nil {
+		return nil
+	}
+	names := make(map[string][]string, len(*sets))
+	for name, operations := range *sets {
+		for operation := range operations {
+			names[name] = append(names[name], operation)
+		}
+		sort.Strings(names[name])
+	}
+	return names
 }
 
 func locationID(value string) (string, error) {
@@ -38,7 +71,7 @@ func locationID(value string) (string, error) {
 	return value, nil
 }
 
-func (c *Client) GetLocation(ctx context.Context, req GetLocationRequest) (*generatedhttp.LocationDetail, error) {
+func (c *Client) GetLocation(ctx context.Context, req GetLocationRequest) (*LocationDetail, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	id, err := locationID(req.LocationID)
 	if err != nil {
@@ -47,10 +80,14 @@ func (c *Client) GetLocation(ctx context.Context, req GetLocationRequest) (*gene
 	if err = c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
-	return c.restClient.GetLocation(ctx, id, req.Params)
+	wire, err := c.restClient.GetLocation(ctx, id, req.Params.wire())
+	if err != nil {
+		return nil, err
+	}
+	return projectCaptured[LocationDetail](wire)
 }
 
-func (c *Client) ListLocationGroups(ctx context.Context, req LocationRequest) (*generatedhttp.LocationGroups, error) {
+func (c *Client) ListLocationGroups(ctx context.Context, req LocationRequest) (*LocationGroups, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	id, err := locationID(req.LocationID)
 	if err != nil {
@@ -59,10 +96,14 @@ func (c *Client) ListLocationGroups(ctx context.Context, req LocationRequest) (*
 	if err = c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
-	return c.restClient.ListLocationGroups(ctx, id)
+	wire, err := c.restClient.ListLocationGroups(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return projectCaptured[LocationGroups](wire)
 }
 
-func (c *Client) ListLocationDevices(ctx context.Context, req LocationRequest) (*generatedhttp.LocationGroupDevices, error) {
+func (c *Client) ListLocationDevices(ctx context.Context, req LocationRequest) (*LocationGroupDevices, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	id, err := locationID(req.LocationID)
 	if err != nil {
@@ -71,10 +112,14 @@ func (c *Client) ListLocationDevices(ctx context.Context, req LocationRequest) (
 	if err = c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
-	return c.restClient.ListLocationDevices(ctx, id)
+	wire, err := c.restClient.ListLocationDevices(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return projectCaptured[LocationGroupDevices](wire)
 }
 
-func (c *Client) GetDeviceTimeline(ctx context.Context, req GetDeviceTimelineRequest) (*generatedhttp.DeviceTimeline, error) {
+func (c *Client) GetDeviceTimeline(ctx context.Context, req GetDeviceTimelineRequest) (*DeviceTimeline, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
@@ -86,15 +131,23 @@ func (c *Client) GetDeviceTimeline(ctx context.Context, req GetDeviceTimelineReq
 	if err = c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
-	return c.restClient.GetDeviceTimeline(ctx, id, req.Params)
+	wire, err := c.restClient.GetDeviceTimeline(ctx, id, req.Params.wire())
+	if err != nil {
+		return nil, err
+	}
+	return projectCaptured[DeviceTimeline](wire)
 }
 
-func (c *Client) GetHistoryDevices(ctx context.Context, req GetHistoryDevicesRequest) (*generatedhttp.HistoryDevices, error) {
+func (c *Client) GetHistoryDevices(ctx context.Context, req GetHistoryDevicesRequest) (*HistoryDevices, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	if err := c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
-	return c.restClient.GetHistoryDevices(ctx, req.Params)
+	wire, err := c.restClient.GetHistoryDevices(ctx, req.Params.wire())
+	if err != nil {
+		return nil, err
+	}
+	return projectCaptured[HistoryDevices](wire)
 }
 
 func (c *Client) RebootDevice(ctx context.Context, req DeviceIDRequest) error {
@@ -154,7 +207,7 @@ func (c *Client) DeleteRecording(ctx context.Context, req DeleteRecordingRequest
 
 // GetCapturedTickets reads the recorded location ticket resource. It does not
 // replace the separate POST ticket used by OpenSignaling.
-func (c *Client) GetCapturedTickets(ctx context.Context, req GetCapturedTicketsRequest) (*generatedhttp.CapturedTickets, error) {
+func (c *Client) GetCapturedTickets(ctx context.Context, req GetCapturedTicketsRequest) (*CapturedTickets, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	if c.endpoints.SolutionsBaseURL == "" {
 		return nil, ringapimodels.NewConnectionError("Solutions endpoint is not configured for this region", nil)
@@ -167,7 +220,8 @@ func (c *Client) GetCapturedTickets(ctx context.Context, req GetCapturedTicketsR
 	if err != nil {
 		return nil, ringapimodels.NewBadRequestError("invalid Solutions endpoint", err)
 	}
-	response, err := wire.GetCapturedLocationTicketsWithResponse(ctx, &req.Params, func(_ context.Context, request *http.Request) error {
+	params := req.Params.wire()
+	response, err := wire.GetCapturedLocationTicketsWithResponse(ctx, &params, func(_ context.Context, request *http.Request) error {
 		request.Header.Set("Authorization", "Bearer "+token)
 		request.Header.Set("Accept", "application/json")
 		request.Header.Set("User-Agent", c.userAgent)
@@ -188,7 +242,7 @@ func (c *Client) GetCapturedTickets(ctx context.Context, req GetCapturedTicketsR
 		if response.JSON200.Ticket == "" {
 			return nil, ringapimodels.NewInternalServerError("captured ticket response lacks a ticket", nil)
 		}
-		return response.JSON200, nil
+		return projectCaptured[CapturedTickets](response.JSON200)
 	}
 	if response.StatusCode() < 200 || response.StatusCode() >= 300 {
 		return nil, ringapimodels.ClassifyHTTPError(response.HTTPResponse, string(response.Body))

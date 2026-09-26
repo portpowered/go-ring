@@ -67,10 +67,10 @@ func (c *Client) UpdateDeviceHealth(ctx context.Context, req UpdateDeviceHealthR
 		return nil, ringapimodels.NewBadRequestError("invalid device ID format", err)
 	}
 	if req.Family != "" {
-		if req.Family != generatedhttp.Doorbots && req.Family != generatedhttp.Chimes {
+		if req.Family != DeviceFamilyDoorbells && req.Family != DeviceFamilyChimes {
 			return nil, ringapimodels.NewBadRequestError("unsupported health device family", nil)
 		}
-		response, healthErr := c.restClient.GetFamilyDeviceHealth(ctx, deviceIDInt, req.Family)
+		response, healthErr := c.restClient.GetFamilyDeviceHealth(ctx, deviceIDInt, generatedhttp.DeviceFamilyCode(req.Family))
 		if healthErr != nil {
 			return nil, healthErr
 		}

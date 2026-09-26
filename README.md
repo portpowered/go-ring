@@ -220,9 +220,9 @@ These are the public SDK methods.
 | --- | --- | --- |
 | Client setup and shutdown | `ring.NewClient`, `Client.Close` | Configuration is fixed at construction; one client can own several signaling connections. |
 | Login and tokens | `Client.NewLoginSession`, `LoginSession.Request2FACode`, `LoginSession.Authenticate`, `Client.RefreshToken` | Login state stays in one session; refresh tokens are passed per request. See [token exchange](examples/token-exchange/main.go). |
-| Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail` | `GetDeviceDetail` returns the captured v3 wire envelope. |
+| Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail` | `GetDeviceDetail` returns a typed client projection of the captured v3 response. |
 | Device health and settings | `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Health can select a doorbell or chime family route. |
-| Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Returns OpenAPI-generated wire models. |
+| Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Requests and results use client-owned types; the generated HTTP models stay inside the transport. |
 | Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolumeForDevice`, `Client.SetVolume`, `Client.SetInHomeChime` | `SetVolumeForDevice` uses an enumerated chime or doorbell; `SetVolume` accepts explicit wire fields. |
 | Chime sound and reboot | `Client.TestSound`, `Client.RebootDevice` | See the inline code below. |
 | Snapshot | `Client.GetSnapshot` | Returns image bytes and metadata. |
@@ -238,6 +238,17 @@ These are the public SDK methods.
 | Cloud playback | `SignalingConnection.StartPlayback`, `PlaybackSession.Answer`, `PlaybackSession.SendICE`, `PlaybackSession.Receive`, `PlaybackSession.Close` | Playback negotiates its own SDP/ICE conversation. |
 | Push notifications | `SignalingConnection.SubscribePush`, `PushSubscription.Receive`, `PushSubscription.Close` | Requires an active signaling connection. |
 | Captured GET ticket | `Client.GetCapturedTickets` | Separate from the POST ticket used by `OpenSignaling`. |
+
+Captured reads use SDK request and result types. For example,
+`GetLocationRequest.Params.Include` accepts `[]ring.LocationExpansion`, and
+`GetDeviceTimelineRequest.Params.Order` accepts `ring.TimelineOrder`.
+`EventCapability`, `HistoryKind`, and captured event/status types have named
+values but remain open to future server values. The generated HTTP types are
+used only inside the transport.
+Callers upgrading from wire-model results should use `DeviceDetail.Device.ID`
+and `LocationList.Locations`, and replace `generatedhttp.Get*Params` fields in
+client requests with `ring.LocationParams`, `ring.TimelineParams`,
+`ring.HistoryDevicesParams`, or `ring.CapturedTicketsParams`.
 
 ## References
 

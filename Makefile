@@ -2,7 +2,7 @@ GO ?= go
 GO_TEST_TIMEOUT ?= 120s
 export GOWORK := off
 .DEFAULT_GOAL := check
-.PHONY: check build build-examples build-cli test test-cli test-race test-cover test-integration fmt vet generate-api lint lint-cli
+.PHONY: check build build-examples build-cli test test-cli test-race test-stress test-cover test-integration fmt vet generate-api lint lint-cli
 check: build build-cli test test-cli vet
 build:
 	$(GO) build ./...
@@ -16,6 +16,8 @@ test-cli:
 	cd cmd/go-ring && $(GO) test ./...
 test-race:
 	$(GO) test -race ./... -timeout $(GO_TEST_TIMEOUT)
+test-stress:
+	$(GO) test -race ./internal/signaling ./pkg/ring -run 'Test(SessionAdversarialTerminationStress|DeviceSessionAdversarialCloseStress|SignalingConnectionAdversarialTerminationStress|CloseWaitsForInFlightPTZAndSendsSafetyStop)' -count=20 -timeout $(GO_TEST_TIMEOUT)
 test-cover:
 	$(GO) run ./tools/coverage
 	$(GO) run ./tools/coverage -suite unit
