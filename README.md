@@ -262,6 +262,5 @@ distinguishes captured routes from Python-profile and legacy routes.
 ## Compatibility and license
 Go implementation: Apache-2.0, see [LICENSE](LICENSE).
 
-The separately vendored Python reference retains its own LGPL-3.0-or-later
-license. Its source and tests are a comparison baseline, not a relicensing of
-this library.
+The upstream [python-ring-doorbell](https://github.com/python-ring-doorbell/python-ring-doorbell)
+project remains a comparison baseline. It is not included in this repository.

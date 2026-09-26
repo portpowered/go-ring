@@ -6,4 +6,4 @@ The spec names captured query parameters for timeline, history-device, location 
 
 `RingAccessToken` documents the existing Go behavior of sending a bearer access token (direct token or configured token getter). The spec does not invent an OAuth grant flow: the sanitized HTTP recordings do not include OAuth exchanges. The plural `/api/v1/clap/tickets` GET remains a captured operation on the US Solutions host. The singular `/api/v1/clap/ticket/request/signalsocket` POST remains separately documented from existing Go code and local tests; the two routes have not been shown to be equivalent.
 
-Run `python tools/verify_reference.py` to execute the Python baseline, recording adapters, HTTP/AsyncAPI body validation, and capture fixture tests.
+Run `python -m unittest discover -s tools/protocols -v` and `python -m unittest discover -s tools/capture -v` after installing their requirements to validate HTTP/AsyncAPI bodies and capture fixtures.

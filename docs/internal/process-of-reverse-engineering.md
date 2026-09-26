@@ -5,8 +5,9 @@ and contracts, then choose idiomatic Go APIs; source code translation alone is
 not the goal. The detailed scope and completion gates live in
 [the library plan](../library-improvement-plan.md).
 
-1. Pin the reference library as a submodule. Run its existing tests unmodified
-   with external networking prohibited. Record the command and actual results.
+1. Pin an upstream reference revision by URL and record its test behavior in
+   a separate checkout when comparison is needed. Keep the Go repository
+   independent of that checkout.
 2. Describe its public features, architecture, HTTP routes, signaling behavior,
    and test coverage. Use the Python tests as the initial behavior checklist,
    including auth regression cases; existing Go authentication remains supported.
@@ -14,7 +15,8 @@ not the goal. The detailed scope and completion gates live in
    minimal HTTP exchanges and ordered WebSocket conversations plus schemas.
    Keep device, dialog, signaling-session, and control-session identities
    distinct. Do not add capture manifests or extraction metadata.
-4. Run compatible recording inputs through the reference using an adapter.
+4. When a separate reference checkout is available, run compatible recording
+   inputs through it using an adapter outside this repository.
    Identify whether each test proves request/response transport behavior or only
    model conversion. Mark incompatible routes, absent recordings, and synthetic
    failures explicitly. Never call a converted fixture a captured request.
@@ -27,7 +29,7 @@ not the goal. The detailed scope and completion gates live in
    regional overrides, cancellation, malformed responses, session ownership,
    SDP/ICE construction, heartbeat handling, RPC correlation, and lifecycle
    limits. Synthetic negative cases supplement the recorded happy paths.
-7. Verify the full reference, contract, Go race, and coverage suites. Publish
+7. Verify the contract, Go race, and coverage suites. Publish
    README examples and API/lifecycle/migration documentation that match tested
    behavior. Completion requires the selected feature matrix and planned tests
    to be satisfied, plus at least 90% maintained handwritten library statement

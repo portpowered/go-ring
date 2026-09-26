@@ -45,8 +45,3 @@ lint:
 	cd cmd/go-ring && golangci-lint run ./...
 lint-cli:
 	cd cmd/go-ring && golangci-lint run ./...
-
-# Optional maintainer checks; ordinary Go builds do not require Python or uv.
-.PHONY: test-reference
-test-reference:
-	python tools/verify_reference.py

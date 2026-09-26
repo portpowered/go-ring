@@ -45,7 +45,7 @@ The caller owns and closes the media peer separately.
 | `tests/replay/fixtures/recordings` | Actual sanitized exchanges, conversations, and schemas |
 | `tests/replay` | Public API replay tests against local HTTP/WebSocket peers, with captured and labeled synthetic fixtures |
 | `tests/integration` | Opt-in full end-to-end tests against real endpoints and hardware |
-| `tools/reference-replay`, `tools/protocols`, `tools/capture` | Optional maintainer comparison, validation, and extraction tools |
+| `tools/protocols`, `tools/capture` | Schema validation and recording extraction tools |
 
 New callers should depend on `pkg/ring`, not the transport packages. The
 remaining transport scheduling in `pkg/ring` is the push/playback heartbeat

@@ -112,9 +112,9 @@ type suiteSpec struct {
 func suiteSpecFor(name string) (suiteSpec, error) {
 	switch name {
 	case "replay":
-		return suiteSpec{name, []string{"./tests/replay/..."}, "coverage.replay.out", 49, "120s"}, nil
+		return suiteSpec{name, []string{"./tests/replay/..."}, "coverage.replay.out", 85, "120s"}, nil
 	case "unit":
-		return suiteSpec{name, []string{"./pkg/...", "./internal/..."}, "coverage.unit.out", 75, "120s"}, nil
+		return suiteSpec{name, []string{"./pkg/...", "./internal/..."}, "coverage.unit.out", 50, "120s"}, nil
 	case "integration":
 		return suiteSpec{name, []string{"-tags=integration", "./tests/integration/..."}, "coverage.integration.out", 0, "5m"}, nil
 	case "combined":

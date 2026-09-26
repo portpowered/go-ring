@@ -33,7 +33,7 @@ The full default test run passed. The verified coverage baseline used PowerShell
 
 ## 3. Sources and evidence model
 
-Reference submodule: `reference/python-ring-doorbell`, pinned to `486193a80e7c924a0ab14b04d47305e1b36e419e`. Normal Go consumers must not need Python or initialize this submodule. Only the reference-comparison job needs it.
+Historical reference revision: [`486193a`](https://github.com/python-ring-doorbell/python-ring-doorbell/tree/486193a80e7c924a0ab14b04d47305e1b36e419e). The Python checkout and comparison job were removed after migration; Go consumers and CI do not need Python source.
 
 Assign independent evidence and implementation statuses. For example, a behavior can be `observed in capture` and `not implemented`; a passing synthetic test does not change its evidence source.
 
@@ -246,7 +246,7 @@ Python sync-wrapper tests do not need direct Go equivalents. Carry their behavio
 
 Build a language-neutral scenario format: ID, evidence, input operation, ordered or explicitly unordered exchanges, request matchers, response/error/delay, expected normalized result, expected side effects, and allowed nondeterminism. Capture fixtures supply exchanges; handwritten expected values supply the oracle.
 
-Use shared scenarios where behavior is comparable through Go and an external Python adapter beside the pinned submodule. Redirect Python transport to a local harness and compare normalized devices, histories, error categories and request effects. Python comparison is advisory, not an equality gate. Freeze time/UUIDs and isolate dependencies. Run unsupported/new C1 routes as Go-only contract tests. Record intentional divergences with the selected behavior, working implementation/capture evidence, scope and regression tests; these are accepted outcomes, not failures to fix by imitating Python.
+Use shared scenarios where behavior is comparable through Go and a separately maintained Python adapter. Redirect Python transport to a local harness and compare normalized devices, histories, error categories and request effects. Python comparison is advisory, not an equality gate. Freeze time/UUIDs and isolate dependencies. Run unsupported/new C1 routes as Go-only contract tests. Record intentional divergences with the selected behavior, working implementation/capture evidence, scope and regression tests; these are accepted outcomes, not failures to fix by imitating Python.
 
 Strengthen the Go mock first: full host/method/path/query/header/body matching, independent response streams, exchange consumption checks, deterministic errors, and failure on unexpected calls. Assert actual outbound RTC frames and terminal errors; merely waiting and checking a non-nil stream is insufficient.
 
@@ -330,7 +330,7 @@ The release placeholder must be replaced before publication. Keep the working li
 | Errors (`docs/errors.md`) | [HTTP error boundaries](protocols/http.md#error-boundaries), [migration behavior](migration.md), and the README's request-handling guidance cover typed errors, refresh, permission failures, and uncertain mutations. |
 | Networking (`docs/networking.md`) | [Configuration ownership](constants-and-configuration.md), [HTTP contracts](protocols/http.md), [HTTP test progress](http-test-progress.md), and [migration behavior](migration.md) cover injected clients/endpoints, response handling, bounded retries, contexts, and redirect limitations. Proxy/TLS behavior follows the injected Go clients; no separate retry-after feature is claimed. |
 | Support (`docs/support.md`) | The reviewed [parity matrix](parity-matrix.md), [porting progress](porting-progress.md), and README evidence table list supported behavior and explicit unknowns; they are not generated device-certification claims. |
-| Testing (`docs/testing.md`) | [Replay format](replay-format.md), the [reverse-engineering process](internal/process-of-reverse-engineering.md), this plan's coverage denominator, and `tools/verify_reference.py` describe offline checks, Python mapping, deterministic seams, and opt-in live tests. |
+| Testing (`docs/testing.md`) | [Replay format](../developer-facing/replay-format.md), the [reverse-engineering process](../internal/process-of-reverse-engineering.md), and this plan's coverage denominator describe offline checks, Python mapping, deterministic seams, and opt-in live tests. |
 | Evidence (`docs/evidence/README.md`) | [Recording notes](../tests/replay/fixtures/recordings/README.md), [legacy fixture notes](../tests/replay/fixtures/legacy/README.md), and the [parity matrix](parity-matrix.md) describe capture scope, source distinctions, synthetic fixtures, and known conflicts. No separate evidence registry is maintained. |
 | Reverse engineering (`docs/reverse-engineering.md`) | The [reverse-engineering process](internal/process-of-reverse-engineering.md), [recording notes](../tests/replay/fixtures/recordings/README.md), and `tools/capture/extract.py` describe local extraction and sanitization. `CONTRIBUTING.md` covers source attribution and review. |
 | Migration (`docs/migration.md`) | [Migration guidance](migration.md) covers current lifecycle and behavior changes; feature-specific settings and identity details remain in their API docs. |
@@ -355,7 +355,7 @@ Required handling guidance: a timed-out mutation may already have succeeded; rec
 
 T6 additions are not required to make existing APIs reliable. Do not delay lifecycle fixes until every capture route is implemented. A stable release may retain explicitly experimental event support while listing it outside stable guarantees.
 
-Before copying Python source or fixtures, record their license and attribution in the provenance review; the reference has an LGPL-3.0 license, while this project declares Apache-2.0. Keeping the reference submodule is separate from incorporating its contents into the Go implementation. Prefer independently authored behavior tests and document the provenance of anything reused.
+Before copying Python source or fixtures, record their license and attribution in the provenance review; the reference has an LGPL-3.0 license, while this project declares Apache-2.0. Prefer independently authored behavior tests and document the provenance of anything reused.
 
 Completion means dependable existing APIs, a published contract, reproducible evidence-backed tests, passing CI gates, and an honest support matrix. It does not mean every Ring endpoint is supported or that a high statement percentage certifies live compatibility.
 

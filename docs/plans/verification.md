@@ -1,5 +1,10 @@
 # Offline porting verification
 
+This page records the original migration verification. Its Python baseline
+figures are historical: the checkout and adapter were removed after migration.
+For active commands and coverage floors, use the
+[coverage guide](../developer-facing/coverage.md).
+
 The selected library improvement scope is implemented and locally verified.
 Execution follows the [reference-first process](internal/process-of-reverse-engineering.md):
 Python behavior baseline, paired recording contracts, explicit Go test mappings,
@@ -25,11 +30,9 @@ Verified locally on Windows with `GOWORK=off`:
 | OpenAPI/AsyncAPI document and payload checks | 12 passed |
 | Capture extraction/sanitizer/schema checks | 11 passed |
 
-`python tools/verify_reference.py` runs the original Python tests, fixture-only
-coverage gate, protocol contracts, and capture checks. It
-requires the initialized reference submodule, uv, and Node.js/npm; it installs
-isolated test dependencies. The actual test replay is offline, with local
-HTTP/WebSocket peers permitted. The private mitmproxy file is not required.
+The retired Python comparison runner produced the historical Python figures
+above. Current CI runs the protocol and capture checks independently of the
+upstream checkout. The private mitmproxy file is not required.
 Coverage includes handwritten code under `pkg` and `internal`; generated models and wire clients, test harnesses,
 examples, tests, and maintainer tools are exercised but excluded from the
 library denominator. Minor scheduling-dependent branch counts can vary; the

@@ -15,8 +15,8 @@ fixture. `http-failures.json` names synthetic transport or status outcomes.
 and snapshot tests. `session-variants.json` holds application messages missing
 from the capture. `session-lifecycle.json` holds SDP/ICE and failure variants.
 
-The Python runner in `tools/reference-replay` consumes these alongside the
-actual captured files. Go reads the same files through `internal/testkit/replay`:
+Go reads these files through `internal/testkit/replay` alongside the
+captured files:
 `tests/replay/signaling_ticket_portable_test.go` exercises the POST ticket;
 `tests/replay/legacy_controls_portable_test.go` exercises all six legacy control
 requests and three in-home chime options; and `tests/replay/session_portable_replay_test.go`

@@ -17,7 +17,7 @@ The HTTP fixture operations pair with the baseline Python library as follows:
 | Signaling ticket | no matching Python test | capture-only bootstrap operation |
 
 The signaling transcript and PTZ methods are capture-only additions: the
-baseline `reference/python-ring-doorbell` tests do not exercise live signaling
+baseline [python-ring-doorbell](https://github.com/python-ring-doorbell/python-ring-doorbell) tests do not exercise live signaling
 or WebSocket PTZ. The fixtures establish observed message shapes and order;
 they do not specify unobserved handshake variants, media success, or SDK timer
 policy.
