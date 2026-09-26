@@ -1,14 +1,6 @@
 package ringapimodels
 
-import (
-	"io"
-	"net/http"
-)
+import "github.com/portpowered/go-ring/internal/ringmedia"
 
-// VideoStream represents a video stream response from the Ring API
-type VideoStream struct {
-	Body        io.ReadCloser
-	ContentType string
-	ContentLen  int64
-	Headers     http.Header
-}
+// VideoStream is the customer-facing recording response body.
+type VideoStream = ringmedia.VideoStream

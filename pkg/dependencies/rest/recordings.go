@@ -8,9 +8,10 @@ import (
 	"strings"
 
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/ringerrors"
+	"github.com/portpowered/go-ring/internal/ringmedia"
 	"github.com/portpowered/go-ring/pkg/dependencymodels"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
-	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 // GetRecordingShareURL follows the pinned Python legacy share/play profile.
@@ -22,7 +23,7 @@ func (c *Client) GetRecordingShareURL(ctx context.Context, recordingID int64) (s
 		return "", err
 	}
 	if response.Url == "" {
-		return "", ringapimodels.NewBadRequestError("recording share response lacks URL", nil)
+		return "", ringerrors.NewBadRequestError("recording share response lacks URL", nil)
 	}
 	return response.Url, nil
 }
@@ -44,18 +45,12 @@ func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int
 	}
 
 	// The API returns an array directly, not wrapped in an object
-	var recordings []dependencymodels.RingRecording
+	var recordings generatedhttp.RecordingArray
 	if err := c.doJSONRequest(ctx, http.MethodGet, endpoint, nil, &recordings); err != nil {
 		return nil, err
 	}
-
-	// Populate DeviceID from doorbot.id for each recording
-	for i := range recordings {
-		recordings[i].DeviceID = recordings[i].Doorbot.ID
-	}
-
 	response := &dependencymodels.RingRecordingHistoryResponse{
-		Recordings: recordings,
+		Recordings: projectRecordings(recordings),
 	}
 	return response, nil
 }
@@ -63,32 +58,47 @@ func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int
 // GetActiveDings retrieves currently active dings
 func (c *Client) GetActiveDings(ctx context.Context) (*dependencymodels.RingRecordingHistoryResponse, error) {
 	// The API returns an array directly, not wrapped in an object
-	var recordings []dependencymodels.RingRecording
-	if err := c.doJSONRequest(ctx, http.MethodGet, ringapimodels.RingDingsActiveEndpoint, nil, &recordings); err != nil {
+	var recordings generatedhttp.RecordingArray
+	if err := c.doJSONRequest(ctx, http.MethodGet, protocol.DingsActivePath, nil, &recordings); err != nil {
 		return nil, err
 	}
 
-	// Populate DeviceID from doorbot.id for each recording
-	for i := range recordings {
-		recordings[i].DeviceID = recordings[i].Doorbot.ID
-	}
-
 	response := &dependencymodels.RingRecordingHistoryResponse{
-		Recordings: recordings,
+		Recordings: projectRecordings(recordings),
 	}
 	return response, nil
 }
 
+func projectRecordings(wire generatedhttp.RecordingArray) []dependencymodels.RingRecording {
+	recordings := make([]dependencymodels.RingRecording, 0, len(wire))
+	for _, item := range wire {
+		deviceID := int64(item.Doorbot.Id)
+		recordings = append(recordings, dependencymodels.RingRecording{
+			ID:        int64(item.Id),
+			Kind:      item.Kind,
+			Answered:  item.Answered,
+			CreatedAt: item.CreatedAt,
+			DeviceID:  deviceID,
+			Doorbot: dependencymodels.RingDoorbot{
+				ID:          deviceID,
+				Description: wireString(item.Doorbot.Description),
+				Type:        wireString(item.Doorbot.Type),
+			},
+		})
+	}
+	return recordings
+}
+
 // GetRecording retrieves a video stream for a recording
 // The endpoint returns video/mp4 directly in the response body
-func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringapimodels.VideoStream, error) {
-	endpoint := strings.Replace(ringapimodels.RingRecordingEndpoint, "{id}", strconv.FormatInt(recordingID, 10), 1)
+func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringmedia.VideoStream, error) {
+	endpoint := strings.Replace(protocol.RecordingPath, "{id}", strconv.FormatInt(recordingID, 10), 1)
 
 	// Make a raw HTTP request (not JSON) to get the video stream
 	url := c.baseURI + endpoint
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, ringapimodels.NewNetworkError("failed to create request", err)
+		return nil, ringerrors.NewNetworkError("failed to create request", err)
 	}
 
 	// Get token and set authorization header
@@ -107,12 +117,12 @@ func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringapim
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, ringapimodels.NewNetworkError("failed to get recording", err)
+		return nil, ringerrors.NewNetworkError("failed to get recording", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		resp.Body.Close()
-		return nil, ringapimodels.NewHTTPError(resp, "")
+		return nil, ringerrors.NewHTTPError(resp, "")
 	}
 
 	// Extract content length from header if available
@@ -121,7 +131,7 @@ func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringapim
 		contentLen = resp.ContentLength
 	}
 
-	stream := &ringapimodels.VideoStream{
+	stream := &ringmedia.VideoStream{
 		Body:        resp.Body,
 		ContentType: resp.Header.Get("Content-Type"),
 		ContentLen:  contentLen,

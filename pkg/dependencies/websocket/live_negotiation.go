@@ -11,19 +11,6 @@ import (
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
 
-type liveAnswerInfo struct {
-	PingInterval json.RawMessage `json:"ping_interval"`
-	SessionID    string          `json:"session_id"`
-}
-
-type liveAnswerBody struct {
-	DeviceID  int64          `json:"doorbot_id"`
-	SessionID string         `json:"session_id"`
-	SDP       string         `json:"sdp"`
-	Info      liveAnswerInfo `json:"session_info"`
-	Type      string         `json:"type"`
-}
-
 // LiveNegotiation contains the identities and timing returned by signaling.
 type LiveNegotiation struct {
 	SignalID  string
@@ -47,23 +34,10 @@ func AwaitLiveAnswer(ctx context.Context, parentDone <-chan struct{}, parentErr 
 				}
 				state.SignalID, state.RIID = body.SessionId, m.RIID
 			case protocol.MethodSDP:
-				var body liveAnswerBody
-				if json.Unmarshal(m.Body, &body) != nil || body.DeviceID != deviceID || body.Type != protocol.SDPTypeAnswer || body.SDP == "" {
-					return state, fmt.Errorf("invalid SDP answer")
-				}
-				if state.SignalID != "" && body.SessionID != state.SignalID {
-					return state, fmt.Errorf("SDP signaling session mismatch")
-				}
-				state.SignalID, state.AnswerSDP, state.ControlID = body.SessionID, body.SDP, body.Info.SessionID
-				if len(body.Info.PingInterval) > 0 {
-					var seconds int
-					if json.Unmarshal(body.Info.PingInterval, &seconds) != nil || seconds <= 0 || seconds > int(signaling.MaxHeartbeatInterval/time.Second) {
-						return state, fmt.Errorf("invalid negotiated heartbeat interval")
-					}
-					state.Heartbeat = time.Duration(seconds) * time.Second
-				}
-				if m.RIID != "" {
-					state.RIID = m.RIID
+				var err error
+				state, err = acceptLiveAnswer(state, m, deviceID)
+				if err != nil {
+					return state, err
 				}
 			case protocol.MethodClose:
 				return state, fmt.Errorf("signaling peer closed during negotiation")
@@ -73,6 +47,33 @@ func AwaitLiveAnswer(ctx context.Context, parentDone <-chan struct{}, parentErr 
 		case <-parentDone:
 			return state, parentErr()
 		}
+	}
+	return state, nil
+}
+
+func acceptLiveAnswer(state LiveNegotiation, message signaling.Message, deviceID int64) (LiveNegotiation, error) {
+	var envelope map[string]json.RawMessage
+	var info map[string]json.RawMessage
+	if json.Unmarshal(message.Body, &envelope) != nil || json.Unmarshal(envelope["session_info"], &info) != nil {
+		return state, fmt.Errorf("invalid SDP answer")
+	}
+	if raw, present := info["ping_interval"]; present {
+		var seconds int
+		if json.Unmarshal(raw, &seconds) != nil || seconds <= 0 || seconds > int(signaling.MaxHeartbeatInterval/time.Second) {
+			return state, fmt.Errorf("invalid negotiated heartbeat interval")
+		}
+		state.Heartbeat = time.Duration(seconds) * time.Second
+	}
+	var body generatedsignaling.LiveAnswerBody
+	if json.Unmarshal(message.Body, &body) != nil || int64(body.DoorbotId) != deviceID || body.ReservedType != protocol.SDPTypeAnswer || body.Sdp == "" || body.SessionInfo == nil {
+		return state, fmt.Errorf("invalid SDP answer")
+	}
+	if state.SignalID != "" && body.SessionId != state.SignalID {
+		return state, fmt.Errorf("SDP signaling session mismatch")
+	}
+	state.SignalID, state.AnswerSDP, state.ControlID = body.SessionId, body.Sdp, body.SessionInfo.SessionId
+	if message.RIID != "" {
+		state.RIID = message.RIID
 	}
 	return state, nil
 }

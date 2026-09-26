@@ -1,5 +1,20 @@
 # Schema value conventions
 
+The model boundary is explicit: `openapi.yaml` generates `pkg/generatedhttp`
+for Ring HTTP request and response bodies, and `asyncapi.yaml` generates
+`pkg/generatedsignaling` for signaling frames. REST and signaling adapters
+decode these wire models, then project them into SDK-facing types where needed.
+`dependency-models.openapi.yaml` generates adapter results such as grouped
+device families and recording histories; those groupings are not Ring HTTP
+response envelopes. `client-models.openapi.yaml` generates only the public
+types in `pkg/ringapimodels`. Internal transport errors and recording body
+ownership live below the public package, with public aliases for callers.
+
+The legacy account-event WebSocket has no captured wire schema in this
+repository and remains separate from the captured signaling protocol. Its
+transport passes through decoded JSON; `pkg/ring` projects that data into the
+public `Event` model.
+
 The OpenAPI files describe captured HTTP responses, dependency projections, and
 public SDK models. `asyncapi.yaml` describes signaling frames. Each schema
 names observed values without treating one recording as the complete set of

@@ -110,6 +110,11 @@ func (s *PushSubscription) heartbeatAt(interval time.Duration) {
 func (s *PushSubscription) Receive(ctx context.Context) (PushEvent, error) {
 	for {
 		select {
+		case <-s.done:
+			return PushEvent{}, signaling.ErrClosed
+		default:
+		}
+		select {
 		case <-ctx.Done():
 			return PushEvent{}, ctx.Err()
 		case <-s.done:
@@ -141,16 +146,6 @@ func (s *PushSubscription) Close() error {
 		err = s.connection.sendTyped(ctx, protocol.MethodPushUnsubscribe, s.dialog, "", generatedsignaling.PushSubscriptionBody{SubscriptionId: s.id})
 	})
 	return err
-}
-
-type playbackCloseReason struct {
-	Code int    `json:"code"`
-	Text string `json:"text"`
-}
-type playbackCloseBody struct {
-	DoorbotID int64               `json:"doorbot_id"`
-	SessionID string              `json:"session_id"`
-	Reason    playbackCloseReason `json:"reason"`
 }
 
 func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlaybackRequest) (*PlaybackSession, error) {
@@ -290,7 +285,7 @@ func (s *PlaybackSession) Close() error {
 		s.connection.mu.Unlock()
 		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 		defer cancel()
-		err = s.connection.sendTyped(ctx, protocol.MethodClose, s.dialog, s.riid, playbackCloseBody{DoorbotID: s.deviceID, SessionID: s.id, Reason: playbackCloseReason{Code: 0, Text: "client_closed"}})
+		err = s.connection.sendTyped(ctx, protocol.MethodClose, s.dialog, s.riid, generatedsignaling.PlaybackCloseBody{DoorbotId: int(s.deviceID), SessionId: s.id, Reason: &generatedsignaling.PlaybackCloseReason{Code: 0, Text: "client_closed"}})
 	})
 	return err
 }

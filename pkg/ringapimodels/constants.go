@@ -22,11 +22,11 @@ const (
 	RingSignalingWebSocketURL = protocol.SignalingURL
 
 	// Default user agent
-	DefaultUserAgent = "android:com.ringapp"
+	DefaultUserAgent = protocol.DefaultUserAgent
 
 	// OAuth constants
-	RingClientID = "ring_official_android"
-	RingScope    = "client"
+	RingClientID = protocol.RingClientID
+	RingScope    = protocol.RingScope
 )
 
 // DeviceFamily represents the family/type of a Ring device

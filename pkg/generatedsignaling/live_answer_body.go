@@ -1,0 +1,10 @@
+package generatedsignaling
+
+type LiveAnswerBody struct {
+	DoorbotId            int                    `json:"doorbot_id" binding:"required"`
+	SessionId            string                 `json:"session_id" binding:"required"`
+	Sdp                  string                 `json:"sdp" binding:"required"`
+	SessionInfo          *LiveAnswerInfo        `json:"session_info" binding:"required"`
+	ReservedType         string                 `json:"type" binding:"required"`
+	AdditionalProperties map[string]interface{} `json:"-,omitempty"`
+}

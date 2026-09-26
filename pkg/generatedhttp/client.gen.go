@@ -247,8 +247,9 @@ type ClientSessionRegistration_Device struct {
 	AdditionalProperties map[string]interface{}                    `json:"-"`
 }
 
-// Device Shared captured inventory/detail shape; unknown hardware fields remain open.
+// Device Shared captured inventory/detail shape, including legacy Python fixture fields; unknown hardware fields remain open.
 type Device struct {
+	Address       *string    `json:"address,omitempty"`
 	CreatedAt     *time.Time `json:"created_at,omitempty"`
 	DeactivatedAt *time.Time `json:"deactivated_at,omitempty"`
 	Description   string     `json:"description"`
@@ -257,16 +258,29 @@ type Device struct {
 	// Family Python legacy families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.
 	Family   *string         `json:"family,omitempty"`
 	Features *DeviceFeatures `json:"features,omitempty"`
+	HasLight *bool           `json:"has_light,omitempty"`
 	Health   *DeviceHealth   `json:"health,omitempty"`
 	Id       int64           `json:"id"`
 
 	// Kind Observed v3 kind is stickup_cam_mini_ptz_v1; Python legacy fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.
-	Kind                 string                 `json:"kind"`
-	LocationId           *string                `json:"location_id,omitempty"`
-	OperationSet         *string                `json:"operation_set,omitempty"`
-	Owned                *bool                  `json:"owned,omitempty"`
-	Owner                *DeviceOwner           `json:"owner,omitempty"`
-	Settings             *DeviceLegacySettings  `json:"settings,omitempty"`
+	Kind                   string  `json:"kind"`
+	LightBrightness        *int    `json:"light_brightness,omitempty"`
+	LocationId             *string `json:"location_id,omitempty"`
+	MotionDetectionEnabled *bool   `json:"motion_detection_enabled,omitempty"`
+
+	// Name Legacy inventory display name; v3 capture uses description.
+	Name         *string               `json:"name,omitempty"`
+	OperationSet *string               `json:"operation_set,omitempty"`
+	Owned        *bool                 `json:"owned,omitempty"`
+	Owner        *DeviceOwner          `json:"owner,omitempty"`
+	Settings     *DeviceLegacySettings `json:"settings,omitempty"`
+
+	// TimeZone Alternate legacy timezone spelling.
+	TimeZone             *string                `json:"time_zone,omitempty"`
+	Timezone             *string                `json:"timezone,omitempty"`
+	Volume               *int                   `json:"volume,omitempty"`
+	WifiName             *string                `json:"wifi_name,omitempty"`
+	WifiSignalStrength   *int                   `json:"wifi_signal_strength,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -280,7 +294,7 @@ type DeviceCommandCommandName string
 
 // DeviceDetail defines model for DeviceDetail.
 type DeviceDetail struct {
-	// Device Shared captured inventory/detail shape; unknown hardware fields remain open.
+	// Device Shared captured inventory/detail shape, including legacy Python fixture fields; unknown hardware fields remain open.
 	Device               Device                         `json:"device"`
 	DeviceOperationSet   *map[string]DeviceOperationSet `json:"device_operation_set,omitempty"`
 	AdditionalProperties map[string]interface{}         `json:"-"`
@@ -297,14 +311,19 @@ type DeviceFeatures struct {
 
 // DeviceHealth defines model for DeviceHealth.
 type DeviceHealth struct {
+	BatteryLevel *int `json:"battery_level,omitempty"`
+
 	// BatteryPercentageCategory The capture reports unknown; other battery categories remain valid.
 	BatteryPercentageCategory *string `json:"battery_percentage_category,omitempty"`
+	BatteryStatus             *string `json:"battery_status,omitempty"`
 	Connected                 *bool   `json:"connected,omitempty"`
 	FirmwareVersion           *string `json:"firmware_version,omitempty"`
+	LastUpdate                *string `json:"last_update,omitempty"`
 
 	// PtzConnected Observed non-null PTZ connection label is emperor; other hardware labels remain valid.
 	PtzConnected         *string                `json:"ptz_connected,omitempty"`
 	Rssi                 *float32               `json:"rssi,omitempty"`
+	SignalStrength       *int                   `json:"signal_strength,omitempty"`
 	SupportedRpcCommands *[]string              `json:"supported_rpc_commands,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -330,11 +349,24 @@ type DeviceOperationSet map[string]map[string]interface{}
 
 // DeviceOwner defines model for DeviceOwner.
 type DeviceOwner struct {
-	Email                *string                `json:"email,omitempty"`
-	FirstName            *string                `json:"first_name,omitempty"`
-	Id                   *int64                 `json:"id,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	FirstName *string `json:"first_name,omitempty"`
+
+	// Id Numeric in the v3 capture and string in legacy inventory fixtures.
+	Id                   *DeviceOwner_Id        `json:"id,omitempty"`
 	LastName             *string                `json:"last_name,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceOwnerId0 defines model for DeviceOwner.Id.0.
+type DeviceOwnerId0 = int64
+
+// DeviceOwnerId1 defines model for DeviceOwner.Id.1.
+type DeviceOwnerId1 = string
+
+// DeviceOwner_Id Numeric in the v3 capture and string in legacy inventory fixtures.
+type DeviceOwner_Id struct {
+	union json.RawMessage
 }
 
 // DeviceSettings defines model for DeviceSettings.
@@ -412,6 +444,16 @@ type HistoryFeedItem struct {
 
 // JsonValue Explicit escape hatch for fields without observed structure or typed error responses.
 type JsonValue = interface{}
+
+// LegacyDeviceHealth Fields consumed by the legacy health adapter; no captured C1 response establishes additional fields.
+type LegacyDeviceHealth struct {
+	BatteryLevel         *int                   `json:"battery_level,omitempty"`
+	BatteryStatus        *string                `json:"battery_status,omitempty"`
+	FirmwareVersion      *string                `json:"firmware_version,omitempty"`
+	LastUpdate           *string                `json:"last_update,omitempty"`
+	SignalStrength       *int                   `json:"signal_strength,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
 
 // LegacyPasswordGrant defines model for LegacyPasswordGrant.
 type LegacyPasswordGrant struct {
@@ -616,7 +658,12 @@ type Recording struct {
 
 // Recording_Doorbot defines model for Recording.Doorbot.
 type Recording_Doorbot struct {
-	Id                   int                    `json:"id"`
+	// Description Legacy recording fixture field.
+	Description *string `json:"description,omitempty"`
+	Id          int     `json:"id"`
+
+	// Type Legacy recording fixture field.
+	Type                 *string                `json:"type,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -644,6 +691,15 @@ type SignInForm struct {
 	CsrfToken string `json:"csrf-token"`
 	Password  string `json:"password"`
 	Username  string `json:"username"`
+}
+
+// SignInState defines model for SignInState.
+type SignInState struct {
+	NextTimeInSecs *int `json:"next_time_in_secs,omitempty"`
+
+	// TsvState Presence indicates two-factor verification is required.
+	TsvState             *string                `json:"tsv_state,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // SirenStatus defines model for SirenStatus.
@@ -1440,6 +1496,14 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["address"]; found {
+		err = json.Unmarshal(raw, &a.Address)
+		if err != nil {
+			return fmt.Errorf("error reading 'address': %w", err)
+		}
+		delete(object, "address")
+	}
+
 	if raw, found := object["created_at"]; found {
 		err = json.Unmarshal(raw, &a.CreatedAt)
 		if err != nil {
@@ -1488,6 +1552,14 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		delete(object, "features")
 	}
 
+	if raw, found := object["has_light"]; found {
+		err = json.Unmarshal(raw, &a.HasLight)
+		if err != nil {
+			return fmt.Errorf("error reading 'has_light': %w", err)
+		}
+		delete(object, "has_light")
+	}
+
 	if raw, found := object["health"]; found {
 		err = json.Unmarshal(raw, &a.Health)
 		if err != nil {
@@ -1512,12 +1584,36 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		delete(object, "kind")
 	}
 
+	if raw, found := object["light_brightness"]; found {
+		err = json.Unmarshal(raw, &a.LightBrightness)
+		if err != nil {
+			return fmt.Errorf("error reading 'light_brightness': %w", err)
+		}
+		delete(object, "light_brightness")
+	}
+
 	if raw, found := object["location_id"]; found {
 		err = json.Unmarshal(raw, &a.LocationId)
 		if err != nil {
 			return fmt.Errorf("error reading 'location_id': %w", err)
 		}
 		delete(object, "location_id")
+	}
+
+	if raw, found := object["motion_detection_enabled"]; found {
+		err = json.Unmarshal(raw, &a.MotionDetectionEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_detection_enabled': %w", err)
+		}
+		delete(object, "motion_detection_enabled")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
 	}
 
 	if raw, found := object["operation_set"]; found {
@@ -1552,6 +1648,46 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		delete(object, "settings")
 	}
 
+	if raw, found := object["time_zone"]; found {
+		err = json.Unmarshal(raw, &a.TimeZone)
+		if err != nil {
+			return fmt.Errorf("error reading 'time_zone': %w", err)
+		}
+		delete(object, "time_zone")
+	}
+
+	if raw, found := object["timezone"]; found {
+		err = json.Unmarshal(raw, &a.Timezone)
+		if err != nil {
+			return fmt.Errorf("error reading 'timezone': %w", err)
+		}
+		delete(object, "timezone")
+	}
+
+	if raw, found := object["volume"]; found {
+		err = json.Unmarshal(raw, &a.Volume)
+		if err != nil {
+			return fmt.Errorf("error reading 'volume': %w", err)
+		}
+		delete(object, "volume")
+	}
+
+	if raw, found := object["wifi_name"]; found {
+		err = json.Unmarshal(raw, &a.WifiName)
+		if err != nil {
+			return fmt.Errorf("error reading 'wifi_name': %w", err)
+		}
+		delete(object, "wifi_name")
+	}
+
+	if raw, found := object["wifi_signal_strength"]; found {
+		err = json.Unmarshal(raw, &a.WifiSignalStrength)
+		if err != nil {
+			return fmt.Errorf("error reading 'wifi_signal_strength': %w", err)
+		}
+		delete(object, "wifi_signal_strength")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -1570,6 +1706,13 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 func (a Device) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Address != nil {
+		object["address"], err = json.Marshal(a.Address)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'address': %w", err)
+		}
+	}
 
 	if a.CreatedAt != nil {
 		object["created_at"], err = json.Marshal(a.CreatedAt)
@@ -1611,6 +1754,13 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.HasLight != nil {
+		object["has_light"], err = json.Marshal(a.HasLight)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'has_light': %w", err)
+		}
+	}
+
 	if a.Health != nil {
 		object["health"], err = json.Marshal(a.Health)
 		if err != nil {
@@ -1628,10 +1778,31 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'kind': %w", err)
 	}
 
+	if a.LightBrightness != nil {
+		object["light_brightness"], err = json.Marshal(a.LightBrightness)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'light_brightness': %w", err)
+		}
+	}
+
 	if a.LocationId != nil {
 		object["location_id"], err = json.Marshal(a.LocationId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'location_id': %w", err)
+		}
+	}
+
+	if a.MotionDetectionEnabled != nil {
+		object["motion_detection_enabled"], err = json.Marshal(a.MotionDetectionEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_detection_enabled': %w", err)
+		}
+	}
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
 		}
 	}
 
@@ -1660,6 +1831,41 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		object["settings"], err = json.Marshal(a.Settings)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'settings': %w", err)
+		}
+	}
+
+	if a.TimeZone != nil {
+		object["time_zone"], err = json.Marshal(a.TimeZone)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'time_zone': %w", err)
+		}
+	}
+
+	if a.Timezone != nil {
+		object["timezone"], err = json.Marshal(a.Timezone)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timezone': %w", err)
+		}
+	}
+
+	if a.Volume != nil {
+		object["volume"], err = json.Marshal(a.Volume)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'volume': %w", err)
+		}
+	}
+
+	if a.WifiName != nil {
+		object["wifi_name"], err = json.Marshal(a.WifiName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wifi_name': %w", err)
+		}
+	}
+
+	if a.WifiSignalStrength != nil {
+		object["wifi_signal_strength"], err = json.Marshal(a.WifiSignalStrength)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wifi_signal_strength': %w", err)
 		}
 	}
 
@@ -1891,12 +2097,28 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["battery_level"]; found {
+		err = json.Unmarshal(raw, &a.BatteryLevel)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_level': %w", err)
+		}
+		delete(object, "battery_level")
+	}
+
 	if raw, found := object["battery_percentage_category"]; found {
 		err = json.Unmarshal(raw, &a.BatteryPercentageCategory)
 		if err != nil {
 			return fmt.Errorf("error reading 'battery_percentage_category': %w", err)
 		}
 		delete(object, "battery_percentage_category")
+	}
+
+	if raw, found := object["battery_status"]; found {
+		err = json.Unmarshal(raw, &a.BatteryStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_status': %w", err)
+		}
+		delete(object, "battery_status")
 	}
 
 	if raw, found := object["connected"]; found {
@@ -1915,6 +2137,14 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 		delete(object, "firmware_version")
 	}
 
+	if raw, found := object["last_update"]; found {
+		err = json.Unmarshal(raw, &a.LastUpdate)
+		if err != nil {
+			return fmt.Errorf("error reading 'last_update': %w", err)
+		}
+		delete(object, "last_update")
+	}
+
 	if raw, found := object["ptz_connected"]; found {
 		err = json.Unmarshal(raw, &a.PtzConnected)
 		if err != nil {
@@ -1929,6 +2159,14 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'rssi': %w", err)
 		}
 		delete(object, "rssi")
+	}
+
+	if raw, found := object["signal_strength"]; found {
+		err = json.Unmarshal(raw, &a.SignalStrength)
+		if err != nil {
+			return fmt.Errorf("error reading 'signal_strength': %w", err)
+		}
+		delete(object, "signal_strength")
 	}
 
 	if raw, found := object["supported_rpc_commands"]; found {
@@ -1958,10 +2196,24 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	if a.BatteryLevel != nil {
+		object["battery_level"], err = json.Marshal(a.BatteryLevel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_level': %w", err)
+		}
+	}
+
 	if a.BatteryPercentageCategory != nil {
 		object["battery_percentage_category"], err = json.Marshal(a.BatteryPercentageCategory)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'battery_percentage_category': %w", err)
+		}
+	}
+
+	if a.BatteryStatus != nil {
+		object["battery_status"], err = json.Marshal(a.BatteryStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_status': %w", err)
 		}
 	}
 
@@ -1979,6 +2231,13 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.LastUpdate != nil {
+		object["last_update"], err = json.Marshal(a.LastUpdate)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'last_update': %w", err)
+		}
+	}
+
 	if a.PtzConnected != nil {
 		object["ptz_connected"], err = json.Marshal(a.PtzConnected)
 		if err != nil {
@@ -1990,6 +2249,13 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 		object["rssi"], err = json.Marshal(a.Rssi)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'rssi': %w", err)
+		}
+	}
+
+	if a.SignalStrength != nil {
+		object["signal_strength"], err = json.Marshal(a.SignalStrength)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'signal_strength': %w", err)
 		}
 	}
 
@@ -3158,6 +3424,134 @@ func (a HistoryFeedItem) MarshalJSON() ([]byte, error) {
 		object["type"], err = json.Marshal(a.Type)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'type': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for LegacyDeviceHealth. Returns the specified
+// element and whether it was found
+func (a LegacyDeviceHealth) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for LegacyDeviceHealth
+func (a *LegacyDeviceHealth) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for LegacyDeviceHealth to handle AdditionalProperties
+func (a *LegacyDeviceHealth) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["battery_level"]; found {
+		err = json.Unmarshal(raw, &a.BatteryLevel)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_level': %w", err)
+		}
+		delete(object, "battery_level")
+	}
+
+	if raw, found := object["battery_status"]; found {
+		err = json.Unmarshal(raw, &a.BatteryStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_status': %w", err)
+		}
+		delete(object, "battery_status")
+	}
+
+	if raw, found := object["firmware_version"]; found {
+		err = json.Unmarshal(raw, &a.FirmwareVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'firmware_version': %w", err)
+		}
+		delete(object, "firmware_version")
+	}
+
+	if raw, found := object["last_update"]; found {
+		err = json.Unmarshal(raw, &a.LastUpdate)
+		if err != nil {
+			return fmt.Errorf("error reading 'last_update': %w", err)
+		}
+		delete(object, "last_update")
+	}
+
+	if raw, found := object["signal_strength"]; found {
+		err = json.Unmarshal(raw, &a.SignalStrength)
+		if err != nil {
+			return fmt.Errorf("error reading 'signal_strength': %w", err)
+		}
+		delete(object, "signal_strength")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for LegacyDeviceHealth to handle AdditionalProperties
+func (a LegacyDeviceHealth) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.BatteryLevel != nil {
+		object["battery_level"], err = json.Marshal(a.BatteryLevel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_level': %w", err)
+		}
+	}
+
+	if a.BatteryStatus != nil {
+		object["battery_status"], err = json.Marshal(a.BatteryStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_status': %w", err)
+		}
+	}
+
+	if a.FirmwareVersion != nil {
+		object["firmware_version"], err = json.Marshal(a.FirmwareVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'firmware_version': %w", err)
+		}
+	}
+
+	if a.LastUpdate != nil {
+		object["last_update"], err = json.Marshal(a.LastUpdate)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'last_update': %w", err)
+		}
+	}
+
+	if a.SignalStrength != nil {
+		object["signal_strength"], err = json.Marshal(a.SignalStrength)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'signal_strength': %w", err)
 		}
 	}
 
@@ -5159,12 +5553,28 @@ func (a *Recording_Doorbot) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["description"]; found {
+		err = json.Unmarshal(raw, &a.Description)
+		if err != nil {
+			return fmt.Errorf("error reading 'description': %w", err)
+		}
+		delete(object, "description")
+	}
+
 	if raw, found := object["id"]; found {
 		err = json.Unmarshal(raw, &a.Id)
 		if err != nil {
 			return fmt.Errorf("error reading 'id': %w", err)
 		}
 		delete(object, "id")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
 	}
 
 	if len(object) != 0 {
@@ -5186,9 +5596,106 @@ func (a Recording_Doorbot) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	if a.Description != nil {
+		object["description"], err = json.Marshal(a.Description)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'description': %w", err)
+		}
+	}
+
 	object["id"], err = json.Marshal(a.Id)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	if a.Type != nil {
+		object["type"], err = json.Marshal(a.Type)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'type': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SignInState. Returns the specified
+// element and whether it was found
+func (a SignInState) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SignInState
+func (a *SignInState) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SignInState to handle AdditionalProperties
+func (a *SignInState) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["next_time_in_secs"]; found {
+		err = json.Unmarshal(raw, &a.NextTimeInSecs)
+		if err != nil {
+			return fmt.Errorf("error reading 'next_time_in_secs': %w", err)
+		}
+		delete(object, "next_time_in_secs")
+	}
+
+	if raw, found := object["tsv_state"]; found {
+		err = json.Unmarshal(raw, &a.TsvState)
+		if err != nil {
+			return fmt.Errorf("error reading 'tsv_state': %w", err)
+		}
+		delete(object, "tsv_state")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SignInState to handle AdditionalProperties
+func (a SignInState) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.NextTimeInSecs != nil {
+		object["next_time_in_secs"], err = json.Marshal(a.NextTimeInSecs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'next_time_in_secs': %w", err)
+		}
+	}
+
+	if a.TsvState != nil {
+		object["tsv_state"], err = json.Marshal(a.TsvState)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tsv_state': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -5907,6 +6414,68 @@ func (a VolumeSettings) MarshalJSON() ([]byte, error) {
 		}
 	}
 	return json.Marshal(object)
+}
+
+// AsDeviceOwnerId0 returns the union data inside the DeviceOwner_Id as a DeviceOwnerId0
+func (t DeviceOwner_Id) AsDeviceOwnerId0() (DeviceOwnerId0, error) {
+	var body DeviceOwnerId0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceOwnerId0 overwrites any union data inside the DeviceOwner_Id as the provided DeviceOwnerId0
+func (t *DeviceOwner_Id) FromDeviceOwnerId0(v DeviceOwnerId0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceOwnerId0 performs a merge with any union data inside the DeviceOwner_Id, using the provided DeviceOwnerId0
+func (t *DeviceOwner_Id) MergeDeviceOwnerId0(v DeviceOwnerId0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDeviceOwnerId1 returns the union data inside the DeviceOwner_Id as a DeviceOwnerId1
+func (t DeviceOwner_Id) AsDeviceOwnerId1() (DeviceOwnerId1, error) {
+	var body DeviceOwnerId1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceOwnerId1 overwrites any union data inside the DeviceOwner_Id as the provided DeviceOwnerId1
+func (t *DeviceOwner_Id) FromDeviceOwnerId1(v DeviceOwnerId1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceOwnerId1 performs a merge with any union data inside the DeviceOwner_Id, using the provided DeviceOwnerId1
+func (t *DeviceOwner_Id) MergeDeviceOwnerId1(v DeviceOwnerId1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DeviceOwner_Id) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DeviceOwner_Id) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
 }
 
 // AsAuthorizationCodeGrant returns the union data inside the OAuthTokenGrant as a AuthorizationCodeGrant
@@ -9705,13 +10274,13 @@ type GetLegacyDeviceHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Json
+	JSON200 *LegacyDeviceHealth
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *HTTPFailure
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetLegacyDeviceHealthResponse) GetJSON200() *Json {
+func (r GetLegacyDeviceHealthResponse) GetJSON200() *LegacyDeviceHealth {
 	return r.JSON200
 }
 
@@ -10566,7 +11135,7 @@ type SubmitOAuthCredentialsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Json
+	JSON200 *SignInState
 	// JSON412 the response for an HTTP 412 `application/json` response
 	JSON412 *TwoFactorRequired
 	// JSONDefault the response for an HTTP default `application/json` response
@@ -10576,7 +11145,7 @@ type SubmitOAuthCredentialsResponse struct {
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SubmitOAuthCredentialsResponse) GetJSON200() *Json {
+func (r SubmitOAuthCredentialsResponse) GetJSON200() *SignInState {
 	return r.JSON200
 }
 
@@ -11595,7 +12164,7 @@ func ParseGetLegacyDeviceHealthResponse(rsp *http.Response) (*GetLegacyDeviceHea
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Json
+		var dest LegacyDeviceHealth
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -12169,7 +12738,7 @@ func ParseSubmitOAuthCredentialsResponse(rsp *http.Response) (*SubmitOAuthCreden
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Json
+		var dest SignInState
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

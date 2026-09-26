@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/portpowered/go-ring/pkg/ringapimodels"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 )
 
 // EventConnection owns the transport, read loop, and event queue.
@@ -19,7 +19,7 @@ type EventConnection struct {
 	wg          sync.WaitGroup
 	mu          sync.RWMutex
 	closed      bool
-	messageChan chan *ringapimodels.Event
+	messageChan chan map[string]interface{}
 	errChan     chan error
 }
 
@@ -36,7 +36,7 @@ func OpenEvents(ctx context.Context, wsURL, token, hardwareID string) (*EventCon
 		return nil, err
 	}
 	eventCtx, cancel := context.WithCancel(ctx)
-	ec := &EventConnection{conn: conn, ctx: eventCtx, cancel: cancel, messageChan: make(chan *ringapimodels.Event, 100), errChan: make(chan error, 10)}
+	ec := &EventConnection{conn: conn, ctx: eventCtx, cancel: cancel, messageChan: make(chan map[string]interface{}, 100), errChan: make(chan error, 10)}
 	ec.wg.Add(1)
 	go ec.processMessages()
 	ec.wg.Add(1)
@@ -62,7 +62,7 @@ func (ec *EventConnection) processMessages() {
 			_, message, err := ec.conn.ReadMessage()
 			if err != nil {
 				select {
-				case ec.errChan <- ringapimodels.NewConnectionError("failed to read message", err):
+				case ec.errChan <- ringerrors.NewConnectionError("failed to read message", err):
 				default:
 				}
 				return
@@ -74,54 +74,30 @@ func (ec *EventConnection) processMessages() {
 				continue
 			}
 
-			event := parseEvent(eventData)
-			if event != nil {
-				select {
-				case ec.messageChan <- event:
-				case <-ec.ctx.Done():
-					return
-				}
+			select {
+			case ec.messageChan <- eventData:
+			case <-ec.ctx.Done():
+				return
 			}
 		}
 	}
 }
 
-// parseEvent parses a raw event message into an Event
-func parseEvent(data map[string]interface{}) *ringapimodels.Event {
-	event := &ringapimodels.Event{
-		Data: data,
-	}
-
-	if kind, ok := data["kind"].(string); ok {
-		event.Kind = ringapimodels.EventKind(kind)
-	}
-
-	if deviceID, ok := data["device_id"].(float64); ok {
-		event.DeviceID = int64(deviceID)
-	}
-
-	if timestamp, ok := data["timestamp"].(string); ok {
-		event.Timestamp = timestamp
-	}
-
-	return event
-}
-
 // Receive receives an event from the connection
-func (ec *EventConnection) Receive() (*ringapimodels.Event, error) {
+func (ec *EventConnection) Receive() (map[string]interface{}, error) {
 	ec.mu.RLock()
 	closed := ec.closed
 	ec.mu.RUnlock()
 
 	if closed {
-		return nil, ringapimodels.NewClosedError("connection is closed")
+		return nil, ringerrors.NewClosedError("connection is closed")
 	}
 	// Preserve wire order by draining already-decoded events before returning
 	// the terminal read error that follows them.
 	select {
 	case event, ok := <-ec.messageChan:
 		if !ok {
-			return nil, ringapimodels.NewClosedError("message channel closed")
+			return nil, ringerrors.NewClosedError("message channel closed")
 		}
 		return event, nil
 	default:
@@ -130,16 +106,16 @@ func (ec *EventConnection) Receive() (*ringapimodels.Event, error) {
 	select {
 	case event, ok := <-ec.messageChan:
 		if !ok {
-			return nil, ringapimodels.NewClosedError("message channel closed")
+			return nil, ringerrors.NewClosedError("message channel closed")
 		}
 		return event, nil
 	case err, ok := <-ec.errChan:
 		if !ok {
-			return nil, ringapimodels.NewClosedError("error channel closed")
+			return nil, ringerrors.NewClosedError("error channel closed")
 		}
 		return nil, err
 	case <-ec.ctx.Done():
-		return nil, ringapimodels.NewClosedError("context cancelled")
+		return nil, ringerrors.NewClosedError("context cancelled")
 	}
 }
 

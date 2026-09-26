@@ -191,8 +191,11 @@ type PushSubscriptionAPI interface {
 	Close() error
 }
 
-// EventConnection is the account event stream managed by the WebSocket dependency.
-type EventConnection = dependencywebsocket.EventConnection
+// EventConnection exposes customer-facing account events while the WebSocket
+// dependency owns the experimental event transport.
+type EventConnection struct {
+	transport *dependencywebsocket.EventConnection
+}
 
 // EventConnectionAPI receives account events until closed.
 type EventConnectionAPI interface {

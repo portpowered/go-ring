@@ -6,24 +6,21 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/dependencymodels"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
-	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
-
-type deviceListResponse struct {
-	Devices []dependencymodels.RingDevice `json:"devices"`
-}
 
 // GetDevices retrieves all devices from the Ring API
 func (c *Client) GetDevices(ctx context.Context) (*dependencymodels.RingDevicesResponse, error) {
-	var raw deviceListResponse
-	if err := c.doJSONRequest(ctx, http.MethodGet, ringapimodels.RingDevicesV3Endpoint, nil, &raw); err != nil {
+	var raw generatedhttp.DeviceList
+	if err := c.doJSONRequest(ctx, http.MethodGet, protocol.DevicesV3Path, nil, &raw); err != nil {
 		return nil, err
 	}
 
 	response := dependencymodels.RingDevicesResponse{}
-	for _, device := range raw.Devices {
+	for _, wire := range raw.Devices {
+		device := projectDevice(wire)
 		switch classifyDevice(device) {
 		case "doorbell":
 			if device.Owned != nil && !*device.Owned {
@@ -40,6 +37,56 @@ func (c *Client) GetDevices(ctx context.Context) (*dependencymodels.RingDevicesR
 		}
 	}
 	return &response, nil
+}
+
+// projectDevice converts a generated HTTP response to the legacy adapter
+// projection. Public SDK models are assembled one layer above this adapter.
+func projectDevice(wire generatedhttp.Device) dependencymodels.RingDevice {
+	device := dependencymodels.RingDevice{
+		ID:                     wire.Id,
+		Name:                   wireString(wire.Name),
+		Description:            wire.Description,
+		Kind:                   wire.Kind,
+		Family:                 wireString(wire.Family),
+		Owned:                  wire.Owned,
+		Address:                wireString(wire.Address),
+		Timezone:               wireString(wire.Timezone),
+		TimeZone:               wireString(wire.TimeZone),
+		WifiName:               wireString(wire.WifiName),
+		WifiSignalStrength:     wireInt(wire.WifiSignalStrength),
+		Volume:                 wireInt(wire.Volume),
+		HasLight:               wireBool(wire.HasLight),
+		LightBrightness:        wire.LightBrightness,
+		MotionDetectionEnabled: wireBool(wire.MotionDetectionEnabled),
+	}
+	if wire.Health != nil {
+		device.Health = &dependencymodels.RingDeviceHealth{
+			BatteryLevel:    wire.Health.BatteryLevel,
+			BatteryStatus:   wire.Health.BatteryStatus,
+			SignalStrength:  wire.Health.SignalStrength,
+			FirmwareVersion: wire.Health.FirmwareVersion,
+			LastUpdate:      wire.Health.LastUpdate,
+		}
+	}
+	return device
+}
+
+func wireString(value *string) string {
+	if value != nil {
+		return *value
+	}
+	return ""
+}
+
+func wireInt(value *int) int {
+	if value != nil {
+		return *value
+	}
+	return 0
+}
+
+func wireBool(value *bool) bool {
+	return value != nil && *value
 }
 
 func classifyDevice(device dependencymodels.RingDevice) string {
@@ -93,16 +140,15 @@ func (c *Client) RegisterSession(ctx context.Context) error {
 			Os: generatedhttp.Android,
 		},
 	}
-	var response map[string]any
-	return c.doJSONRequest(ctx, http.MethodPost, ringapimodels.RingSessionEndpoint, body, &response)
+	return c.doJSONRequest(ctx, http.MethodPost, protocol.SessionPath, body, nil)
 }
 
 // GetDeviceHealth retrieves health data for a specific device
-func (c *Client) GetDeviceHealth(ctx context.Context, deviceID int64) (map[string]interface{}, error) {
-	var health map[string]interface{}
-	endpoint := ringapimodels.RingDevicesEndpoint + "/" + strconv.FormatInt(deviceID, 10) + "/health"
+func (c *Client) GetDeviceHealth(ctx context.Context, deviceID int64) (*generatedhttp.LegacyDeviceHealth, error) {
+	var health generatedhttp.LegacyDeviceHealth
+	endpoint := protocol.DevicesPath + "/" + strconv.FormatInt(deviceID, 10) + "/health"
 	if err := c.doJSONRequest(ctx, http.MethodGet, endpoint, nil, &health); err != nil {
 		return nil, err
 	}
-	return health, nil
+	return &health, nil
 }

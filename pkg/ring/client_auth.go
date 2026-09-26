@@ -37,13 +37,13 @@ func (c *Client) Authenticate(ctx context.Context, req AuthenticateRequest) (*ri
 
 	// Store tokens
 	c.accessToken = tokenResp.AccessToken
-	c.refreshToken = tokenResp.RefreshToken
+	c.refreshToken = tokenString(tokenResp.RefreshToken)
 	c.restClient.Apply(rest.WithAccessToken(tokenResp.AccessToken))
 
 	return &ringapimodels.AuthResponse{
 		AccessToken:  tokenResp.AccessToken,
-		RefreshToken: tokenResp.RefreshToken,
-		ExpiresIn:    tokenResp.ExpiresIn,
+		RefreshToken: tokenString(tokenResp.RefreshToken),
+		ExpiresIn:    tokenInt(tokenResp.ExpiresIn),
 		TokenType:    tokenResp.TokenType,
 	}, nil
 }
@@ -73,15 +73,29 @@ func (c *Client) RefreshToken(ctx context.Context, req RefreshTokenRequest) (*ri
 
 	// Update stored tokens
 	c.accessToken = tokenResp.AccessToken
-	if tokenResp.RefreshToken != "" {
-		c.refreshToken = tokenResp.RefreshToken
+	if tokenResp.RefreshToken != nil && *tokenResp.RefreshToken != "" {
+		c.refreshToken = *tokenResp.RefreshToken
 	}
 	c.restClient.Apply(rest.WithAccessToken(tokenResp.AccessToken))
 
 	return &ringapimodels.AuthResponse{
 		AccessToken:  tokenResp.AccessToken,
-		RefreshToken: tokenResp.RefreshToken,
-		ExpiresIn:    tokenResp.ExpiresIn,
+		RefreshToken: tokenString(tokenResp.RefreshToken),
+		ExpiresIn:    tokenInt(tokenResp.ExpiresIn),
 		TokenType:    tokenResp.TokenType,
 	}, nil
+}
+
+func tokenString(value *string) string {
+	if value != nil {
+		return *value
+	}
+	return ""
+}
+
+func tokenInt(value *int) int {
+	if value != nil {
+		return *value
+	}
+	return 0
 }

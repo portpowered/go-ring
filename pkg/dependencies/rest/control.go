@@ -11,7 +11,6 @@ import (
 
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
-	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 // GetMotionDetectionEnabled reads the one settings field supported by the current
@@ -58,7 +57,7 @@ func legacyPath(pattern string, deviceID int64) string {
 func (c *Client) SetVolume(ctx context.Context, deviceID int64, kind, description string, volume int) error {
 	path, prefix := protocol.LegacyDoorbotPath, "doorbot"
 	field := "doorbell_volume"
-	if kind == ringapimodels.VolumeKindChime {
+	if kind == protocol.VolumeKindChime {
 		path, prefix, field = protocol.LegacyChimePath, legacyChimeKind, "volume"
 	}
 	query := url.Values{}
@@ -70,7 +69,7 @@ func (c *Client) SetVolume(ctx context.Context, deviceID int64, kind, descriptio
 // SetLights uses the captured on route and the corresponding legacy off route.
 func (c *Client) SetLights(ctx context.Context, deviceID int64, state string) error {
 	path := protocol.DoorbotLightOffPath
-	if state == ringapimodels.LightStateOn {
+	if state == protocol.LightStateOn {
 		path = protocol.DoorbotLightOnPath
 	}
 	return c.doJSONRequest(ctx, http.MethodPut, legacyPath(path, deviceID), nil, nil)

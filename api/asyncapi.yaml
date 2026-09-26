@@ -47,6 +47,11 @@ channels:
     messages:
       playbackAnswer:
         $ref: '#/components/messages/PlaybackAnswer'
+  playbackClose:
+    address: /ws
+    messages:
+      playbackClose:
+        $ref: '#/components/messages/PlaybackClose'
   iCECandidate:
     address: /ws
     messages:
@@ -77,6 +82,11 @@ channels:
     messages:
       sessionCreated:
         $ref: '#/components/messages/SessionCreated'
+  liveAnswer:
+    address: /ws
+    messages:
+      liveAnswer:
+        $ref: '#/components/messages/LiveAnswer'
   liveICE:
     address: /ws
     messages:
@@ -116,6 +126,10 @@ operations:
     action: receive
     channel:
       $ref: '#/channels/playbackAnswer'
+  sendPlaybackClose:
+    action: send
+    channel:
+      $ref: '#/channels/playbackClose'
   sendICECandidate:
     action: send
     channel:
@@ -140,6 +154,10 @@ operations:
     action: receive
     channel:
       $ref: '#/channels/sessionCreated'
+  receiveLiveAnswer:
+    action: receive
+    channel:
+      $ref: '#/channels/liveAnswer'
   sendLiveICE:
     action: send
     channel:
@@ -168,6 +186,8 @@ components:
       payload: {$ref: '#/components/schemas/PlaybackOfferFrame'}
     PlaybackAnswer:
       payload: {$ref: '#/components/schemas/PlaybackAnswerFrame'}
+    PlaybackClose:
+      payload: {$ref: '#/components/schemas/PlaybackCloseFrame'}
     ICECandidate:
       payload: {$ref: '#/components/schemas/ICECandidateFrame'}
     SessionNotification:
@@ -180,6 +200,8 @@ components:
       payload: {$ref: '#/components/schemas/LiveViewFrame'}
     SessionCreated:
       payload: {$ref: '#/components/schemas/SessionCreatedFrame'}
+    LiveAnswer:
+      payload: {$ref: '#/components/schemas/LiveAnswerFrame'}
     LiveICE:
       payload: {$ref: '#/components/schemas/LiveICEFrame'}
     PTZCommand:
@@ -219,6 +241,32 @@ components:
       properties:
         doorbot_id: {type: integer}
         session_id: {type: string, minLength: 1}
+    LiveAnswerFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: sdp}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/LiveAnswerBody'}
+    LiveAnswerBody:
+      description: Live-view SDP answer; control session identity differs from the signaling session ID.
+      type: object
+      required: [doorbot_id, session_id, sdp, session_info, type]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string, minLength: 1}
+        sdp: {type: string, minLength: 1}
+        session_info: {$ref: '#/components/schemas/LiveAnswerInfo'}
+        type: {type: string, const: answer}
+      additionalProperties: true
+    LiveAnswerInfo:
+      type: object
+      required: [session_id]
+      properties:
+        session_id: {type: string, minLength: 1}
+        ping_interval: {type: integer, minimum: 1, description: Optional negotiated heartbeat interval in seconds.}
+      additionalProperties: true
     LiveICEFrame:
       type: object
       required: [method, dialog_id, body]
@@ -440,6 +488,27 @@ components:
         ping_interval: {type: integer, minimum: 1, description: Server-provided application heartbeat interval in seconds.}
         region: {type: string}
       additionalProperties: true
+    PlaybackCloseFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: close}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PlaybackCloseBody'}
+    PlaybackCloseBody:
+      type: object
+      required: [doorbot_id, session_id, reason]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        reason: {$ref: '#/components/schemas/PlaybackCloseReason'}
+    PlaybackCloseReason:
+      type: object
+      required: [code, text]
+      properties:
+        code: {type: integer, description: Captured client close uses zero.}
+        text: {type: string, description: Captured client close uses client_closed.}
     ClientEnvelope:
       type: object
       required: [method, dialog_id, body]

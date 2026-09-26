@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
-	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 const maxSnapshotBytes = 16 << 20
@@ -35,11 +35,11 @@ func (c *Client) GetSnapshotImage(ctx context.Context, deviceID int64) ([]byte, 
 	path := strings.Replace(protocol.LegacySnapshotImagePath, "{id}", strconv.FormatInt(deviceID, 10), 1)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURI+path, nil)
 	if err != nil {
-		return nil, "", ringapimodels.NewNetworkError("failed to create snapshot request", err)
+		return nil, "", ringerrors.NewNetworkError("failed to create snapshot request", err)
 	}
 	token, err := c.getToken(ctx)
 	if err != nil {
-		return nil, "", ringapimodels.NewTokenError("failed to get snapshot token", err)
+		return nil, "", ringerrors.NewTokenError("failed to get snapshot token", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "image/jpeg")
@@ -49,18 +49,18 @@ func (c *Client) GetSnapshotImage(ctx context.Context, deviceID int64) ([]byte, 
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, "", ringapimodels.NewNetworkError("failed to get snapshot image", err)
+		return nil, "", ringerrors.NewNetworkError("failed to get snapshot image", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, "", ringapimodels.NewHTTPError(resp, "")
+		return nil, "", ringerrors.NewHTTPError(resp, "")
 	}
 	data, err := io.ReadAll(io.LimitReader(resp.Body, maxSnapshotBytes+1))
 	if err != nil {
-		return nil, "", ringapimodels.NewNetworkError("failed to read snapshot image", err)
+		return nil, "", ringerrors.NewNetworkError("failed to read snapshot image", err)
 	}
 	if len(data) > maxSnapshotBytes {
-		return nil, "", ringapimodels.NewBadRequestError(fmt.Sprintf("snapshot exceeds %d bytes", maxSnapshotBytes), nil)
+		return nil, "", ringerrors.NewBadRequestError(fmt.Sprintf("snapshot exceeds %d bytes", maxSnapshotBytes), nil)
 	}
 	return data, resp.Header.Get("Content-Type"), nil
 }

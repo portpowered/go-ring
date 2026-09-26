@@ -2,6 +2,8 @@
 package protocol
 
 const (
+	VolumeKindChime               = "chime"
+	LightStateOn                  = "on"
 	OAuthBaseURL                  = "https://oauth.ring.com"
 	APIBaseURL                    = "https://api.ring.com"
 	USSolutionsBaseURL            = "https://prd-api-us.prd.rings.solutions"

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/portpowered/go-ring/pkg/dependencymodels"
+	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -201,30 +202,12 @@ func convertInventoryHealth(raw *dependencymodels.RingDeviceHealth) *ringapimode
 }
 
 // convertToDeviceHealth converts the separate legacy health endpoint's JSON.
-func convertToDeviceHealth(raw map[string]interface{}) *ringapimodels.DeviceHealth {
-	health := &ringapimodels.DeviceHealth{}
-
-	if batteryLevel, ok := raw["battery_level"].(float64); ok {
-		level := int(batteryLevel)
-		health.BatteryLevel = &level
+func convertToDeviceHealth(raw *generatedhttp.LegacyDeviceHealth) *ringapimodels.DeviceHealth {
+	return &ringapimodels.DeviceHealth{
+		BatteryLevel:    raw.BatteryLevel,
+		BatteryStatus:   raw.BatteryStatus,
+		SignalStrength:  raw.SignalStrength,
+		FirmwareVersion: raw.FirmwareVersion,
+		LastUpdate:      raw.LastUpdate,
 	}
-
-	if batteryStatus, ok := raw["battery_status"].(string); ok {
-		health.BatteryStatus = &batteryStatus
-	}
-
-	if signalStrength, ok := raw["signal_strength"].(float64); ok {
-		strength := int(signalStrength)
-		health.SignalStrength = &strength
-	}
-
-	if firmwareVersion, ok := raw["firmware_version"].(string); ok {
-		health.FirmwareVersion = &firmwareVersion
-	}
-
-	if lastUpdate, ok := raw["last_update"].(string); ok {
-		health.LastUpdate = &lastUpdate
-	}
-
-	return health
 }

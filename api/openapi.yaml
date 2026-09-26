@@ -63,7 +63,7 @@ paths:
           application/x-www-form-urlencoded:
             schema: {$ref: '#/components/schemas/SignInForm'}
       responses:
-        '200': {$ref: '#/components/responses/Json'}
+        '200': {description: Credential submission state, content: {application/json: {schema: {$ref: '#/components/schemas/SignInState'}}}}
         '302': {$ref: '#/components/responses/OAuthRedirect'}
         '412': {$ref: '#/components/responses/TwoFactorRequired'}
         default: {$ref: '#/components/responses/AuthFailure'}
@@ -173,7 +173,7 @@ paths:
         response; SDK tests use local fixtures only.
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses:
-        '200': {$ref: '#/components/responses/Json'}
+        '200': {description: Legacy device health response, content: {application/json: {schema: {$ref: '#/components/schemas/LegacyDeviceHealth'}}}}
         default: {$ref: '#/components/responses/HTTPFailure'}
   /clients_api/doorbots/{device_id}/history:
     get:
@@ -625,7 +625,10 @@ components:
         doorbot:
           type: object
           required: [id]
-          properties: {id: {type: integer}}
+          properties:
+            id: {type: integer}
+            description: {type: string, description: Legacy recording fixture field.}
+            type: {type: string, description: Legacy recording fixture field.}
           additionalProperties: true
       additionalProperties: true
     ExtensibleObject:
@@ -640,6 +643,22 @@ components:
           type: object
           additionalProperties: {$ref: '#/components/schemas/DeviceOperationSet'}
       additionalProperties: true
+    SignInState:
+      type: object
+      properties:
+        tsv_state: {type: string, description: Presence indicates two-factor verification is required.}
+        next_time_in_secs: {type: integer, minimum: 0}
+      additionalProperties: true
+    LegacyDeviceHealth:
+      description: Fields consumed by the legacy health adapter; no captured C1 response establishes additional fields.
+      type: object
+      properties:
+        battery_level: {type: integer}
+        battery_status: {type: string}
+        signal_strength: {type: integer}
+        firmware_version: {type: string}
+        last_update: {type: string}
+      additionalProperties: true
     DeviceDetail:
       type: object
       required: [device]
@@ -650,7 +669,7 @@ components:
           additionalProperties: {$ref: '#/components/schemas/DeviceOperationSet'}
       additionalProperties: true
     Device:
-      description: Shared captured inventory/detail shape; unknown hardware fields remain open.
+      description: Shared captured inventory/detail shape, including legacy Python fixture fields; unknown hardware fields remain open.
       type: object
       required: [id, kind, description]
       properties:
@@ -658,6 +677,16 @@ components:
         device_id: {type: string}
         kind: {type: string, description: "Observed v3 kind is stickup_cam_mini_ptz_v1; Python legacy fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.", x-extensible-enum: [stickup_cam_mini_ptz_v1, lpd_v1, chime, intercom_handset_audio]}
         description: {type: string}
+        name: {type: string, description: Legacy inventory display name; v3 capture uses description.}
+        address: {type: string}
+        timezone: {type: string}
+        time_zone: {type: string, description: Alternate legacy timezone spelling.}
+        wifi_name: {type: string}
+        wifi_signal_strength: {type: integer}
+        volume: {type: integer, minimum: 0, maximum: 11}
+        has_light: {type: boolean}
+        light_brightness: {type: integer}
+        motion_detection_enabled: {type: boolean}
         location_id: {type: string}
         family: {type: string, description: "Python legacy families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.", x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         owned: {type: boolean}
@@ -672,7 +701,11 @@ components:
     DeviceOwner:
       type: object
       properties:
-        id: {type: integer, format: int64}
+        id:
+          description: Numeric in the v3 capture and string in legacy inventory fixtures.
+          oneOf:
+            - {type: integer, format: int64}
+            - {type: string}
         first_name: {type: string}
         last_name: {type: string}
         email: {type: string}
@@ -680,6 +713,10 @@ components:
     DeviceHealth:
       type: object
       properties:
+        battery_level: {type: integer}
+        battery_status: {type: string}
+        signal_strength: {type: integer}
+        last_update: {type: string}
         connected: {type: boolean}
         rssi: {type: number}
         ptz_connected: {type: [string, 'null'], description: Observed non-null PTZ connection label is emperor; other hardware labels remain valid., x-extensible-enum: [emperor]}

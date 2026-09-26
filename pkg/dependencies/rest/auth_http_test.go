@@ -93,7 +93,7 @@ func TestDecodeTokenResponseStatusAndBodyFailures(t *testing.T) {
 	}
 	resp := &http.Response{StatusCode: http.StatusCreated, Body: io.NopCloser(strings.NewReader(`{"access_token":"a","refresh_token":"r","expires_in":30,"token_type":"Bearer"}`))}
 	got, err := decodeTokenResponse(resp)
-	if err != nil || got.AccessToken != "a" || got.RefreshToken != "r" || got.ExpiresIn != 30 {
+	if err != nil || got.AccessToken != "a" || wireString(got.RefreshToken) != "r" || wireInt(got.ExpiresIn) != 30 {
 		t.Fatalf("decodeTokenResponse() success = %#v, %v", got, err)
 	}
 }
@@ -124,7 +124,7 @@ func TestRefreshAccessTokenUsesConfiguredOAuthEndpointAndRotatesResponse(t *test
 	if err != nil {
 		t.Fatalf("RefreshAccessToken() error = %v", err)
 	}
-	if calls != 1 || response.AccessToken != "new-access" || response.RefreshToken != "new-refresh" || response.ExpiresIn != 1800 {
+	if calls != 1 || response.AccessToken != "new-access" || wireString(response.RefreshToken) != "new-refresh" || wireInt(response.ExpiresIn) != 1800 {
 		t.Fatalf("refresh response = %#v, calls = %d", response, calls)
 	}
 }

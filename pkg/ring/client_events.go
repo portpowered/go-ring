@@ -18,8 +18,28 @@ func (c *Client) ConnectEvents(ctx context.Context) (*EventConnection, error) {
 	if err != nil {
 		return nil, ringapimodels.NewConnectionError("failed to connect to event stream", err)
 	}
-	return conn, nil
+	return &EventConnection{transport: conn}, nil
 }
+
+func (c *EventConnection) Receive() (*ringapimodels.Event, error) {
+	raw, err := c.transport.Receive()
+	if err != nil {
+		return nil, err
+	}
+	event := &ringapimodels.Event{Data: raw}
+	if kind, ok := raw["kind"].(string); ok {
+		event.Kind = ringapimodels.EventKind(kind)
+	}
+	if deviceID, ok := raw["device_id"].(float64); ok {
+		event.DeviceID = int64(deviceID)
+	}
+	if timestamp, ok := raw["timestamp"].(string); ok {
+		event.Timestamp = timestamp
+	}
+	return event, nil
+}
+
+func (c *EventConnection) Close() error { return c.transport.Close() }
 
 // Listen listens for events and calls the callback for each event
 func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallback) error {

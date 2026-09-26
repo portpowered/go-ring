@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/portpowered/go-ring/internal/protocol"
-	"github.com/portpowered/go-ring/pkg/ringapimodels"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 )
 
 // Client is a REST API client for Ring services
@@ -83,7 +83,7 @@ func NewClient(opts ...ClientOption) *Client {
 	client := &Client{
 		baseURI:      protocol.APIBaseURL,
 		oauthBaseURI: protocol.OAuthBaseURL,
-		userAgent:    ringapimodels.DefaultUserAgent,
+		userAgent:    protocol.DefaultUserAgent,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -111,7 +111,7 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 	if c.tokenGetter != nil {
 		return c.tokenGetter(ctx)
 	}
-	return "", ringapimodels.NewTokenError("no token available", nil)
+	return "", ringerrors.NewTokenError("no token available", nil)
 }
 
 // doRequest performs an HTTP request with retry logic
@@ -123,7 +123,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	if body != nil {
 		bodyBytes, err := json.Marshal(body)
 		if err != nil {
-			return nil, ringapimodels.NewBadRequestError("failed to marshal request body", err)
+			return nil, ringerrors.NewBadRequestError("failed to marshal request body", err)
 		}
 		bodyReader = bytes.NewReader(bodyBytes)
 	}
@@ -131,13 +131,13 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	url := c.baseURI + path
 	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 	if err != nil {
-		return nil, ringapimodels.NewNetworkError("failed to create request", err)
+		return nil, ringerrors.NewNetworkError("failed to create request", err)
 	}
 
 	// Get token and set authorization header
 	token, err := c.getToken(ctx)
 	if err != nil && c.tokenGetter != nil {
-		return nil, ringapimodels.NewTokenError("failed to retrieve access token", err)
+		return nil, ringerrors.NewTokenError("failed to retrieve access token", err)
 	}
 	if err == nil && token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -164,7 +164,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 			if req.GetBody != nil {
 				attemptReq.Body, err = req.GetBody()
 				if err != nil {
-					return nil, ringapimodels.NewNetworkError("failed to recreate request body", err)
+					return nil, ringerrors.NewNetworkError("failed to recreate request body", err)
 				}
 			}
 		}
@@ -188,7 +188,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	if err != nil {
-		return nil, ringapimodels.NewNetworkError("request failed after retries", err)
+		return nil, ringerrors.NewNetworkError("request failed after retries", err)
 	}
 
 	return resp, nil
@@ -205,16 +205,16 @@ func (c *Client) doJSONRequest(ctx context.Context, method, path string, body in
 	// Read the response body before decoding so the transport can be reused.
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return ringapimodels.NewNetworkError("failed to read response body", err)
+		return ringerrors.NewNetworkError("failed to read response body", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return ringapimodels.NewHTTPError(resp, string(bodyBytes))
+		return ringerrors.NewHTTPError(resp, string(bodyBytes))
 	}
 
 	if result != nil {
 		if err := json.Unmarshal(bodyBytes, result); err != nil {
-			return ringapimodels.NewBadRequestError("failed to decode response", err)
+			return ringerrors.NewBadRequestError("failed to decode response", err)
 		}
 	}
 
