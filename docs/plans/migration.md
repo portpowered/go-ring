@@ -15,6 +15,7 @@ commit containing them; no released-version support is implied.
 | HTTP error formatting included raw response bodies | `HTTPError.Error()` omits raw bodies; `Body` remains available for deliberate inspection. |
 | Endpoint overrides were scattered | `WithRegion` and `WithEndpoints` configure one client. Explicit endpoints win independent of option order. EU/FE Solutions bootstrap needs a supplied, verified endpoint. |
 | Generic control requests used `/clients_api/ring_devices/{id}` with unverified JSON bodies | `SetVolume` now needs `Kind` and `Description` and sends family-specific query values; `SetInHomeChime` needs `Description` and one setting; `SetLights` uses legacy on/off paths and rejects `Duration`; `TestSound` uses the chime sound path and query; `SetMotionDetection` uses the captured settings PATCH. Update call sites that depended on the old shapes. |
+| Control requests accepted untyped string choices and an arbitrary in-home chime settings map | `SetVolumeRequest.Kind`, `SetLightsRequest.State`, and `TestSoundRequest.Kind` use enums generated from `api/client-models.openapi.yaml`. Use `ringapimodels.VolumeKindDoorbell`, `LightStateOn`, or `SoundKindDing`. `SetInHomeChimeRequest.Settings` is now a generated struct with pointer fields `Type`, `Enabled`, and `Duration`; set exactly one. Unknown enum values are rejected before HTTP. |
 
 Authentication mechanisms and token persistence ownership remain unchanged.
 The new capture does not contain an OAuth exchange. Typed settings currently

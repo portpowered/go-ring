@@ -9,6 +9,30 @@ info:
 paths: {}
 components:
   schemas:
+    VolumeKind:
+      description: Legacy volume control target; selects the chime or doorbell endpoint.
+      type: string
+      enum: [chime, doorbell]
+      x-enum-varnames: [VolumeKindChime, VolumeKindDoorbell]
+    LightState:
+      description: Legacy floodlight action.
+      type: string
+      enum: [on, off]
+      x-enum-varnames: [LightStateOn, LightStateOff]
+    SoundKind:
+      description: Accepted legacy chime test sounds.
+      type: string
+      enum: [ding, motion]
+      x-enum-varnames: [SoundKindDing, SoundKindMotion]
+    InHomeChimeSettings:
+      description: Supply exactly one field per update. Enabled maps to the legacy enable query value.
+      type: object
+      properties:
+        type: {type: integer, minimum: 0}
+        enabled: {type: boolean}
+        duration: {type: integer, minimum: 0}
+      minProperties: 1
+      maxProperties: 1
     DeviceHealth:
       type: object
       required: [battery_level, battery_status, signal_strength, firmware_version, last_update]

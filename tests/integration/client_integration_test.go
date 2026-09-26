@@ -140,7 +140,7 @@ func TestDeviceEnumeration(t *testing.T) {
 			if i >= 3 {
 				break
 			}
-			t.Logf("  - Doorbell %d: %s (ID: %d)", i+1, doorbell.Name, doorbell.ID)
+			t.Logf("  - Doorbell %d: %s (ID: %s)", i+1, doorbell.Name, doorbell.ID)
 		}
 	}
 }
@@ -192,7 +192,7 @@ func TestGetDevice(t *testing.T) {
 		t.Fatal("Device is nil")
 	}
 
-	t.Logf("Successfully retrieved device: %s (ID: %d)", device.GetName(), device.GetID())
+	t.Logf("Successfully retrieved device: %s (ID: %s)", device.GetName(), device.GetID())
 }
 
 // TestRecordingDownload tests downloading a recording
@@ -240,7 +240,7 @@ func TestRecordingDownload(t *testing.T) {
 	recordingID := history.Recordings[0].ID
 
 	// Get recording URL
-	url, err := client.GetRecordingURL(ctx, recordingID)
+	url, err := client.GetRecordingShareURL(ctx, ring.GetRecordingShareURLRequest{RecordingID: recordingID})
 	if err != nil {
 		t.Fatalf("Failed to get recording URL: %v", err)
 	}
@@ -302,7 +302,7 @@ func TestDeviceControl(t *testing.T) {
 	// Test volume control
 	err = client.SetVolume(ctx, ring.SetVolumeRequest{
 		DeviceID:    testDeviceID,
-		Kind:        "doorbell",
+		Kind:        ringapimodels.VolumeKindDoorbell,
 		Description: deviceName,
 		Volume:      5,
 	})

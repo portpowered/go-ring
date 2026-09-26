@@ -11,6 +11,7 @@ import (
 
 	"github.com/portpowered/go-ring/internal/testkit/replay"
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 type portableControlCase struct {
@@ -102,14 +103,14 @@ func TestPortableInHomeChimeOptions(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			settings := map[string]interface{}{}
+			settings := ringapimodels.InHomeChimeSettings{}
 			switch tc.Case {
 			case "type":
-				settings["type"] = 1
+				settings.Type = chimePointer(1)
 			case "enabled":
-				settings["enabled"] = false
+				settings.Enabled = chimePointer(false)
 			case "duration":
-				settings["duration"] = 5
+				settings.Duration = chimePointer(5)
 			default:
 				t.Fatalf("unknown portable case %s", tc.Case)
 			}

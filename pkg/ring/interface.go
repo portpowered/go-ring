@@ -242,7 +242,7 @@ type UpdateDeviceHealthRequest struct {
 type SetVolumeRequest struct {
 	DeviceID string
 	// Kind is "chime" or "doorbell"; Description is the current device name.
-	Kind        string
+	Kind        ringapimodels.VolumeKind
 	Description string
 	Volume      int
 }
@@ -250,7 +250,7 @@ type SetVolumeRequest struct {
 // SetLightsRequest contains parameters for SetLights
 type SetLightsRequest struct {
 	DeviceID string
-	State    string
+	State    ringapimodels.LightState
 	Duration *int
 }
 
@@ -263,21 +263,22 @@ type SetMotionDetectionRequest struct {
 // TestSoundRequest contains parameters for TestSound
 type TestSoundRequest struct {
 	DeviceID string
-	Kind     string
+	Kind     ringapimodels.SoundKind
 }
 
 // SetInHomeChimeRequest contains parameters for SetInHomeChime
 type SetInHomeChimeRequest struct {
 	DeviceID    string
 	Description string
-	Settings    map[string]interface{}
+	Settings    ringapimodels.InHomeChimeSettings
 }
 
 // GetDeviceHistoryRequest contains parameters for GetDeviceHistory
 type GetDeviceHistoryRequest struct {
 	DeviceID string
 	Limit    int
-	Kind     string
+	// Kind is an open server value; unfamiliar history kinds are forwarded.
+	Kind string
 }
 
 // GetRecordingRequest contains parameters for GetRecording

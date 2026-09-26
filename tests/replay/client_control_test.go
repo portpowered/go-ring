@@ -42,19 +42,19 @@ func TestLegacyControlValidationBeforeHTTP(t *testing.T) {
 			return c.TestSound(context.Background(), ring.TestSoundRequest{DeviceID: "123", Kind: "alarm"})
 		}},
 		{"chime missing description", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Settings: map[string]interface{}{"type": 1}})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1)}})
 		}},
 		{"chime multiple settings", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Description: "Bell", Settings: map[string]interface{}{"type": 1, "duration": 5}})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Description: "Bell", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(1), Duration: chimePointer(5)}})
 		}},
-		{"chime unknown field", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Description: "Bell", Settings: map[string]interface{}{"foo": 1}})
+		{"chime missing setting", func(c *ring.Client) error {
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Description: "Bell"})
 		}},
-		{"chime invalid value", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Description: "Bell", Settings: map[string]interface{}{"type": "mechanical"}})
+		{"chime negative type", func(c *ring.Client) error {
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Description: "Bell", Settings: ringapimodels.InHomeChimeSettings{Type: chimePointer(-1)}})
 		}},
 		{"chime negative duration", func(c *ring.Client) error {
-			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Description: "Bell", Settings: map[string]interface{}{"duration": -1}})
+			return c.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "123", Description: "Bell", Settings: ringapimodels.InHomeChimeSettings{Duration: chimePointer(-1)}})
 		}},
 	}
 	for _, tc := range checks {
@@ -68,3 +68,5 @@ func TestLegacyControlValidationBeforeHTTP(t *testing.T) {
 		})
 	}
 }
+
+func chimePointer[T any](value T) *T { return &value }

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
@@ -87,7 +88,7 @@ func main() {
 	fmt.Printf("Step 3: Testing chime sound (ding) on device %s...\n", deviceName)
 	err = client.TestSound(ctx, ring.TestSoundRequest{
 		DeviceID: deviceID,
-		Kind:     "ding",
+		Kind:     ringapimodels.SoundKindDing,
 	})
 	if err != nil {
 		log.Fatalf("Failed to test sound: %v", err)
@@ -99,7 +100,7 @@ func main() {
 	fmt.Printf("Step 4: Testing chime sound (motion) on device %s...\n", deviceName)
 	err = client.TestSound(ctx, ring.TestSoundRequest{
 		DeviceID: deviceID,
-		Kind:     "motion",
+		Kind:     ringapimodels.SoundKindMotion,
 	})
 	if err != nil {
 		log.Printf("Warning: Failed to test 'motion' sound: %v (this may not be supported on all devices)\n", err)
