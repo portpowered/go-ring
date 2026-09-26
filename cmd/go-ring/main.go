@@ -83,6 +83,12 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 		return snapshotCommand(ctx, store, args[1:], out)
 	case "siren":
 		return sirenCommand(ctx, store, args[1:], out)
+	case "reboot":
+		return rebootCommand(ctx, store, args[1:], out)
+	case "health":
+		return healthCommand(ctx, store, args[1:], out)
+	case "sound":
+		return soundCommand(ctx, store, args[1:], out)
 	case "view":
 		return viewCommand(ctx, store, args[1:], in, out)
 	}
@@ -90,7 +96,7 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 }
 
 func usage(out io.Writer) error {
-	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file | siren <id> on|off | view <id> [--player ffplay] [--ice-servers file.json] [--continuous] [--speed 0.5]")
+	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file | siren <id> on|off | reboot <id> | health <id> [--refresh] | sound <chime-id> ding|motion | view <id> [--player ffplay] [--debug] [--ice-servers file.json] [--continuous] [--speed 0.5]")
 	return errors.New("invalid command")
 }
 
