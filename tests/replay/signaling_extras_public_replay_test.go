@@ -3,10 +3,12 @@ package replay_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/ring"
 )
 
@@ -131,11 +133,11 @@ func TestRecordedPublicPlaybackAnswerICEAndClose(t *testing.T) {
 	t.Cleanup(func() { _ = conn.Close() })
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	session, err := conn.StartPlayback(ctx, ring.StartPlaybackRequest{DeviceID: "1000", Offer: ring.SessionDescription{Type: "offer", SDP: recordedPlaybackOffer(t)}})
+	session, err := conn.StartPlayback(ctx, ring.StartPlaybackRequest{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: recordedPlaybackOffer(t)}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if session.Answer().Type != "answer" || session.Answer().SDP == "" {
+	if session.Answer().Type != ring.SDPTypeAnswer || session.Answer().SDP == "" {
 		t.Fatal("captured playback answer missing")
 	}
 	for _, method := range []string{"ice", "notification"} {
@@ -168,7 +170,136 @@ func TestRecordedPublicPlaybackRejectsInvalidAnswer(t *testing.T) {
 	defer conn.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if _, err := conn.StartPlayback(ctx, ring.StartPlaybackRequest{DeviceID: "1000", Offer: ring.SessionDescription{Type: "offer", SDP: recordedPlaybackOffer(t)}}); err == nil {
+	if _, err := conn.StartPlayback(ctx, ring.StartPlaybackRequest{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: recordedPlaybackOffer(t)}}); err == nil {
 		t.Fatal("invalid playback answer accepted")
+	}
+}
+
+func TestRecordedPublicPushIdentityAndCancellation(t *testing.T) {
+	for _, scenario := range []string{"wrong subscription", "canceled negotiation", "closed subscription"} {
+		t.Run(scenario, func(t *testing.T) {
+			conn := openRecordedPeer(t, func(c *websocket.Conn) {
+				request := readSignalRequest(t, c, "push_subscribe")
+				if request == nil {
+					return
+				}
+				if scenario == "canceled negotiation" {
+					_, _, _ = c.ReadMessage()
+					return
+				}
+				writeCapturedSignal(t, c, "dialog-1", request, "push_subscription_ack")
+				if scenario == "wrong subscription" {
+					body := capturedSignalFrame(t, "server_to_client", "dialog-1", "push_event")
+					body["subscription_id"] = "foreign-subscription"
+					_ = c.WriteJSON(map[string]any{"method": "push_event", "dialog_id": request["dialog_id"], "body": body})
+				}
+				_ = readSignalRequest(t, c, "push_unsubscribe")
+			})
+			defer conn.Close()
+			ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+			defer cancel()
+			filter := ring.PushFilter{FilterIdentifier: "sanitized-text", NotificationScope: "event", NotificationType: "shoulder_tap"}
+			subscription, err := conn.SubscribePush(ctx, []ring.PushFilter{filter})
+			if scenario == "canceled negotiation" {
+				if !errors.Is(err, context.DeadlineExceeded) {
+					t.Fatalf("canceled subscription = %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if scenario == "wrong subscription" {
+				receiveCtx, stop := context.WithTimeout(context.Background(), time.Second)
+				defer stop()
+				if _, err := subscription.Receive(receiveCtx); err == nil {
+					t.Fatal("foreign push event accepted")
+				}
+			}
+			if err := subscription.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := subscription.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
+				t.Fatalf("closed subscription receive = %v", err)
+			}
+		})
+	}
+}
+
+func TestRecordedPublicPlaybackRemoteCloseAndValidation(t *testing.T) {
+	conn := openRecordedPeer(t, func(c *websocket.Conn) {
+		request := readSignalRequest(t, c, "playback")
+		if request == nil {
+			return
+		}
+		writeCapturedSignal(t, c, "dialog-2", request, "sdp")
+		if readSignalRequest(t, c, "ice") == nil {
+			return
+		}
+		pong := capturedSignalFrame(t, "server_to_client", "dialog-2", "pong")
+		_ = c.WriteJSON(map[string]any{"method": "pong", "dialog_id": request["dialog_id"], "body": pong})
+		_ = c.WriteJSON(map[string]any{"method": "close", "dialog_id": request["dialog_id"], "body": capturedSignalFrame(t, "client_to_server", "dialog-2", "close")})
+		_, _, _ = c.ReadMessage()
+	})
+	defer conn.Close()
+	for _, invalid := range []ring.StartPlaybackRequest{
+		{DeviceID: "invalid"},
+		{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeAnswer, SDP: recordedPlaybackOffer(t)}},
+		{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: "bad"}},
+	} {
+		if _, err := conn.StartPlayback(context.Background(), invalid); err == nil {
+			t.Fatalf("invalid playback request accepted: %+v", invalid)
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	session, err := conn.StartPlayback(ctx, ring.StartPlaybackRequest{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: recordedPlaybackOffer(t)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := session.SendICE(ctx, ring.ICECandidateRequest{Candidate: "candidate:synthetic", MLineIndex: 0}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := session.Receive(ctx); !errors.Is(err, signaling.ErrClosed) {
+		t.Fatalf("remote playback close = %v", err)
+	}
+}
+
+func TestRecordedPublicPlaybackPingPongLifecycle(t *testing.T) {
+	conn := openRecordedPeer(t, func(c *websocket.Conn) {
+		request := readSignalRequest(t, c, "playback")
+		if request == nil {
+			return
+		}
+		answer := capturedSignalFrame(t, "server_to_client", "dialog-2", "sdp")
+		answer["session_info"].(map[string]any)["ping_interval"] = float64(1)
+		if err := c.WriteJSON(map[string]any{"method": "sdp", "dialog_id": request["dialog_id"], "body": answer}); err != nil {
+			t.Error(err)
+			return
+		}
+		pong := capturedSignalFrame(t, "server_to_client", "dialog-2", "pong")
+		for range 2 {
+			ping := readSignalRequest(t, c, "ping")
+			if ping == nil || ping["body"].(map[string]any)["session_id"] != answer["session_id"] {
+				t.Errorf("playback ping identity differs from captured session")
+				return
+			}
+			if err := c.WriteJSON(map[string]any{"method": "pong", "dialog_id": request["dialog_id"], "body": pong}); err != nil {
+				t.Error(err)
+				return
+			}
+		}
+		_ = c.WriteJSON(map[string]any{"method": "close", "dialog_id": request["dialog_id"], "body": capturedSignalFrame(t, "client_to_server", "dialog-2", "close")})
+		_, _, _ = c.ReadMessage()
+	})
+	defer conn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	session, err := conn.StartPlayback(ctx, ring.StartPlaybackRequest{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: recordedPlaybackOffer(t)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := session.Receive(ctx); !errors.Is(err, signaling.ErrClosed) {
+		t.Fatalf("playback did not terminate after recorded pong cycle: %v", err)
 	}
 }

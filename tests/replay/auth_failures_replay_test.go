@@ -22,6 +22,56 @@ type authFailureCase struct {
 	Error  string `json:"error"`
 }
 
+type authCSRFCase struct {
+	Case     string `json:"case"`
+	HTML     string `json:"html"`
+	Expected string `json:"expected"`
+}
+
+type csrfPageReplay struct {
+	page   string
+	token  string
+	signin bool
+}
+
+func (p *csrfPageReplay) RoundTrip(request *http.Request) (*http.Response, error) {
+	status, body := http.StatusOK, p.page
+	if request.URL.Path == "/oauth/v2/signin" {
+		p.signin = true
+		form, err := io.ReadAll(request.Body)
+		if err != nil {
+			return nil, err
+		}
+		values, err := url.ParseQuery(string(form))
+		if err != nil || values.Get("csrf-token") != p.token {
+			return nil, errors.New("CSRF token differs from portable page fixture")
+		}
+		status, body = http.StatusUnauthorized, `{}`
+	}
+	return &http.Response{StatusCode: status, Status: http.StatusText(status), Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body)), Request: request}, nil
+}
+
+func TestPortableOAuthCSRFPages(t *testing.T) {
+	cases, err := replay.LoadCases[authCSRFCase](filepath.Join("fixtures", "porting", "auth-csrf-variants.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range cases {
+		t.Run(tc.Case, func(t *testing.T) {
+			transport := &csrfPageReplay{page: tc.HTML, token: tc.Expected}
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}), ring.WithHardwareID("fixture-hardware"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer client.Close()
+			_, err = client.Authenticate(context.Background(), ring.AuthenticateRequest{Username: "fixture-user", Password: "fixture-password"})
+			if !ringapimodels.IsAuthenticationError(err) || transport.signin != (tc.Expected != "") {
+				t.Fatalf("CSRF page behavior: signin=%t error=%v", transport.signin, err)
+			}
+		})
+	}
+}
+
 type authStageReplay struct {
 	stage      string
 	status     int
@@ -94,6 +144,9 @@ func TestPortableOAuthFailureStages(t *testing.T) {
 			}
 			if !transport.failed || got == nil {
 				t.Fatalf("failure stage %s not reached: calls=%d error=%v", tc.Stage, transport.calls, got)
+			}
+			if message := got.Error(); message == "" || strings.Contains(message, "fixture-password") || strings.Contains(message, "fixture-refresh") {
+				t.Fatalf("unsafe OAuth error message: %q", message)
 			}
 			switch tc.Error {
 			case "network":

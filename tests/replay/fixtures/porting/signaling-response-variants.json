@@ -1,0 +1,9 @@
+[
+  {"case":"push-malformed-ack","flow":"push","field":"malformed"},
+  {"case":"push-missing-subscription","flow":"push","field":"subscription_id"},
+  {"case":"push-wrong-status","flow":"push","field":"status"},
+  {"case":"playback-malformed-answer","flow":"playback","field":"malformed"},
+  {"case":"playback-missing-session","flow":"playback","field":"session_id"},
+  {"case":"playback-wrong-type","flow":"playback","field":"type"},
+  {"case":"playback-missing-sdp","flow":"playback","field":"sdp"}
+]

@@ -1,0 +1,7 @@
+[
+  {"case":"server-error","status":503,"body":"{\"error\":\"unavailable\"}","error":"http"},
+  {"case":"malformed-json","status":200,"body":"{","error":"bad-request"},
+  {"case":"empty-ticket","status":200,"body":"{}","error":"connection"},
+  {"case":"oversized-ticket","status":200,"body":"oversized","error":"bad-request"},
+  {"case":"transport-error","status":0,"body":"","error":"network"}
+]

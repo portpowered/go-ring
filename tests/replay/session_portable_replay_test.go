@@ -143,11 +143,11 @@ func TestRecordedLiveViewBehaviors(t *testing.T) {
 			})
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offer}, VideoEnabled: true, ICEMode: ring.ICETrickle})
+			session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer}, VideoEnabled: true, ICEMode: ring.ICETrickle})
 			if err != nil {
 				t.Fatal(err)
 			}
-			if session.Answer().Type != "answer" || session.Answer().SDP == "" {
+			if session.Answer().Type != ring.SDPTypeAnswer || session.Answer().SDP == "" {
 				t.Fatal("captured answer was not exposed")
 			}
 			switch scenario {

@@ -39,9 +39,9 @@ func TestStartSessionRejectsInvalidOfferBeforeOpeningSession(t *testing.T) {
 	}
 	defer conn.Close()
 	for _, req := range []ring.StartDeviceSessionRequest{
-		{DeviceID: "1001", Offer: ring.SessionDescription{Type: "answer", SDP: offerSDP}},
-		{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: "not SDP"}},
-		{DeviceID: "bad", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}},
+		{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeAnswer, SDP: offerSDP}},
+		{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: "not SDP"}},
+		{DeviceID: "bad", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}},
 	} {
 		if _, err := conn.StartDeviceSession(context.Background(), req); err == nil {
 			t.Fatalf("accepted invalid request: %+v", req)
@@ -180,7 +180,7 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 				result := make(chan error, 1)
 				go func() {
-					_, e := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}})
+					_, e := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}})
 					result <- e
 				}()
 				select {
@@ -199,7 +199,7 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 				}
 				return
 			}
-			request := ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}}
+			request := ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}}
 			if mode == "session_expiry" || mode == "heartbeat_timeout" || mode == "event_backpressure" || mode == "malformed_rpc_envelope" || mode == "malformed_close" {
 				if mode == "session_expiry" {
 					request.MaxAge = 25 * time.Millisecond

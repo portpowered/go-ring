@@ -1,0 +1,9 @@
+[
+  {"case":"bootstrap-missing-location","stage":"bootstrap","location":""},
+  {"case":"bootstrap-malformed-location","stage":"bootstrap","location":"%zz"},
+  {"case":"bootstrap-redirect-limit","stage":"bootstrap","location":"/oauth/v2/authorize"},
+  {"case":"authorization-missing-location","stage":"authorization","location":""},
+  {"case":"authorization-malformed-location","stage":"authorization","location":"%zz"},
+  {"case":"authorization-state-mismatch","stage":"authorization","location":"https://oauth.example.test/callback?code=fixture-code&state=wrong"},
+  {"case":"authorization-redirect-limit","stage":"authorization","location":"/oauth/v2/authorize"}
+]

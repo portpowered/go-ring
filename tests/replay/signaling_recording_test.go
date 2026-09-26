@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,69 @@ type recordedMessages struct {
 		Direction string            `json:"direction"`
 		Payload   signaling.Message `json:"payload"`
 	} `json:"messages"`
+}
+
+// Each malformed SDP is a labeled mutation of a captured offer. The parser
+// must reject ambiguous media identity before an ICE candidate can be routed.
+func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
+	offer, captured := recordedLiveView(t)
+	for _, tc := range []struct {
+		name string
+		sdp  string
+	}{
+		{"missing MID", strings.Replace(offer, "a=mid:0", "a=mid:", 1)},
+		{"duplicate MID", strings.Replace(offer, "a=mid:1", "a=mid:0", 1)},
+		{"duplicate MID property", strings.Replace(offer, "a=mid:0", "a=mid:0\r\na=mid:0", 1)},
+		{"unknown bundle member", strings.Replace(offer, "a=group:BUNDLE 0", "a=group:BUNDLE unknown", 1)},
+		{"conflicting session directions", strings.Replace(offer, "m=audio", "a=sendonly\r\na=recvonly\r\nm=audio", 1)},
+		{"oversized offer", strings.Repeat("x", signaling.MaxMessageBytes+1)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.sdp == offer {
+				t.Fatal("fixture mutation did not change offer")
+			}
+			if _, err := signaling.ParseSDP(tc.sdp); err == nil {
+				t.Fatal("ambiguous captured SDP mutation accepted")
+			}
+		})
+	}
+	parsed, err := signaling.ParseSDP(offer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		mid   string
+		index int
+	}{
+		{"0", -1}, {"0", 99}, {"unknown", 0},
+	} {
+		if err := signaling.ValidateICE(parsed, tc.mid, tc.index); err == nil {
+			t.Fatalf("invalid candidate media identity accepted: %+v", tc)
+		}
+	}
+	var answerFrame struct {
+		Body struct {
+			SDP string `json:"sdp"`
+		} `json:"body"`
+	}
+	if err := json.Unmarshal(captured["sdp"], &answerFrame); err != nil {
+		t.Fatal(err)
+	}
+	answer := answerFrame.Body.SDP
+	lastMedia := strings.LastIndex(answer, "m=")
+	for _, tc := range []struct {
+		name string
+		sdp  string
+	}{
+		{"fewer media sections", answer[:lastMedia]},
+		{"changed media kind", strings.Replace(answer, "m=audio", "m=video", 1)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := signaling.NormalizeAnswer(offer, tc.sdp); err == nil {
+				t.Fatal("incompatible answer accepted")
+			}
+		})
+	}
 }
 
 func loadConversation(t *testing.T, name string) recordedMessages {

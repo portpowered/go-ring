@@ -222,11 +222,11 @@ func TestSignalingSessionIntegrationSmoke(t *testing.T) {
 	if !strings.Contains(dialer.url, "token=synthetic-ticket") || dialer.headers.Get("User-Agent") == "" {
 		t.Fatalf("injected dialer missed endpoint or headers: %s", dialer.url)
 	}
-	session, err := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}, VideoEnabled: true, ICEMode: ring.ICETrickle})
+	session, err := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}, VideoEnabled: true, ICEMode: ring.ICETrickle})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := session.Answer(); got.Type != "answer" || !strings.Contains(got.SDP, "a=sendonly") {
+	if got := session.Answer(); got.Type != ring.SDPTypeAnswer || !strings.Contains(got.SDP, "a=sendonly") {
 		t.Fatalf("invalid answer: %+v", got)
 	}
 	for _, candidate := range []ring.ICECandidateRequest{{Candidate: "candidate:x", MID: "unknown", MLineIndex: 0}, {Candidate: "candidate:x", MID: "0", MLineIndex: 1}} {
@@ -452,11 +452,11 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	first, e := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}, VideoEnabled: true})
+	first, e := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}, VideoEnabled: true})
 	if e != nil {
 		t.Fatal(e)
 	}
-	second, e := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1002", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}, VideoEnabled: true, ICEMode: ring.ICENonTrickle})
+	second, e := conn.StartDeviceSession(context.Background(), ring.StartDeviceSessionRequest{DeviceID: "1002", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}, VideoEnabled: true, ICEMode: ring.ICENonTrickle})
 	if e != nil {
 		t.Fatal(e)
 	}

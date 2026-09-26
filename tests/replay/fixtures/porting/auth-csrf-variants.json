@@ -1,0 +1,9 @@
+[
+  {"case":"script-token","html":"<script id=\"oauth-args\">{\"csrf-token\":\"script-value\"}</script>","expected":"script-value"},
+  {"case":"nested-token","html":"<script id=\"__NEXT_DATA__\">{\"props\":[{\"auth\":{\"CSRF_TOKEN\":\"nested-value\"}}]}</script>","expected":"nested-value"},
+  {"case":"recursive-json-token","html":"<script id=\"__NEXT_DATA__\">{\"props\":[{\"auth\":{\"csrf\":\"recursive-value\"}}]}</script>","expected":"recursive-value"},
+  {"case":"meta-token","html":"<meta name=\"csrfToken\" content=\"meta-value\">","expected":"meta-value"},
+  {"case":"input-token","html":"<input name=\"csrf-token\" value=\"input-value\">","expected":"input-value"},
+  {"case":"malformed-script-fallback","html":"<script id=\"oauth-args\">{broken}</script><input name=\"csrf-token\" value=\"fallback-value\">","expected":"fallback-value"},
+  {"case":"missing-token","html":"<input name=\"other\" value=\"none\">","expected":""}
+]

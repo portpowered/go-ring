@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -52,7 +53,7 @@ func startRecordedSession(t *testing.T, conn *ring.SignalingConnection, offer st
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{
-		DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offer},
+		DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer},
 		VideoEnabled: true, ICEMode: ring.ICETrickle,
 	})
 	if err != nil {
@@ -158,6 +159,13 @@ func TestRecordedConnectionPTZResponses(t *testing.T) {
 			_, err := s.StopPTZ(ctx, ring.StopPTZRequest{Axis: ring.PanAxis})
 			return err
 		}},
+		{"tilt movement and stop", []capturedRPCPair{recordedRPCPair(t, "PTZ.Tilt.Continuous", &moveSpeed), recordedRPCPair(t, "PTZ.Tilt.Continuous", &stopSpeed)}, func(ctx context.Context, s *ring.DeviceSession) error {
+			if _, err := s.TiltContinuous(ctx, ring.TiltContinuousRequest{Direction: ring.TiltUp, Speed: moveSpeed}); err != nil {
+				return err
+			}
+			_, err := s.StopPTZ(ctx, ring.StopPTZRequest{Axis: ring.TiltAxis})
+			return err
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			conn := identityPeer(t, func(c *websocket.Conn, dialog string) {
@@ -174,6 +182,64 @@ func TestRecordedConnectionPTZResponses(t *testing.T) {
 			defer cancel()
 			if err := tc.call(ctx, session); err != nil {
 				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestRecordedSessionRejectsInvalidControlsBeforeWire(t *testing.T) {
+	offer, captured := recordedLiveView(t)
+	conn := identityPeer(t, func(c *websocket.Conn, dialog string) {
+		if !serveRecordedNegotiation(t, c, dialog, captured, false) {
+			return
+		}
+		var frame map[string]any
+		if err := c.ReadJSON(&frame); err == nil && frame["method"] != "close" {
+			t.Errorf("invalid control reached wire: %v", frame["method"])
+		}
+	})
+	session := startRecordedSession(t, conn, offer)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	for _, tc := range []struct {
+		name string
+		call func() error
+	}{
+		{"bad pan direction", func() error { _, err := session.PanStep(ctx, ring.PanStepRequest{Direction: "SIDEWAYS"}); return err }},
+		{"bad tilt direction", func() error { _, err := session.TiltStep(ctx, ring.TiltStepRequest{Direction: "SIDEWAYS"}); return err }},
+		{"negative pan speed", func() error {
+			_, err := session.PanContinuous(ctx, ring.PanContinuousRequest{Direction: ring.PanRight, Speed: -1})
+			return err
+		}},
+		{"nonfinite pan speed", func() error {
+			_, err := session.PanContinuous(ctx, ring.PanContinuousRequest{Direction: ring.PanRight, Speed: math.NaN()})
+			return err
+		}},
+		{"bad pan movement direction", func() error {
+			_, err := session.PanContinuous(ctx, ring.PanContinuousRequest{Direction: "SIDEWAYS", Speed: 0.5})
+			return err
+		}},
+		{"negative tilt speed", func() error {
+			_, err := session.TiltContinuous(ctx, ring.TiltContinuousRequest{Direction: ring.TiltUp, Speed: -1})
+			return err
+		}},
+		{"nonfinite tilt speed", func() error {
+			_, err := session.TiltContinuous(ctx, ring.TiltContinuousRequest{Direction: ring.TiltUp, Speed: math.Inf(1)})
+			return err
+		}},
+		{"bad tilt movement direction", func() error {
+			_, err := session.TiltContinuous(ctx, ring.TiltContinuousRequest{Direction: "SIDEWAYS", Speed: 0.5})
+			return err
+		}},
+		{"stop without movement", func() error { _, err := session.StopPTZ(ctx, ring.StopPTZRequest{Axis: ring.PanAxis}); return err }},
+		{"empty ICE candidate", func() error { return session.SendICE(ctx, ring.ICECandidateRequest{MID: "0", MLineIndex: 0}) }},
+		{"unknown ICE MID", func() error {
+			return session.SendICE(ctx, ring.ICECandidateRequest{Candidate: "candidate:synthetic", MID: "unknown", MLineIndex: 0})
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.call(); err == nil {
+				t.Fatal("invalid control accepted")
 			}
 		})
 	}

@@ -92,7 +92,7 @@ func TestNegotiatedHeartbeatRejectsInvalidPresentValues(t *testing.T) {
 			})
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}})
+			session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}})
 			if session != nil || err == nil || !strings.Contains(err.Error(), "heartbeat interval") {
 				t.Fatalf("invalid interval accepted: session=%v err=%v", session != nil, err)
 			}
@@ -118,7 +118,7 @@ func TestWrongIdentityCannotDeclareSessionReady(t *testing.T) {
 			})
 			ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
 			defer cancel()
-			session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}})
+			session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}})
 			if session != nil || !errors.Is(err, context.DeadlineExceeded) {
 				t.Fatalf("cross-session readiness: session=%v err=%v", session != nil, err)
 			}
@@ -129,7 +129,7 @@ func TestMaximumAgeBoundsNegotiationBeforeAnyAnswer(t *testing.T) {
 	conn := identityPeer(t, func(c *websocket.Conn, _ string) { _, _, _ = c.ReadMessage() })
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}, MaxAge: 40 * time.Millisecond})
+	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}, MaxAge: 40 * time.Millisecond})
 	if session != nil || !errors.Is(err, ring.ErrSessionExpired) {
 		t.Fatalf("max age not enforced during negotiation: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestRemoteCloseTerminatesSessionWithSocketStillOpen(t *testing.T) {
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: "offer", SDP: offerSDP}})
+	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP}})
 	if err != nil {
 		t.Fatal(err)
 	}
