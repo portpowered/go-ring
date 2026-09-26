@@ -11,7 +11,6 @@ import (
 
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3"
-	"github.com/pion/webrtc/v3/pkg/media/h264writer"
 	"github.com/pion/webrtc/v3/pkg/media/ivfwriter"
 )
 
@@ -32,7 +31,7 @@ func videoWriter(codec string, output io.Writer) (rtpVideoWriter, string, error)
 	}
 	switch format {
 	case previewH264:
-		return h264writer.NewWith(output), previewH264, nil
+		return newH264FrameWriter(output), previewH264, nil
 	case previewIVF:
 		writer, err := ivfwriter.NewWith(output, ivfwriter.WithCodec(webrtc.MimeTypeVP8))
 		return writer, previewIVF, err

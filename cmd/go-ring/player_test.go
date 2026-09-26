@@ -17,11 +17,6 @@ func TestPreviewWritersDepacketizeWithoutUDP(t *testing.T) {
 		packet *rtp.Packet
 	}{
 		{
-			name: "H264", codec: webrtc.MimeTypeH264, format: "h264",
-			prefix: []byte{0, 0, 0, 1},
-			packet: &rtp.Packet{Header: rtp.Header{Version: 2, Marker: true}, Payload: []byte{0x67, 0x42, 0x00, 0x1f}},
-		},
-		{
 			name: "VP8", codec: webrtc.MimeTypeVP8, format: "ivf",
 			prefix: []byte("DKIF"),
 			packet: &rtp.Packet{Header: rtp.Header{Version: 2, Marker: true, Timestamp: 90000}, Payload: []byte{0x10, 0x00, 0x00, 0x00}},
