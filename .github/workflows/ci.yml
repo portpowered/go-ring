@@ -102,7 +102,7 @@ jobs:
         with:
           node-version: '22'
       - run: make generate-api
-      - run: git diff --exit-code -- pkg/generatedhttp pkg/generatedsignaling pkg/ringapimodels/models.gen.go
+      - run: git diff --exit-code -- pkg/generatedhttp pkg/generatedsignaling pkg/dependencymodels/models.gen.go pkg/ringapimodels/models.gen.go
   reference-replay:
     strategy:
       fail-fast: false

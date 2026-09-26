@@ -4,6 +4,8 @@
 
 Ring's APIs are unofficial and may change without notice. The implementation follows the current Android-client-compatible flow and retains a legacy password-grant fallback only when the OAuth v2 authorization endpoint is unavailable.
 
+## CORS:
+1. None of the endpoints support CORS. if you want to perform auth, you need a backend server to do it for you.
 ## Endpoints
 
 - Authorization: `https://oauth.ring.com/oauth/v2/authorize`
@@ -21,30 +23,6 @@ All calls must be made from a backend process. Ring's OAuth pages do not support
 
 Create one client and use it for both 2FA calls. The client retains the PKCE verifier, OAuth state, CSRF token, cookies, and hardware ID between calls.
 
-```go
-client, err := ring.NewClient()
-if err != nil {
-	return err
-}
-defer client.Close()
-
-err = client.Request2FACode(ctx, ring.Request2FACodeRequest{
-	Username: username,
-	Password: password,
-})
-if err != nil {
-	return err
-}
-
-tokens, err := client.Authenticate(ctx, ring.AuthenticateRequest{
-	Username: username,
-	Password: password,
-	OTPCode:  otpCode,
-})
-if err != nil {
-	return err
-}
-```
 
 The flow performs these steps:
 

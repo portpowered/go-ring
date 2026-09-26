@@ -17,6 +17,7 @@ const (
 	SessionPath                   = "/clients_api/session"
 	DingsActivePath               = "/clients_api/dings/active"
 	DingsHistoryPath              = "/clients_api/dings/history"
+	DoorbotHistoryPath            = "/clients_api/doorbots/{id}/history"
 	RecordingPath                 = "/clients_api/dings/{id}/recording"
 	RecordingSharePath            = "/clients_api/dings/{id}/share/play"
 	DeviceSettingsPath            = "/devices/v1/devices/{id}/settings"

@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,37 +13,6 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
-
-// PushFilter is the captured subscription filter. Identifiers are caller
-// supplied so one subscriber can distinguish multiple requested filters.
-type PushFilter struct {
-	FilterIdentifier  string      `json:"filter_identifier"`
-	Filters           PushFilters `json:"filters"`
-	NotificationScope string      `json:"notification_scope"`
-	NotificationType  string      `json:"notification_type"`
-}
-
-type PushFilters struct {
-	DoorbotIDs []int64 `json:"doorbot_ids"`
-}
-
-type PushEvent struct {
-	FilterIdentifiers []string        `json:"filter_identifiers"`
-	IngestionTimeMS   int64           `json:"ingestion_time_ms"`
-	NotificationScope string          `json:"notification_scope"`
-	NotificationType  string          `json:"notification_type"`
-	Payload           json.RawMessage `json:"payload"`
-	SubscriptionID    string          `json:"subscription_id"`
-}
-
-type PushSubscription struct {
-	connection *SignalingConnection
-	dialog     string
-	id         string
-	events     chan signaling.Message
-	done       chan struct{}
-	once       sync.Once
-}
 
 func (c *SignalingConnection) registerChannel() (string, chan signaling.Message, error) {
 	name := uuid.NewString()
@@ -109,7 +76,7 @@ func (c *SignalingConnection) SubscribePush(ctx context.Context, filters []PushF
 				continue
 			}
 			var ack generatedsignaling.PushSubscriptionAckBody
-			if json.Unmarshal(m.Body, &ack) != nil || ack.Status != "ok" || ack.SubscriptionId == "" {
+			if json.Unmarshal(m.Body, &ack) != nil || ack.Status != protocol.SubscriptionStatusOK || ack.SubscriptionId == "" {
 				c.removeChannel(dialog)
 				return nil, fmt.Errorf("push subscription rejected: %s", m.Body)
 			}
@@ -175,11 +142,6 @@ func (s *PushSubscription) Close() error {
 	return err
 }
 
-type StartPlaybackRequest struct {
-	DeviceID   string
-	Offer      SessionDescription
-	EntryPoint string
-}
 type playbackCloseReason struct {
 	Code int    `json:"code"`
 	Text string `json:"text"`
@@ -190,27 +152,12 @@ type playbackCloseBody struct {
 	Reason    playbackCloseReason `json:"reason"`
 }
 
-// PlaybackSession is a cloud playback negotiation on a signaling connection.
-// Live camera controls remain on DeviceSession.
-type PlaybackSession struct {
-	connection *SignalingConnection
-	dialog     string
-	riid       string
-	id         string
-	deviceID   int64
-	answer     SessionDescription
-	events     chan signaling.Message
-	done       chan struct{}
-	once       sync.Once
-	lastPong   atomic.Int64
-}
-
 func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlaybackRequest) (*PlaybackSession, error) {
 	id, err := strconv.ParseInt(req.DeviceID, 10, 64)
 	if err != nil || id <= 0 {
 		return nil, errors.New("device ID must be a positive integer")
 	}
-	if req.Offer.Type != "offer" || req.Offer.SDP == "" {
+	if req.Offer.Type != SDPTypeOffer || req.Offer.SDP == "" {
 		return nil, errors.New("playback requires an SDP offer")
 	}
 	if _, err = signaling.ParseSDP(req.Offer.SDP); err != nil {
@@ -243,11 +190,11 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 				continue
 			}
 			var body generatedsignaling.PlaybackAnswerBody
-			if json.Unmarshal(m.Body, &body) != nil || int64(body.DoorbotId) != id || body.SessionId == "" || body.ReservedType != "answer" || body.Sdp == "" {
+			if json.Unmarshal(m.Body, &body) != nil || int64(body.DoorbotId) != id || body.SessionId == "" || body.ReservedType != protocol.SDPTypeAnswer || body.Sdp == "" {
 				c.removeChannel(dialog)
 				return nil, errors.New("invalid playback SDP answer")
 			}
-			s := &PlaybackSession{connection: c, dialog: dialog, riid: m.RIID, id: body.SessionId, deviceID: id, answer: SessionDescription{Type: "answer", SDP: body.Sdp}, events: events, done: make(chan struct{})}
+			s := &PlaybackSession{connection: c, dialog: dialog, riid: m.RIID, id: body.SessionId, deviceID: id, answer: SessionDescription{Type: SDPTypeAnswer, SDP: body.Sdp}, events: events, done: make(chan struct{})}
 			s.lastPong.Store(time.Now().UnixNano())
 			c.mu.Lock()
 			c.playbacks[dialog] = s

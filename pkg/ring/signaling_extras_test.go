@@ -101,7 +101,7 @@ func TestCapturedPlaybackNegotiationICEAndTermination(t *testing.T) {
 	result := make(chan *PlaybackSession, 1)
 	failures := make(chan error, 1)
 	go func() {
-		s, e := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: "offer", SDP: offer.SDP}})
+		s, e := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
 		result <- s
 		failures <- e
 	}()
@@ -122,7 +122,7 @@ func TestCapturedPlaybackNegotiationICEAndTermination(t *testing.T) {
 	if err := <-failures; err != nil {
 		t.Fatal(err)
 	}
-	if s.Answer().Type != "answer" || s.Answer().SDP == "" {
+	if s.Answer().Type != SDPTypeAnswer || s.Answer().SDP == "" {
 		t.Fatal("missing playback answer")
 	}
 	replayReply(t, c, request, "ice")
@@ -171,7 +171,7 @@ func TestPushReplayFailureAndClosure(t *testing.T) {
 
 func TestPlaybackReplayValidation(t *testing.T) {
 	c, writes := replayConnection(t)
-	for _, req := range []StartPlaybackRequest{{DeviceID: "bad"}, {DeviceID: "1000", Offer: SessionDescription{Type: "answer", SDP: "x"}}, {DeviceID: "1000", Offer: SessionDescription{Type: "offer", SDP: "bad"}}} {
+	for _, req := range []StartPlaybackRequest{{DeviceID: "bad"}, {DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeAnswer, SDP: "x"}}, {DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: "bad"}}} {
 		if _, err := c.StartPlayback(context.Background(), req); err == nil {
 			t.Fatalf("accepted %+v", req)
 		}
@@ -183,7 +183,7 @@ func TestPlaybackReplayValidation(t *testing.T) {
 	_ = json.Unmarshal(frame.Body, &offer)
 	result := make(chan error, 1)
 	go func() {
-		_, err := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: "offer", SDP: offer.SDP}})
+		_, err := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
 		result <- err
 	}()
 	request := <-writes
@@ -247,7 +247,7 @@ func TestPlaybackReplayReceiveCancellation(t *testing.T) {
 	_ = json.Unmarshal(frame.Body, &offer)
 	ready := make(chan *PlaybackSession, 1)
 	go func() {
-		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: "offer", SDP: offer.SDP}})
+		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
 		ready <- s
 	}()
 	request := <-writes
@@ -294,7 +294,7 @@ func TestSignalingExtraValidationBeforeWire(t *testing.T) {
 		SDP string `json:"sdp"`
 	}
 	_ = json.Unmarshal(frame.Body, &offer)
-	if _, err := c.StartPlayback(ctx, StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: "offer", SDP: offer.SDP}}); err != context.Canceled {
+	if _, err := c.StartPlayback(ctx, StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}}); err != context.Canceled {
 		t.Fatalf("canceled playback=%v", err)
 	}
 	select {
@@ -320,7 +320,7 @@ func TestPlaybackCapturedPongAndRemoteClose(t *testing.T) {
 	_ = json.Unmarshal(frame.Body, &offer)
 	ready := make(chan *PlaybackSession, 1)
 	go func() {
-		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: "offer", SDP: offer.SDP}})
+		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
 		ready <- s
 	}()
 	request := <-writes
@@ -355,7 +355,7 @@ func TestPlaybackMissingPongTerminates(t *testing.T) {
 	_ = json.Unmarshal(frame.Body, &offer)
 	ready := make(chan *PlaybackSession, 1)
 	go func() {
-		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: "offer", SDP: offer.SDP}})
+		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
 		ready <- s
 	}()
 	request := <-writes

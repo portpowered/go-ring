@@ -34,4 +34,27 @@ const (
 	PanRight                  = "RIGHT"
 	TiltUp                    = "UP"
 	TiltDown                  = "DOWN"
+	SDPTypeOffer              = "offer"
+	SDPTypeAnswer             = "answer"
+	SubscriptionStatusOK      = "ok"
+	SDPSendRecv               = "sendrecv"
+	SDPSendOnly               = "sendonly"
+	SDPRecvOnly               = "recvonly"
+	SDPInactive               = "inactive"
+)
+
+// JSON keys used by the dynamic session and PTZ payloads. Typed wire bodies
+// should be used where the payload shape is fixed.
+const (
+	FieldDeviceID     = "doorbot_id"
+	FieldSessionID    = "session_id"
+	FieldEnabled      = "enabled"
+	FieldAudioEnabled = "audio_enabled"
+	FieldVideoEnabled = "video_enabled"
+	FieldDirection    = "direction"
+	FieldSpeed        = "speed"
+	FieldSessionIDRPC = "sessionId"
+	FieldTimestamp    = "timestamp"
+	FieldVersion      = "version"
+	FieldCommand      = "command"
 )

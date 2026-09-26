@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pion/sdp/v3"
+	"github.com/portpowered/go-ring/internal/protocol"
 )
 
 // ParseSDP validates the media identities used to route trickled ICE. It does not
@@ -29,7 +30,7 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 	sessionDirections := 0
 	for _, attribute := range description.Attributes {
 		switch attribute.Key {
-		case "sendrecv", "sendonly", "recvonly", "inactive":
+		case protocol.SDPSendRecv, protocol.SDPSendOnly, protocol.SDPRecvOnly, protocol.SDPInactive:
 			sessionDirections++
 		}
 	}
@@ -49,7 +50,7 @@ func ParseSDP(raw string) (*sdp.SessionDescription, error) {
 				midCount++
 			}
 			switch attribute.Key {
-			case "sendrecv", "sendonly", "recvonly", "inactive":
+			case protocol.SDPSendRecv, protocol.SDPSendOnly, protocol.SDPRecvOnly, protocol.SDPInactive:
 				count++
 			}
 		}
@@ -83,12 +84,12 @@ func direction(description *sdp.SessionDescription, media *sdp.MediaDescription)
 	for _, attributes := range [][]sdp.Attribute{media.Attributes, description.Attributes} {
 		for _, attribute := range attributes {
 			switch attribute.Key {
-			case "sendrecv", "sendonly", "recvonly", "inactive":
+			case protocol.SDPSendRecv, protocol.SDPSendOnly, protocol.SDPRecvOnly, protocol.SDPInactive:
 				return attribute.Key
 			}
 		}
 	}
-	return "sendrecv"
+	return protocol.SDPSendRecv
 }
 
 // NormalizeAnswer applies the observed recvonly/sendrecv workaround by MID,
@@ -119,24 +120,24 @@ func NormalizeAnswer(offer, answer string) (string, error) {
 		if original.MediaName.Port.Value == 0 {
 			return "", fmt.Errorf("SDP answer reactivates a rejected offer section")
 		}
-		if direction(o, original) == "recvonly" && direction(a, media) == "sendrecv" {
+		if direction(o, original) == protocol.SDPRecvOnly && direction(a, media) == protocol.SDPSendRecv {
 			found := false
 			for j := range media.Attributes {
-				if media.Attributes[j].Key == "sendrecv" {
-					media.Attributes[j].Key = "sendonly"
+				if media.Attributes[j].Key == protocol.SDPSendRecv {
+					media.Attributes[j].Key = protocol.SDPSendOnly
 					found = true
 				}
 			}
 			if !found {
-				media.Attributes = append(media.Attributes, sdp.NewPropertyAttribute("sendonly"))
+				media.Attributes = append(media.Attributes, sdp.NewPropertyAttribute(protocol.SDPSendOnly))
 			}
 			changed = true
 		}
 		// RFC 3264 section 6.1, after the capture-backed recvonly workaround.
 		offerDirection, answerDirection := direction(o, original), direction(a, media)
-		invalid := offerDirection == "recvonly" && answerDirection != "sendonly" && answerDirection != "inactive"
-		invalid = invalid || offerDirection == "sendonly" && answerDirection != "recvonly" && answerDirection != "inactive"
-		invalid = invalid || offerDirection == "inactive" && answerDirection != "inactive"
+		invalid := offerDirection == protocol.SDPRecvOnly && answerDirection != protocol.SDPSendOnly && answerDirection != protocol.SDPInactive
+		invalid = invalid || offerDirection == protocol.SDPSendOnly && answerDirection != protocol.SDPRecvOnly && answerDirection != protocol.SDPInactive
+		invalid = invalid || offerDirection == protocol.SDPInactive && answerDirection != protocol.SDPInactive
 		if invalid {
 			return "", fmt.Errorf("SDP answer direction incompatible with offer")
 		}

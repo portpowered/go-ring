@@ -12,7 +12,7 @@ func (c *Client) SetVolume(ctx context.Context, req SetVolumeRequest) error {
 	if req.Volume < 0 || req.Volume > 11 {
 		return ringapimodels.NewBadRequestError("volume must be between 0 and 11", nil)
 	}
-	if req.Kind != "chime" && req.Kind != "doorbell" {
+	if req.Kind != ringapimodels.VolumeKindChime && req.Kind != ringapimodels.VolumeKindDoorbell {
 		return ringapimodels.NewBadRequestError("volume kind must be chime or doorbell", nil)
 	}
 	if req.Description == "" {
@@ -29,7 +29,7 @@ func (c *Client) SetVolume(ctx context.Context, req SetVolumeRequest) error {
 // req.State can be "on" or "off"
 // req.Duration is optional and specifies how long to keep lights on (in seconds)
 func (c *Client) SetLights(ctx context.Context, req SetLightsRequest) error {
-	if req.State != "on" && req.State != "off" {
+	if req.State != ringapimodels.LightStateOn && req.State != ringapimodels.LightStateOff {
 		return ringapimodels.NewBadRequestError("state must be 'on' or 'off'", nil)
 	}
 	if req.Duration != nil {

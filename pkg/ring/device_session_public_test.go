@@ -125,7 +125,7 @@ func TestStartDeviceSessionValidationStopsBeforeTransport(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	connection := &SignalingConnection{}
-	valid := StartDeviceSessionRequest{DeviceID: "7", Offer: SessionDescription{Type: "offer", SDP: publicTestOffer}}
+	valid := StartDeviceSessionRequest{DeviceID: "7", Offer: SessionDescription{Type: SDPTypeOffer, SDP: publicTestOffer}}
 	checks := []struct {
 		name string
 		ctx  context.Context
@@ -133,10 +133,10 @@ func TestStartDeviceSessionValidationStopsBeforeTransport(t *testing.T) {
 	}{
 		{"canceled context", ctx, valid},
 		{"invalid device", context.Background(), StartDeviceSessionRequest{DeviceID: "7x", Offer: valid.Offer}},
-		{"wrong description type", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: SessionDescription{Type: "answer", SDP: publicTestOffer}}},
-		{"empty SDP", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: SessionDescription{Type: "offer"}}},
+		{"wrong description type", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: SessionDescription{Type: SDPTypeAnswer, SDP: publicTestOffer}}},
+		{"empty SDP", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: SessionDescription{Type: SDPTypeOffer}}},
 		{"invalid ICE mode", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: valid.Offer, ICEMode: "gathering"}},
-		{"invalid SDP", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: SessionDescription{Type: "offer", SDP: "broken"}}},
+		{"invalid SDP", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: SessionDescription{Type: SDPTypeOffer, SDP: "broken"}}},
 		{"negative max age", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: valid.Offer, MaxAge: -time.Second}},
 		{"overlong max age", context.Background(), StartDeviceSessionRequest{DeviceID: "7", Offer: valid.Offer, MaxAge: signaling.MaxSessionAge + time.Second}},
 	}

@@ -11,22 +11,6 @@ import (
 
 var ErrSnapshotNotReady = errors.New("fresh snapshot not available")
 
-// GetSnapshotRequest controls the bounded Python-legacy freshness poll.
-// Zero attempts defaults to three; a zero interval polls without delay.
-type GetSnapshotRequest struct {
-	DeviceID     string
-	MaxAttempts  int
-	PollInterval time.Duration
-}
-
-// Snapshot contains buffered image bytes and the timestamp returned by the
-// legacy polling endpoint. The caller may choose how to persist the bytes.
-type Snapshot struct {
-	Bytes       []byte
-	Timestamp   time.Time
-	ContentType string
-}
-
 // GetSnapshot triggers a fresh legacy snapshot, polls its timestamp, then
 // fetches the image. This follows pinned Python behavior; it is not the C1
 // app-snaps endpoint, whose response was absent from the capture.

@@ -1,5 +1,39 @@
 # Coverage by test suite
 
+## How to run
+Tests have one layout: `tests/replay` exercises the public API against local
+HTTP/WebSocket peers driven by checked-in captured or explicitly synthetic
+fixtures; `tests/integration` contains opt-in tests against real endpoints.
+Small white-box unit tests live beside their implementation in `pkg` or
+`internal`. Replay cases isolate session establishment, ICE, PTZ replies,
+heartbeat, and termination; the full captured conversation remains an ordering
+regression test.
+
+```sh
+go test -race ./... -timeout 120s
+go vet ./...
+go build ./examples/...
+make lint
+```
+
+Set `GOWORK=off` when testing this module independently of a surrounding workspace.
+For the reference-first comparison checks, initialize the submodule, install uv and Node.js/npm,
+and run `python tools/verify_reference.py`. This runs the pinned Python tests,
+the shared fixture replay with its 95% selected-code coverage gate, and
+schema/sanitizer checks in separate local
+environments. The private mitmproxy file is not required for CI.
+
+`make test-cover` measures replay, unit, and their combined coverage separately.
+Replay is the primary compatibility metric: it currently reaches 49.29% of
+maintained Go statements; unit tests reach 75.38%, and their union reaches
+91.10%. These suites have separate CI floors and profiles. The Python replay
+gate covers 96.13% of selected Python lines, a different denominator; compare
+ported behavior through the [test mapping](docs/porting-progress.md). Live tests
+are opt-in via `make test-integration`, with separate coverage through
+`make test-cover-integration`.
+
+
+## implementation:
 Replay coverage is the primary Go compatibility signal. It measures maintained
 handwritten library statements reached by `tests/replay` alone, using the same
 sanitized captured and labeled synthetic fixtures used by the Python replay

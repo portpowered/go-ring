@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,115 +14,6 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 )
-
-type SessionState string
-
-var (
-	ErrSessionClosed       = signaling.ErrClosed
-	ErrSessionExpired      = signaling.ErrExpired
-	ErrSessionHeartbeat    = signaling.ErrHeartbeat
-	ErrSessionBackpressure = signaling.ErrBackpressure
-)
-
-const (
-	SessionActive  SessionState = "active"
-	SessionClosed  SessionState = "closed"
-	SessionExpired SessionState = "expired"
-	SessionFailed  SessionState = "failed"
-)
-
-type SessionDescription struct {
-	Type string `json:"type"`
-	SDP  string `json:"sdp"`
-}
-type StartDeviceSessionRequest struct {
-	DeviceID     string
-	Offer        SessionDescription
-	AudioEnabled bool
-	VideoEnabled bool
-	MaxAge       time.Duration
-	ICEMode      ICECandidateMode
-}
-type ICECandidateMode string
-
-const (
-	ICETrickle    ICECandidateMode = "trickle"
-	ICENonTrickle ICECandidateMode = "non_trickle"
-)
-
-type ICECandidateRequest struct {
-	Candidate  string
-	MID        string
-	MLineIndex int
-}
-type PanDirection string
-type TiltDirection string
-
-const (
-	PanLeft  PanDirection  = protocol.PanLeft
-	PanRight PanDirection  = protocol.PanRight
-	TiltUp   TiltDirection = protocol.TiltUp
-	TiltDown TiltDirection = protocol.TiltDown
-)
-
-type PanStepRequest struct{ Direction PanDirection }
-type TiltStepRequest struct{ Direction TiltDirection }
-type PanContinuousRequest struct {
-	Direction PanDirection
-	Speed     float64
-}
-type TiltContinuousRequest struct {
-	Direction TiltDirection
-	Speed     float64
-}
-type PTZAxis string
-
-const (
-	PanAxis  PTZAxis = "pan"
-	TiltAxis PTZAxis = "tilt"
-)
-
-type StopPTZRequest struct{ Axis PTZAxis }
-type SetMicrophoneRequest struct{ Enabled bool }
-type SetStreamOptionsRequest struct {
-	AudioEnabled *bool
-	VideoEnabled *bool
-}
-type SessionEvent struct {
-	Method string
-	Body   json.RawMessage
-}
-
-// PTZResult exposes captured acknowledgement fields while Raw retains unknown extensions.
-type PTZResult struct {
-	SessionID string          `json:"sessionId"`
-	Timestamp float64         `json:"timestamp"`
-	Version   float64         `json:"version"`
-	Raw       json.RawMessage `json:"-"`
-}
-
-// RPCError describes a command rejection returned by the signaling service.
-type RPCError = signaling.RPCError
-
-type DeviceSession struct {
-	connection *SignalingConnection
-	core       *signaling.Session
-	dialogID   string
-	answer     SessionDescription
-	offerSDP   string
-	started    time.Time
-	deviceID   int64
-	signalID   string
-	riid       string
-	iceMode    ICECandidateMode
-	mu         sync.Mutex
-	closed     bool
-	terminal   error
-	movement   map[PTZAxis]string
-	ready      chan struct{}
-	done       chan struct{}
-	doneOnce   sync.Once
-}
 
 type liveAnswerInfo struct {
 	PingInterval json.RawMessage `json:"ping_interval"`
@@ -160,7 +50,7 @@ func (c *SignalingConnection) waitForLiveAnswer(ctx context.Context, events <-ch
 				state.signalID, state.riid = body.SessionId, m.RIID
 			case protocol.MethodSDP:
 				var body liveAnswerBody
-				if json.Unmarshal(m.Body, &body) != nil || body.DeviceID != id || body.Type != "answer" || body.SDP == "" {
+				if json.Unmarshal(m.Body, &body) != nil || body.DeviceID != id || body.Type != protocol.SDPTypeAnswer || body.SDP == "" {
 					return state, fmt.Errorf("invalid SDP answer")
 				}
 				if state.signalID != "" && body.SessionID != state.signalID {
@@ -223,7 +113,7 @@ func validateSessionRequest(req StartDeviceSessionRequest) (int64, time.Duration
 	if err != nil || id <= 0 {
 		return 0, 0, fmt.Errorf("device ID must be a positive integer")
 	}
-	if req.Offer.Type != "offer" || req.Offer.SDP == "" {
+	if req.Offer.Type != SDPTypeOffer || req.Offer.SDP == "" {
 		return 0, 0, fmt.Errorf("offer must contain type offer and SDP")
 	}
 	if req.ICEMode != "" && req.ICEMode != ICETrickle && req.ICEMode != ICENonTrickle {
@@ -270,9 +160,9 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	c.pending[dialog] = events
 	c.mu.Unlock()
 	cleanup := func() { c.mu.Lock(); delete(c.pending, dialog); c.mu.Unlock() }
-	body := generatedsignaling.LiveViewBody{DoorbotId: int(id), StreamOptions: &generatedsignaling.LiveStreamOptions{AudioEnabled: req.AudioEnabled, VideoEnabled: req.VideoEnabled}, Sdp: req.Offer.SDP, ReservedType: "offer"}
+	body := generatedsignaling.LiveViewBody{DoorbotId: int(id), StreamOptions: &generatedsignaling.LiveStreamOptions{AudioEnabled: req.AudioEnabled, VideoEnabled: req.VideoEnabled}, Sdp: req.Offer.SDP, ReservedType: protocol.SDPTypeOffer}
 	raw, _ := json.Marshal(body)
-	if err = c.send(negotiationCtx, signaling.Message{Method: "live_view", DialogID: dialog, Body: raw}); err != nil {
+	if err = c.send(negotiationCtx, signaling.Message{Method: protocol.MethodLiveView, DialogID: dialog, Body: raw}); err != nil {
 		cleanup()
 		return nil, err
 	}
@@ -281,7 +171,7 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	defer func() {
 		if !startedSuccessfully && signalID != "" {
 			ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
-			_ = c.send(ctx, signaling.Message{Method: "close", DialogID: dialog, RIID: riid, Body: mustJSON(map[string]any{"doorbot_id": id, "session_id": signalID})})
+			_ = c.send(ctx, signaling.Message{Method: protocol.MethodClose, DialogID: dialog, RIID: riid, Body: mustJSON(generatedsignaling.SessionBody{DoorbotId: int(id), SessionId: signalID})})
 			cancel()
 		}
 	}()
@@ -309,7 +199,7 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	if iceMode == "" {
 		iceMode = ICETrickle
 	}
-	created := &DeviceSession{connection: c, dialogID: dialog, answer: SessionDescription{Type: "answer", SDP: answer}, offerSDP: req.Offer.SDP, started: started, movement: map[PTZAxis]string{}, ready: make(chan struct{}), done: make(chan struct{}), deviceID: id, signalID: signalID, riid: riid, iceMode: iceMode}
+	created := &DeviceSession{connection: c, dialogID: dialog, answer: SessionDescription{Type: SDPTypeAnswer, SDP: answer}, offerSDP: req.Offer.SDP, started: started, movement: map[PTZAxis]string{}, ready: make(chan struct{}), done: make(chan struct{}), deviceID: id, signalID: signalID, riid: riid, iceMode: iceMode}
 	remaining := maxAge - time.Since(started)
 	if remaining <= 0 {
 		cleanup()
@@ -326,17 +216,17 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 		return nil, err
 	}
 	go created.watch()
-	if err = c.send(negotiationCtx, signaling.Message{Method: "activate_session", DialogID: dialog, RIID: riid, Body: mustJSON(map[string]any{"doorbot_id": id, "session_id": signalID})}); err != nil {
+	if err = c.send(negotiationCtx, signaling.Message{Method: protocol.MethodActivateSession, DialogID: dialog, RIID: riid, Body: mustJSON(generatedsignaling.SessionBody{DoorbotId: int(id), SessionId: signalID})}); err != nil {
 		created.terminate(err)
 		cleanup()
 		return nil, err
 	}
-	if err = created.core.Send(negotiationCtx, "mic_enable", map[string]any{"enabled": req.AudioEnabled}); err != nil {
+	if err = created.core.Send(negotiationCtx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: req.AudioEnabled}); err != nil {
 		created.terminate(err)
 		cleanup()
 		return nil, err
 	}
-	if err = created.core.Send(negotiationCtx, "stream_options", map[string]any{"audio_enabled": req.AudioEnabled}); err != nil {
+	if err = created.core.Send(negotiationCtx, protocol.MethodStreamOptions, map[string]any{protocol.FieldAudioEnabled: req.AudioEnabled}); err != nil {
 		created.terminate(err)
 		cleanup()
 		return nil, err
@@ -373,7 +263,7 @@ func (s *DeviceSession) watch() {
 	err := s.core.Wait(context.Background())
 	if errors.Is(err, signaling.ErrExpired) || errors.Is(err, signaling.ErrHeartbeat) {
 		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
-		_ = s.connection.send(ctx, signaling.Message{Method: "close", DialogID: s.dialogID, RIID: s.riid, Body: mustJSON(map[string]any{"doorbot_id": s.deviceID, "session_id": s.signalID})})
+		_ = s.connection.send(ctx, signaling.Message{Method: protocol.MethodClose, DialogID: s.dialogID, RIID: s.riid, Body: mustJSON(generatedsignaling.SessionBody{DoorbotId: int(s.deviceID), SessionId: s.signalID})})
 		cancel()
 	}
 	s.mu.Lock()
@@ -394,7 +284,7 @@ func (s *DeviceSession) handle(m signaling.Message) {
 		s.terminate(err)
 		return
 	}
-	if m.Method == "close" && s.matches(m) {
+	if m.Method == protocol.MethodClose && s.matches(m) {
 		s.terminate(signaling.ErrClosed)
 	}
 }
@@ -480,13 +370,13 @@ func (s *DeviceSession) PanStep(ctx context.Context, r PanStepRequest) (*PTZResu
 	if r.Direction != PanLeft && r.Direction != PanRight {
 		return nil, fmt.Errorf("invalid pan direction %q", r.Direction)
 	}
-	return s.call(ctx, protocol.RPCPanStep, map[string]any{"direction": r.Direction})
+	return s.call(ctx, protocol.RPCPanStep, map[string]any{protocol.FieldDirection: r.Direction})
 }
 func (s *DeviceSession) TiltStep(ctx context.Context, r TiltStepRequest) (*PTZResult, error) {
 	if r.Direction != TiltUp && r.Direction != TiltDown {
 		return nil, fmt.Errorf("invalid tilt direction %q", r.Direction)
 	}
-	return s.call(ctx, protocol.RPCTiltStep, map[string]any{"direction": r.Direction})
+	return s.call(ctx, protocol.RPCTiltStep, map[string]any{protocol.FieldDirection: r.Direction})
 }
 func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousRequest) (*PTZResult, error) {
 	if r.Direction != PanLeft && r.Direction != PanRight {
@@ -498,7 +388,7 @@ func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousReques
 	s.mu.Lock()
 	s.movement[PanAxis] = string(r.Direction)
 	s.mu.Unlock()
-	v, e := s.call(ctx, protocol.RPCPanContinuous, map[string]any{"direction": r.Direction, "speed": r.Speed})
+	v, e := s.call(ctx, protocol.RPCPanContinuous, map[string]any{protocol.FieldDirection: r.Direction, protocol.FieldSpeed: r.Speed})
 	if e != nil {
 		s.mu.Lock()
 		delete(s.movement, PanAxis)
@@ -516,7 +406,7 @@ func (s *DeviceSession) TiltContinuous(ctx context.Context, r TiltContinuousRequ
 	s.mu.Lock()
 	s.movement[TiltAxis] = string(r.Direction)
 	s.mu.Unlock()
-	v, e := s.call(ctx, protocol.RPCTiltContinuous, map[string]any{"direction": r.Direction, "speed": r.Speed})
+	v, e := s.call(ctx, protocol.RPCTiltContinuous, map[string]any{protocol.FieldDirection: r.Direction, protocol.FieldSpeed: r.Speed})
 	if e != nil {
 		s.mu.Lock()
 		delete(s.movement, TiltAxis)
@@ -535,7 +425,7 @@ func (s *DeviceSession) StopPTZ(ctx context.Context, r StopPTZRequest) (*PTZResu
 	if r.Axis == TiltAxis {
 		method = protocol.RPCTiltContinuous
 	}
-	result, e := s.call(ctx, method, map[string]any{"direction": direction, "speed": 0.0})
+	result, e := s.call(ctx, method, map[string]any{protocol.FieldDirection: direction, protocol.FieldSpeed: 0.0})
 	if e == nil {
 		s.mu.Lock()
 		delete(s.movement, r.Axis)
@@ -544,20 +434,20 @@ func (s *DeviceSession) StopPTZ(ctx context.Context, r StopPTZRequest) (*PTZResu
 	return result, e
 }
 func (s *DeviceSession) SetMicrophone(ctx context.Context, r SetMicrophoneRequest) error {
-	return s.core.Send(ctx, "mic_enable", map[string]any{"enabled": r.Enabled})
+	return s.core.Send(ctx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: r.Enabled})
 }
 func (s *DeviceSession) SetStreamOptions(ctx context.Context, r SetStreamOptionsRequest) error {
 	body := map[string]any{}
 	if r.AudioEnabled != nil {
-		body["audio_enabled"] = *r.AudioEnabled
+		body[protocol.FieldAudioEnabled] = *r.AudioEnabled
 	}
 	if r.VideoEnabled != nil {
-		body["video_enabled"] = *r.VideoEnabled
+		body[protocol.FieldVideoEnabled] = *r.VideoEnabled
 	}
 	if len(body) == 0 {
 		return fmt.Errorf("at least one stream option is required")
 	}
-	return s.core.Send(ctx, "stream_options", body)
+	return s.core.Send(ctx, protocol.MethodStreamOptions, body)
 }
 func (s *DeviceSession) Close() error { return s.close(true) }
 func (s *DeviceSession) close(sendClose bool) error {
@@ -588,9 +478,9 @@ func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) er
 			if axis == TiltAxis {
 				method = protocol.RPCTiltContinuous
 			}
-			_, _ = s.call(ctx, method, map[string]any{"direction": direction, "speed": 0.0})
+			_, _ = s.call(ctx, method, map[string]any{protocol.FieldDirection: direction, protocol.FieldSpeed: 0.0})
 		}
-		_ = s.core.Send(ctx, "close", nil)
+		_ = s.core.Send(ctx, protocol.MethodClose, nil)
 	}
 	_ = s.core.Close()
 	s.connection.removeSession(s.dialogID)

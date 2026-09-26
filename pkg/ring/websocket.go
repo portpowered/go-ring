@@ -1,25 +1,10 @@
 package ring
 
 import (
-	"context"
 	"encoding/json"
-	"sync"
 
-	"github.com/gorilla/websocket"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
-
-// EventConnection represents a WebSocket connection for receiving events
-type EventConnection struct {
-	conn        *websocket.Conn
-	ctx         context.Context
-	cancel      context.CancelFunc
-	wg          sync.WaitGroup
-	mu          sync.RWMutex
-	closed      bool
-	messageChan chan *ringapimodels.Event
-	errChan     chan error
-}
 
 // Note: ConnectEvents is implemented in client_events.go to avoid circular dependencies
 

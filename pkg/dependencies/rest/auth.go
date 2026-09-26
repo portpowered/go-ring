@@ -172,7 +172,7 @@ func (c *Client) initiatePKCE(ctx context.Context, hardwareID string) error {
 		"scope":                 {ringapimodels.RingScope},
 		"code_challenge":        {base64.RawURLEncoding.EncodeToString(challengeBytes[:])},
 		"code_challenge_method": {"S256"},
-		"device_model":          {"go-ring"},
+		"device_model":          {deviceModel},
 		"app_version":           {"3.102.0"},
 		"dark_mode":             {"false"},
 		"device_brand":          {"golang"},
@@ -433,7 +433,7 @@ func extractCSRF(html string, jar http.CookieJar, oauthBase string) string {
 }
 
 func findCSRF(value any, depth int) string {
-	if depth > 8 {
+	if depth > maxCSRFSearchDepth {
 		return ""
 	}
 	switch typed := value.(type) {

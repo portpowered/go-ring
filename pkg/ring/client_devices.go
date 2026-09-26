@@ -121,7 +121,7 @@ func convertToDoorbell(raw dependencymodels.RingDevice) *ringapimodels.Doorbell 
 	}
 
 	if raw.Health != nil {
-		doorbell.Health = convertToDeviceHealth(raw.Health)
+		doorbell.Health = convertInventoryHealth(raw.Health)
 	}
 
 	return doorbell
@@ -141,7 +141,7 @@ func convertToChime(raw dependencymodels.RingDevice) *ringapimodels.Chime {
 	}
 
 	if raw.Health != nil {
-		chime.Health = convertToDeviceHealth(raw.Health)
+		chime.Health = convertInventoryHealth(raw.Health)
 	}
 
 	return chime
@@ -165,7 +165,7 @@ func convertToStickUpCam(raw dependencymodels.RingDevice) *ringapimodels.StickUp
 	}
 
 	if raw.Health != nil {
-		stickupCam.Health = convertToDeviceHealth(raw.Health)
+		stickupCam.Health = convertInventoryHealth(raw.Health)
 	}
 
 	return stickupCam
@@ -183,13 +183,24 @@ func convertToOther(raw dependencymodels.RingDevice) *ringapimodels.Other {
 	}
 
 	if raw.Health != nil {
-		other.Health = convertToDeviceHealth(raw.Health)
+		other.Health = convertInventoryHealth(raw.Health)
 	}
 
 	return other
 }
 
-// convertToDeviceHealth converts raw health data to DeviceHealth
+// convertInventoryHealth maps typed inventory health into the public projection.
+func convertInventoryHealth(raw *dependencymodels.RingDeviceHealth) *ringapimodels.DeviceHealth {
+	return &ringapimodels.DeviceHealth{
+		BatteryLevel:    raw.BatteryLevel,
+		BatteryStatus:   raw.BatteryStatus,
+		SignalStrength:  raw.SignalStrength,
+		FirmwareVersion: raw.FirmwareVersion,
+		LastUpdate:      raw.LastUpdate,
+	}
+}
+
+// convertToDeviceHealth converts the separate legacy health endpoint's JSON.
 func convertToDeviceHealth(raw map[string]interface{}) *ringapimodels.DeviceHealth {
 	health := &ringapimodels.DeviceHealth{}
 

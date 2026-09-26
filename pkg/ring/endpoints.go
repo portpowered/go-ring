@@ -9,52 +9,6 @@ import (
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
 )
 
-// Region selects a Ring account region. Regional Solutions bootstrap origins
-// are not currently verified for EU or FE and must be supplied explicitly.
-type Region string
-
-const (
-	RegionUS Region = "US"
-	RegionEU Region = "EU"
-	RegionFE Region = "FE"
-)
-
-// Endpoints overrides service origins for a client. Empty fields inherit the
-// selected region's verified defaults.
-type Endpoints struct {
-	OAuthBaseURL     string
-	APIBaseURL       string
-	SolutionsBaseURL string
-	SignalingURL     string
-}
-
-func WithRegion(region Region) Option { return withRegion(region) }
-
-type withRegion Region
-
-func (w withRegion) Apply(c *Client) error {
-	region := Region(w)
-	if region != RegionUS && region != RegionEU && region != RegionFE {
-		return fmt.Errorf("unsupported region %q", region)
-	}
-	c.region = region
-	return c.applyEndpointConfiguration()
-}
-
-// WithEndpoints overrides endpoint origins for this client. Overrides take
-// precedence over the selected region regardless of option order.
-func WithEndpoints(endpoints Endpoints) Option { return withEndpoints(endpoints) }
-
-type withEndpoints Endpoints
-
-func (w withEndpoints) Apply(c *Client) error {
-	if err := validateEndpoints(Endpoints(w)); err != nil {
-		return err
-	}
-	c.endpointOverrides = Endpoints(w)
-	return c.applyEndpointConfiguration()
-}
-
 type endpointValidation struct {
 	name, raw string
 	schemes   []string

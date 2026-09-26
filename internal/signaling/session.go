@@ -64,6 +64,13 @@ type rpcResultIdentity struct {
 	SessionID string `json:"sessionId"`
 }
 
+type rpcCommandRequest struct {
+	Version string         `json:"jsonrpc"`
+	ID      string         `json:"id"`
+	Method  string         `json:"method"`
+	Params  map[string]any `json:"params"`
+}
+
 // Session owns an activated device's routing and RPC state. Negotiation and the
 // single socket reader belong to the connection. Send must honor its context.
 type Session struct {
@@ -210,8 +217,8 @@ func (s *Session) Send(ctx context.Context, method string, fields map[string]any
 		body[k] = v
 	}
 	// Routing fields cannot be overridden by command payloads.
-	body["doorbot_id"] = s.deviceID
-	body["session_id"] = s.signalID
+	body[protocol.FieldDeviceID] = s.deviceID
+	body[protocol.FieldSessionID] = s.signalID
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("invalid session payload")
@@ -264,10 +271,10 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 	for k, v := range params {
 		p[k] = v
 	}
-	p["sessionId"] = s.controlID
-	p["timestamp"] = s.clock.Now().UnixMilli()
-	p["version"] = protocol.PTZVersion
-	err := s.Send(ctx, protocol.MethodRPC, map[string]any{"command": map[string]any{"jsonrpc": protocol.JSONRPCVersion, "id": id, "method": method, "params": p}})
+	p[protocol.FieldSessionIDRPC] = s.controlID
+	p[protocol.FieldTimestamp] = s.clock.Now().UnixMilli()
+	p[protocol.FieldVersion] = protocol.PTZVersion
+	err := s.Send(ctx, protocol.MethodRPC, map[string]any{protocol.FieldCommand: rpcCommandRequest{Version: protocol.JSONRPCVersion, ID: id, Method: method, Params: p}})
 	if err != nil {
 		if cause := context.Cause(callCtx); cause != nil {
 			return nil, cause

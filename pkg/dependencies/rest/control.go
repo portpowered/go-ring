@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 // GetMotionDetectionEnabled reads the one settings field supported by the current
@@ -17,7 +19,7 @@ import (
 func (c *Client) GetMotionDetectionEnabled(ctx context.Context, deviceID int64) (*bool, error) {
 	var response generatedhttp.DeviceSettings
 	path := settingsPath(deviceID)
-	if err := c.doJSONRequest(ctx, "GET", path, nil, &response); err != nil {
+	if err := c.doJSONRequest(ctx, http.MethodGet, path, nil, &response); err != nil {
 		return nil, err
 	}
 	if response.MotionSettings == nil {
@@ -30,7 +32,7 @@ func (c *Client) GetMotionDetectionEnabled(ctx context.Context, deviceID int64) 
 func (c *Client) PatchMotionDetectionEnabled(ctx context.Context, deviceID int64, enabled bool) error {
 	body := generatedhttp.DeviceSettingsPatch{MotionSettings: &generatedhttp.MotionSettingsPatch{MotionDetectionEnabled: &enabled}}
 	var response json.RawMessage
-	return c.doJSONRequest(ctx, "PATCH", settingsPath(deviceID), body, &response)
+	return c.doJSONRequest(ctx, http.MethodPatch, settingsPath(deviceID), body, &response)
 }
 
 // SetSiren toggles the captured legacy doorbot siren route. Duration is not
@@ -41,7 +43,7 @@ func (c *Client) SetSiren(ctx context.Context, deviceID int64, enabled bool) err
 		path = protocol.DoorbotSirenOnPath
 	}
 	path = strings.Replace(path, "{id}", strconv.FormatInt(deviceID, 10), 1)
-	return c.doJSONRequest(ctx, "PUT", path, nil, nil)
+	return c.doJSONRequest(ctx, http.MethodPut, path, nil, nil)
 }
 
 func settingsPath(deviceID int64) string {
@@ -56,22 +58,22 @@ func legacyPath(pattern string, deviceID int64) string {
 func (c *Client) SetVolume(ctx context.Context, deviceID int64, kind, description string, volume int) error {
 	path, prefix := protocol.LegacyDoorbotPath, "doorbot"
 	field := "doorbell_volume"
-	if kind == "chime" {
-		path, prefix, field = protocol.LegacyChimePath, "chime", "volume"
+	if kind == ringapimodels.VolumeKindChime {
+		path, prefix, field = protocol.LegacyChimePath, legacyChimeKind, "volume"
 	}
 	query := url.Values{}
 	query.Set(prefix+"[description]", description)
 	query.Set(prefix+"[settings]["+field+"]", strconv.Itoa(volume))
-	return c.doJSONRequest(ctx, "PUT", legacyPath(path, deviceID)+"?"+query.Encode(), nil, nil)
+	return c.doJSONRequest(ctx, http.MethodPut, legacyPath(path, deviceID)+"?"+query.Encode(), nil, nil)
 }
 
 // SetLights uses the captured on route and the corresponding legacy off route.
 func (c *Client) SetLights(ctx context.Context, deviceID int64, state string) error {
 	path := protocol.DoorbotLightOffPath
-	if state == "on" {
+	if state == ringapimodels.LightStateOn {
 		path = protocol.DoorbotLightOnPath
 	}
-	return c.doJSONRequest(ctx, "PUT", legacyPath(path, deviceID), nil, nil)
+	return c.doJSONRequest(ctx, http.MethodPut, legacyPath(path, deviceID), nil, nil)
 }
 
 // SetMotionDetection shares the recorded typed settings PATCH route.
@@ -82,7 +84,7 @@ func (c *Client) SetMotionDetection(ctx context.Context, deviceID int64, enabled
 // TestSound uses the Python legacy chime route and query parameter.
 func (c *Client) TestSound(ctx context.Context, deviceID int64, kind string) error {
 	query := url.Values{"kind": {kind}}
-	return c.doJSONRequest(ctx, "POST", legacyPath(protocol.LegacyChimeSoundPath, deviceID)+"?"+query.Encode(), nil, nil)
+	return c.doJSONRequest(ctx, http.MethodPost, legacyPath(protocol.LegacyChimeSoundPath, deviceID)+"?"+query.Encode(), nil, nil)
 }
 
 // SetInHomeChime changes one legacy chime field, matching the Python fixture.
@@ -90,5 +92,5 @@ func (c *Client) SetInHomeChime(ctx context.Context, deviceID int64, description
 	query := url.Values{}
 	query.Set("doorbot[description]", description)
 	query.Set(fmt.Sprintf("doorbot[settings][chime_settings][%s]", field), strconv.Itoa(value))
-	return c.doJSONRequest(ctx, "PUT", legacyPath(protocol.LegacyDoorbotPath, deviceID)+"?"+query.Encode(), nil, nil)
+	return c.doJSONRequest(ctx, http.MethodPut, legacyPath(protocol.LegacyDoorbotPath, deviceID)+"?"+query.Encode(), nil, nil)
 }

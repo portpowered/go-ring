@@ -7,28 +7,6 @@ import (
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-// DeviceSettings contains only fields confirmed in captured settings exchanges.
-// Fields not represented here remain opaque to callers of the typed API.
-type DeviceSettings struct {
-	// MotionDetectionEnabled is nil when the response omits or nulls the field.
-	MotionDetectionEnabled *bool
-}
-
-// GetDeviceSettingsRequest identifies a device whose supported settings are read.
-type GetDeviceSettingsRequest struct{ DeviceID string }
-
-// PatchDeviceSettingsRequest changes only explicitly supplied supported fields.
-type PatchDeviceSettingsRequest struct {
-	DeviceID               string
-	MotionDetectionEnabled *bool
-}
-
-// SetSirenRequest controls the captured legacy doorbot siren endpoint.
-type SetSirenRequest struct {
-	DeviceID string
-	Enabled  bool
-}
-
 // GetDeviceSettings reads the motion_detection_enabled field from the captured
 // v1 settings resource. Unrecognized settings are ignored.
 func (c *Client) GetDeviceSettings(ctx context.Context, req GetDeviceSettingsRequest) (DeviceSettings, error) {

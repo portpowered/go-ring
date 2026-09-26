@@ -61,6 +61,8 @@ Library best practices:
     2. testing should be replay test based (i.e. do network capture, and sanitize the network capture, then use those as the sample data that we use to test things)
     3. traces should be recorded and pointed to as part of the documentation
     4. tests should be granular and focused ( i.e. we want to test session establishment, ICE, session termination as a cohesive test, but we also want them to be tested independently as functional tests)
+    5. tests for replay tests should have a coverage target of 90%, independent of replay tests.
+    6. tests for unit tests should have a coverage target of 90%, independent of replay tests.
 3. operational best practices
     1. we should denote in the library how to do things such as injecting retries/clients/etc.
         1. we should prefer that systems should inject at the rountripper/http client or the websocket dialer/rpc client level rather than having something activated at the library
@@ -75,11 +77,18 @@ Library best practices:
     1. we enforce linting by golang lint, biome or whateer is appropriate
         1. constraints on funlen, file len, as well as cyclomatic complexity, etc are covered by liniting, and the CI is covered as parts of tests.
     2. go fmt is run/enforced
+7. code
+    1. there is one clear interface, and no duplication
+    2. there is a single interface file that declares all the functions of the client that can be used
+
+8. semver
+    1. it doesn't introduce breaking changes to the library interfaces
 
 CI:
 1. automated builds and CI/test on each release, builds on windows/mac/linux
 2. proper release versioning system
 3. generated code coverage documentation
+4. merges to main should be blocked for things that do not pass CI.
 
 AGENTS.md
 1. short and to the point (languages, systems)

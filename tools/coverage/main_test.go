@@ -39,7 +39,7 @@ func TestTotalsMergeDuplicatesAndCountStatements(t *testing.T) {
 }
 
 func TestExcludeGeneratedModelsKeepsHandwrittenPackageCoverage(t *testing.T) {
-	profile := []byte("mode: atomic\ngithub.com/example/pkg/ringapimodels/models.gen.go:1.1,2.1 8 0\ngithub.com/example/pkg/ringapimodels/devices.go:1.1,2.1 2 1\n")
+	profile := []byte("mode: atomic\ngithub.com/example/pkg/ringapimodels/models.gen.go:1.1,2.1 8 0\ngithub.com/example/pkg/dependencymodels/models.gen.go:1.1,2.1 4 0\ngithub.com/example/pkg/ringapimodels/devices.go:1.1,2.1 2 1\n")
 	filtered := excludeGeneratedModels(profile)
 	covered, total, err := totals(filtered)
 	if err != nil || covered != 2 || total != 2 {

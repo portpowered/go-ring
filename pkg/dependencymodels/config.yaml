@@ -1,0 +1,6 @@
+package: dependencymodels
+generate:
+  models: true
+output: pkg/dependencymodels/models.gen.go
+output-options:
+  skip-prune: true

@@ -29,8 +29,7 @@ func (c *Client) GetRecordingShareURL(ctx context.Context, recordingID int64) (s
 
 // GetDeviceHistory retrieves the history of recordings for a device
 func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int, kind string) (*dependencymodels.RingRecordingHistoryResponse, error) {
-	// Build endpoint with device ID in the path: /clients_api/doorbots/{device_id}/history
-	endpoint := "/clients_api/doorbots/" + strconv.FormatInt(deviceID, 10) + "/history"
+	endpoint := strings.Replace(protocol.DoorbotHistoryPath, "{id}", strconv.FormatInt(deviceID, 10), 1)
 	params := url.Values{}
 
 	if limit > 0 {
@@ -46,7 +45,7 @@ func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int
 
 	// The API returns an array directly, not wrapped in an object
 	var recordings []dependencymodels.RingRecording
-	if err := c.doJSONRequest(ctx, "GET", endpoint, nil, &recordings); err != nil {
+	if err := c.doJSONRequest(ctx, http.MethodGet, endpoint, nil, &recordings); err != nil {
 		return nil, err
 	}
 
@@ -65,7 +64,7 @@ func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int
 func (c *Client) GetActiveDings(ctx context.Context) (*dependencymodels.RingRecordingHistoryResponse, error) {
 	// The API returns an array directly, not wrapped in an object
 	var recordings []dependencymodels.RingRecording
-	if err := c.doJSONRequest(ctx, "GET", ringapimodels.RingDingsActiveEndpoint, nil, &recordings); err != nil {
+	if err := c.doJSONRequest(ctx, http.MethodGet, ringapimodels.RingDingsActiveEndpoint, nil, &recordings); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +86,7 @@ func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringapim
 
 	// Make a raw HTTP request (not JSON) to get the video stream
 	url := c.baseURI + endpoint
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, ringapimodels.NewNetworkError("failed to create request", err)
 	}

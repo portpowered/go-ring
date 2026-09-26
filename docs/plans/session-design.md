@@ -86,7 +86,7 @@ The public SessionDescription uses type=offer or answer and non-empty SDP text. 
 
 For a recvonly offer, the answer direction must be sendonly or inactive. Go parses the SDP and applies the observed recvonly/sendrecv workaround to the matching media section by MID, while retaining unknown attributes. The normalized answer is returned; the implementation does not preserve a separate original/normalized diagnostic pair. Live media interoperability remains unverified. [Offer/answer direction rules](https://www.rfc-editor.org/rfc/rfc3264.html)
 
-The `examples/device-session` program generates real peer offers and supports non-trickle and `-trickle` modes; parser and replay tests use synthetic SDP. A diagram or hand-edited SDP fragment is explanatory only and must not be presented as runnable connection credentials. A playback example remains deferred until its contract is implemented.
+The `examples/rtc_stream` program generates real peer offers and supports non-trickle and `-trickle` modes; parser and replay tests use synthetic SDP. The separate `examples/rtc_ptz` and `examples/session_push_events` programs demonstrate camera control and push subscriptions. A diagram or hand-edited SDP fragment is explanatory only and must not be presented as runnable connection credentials. A playback example remains deferred until its contract is implemented.
 
 ## Internal state and timers
 
@@ -156,10 +156,10 @@ Keep the module/import layout stable where it aids migration, but do not add ali
 
 ## Executable offer example
 
-[examples/device-session](../examples/device-session/main.go) creates a Pion
+[examples/rtc_stream](../../examples/rtc_stream/rtc_stream.go) creates a Pion
 peer, adds receive-only video (and optional send/receive audio), gathers ICE,
 and sends the updated local offer in non-trickle mode. Set `RING_ACCESS_TOKEN`
-and `RING_DEVICE_ID`, then explicitly run `go run ./examples/device-session`.
+and `RING_DEVICE_ID`, then explicitly run `go run ./examples/rtc_stream`.
 Use `-audio` for the audio/video profile; attach a microphone track and renderer
 in your application. This example consumes packets but does not render video
 or record audio. `RING_ICE_SERVERS_JSON` optionally supplies application-owned
