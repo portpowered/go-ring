@@ -45,7 +45,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     env:
       GOWORK: 'off'
@@ -62,6 +62,16 @@ jobs:
         run: go run ./tools/coverage -suite unit
       - name: Combined coverage
         run: go run ./tools/coverage -suite combined
+      - name: Publish replay coverage badge and report
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: ncruces/go-coverage-report@dfc237255099f2d25066babde51253992175e365 # v0
+        with:
+          coverage-file: coverage.replay.out
+          badge-title: replay coverage
+          report: true
+          chart: true
+          amend: true
+        continue-on-error: true
       - name: Upload replay coverage to Codecov
         uses: codecov/codecov-action@v7
         with:

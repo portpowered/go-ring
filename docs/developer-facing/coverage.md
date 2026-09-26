@@ -32,6 +32,12 @@ ported behavior through the [test mapping](docs/porting-progress.md). Live tests
 are opt-in via `make test-integration`, with separate coverage through
 `make test-cover-integration`.
 
+The README badge and linked HTML report are published from
+`coverage.replay.out` by [go-coverage-report](https://github.com/ncruces/go-coverage-report)
+on pushes to `main`. The report is stored in the repository Wiki. GitHub must
+have a first Wiki page before that publisher can write the badge and report;
+until then the publishing step is allowed to fail without failing the test job.
+
 
 ## implementation:
 Replay coverage is the primary Go compatibility signal. It measures maintained
