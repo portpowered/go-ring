@@ -49,12 +49,12 @@ func TestPortableLegacyTicketFailureResponses(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Case, func(t *testing.T) {
 			transport := &ticketFailureTransport{caseData: tc}
-			client, err := ring.NewClient(ring.WithAccessToken("fixture-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://solutions.example.test"}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://solutions.example.test"}))
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer client.Close()
-			_, got := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{})
+			_, got := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: "fixture-token"}})
 			if !transport.seen || got == nil {
 				t.Fatalf("ticket failure not reached: %v", got)
 			}

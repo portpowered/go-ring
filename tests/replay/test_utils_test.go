@@ -34,8 +34,8 @@ func newTestClient() (*ring.Client, *mocks.MockTransport) {
 	return client, mockTransport
 }
 
-// newTestClientWithToken creates a new Ring client with a token and mock transport
-func newTestClientWithToken(token string) (*ring.Client, *mocks.MockTransport) {
+// newTestClientWithMockTransport creates a Ring client with a mock transport.
+func newTestClientWithMockTransport() (*ring.Client, *mocks.MockTransport) {
 	fixtureDir := getFixtureDir()
 	mockTransport := mocks.NewMockTransport(fixtureDir)
 	httpClient := &http.Client{
@@ -43,7 +43,6 @@ func newTestClientWithToken(token string) (*ring.Client, *mocks.MockTransport) {
 	}
 
 	client, err := ring.NewClient(
-		ring.WithAccessToken(token),
 		ring.WithHTTPClient(httpClient),
 	)
 	if err != nil {

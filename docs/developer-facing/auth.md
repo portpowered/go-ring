@@ -17,7 +17,9 @@ Ring's APIs are unofficial and may change without notice. The implementation fol
 
 All calls must be made from a backend process. Ring's OAuth pages do not support cross-origin browser authentication.
 
-`WithUsername` and `WithPassword` provide fallback credentials to `Authenticate` when its request fields are empty; non-empty request values take precedence. `Request2FACode` still takes its credentials directly in `Request2FACodeRequest`. `WithRefreshToken` provides the analogous fallback when `RefreshTokenRequest.RefreshToken` is empty. These options do not trigger automatic authentication or token refresh.
+The client has no credential options or token fallback. Each account operation
+requires an `AuthContext` in its request. `RefreshToken` requires an explicit
+refresh token and hardware ID when one is available.
 
 ## Concurrent authentication
 
@@ -43,12 +45,11 @@ client. Pass `HardwareID` in that request for the matching account.
 
 ## Initial authentication
 
-The older client-level `Request2FACode` and `Authenticate` pair retains its
-challenge on the client for existing single-account callers. Use a separate
-login session per user on a shared server client.
+Use one `LoginSession` for both steps of a 2FA exchange. The client-level
+`Authenticate` and `Request2FACode` methods each start an independent exchange;
+they do not retain a challenge or bind returned credentials to the client.
 
-
-The flow performs these steps:
+The login session performs these steps:
 
 1. Generate a cryptographically random PKCE verifier, S256 challenge, OAuth state, and persistent hardware UUID.
 2. Open `/oauth/v2/authorize` and retain Ring's cookies and CSRF token.
@@ -57,7 +58,7 @@ The flow performs these steps:
 5. Follow the authorization redirect, validate its state, and exchange the returned code with the PKCE verifier.
 6. Rotate the returned refresh token once. Ring's client APIs may reject the initial code-exchange access token, while the rotated access token is immediately usable.
 
-Do not call `Request2FACode` repeatedly. Ring rate-limits verification-code delivery, and starting a new client discards the pending OAuth session needed to verify the code.
+Do not call `Request2FACode` repeatedly. Ring rate-limits verification-code delivery. Keep the same login session until the challenge is completed.
 
 ## Token response and storage
 
@@ -75,7 +76,7 @@ Authentication and refresh return the same structure:
 - Access tokens normally last four hours.
 - Refresh tokens are rotated. Persist the complete response after every successful authentication or refresh; continuing to store the previous refresh token can force another 2FA login.
 - Store token files with owner-only permissions such as `0600` and never log token contents.
-- The access-token JWT may include the hardware ID. `NewClientWithToken` recovers it when the token has a decodable claim; malformed or missing claims are ignored. An explicit `WithHardwareID` option takes precedence and determines subsequent session registration identity.
+- The access-token JWT may include the hardware ID. Each request's `AuthContext` recovers it when the token has a decodable claim; malformed or missing claims are ignored. An explicit `AuthContext.HardwareID` takes precedence and determines that request's session registration identity.
 
 The token-exchange example writes the complete response without printing either token:
 
@@ -88,7 +89,8 @@ go run ./examples/token-exchange
 
 ## Using stored tokens
 
-For a shared client, pass the current access token in each request:
+Pass the current access token in every account-level request. The client does
+not store access or refresh tokens, usernames, passwords, or hardware IDs:
 
 ```go
 client, err := ring.NewClient()
@@ -97,7 +99,7 @@ if err != nil {
 }
 defer client.Close()
 
-auth := ring.AccountAuth{AccessToken: tokens.AccessToken, HardwareID: hardwareID}
+auth := ring.AuthContext{AccessToken: tokens.AccessToken, HardwareID: hardwareID}
 devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 ```
 

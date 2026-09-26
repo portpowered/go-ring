@@ -39,10 +39,10 @@ func TestDeviceFamilyCatalogReplay(t *testing.T) {
 			require.NoError(t, err)
 			x.Response.Body = body
 			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithAccessToken("recorded-test-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 			require.NoError(t, err)
 			defer client.Close()
-			devices, err := client.ListDevices(context.Background())
+			devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}})
 			require.NoError(t, err)
 			switch tc.want {
 			case generatedhttp.Doorbots:

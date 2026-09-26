@@ -10,20 +10,20 @@ import (
 )
 
 func TestOpenSignalingRejectsLocalPreconditions(t *testing.T) {
-	client, err := NewClient(WithAccessToken("token"))
+	client, err := NewClient()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer client.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := client.OpenSignaling(ctx, OpenSignalingRequest{}); !errors.Is(err, context.Canceled) {
+	if _, err := client.OpenSignaling(ctx, OpenSignalingRequest{Auth: AuthContext{AccessToken: "token"}}); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled OpenSignaling error = %v", err)
 	}
 	if err := client.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.OpenSignaling(context.Background(), OpenSignalingRequest{}); err == nil {
+	if _, err := client.OpenSignaling(context.Background(), OpenSignalingRequest{Auth: AuthContext{AccessToken: "token"}}); err == nil {
 		t.Fatal("OpenSignaling succeeded on a closed client")
 	}
 
@@ -36,12 +36,12 @@ func TestOpenSignalingRejectsLocalPreconditions(t *testing.T) {
 		t.Fatal("OpenSignaling succeeded without an access token")
 	}
 
-	unverified, err := NewClient(WithAccessToken("token"), WithRegion(RegionEU))
+	unverified, err := NewClient(WithRegion(RegionEU))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer unverified.Close()
-	if _, err := unverified.OpenSignaling(context.Background(), OpenSignalingRequest{}); err == nil || !strings.Contains(err.Error(), "unverified") {
+	if _, err := unverified.OpenSignaling(context.Background(), OpenSignalingRequest{Auth: AuthContext{AccessToken: "token"}}); err == nil || !strings.Contains(err.Error(), "unverified") {
 		t.Fatalf("EU bootstrap error = %v; want unverified endpoint error", err)
 	}
 }
@@ -64,12 +64,12 @@ func TestOpenSignalingRejectsMalformedOrEmptyTicketResponse(t *testing.T) {
 				_, _ = w.Write([]byte(tc.body))
 			}))
 			defer srv.Close()
-			client, err := NewClient(WithAccessToken("access-token"), WithEndpoints(Endpoints{SolutionsBaseURL: srv.URL}), WithSignalingWebSocketURL("wss://example.invalid/{token}"))
+			client, err := NewClient(WithEndpoints(Endpoints{SolutionsBaseURL: srv.URL}), WithSignalingWebSocketURL("wss://example.invalid/{token}"))
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer client.Close()
-			if _, err := client.OpenSignaling(context.Background(), OpenSignalingRequest{}); err == nil {
+			if _, err := client.OpenSignaling(context.Background(), OpenSignalingRequest{Auth: AuthContext{AccessToken: "access-token"}}); err == nil {
 				t.Fatal("invalid ticket response was accepted")
 			}
 		})
@@ -82,12 +82,12 @@ func TestOpenSignalingHTTPFailureDoesNotExposeResponseBody(t *testing.T) {
 		http.Error(w, secret, http.StatusInternalServerError)
 	}))
 	defer srv.Close()
-	client, err := NewClient(WithAccessToken("access-token"), WithEndpoints(Endpoints{SolutionsBaseURL: srv.URL}))
+	client, err := NewClient(WithEndpoints(Endpoints{SolutionsBaseURL: srv.URL}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer client.Close()
-	_, err = client.OpenSignaling(context.Background(), OpenSignalingRequest{})
+	_, err = client.OpenSignaling(context.Background(), OpenSignalingRequest{Auth: AuthContext{AccessToken: "token"}})
 	if err == nil {
 		t.Fatal("OpenSignaling accepted HTTP 500")
 	}

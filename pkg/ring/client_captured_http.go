@@ -23,10 +23,8 @@ func (c *Client) GetDeviceDetail(ctx context.Context, req GetDeviceDetailRequest
 	return c.restClient.GetDeviceDetail(ctx, id)
 }
 
-func (c *Client) ListLocations(ctx context.Context, requests ...ListLocationsRequest) (*generatedhttp.LocationList, error) {
-	if len(requests) > 0 {
-		ctx = c.accountContext(ctx, requests[0].Auth)
-	}
+func (c *Client) ListLocations(ctx context.Context, req ListLocationsRequest) (*generatedhttp.LocationList, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	if err := c.ensureSession(ctx); err != nil {
 		return nil, err
 	}

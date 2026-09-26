@@ -9,10 +9,8 @@ import (
 
 // ConnectEvents establishes a WebSocket connection for receiving events
 // This is a wrapper that calls the internal ConnectEvents method
-func (c *Client) ConnectEvents(ctx context.Context, requests ...ConnectEventsRequest) (*EventConnection, error) {
-	if len(requests) > 0 {
-		ctx = c.accountContext(ctx, requests[0].Auth)
-	}
+func (c *Client) ConnectEvents(ctx context.Context, req ConnectEventsRequest) (*EventConnection, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	token, err := c.getToken(ctx)
 	if err != nil {
 		return nil, ringapimodels.NewTokenError("failed to get token for event connection", err)
@@ -45,8 +43,8 @@ func (c *EventConnection) Receive() (*ringapimodels.Event, error) {
 func (c *EventConnection) Close() error { return c.transport.Close() }
 
 // Listen listens for events and calls the callback for each event
-func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallback, requests ...ConnectEventsRequest) error {
-	conn, err := c.ConnectEvents(ctx, requests...)
+func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallback, req ConnectEventsRequest) error {
+	conn, err := c.ConnectEvents(ctx, req)
 	if err != nil {
 		return err
 	}

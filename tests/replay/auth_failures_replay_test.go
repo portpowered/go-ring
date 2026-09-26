@@ -59,12 +59,12 @@ func TestPortableOAuthCSRFPages(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Case, func(t *testing.T) {
 			transport := &csrfPageReplay{page: tc.HTML, token: tc.Expected}
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}), ring.WithHardwareID("fixture-hardware"))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}))
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer client.Close()
-			_, err = client.Authenticate(context.Background(), ring.AuthenticateRequest{Username: "fixture-user", Password: "fixture-password"})
+			_, err = client.Authenticate(context.Background(), ring.AuthenticateRequest{HardwareID: "fixture-hardware", Username: "fixture-user", Password: "fixture-password"})
 			if !ringapimodels.IsAuthenticationError(err) || transport.signin != (tc.Expected != "") {
 				t.Fatalf("CSRF page behavior: signin=%t error=%v", transport.signin, err)
 			}
@@ -131,16 +131,16 @@ func TestPortableOAuthFailureStages(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Case, func(t *testing.T) {
 			transport := &authStageReplay{stage: tc.Stage, status: tc.Status}
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}), ring.WithHardwareID("fixture-hardware"))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}))
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer client.Close()
 			var got error
 			if tc.Stage == "refresh" {
-				_, got = client.RefreshToken(context.Background(), ring.RefreshTokenRequest{RefreshToken: "fixture-refresh"})
+				_, got = client.RefreshToken(context.Background(), ring.RefreshTokenRequest{HardwareID: "fixture-hardware", RefreshToken: "fixture-refresh"})
 			} else {
-				_, got = client.Authenticate(context.Background(), ring.AuthenticateRequest{Username: "fixture-user", Password: "fixture-password", OTPCode: "123456"})
+				_, got = client.Authenticate(context.Background(), ring.AuthenticateRequest{HardwareID: "fixture-hardware", Username: "fixture-user", Password: "fixture-password", OTPCode: "123456"})
 			}
 			if !transport.failed || got == nil {
 				t.Fatalf("failure stage %s not reached: calls=%d error=%v", tc.Stage, transport.calls, got)

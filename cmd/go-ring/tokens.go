@@ -104,13 +104,18 @@ func login(ctx context.Context, store tokenStore, in io.Reader, out io.Writer) e
 		return errors.New("username and password required")
 	}
 	identity := uuid.NewString()
-	client, err := ring.NewClient(append([]ring.Option{ring.WithHardwareID(identity)}, store.clientOptions...)...)
+	client, err := ring.NewClient(store.clientOptions...)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
+	session, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password, HardwareID: identity})
+	if err != nil {
+		return err
+	}
+	defer session.Close()
 	otp := os.Getenv("RING_OTP_CODE")
-	response, err := client.Authenticate(ctx, ring.AuthenticateRequest{Username: username, Password: password, OTPCode: otp})
+	response, err := session.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otp})
 	if ringapimodels.IsRequires2FAError(err) && otp == "" {
 		otp, err = prompt(reader, out, "Verification code: ")
 		if err != nil {
@@ -119,7 +124,7 @@ func login(ctx context.Context, store tokenStore, in io.Reader, out io.Writer) e
 		if otp == "" {
 			return errors.New("verification code required")
 		}
-		response, err = client.Authenticate(ctx, ring.AuthenticateRequest{Username: username, Password: password, OTPCode: otp})
+		response, err = session.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otp})
 	}
 	if err != nil {
 		return fmt.Errorf("authenticate: %w", err)

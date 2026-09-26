@@ -43,15 +43,8 @@ func (c *captureRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 func TestListDevicesUsesTokenGetterAndPropagatesConfiguredRequestHeaders(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextValueKey{}, "trace-context")
 	transport := &captureRoundTripper{responseBody: `{"devices":[]}`}
-	calls := 0
 	client, err := ring.NewClient(
-		ring.WithTokenGetter(func(got context.Context) (string, error) {
-			require.Equal(t, "trace-context", got.Value(contextValueKey{}))
-			calls++
-			return "dynamic-token", nil
-		}),
 		ring.WithHTTPClient(&http.Client{Transport: transport}),
-		ring.WithHardwareID("hardware-abc"),
 		ring.WithUserAgent("test-agent/1"),
 		ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://api.override.example"}),
 	)
@@ -59,15 +52,14 @@ func TestListDevicesUsesTokenGetterAndPropagatesConfiguredRequestHeaders(t *test
 	t.Cleanup(func() { _ = client.Close() })
 
 	for range 2 {
-		devices, listErr := client.ListDevices(ctx)
+		devices, listErr := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "dynamic-token", HardwareID: "hardware-abc"}})
 		require.NoError(t, listErr)
 		require.NotNil(t, devices)
 	}
-	require.Equal(t, 3, calls, "hardware ID session registration and each API call retrieve a token")
-	require.Len(t, transport.requests, 3)
+	require.Len(t, transport.requests, 4)
 	require.Equal(t, http.MethodPost, transport.requests[0].Method, "hardware ID triggers session registration")
 	for i, req := range transport.requests {
-		if i == 0 {
+		if i%2 == 0 {
 			require.Equal(t, "https://api.override.example/clients_api/session", req.URL.String())
 		} else {
 			require.Equal(t, "https://api.override.example/device_info/v3/devices", req.URL.String())
@@ -81,39 +73,31 @@ func TestListDevicesUsesTokenGetterAndPropagatesConfiguredRequestHeaders(t *test
 	}
 }
 
-func TestTokenGetterErrorsStopBeforeHTTP(t *testing.T) {
+func TestMissingRequestTokenStopsBeforeHTTP(t *testing.T) {
 	transport := &captureRoundTripper{responseBody: `{"devices":[]}`}
 	client, err := ring.NewClient(
-		ring.WithTokenGetter(func(context.Context) (string, error) { return "", io.ErrUnexpectedEOF }),
 		ring.WithHTTPClient(&http.Client{Transport: transport}),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = client.Close() })
-	_, err = client.ListDevices(context.Background())
+	_, err = client.ListDevices(context.Background(), ring.ListDevicesRequest{})
 	require.Error(t, err)
 	require.True(t, ringapimodels.IsTokenError(err))
 	require.Empty(t, transport.requests)
 }
 
-func TestAuthenticateUsesConfiguredCredentialFallbacksAndExplicitValuesWin(t *testing.T) {
+func TestAuthenticateUsesOnlyRequestCredentials(t *testing.T) {
 	for _, tc := range []struct {
-		name            string
-		requestUsername string
-		requestPassword string
-		wantUsername    string
-		wantPassword    string
+		name     string
+		username string
+		password string
 	}{
-		{name: "configured fallback", wantUsername: "configured-user", wantPassword: "configured-password"},
-		{name: "request values win", requestUsername: "request-user", requestPassword: "request-password", wantUsername: "request-user", wantPassword: "request-password"},
-		{name: "username wins independently", requestUsername: "request-user", wantUsername: "request-user", wantPassword: "configured-password"},
-		{name: "password wins independently", requestPassword: "request-password", wantUsername: "configured-user", wantPassword: "request-password"},
+		{name: "first account", username: "first-user", password: "first-password"},
+		{name: "second account", username: "second-user", password: "second-password"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			transport := &pkceMockTransport{}
 			client, err := ring.NewClient(
-				ring.WithUsername("configured-user"),
-				ring.WithPassword("configured-password"),
-				ring.WithHardwareID("hardware-auth"),
 				ring.WithUserAgent("auth-test/1"),
 				ring.WithHTTPClient(&http.Client{Transport: transport}),
 			)
@@ -121,16 +105,17 @@ func TestAuthenticateUsesConfiguredCredentialFallbacksAndExplicitValuesWin(t *te
 			t.Cleanup(func() { _ = client.Close() })
 
 			_, err = client.Authenticate(context.Background(), ring.AuthenticateRequest{
-				Username: tc.requestUsername,
-				Password: tc.requestPassword,
-				OTPCode:  "123456",
+				Username:   tc.username,
+				Password:   tc.password,
+				OTPCode:    "123456",
+				HardwareID: "hardware-auth",
 			})
 			require.NoError(t, err)
 			require.GreaterOrEqual(t, len(transport.bodies), 3)
 			form, parseErr := url.ParseQuery(transport.bodies[1])
 			require.NoError(t, parseErr)
-			require.Equal(t, tc.wantUsername, form.Get("username"))
-			require.Equal(t, tc.wantPassword, form.Get("password"))
+			require.Equal(t, tc.username, form.Get("username"))
+			require.Equal(t, tc.password, form.Get("password"))
 			require.Equal(t, "auth-test/1", transport.requests[1].Header.Get("User-Agent"))
 			require.Equal(t, "hardware-auth", transport.requests[4].Header.Get("hardware_id"))
 			verifyForm, parseErr := url.ParseQuery(transport.bodies[2])
@@ -140,36 +125,30 @@ func TestAuthenticateUsesConfiguredCredentialFallbacksAndExplicitValuesWin(t *te
 	}
 }
 
-func TestRefreshTokenUsesConfiguredFallbackAndExplicitTokenWins(t *testing.T) {
+func TestRefreshTokenUsesOnlyRequestCredentials(t *testing.T) {
 	for _, tc := range []struct {
-		name        string
-		request     string
-		wantRefresh string
+		name         string
+		refreshToken string
 	}{
-		{name: "configured fallback", wantRefresh: "configured-refresh"},
-		{name: "request value wins", request: "request-refresh", wantRefresh: "request-refresh"},
+		{name: "first account", refreshToken: "first-refresh"},
+		{name: "second account", refreshToken: "second-refresh"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			transport := &captureRoundTripper{responseBody: `{"access_token":"new-access","refresh_token":"rotated-refresh","expires_in":3600,"token_type":"Bearer"}`}
 			client, err := ring.NewClient(
-				ring.WithRefreshToken("configured-refresh"),
-				ring.WithHardwareID("hardware-refresh"),
 				ring.WithUserAgent("refresh-test/1"),
 				ring.WithHTTPClient(&http.Client{Transport: transport}),
 			)
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
 
-			request := ring.RefreshTokenRequest{RefreshToken: tc.request}
-			if tc.request != "" {
-				request.HardwareID = "hardware-refresh"
-			}
+			request := ring.RefreshTokenRequest{RefreshToken: tc.refreshToken, HardwareID: "hardware-refresh"}
 			_, err = client.RefreshToken(context.Background(), request)
 			require.NoError(t, err)
 			require.Len(t, transport.requests, 1)
 			form, parseErr := url.ParseQuery(string(transport.bodies[0]))
 			require.NoError(t, parseErr)
-			require.Equal(t, tc.wantRefresh, form.Get("refresh_token"))
+			require.Equal(t, tc.refreshToken, form.Get("refresh_token"))
 			require.Equal(t, "hardware-refresh", transport.requests[0].Header.Get("hardware_id"))
 			require.Equal(t, "refresh-test/1", transport.requests[0].Header.Get("User-Agent"))
 		})
@@ -190,11 +169,11 @@ func TestGetAllDevicesUniformMetadataAndDefaultsAcrossFamilies(t *testing.T) {
 		{"id":501,"kind":"future_device_kind","family":"future_family","description":"Unknown"}
 	]}`
 	transport := &captureRoundTripper{responseBody: body}
-	client, err := ring.NewClient(ring.WithAccessToken("inventory-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = client.Close() })
 
-	devices, err := client.ListDevices(context.Background())
+	devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "inventory-token"}})
 	require.NoError(t, err)
 	require.Len(t, devices.Doorbells, 2, "owned and shared doorbells are both exposed")
 	require.Len(t, devices.Chimes, 1)
@@ -245,10 +224,10 @@ func TestGetDeviceSettingsDistinguishesUnknownFromCapturedFalse(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			transport := &captureRoundTripper{responseBody: tc.body}
-			client, err := ring.NewClient(ring.WithAccessToken("settings-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
-			settings, err := client.GetDeviceSettings(context.Background(), ring.GetDeviceSettingsRequest{DeviceID: "101"})
+			settings, err := client.GetDeviceSettings(context.Background(), ring.GetDeviceSettingsRequest{Auth: ring.AuthContext{AccessToken: "settings-token"}, DeviceID: "101"})
 			require.NoError(t, err)
 			if tc.name == "explicit false" {
 				require.NotNil(t, settings.MotionDetectionEnabled)
@@ -260,9 +239,8 @@ func TestGetDeviceSettingsDistinguishesUnknownFromCapturedFalse(t *testing.T) {
 	}
 }
 
-// The auth guide documents best-effort JWT claim recovery and explicit hardware
-// ID option precedence. Verify both through the session request header.
-func TestNewClientWithTokenClaimHandlingAndHardwareIDPrecedence(t *testing.T) {
+// AuthContext recovers a hardware ID from the JWT unless explicitly supplied.
+func TestAuthContextClaimHandlingAndHardwareIDPrecedence(t *testing.T) {
 	validPayload := base64.RawURLEncoding.EncodeToString([]byte(`{"hardware_id":"jwt-hardware"}`))
 	missingPayload := base64.RawURLEncoding.EncodeToString([]byte(`{"sub":"account"}`))
 	malformedJSON := base64.RawURLEncoding.EncodeToString([]byte(`{"hardware_id":`))
@@ -285,13 +263,10 @@ func TestNewClientWithTokenClaimHandlingAndHardwareIDPrecedence(t *testing.T) {
 				ring.WithHTTPClient(&http.Client{Transport: transport}),
 				ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://api.token-claims.example"}),
 			}
-			if tc.explicitHardwareID != "" {
-				options = append(options, ring.WithHardwareID(tc.explicitHardwareID))
-			}
-			client, err := ring.NewClientWithToken(tc.token, options...)
+			client, err := ring.NewClient(options...)
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
-			_, err = client.ListDevices(context.Background())
+			_, err = client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: tc.token, HardwareID: tc.explicitHardwareID}})
 			require.NoError(t, err)
 
 			if tc.wantHardwareID == "" {
@@ -313,7 +288,6 @@ func TestNewClientWithTokenClaimHandlingAndHardwareIDPrecedence(t *testing.T) {
 func TestInvalidPublicDeviceRequestsDoNotReachHTTP(t *testing.T) {
 	transport := &captureRoundTripper{responseBody: `{"devices":[]}`}
 	client, err := ring.NewClient(
-		ring.WithAccessToken("validation-token"),
 		ring.WithHTTPClient(&http.Client{Transport: transport}),
 	)
 	require.NoError(t, err)
@@ -347,7 +321,7 @@ func TestInvalidPublicDeviceRequestsDoNotReachHTTP(t *testing.T) {
 
 func TestCanceledPublicControlDoesNotReachHTTP(t *testing.T) {
 	transport := &captureRoundTripper{responseBody: `{}`}
-	client, err := ring.NewClient(ring.WithAccessToken("cancel-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = client.Close() })
 	ctx, cancel := context.WithCancel(context.Background())

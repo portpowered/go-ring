@@ -52,23 +52,23 @@ func TestPortableLegacyHTTPControls(t *testing.T) {
 			}
 			x := replay.Exchange{Request: tc.Request, Response: tc.Response}
 			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
 			if err != nil {
 				t.Fatal(err)
 			}
 			switch tc.Case {
 			case "chime-volume":
-				err = client.SetVolume(context.Background(), ring.SetVolumeRequest{DeviceID: "12345", Kind: "chime", Description: "Fixture Device", Volume: 2})
+				err = client.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Kind: "chime", Description: "Fixture Device", Volume: 2})
 			case "doorbell-volume":
-				err = client.SetVolume(context.Background(), ring.SetVolumeRequest{DeviceID: "12345", Kind: "doorbell", Description: "Fixture Device", Volume: 3})
+				err = client.SetVolume(context.Background(), ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Kind: "doorbell", Description: "Fixture Device", Volume: 3})
 			case "chime-test":
-				err = client.TestSound(context.Background(), ring.TestSoundRequest{DeviceID: "12345", Kind: "ding"})
+				err = client.TestSound(context.Background(), ring.TestSoundRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Kind: "ding"})
 			case "camera-light-on":
-				err = client.SetLights(context.Background(), ring.SetLightsRequest{DeviceID: "12345", State: "on"})
+				err = client.SetLights(context.Background(), ring.SetLightsRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", State: "on"})
 			case "camera-siren-off":
-				err = client.SetSiren(context.Background(), ring.SetSirenRequest{DeviceID: "12345", Enabled: false})
+				err = client.SetSiren(context.Background(), ring.SetSirenRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Enabled: false})
 			case "doorbell-motion-on":
-				err = client.SetMotionDetection(context.Background(), ring.SetMotionDetectionRequest{DeviceID: "12345", Enabled: true})
+				err = client.SetMotionDetection(context.Background(), ring.SetMotionDetectionRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Enabled: true})
 			}
 			if err != nil {
 				t.Fatal(err)
@@ -99,7 +99,7 @@ func TestPortableInHomeChimeOptions(t *testing.T) {
 				request.Query = append(request.Query, replay.Pair{Name: key, Value: fmt.Sprint(value)})
 			}
 			transport := replay.NewTransport(replay.Exchange{Request: request, Response: tc.Response})
-			client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -114,7 +114,7 @@ func TestPortableInHomeChimeOptions(t *testing.T) {
 			default:
 				t.Fatalf("unknown portable case %s", tc.Case)
 			}
-			if err := client.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{DeviceID: "12345", Description: "Fixture Device", Settings: settings}); err != nil {
+			if err := client.SetInHomeChime(context.Background(), ring.SetInHomeChimeRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Description: "Fixture Device", Settings: settings}); err != nil {
 				t.Fatal(err)
 			}
 			if err := transport.AssertConsumed(); err != nil {

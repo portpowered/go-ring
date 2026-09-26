@@ -11,19 +11,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccountContextOverridesClientWithoutMutation(t *testing.T) {
-	client, err := NewClient(WithAccessToken("bound-token"), WithHardwareID("bound-hardware"))
+func TestAccountContextRequiresRequestCredentials(t *testing.T) {
+	client, err := NewClient()
 	require.NoError(t, err)
-	ctx := client.accountContext(context.Background(), AccountAuth{AccessToken: "request-token", HardwareID: "request-hardware"})
+	ctx := client.accountContext(context.Background(), AuthContext{AccessToken: "request-token", HardwareID: "request-hardware"})
 	token, err := client.getToken(ctx)
 	require.NoError(t, err)
 	require.Equal(t, "request-token", token)
 	require.Equal(t, "request-hardware", client.hardwareIDFor(ctx))
-	defaultToken, err := client.getToken(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, "bound-token", defaultToken)
-	require.Equal(t, "bound-hardware", client.hardwareIDFor(context.Background()))
-	_, err = client.getToken(client.accountContext(ctx, AccountAuth{HardwareID: "other-hardware"}))
+	_, err = client.getToken(context.Background())
+	require.True(t, ringapimodels.IsTokenError(err))
+	require.Empty(t, client.hardwareIDFor(context.Background()))
+	_, err = client.getToken(client.accountContext(ctx, AuthContext{HardwareID: "other-hardware"}))
 	require.True(t, ringapimodels.IsTokenError(err))
 }
 
@@ -48,7 +47,7 @@ func TestSharedClientRejectsCookieJar(t *testing.T) {
 	require.True(t, ringapimodels.IsBadRequestError(err))
 }
 
-func TestExplicitRefreshDoesNotReplaceBoundToken(t *testing.T) {
+func TestRefreshDoesNotBindToken(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
 		wantHardware := "refresh-hardware"
@@ -62,14 +61,15 @@ func TestExplicitRefreshDoesNotReplaceBoundToken(t *testing.T) {
 		_, _ = w.Write([]byte(`{"access_token":"new-token","refresh_token":"new-refresh","token_type":"Bearer"}`))
 	}))
 	defer server.Close()
-	client, err := NewClient(WithAccessToken("bound-token"), WithHardwareID("bound-hardware"), WithHTTPClient(server.Client()), WithEndpoints(Endpoints{OAuthBaseURL: server.URL}))
+	client, err := NewClient(WithHTTPClient(server.Client()), WithEndpoints(Endpoints{OAuthBaseURL: server.URL}))
 	require.NoError(t, err)
 	response, err := client.RefreshToken(context.Background(), RefreshTokenRequest{RefreshToken: "old-refresh", HardwareID: "refresh-hardware"})
 	require.NoError(t, err)
 	require.Equal(t, "new-token", response.AccessToken)
 	_, err = client.RefreshToken(context.Background(), RefreshTokenRequest{RefreshToken: "another-refresh"})
 	require.NoError(t, err)
-	bound, err := client.getToken(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, "bound-token", bound)
+	_, err = client.RefreshToken(context.Background(), RefreshTokenRequest{})
+	require.True(t, ringapimodels.IsBadRequestError(err))
+	_, err = client.getToken(context.Background())
+	require.True(t, ringapimodels.IsTokenError(err))
 }

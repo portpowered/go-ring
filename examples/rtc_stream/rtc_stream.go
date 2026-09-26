@@ -74,12 +74,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	client, err := ring.NewClient(ring.WithAccessToken(token))
+	client, err := ring.NewClient()
 	if err != nil {
 		return err
 	}
 	defer client.Close()
-	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{})
+	auth := ring.AuthContext{AccessToken: token}
+	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
 	if err != nil {
 		return err
 	}

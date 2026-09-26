@@ -24,8 +24,8 @@ a Python reference checkout. The private mitmproxy file is not required.
 
 `make test-cover` measures replay, unit, and their combined coverage separately.
 Replay is the primary compatibility metric: the local account-scope replay run
-reaches 87.27% of maintained Go statements; unit tests reach 50.79%, and their
-union reaches 93.03%. These suites have separate CI floors and profiles. The retired Python
+reaches 86.84% of maintained Go statements; unit tests reach 51.70%, and their
+union reaches 93.06%. These suites have separate CI floors and profiles. The retired Python
 replay gate covered 96.13% of selected Python lines, a different denominator;
 compare ported behavior through the [test mapping](../plans/porting-progress.md). Live tests
 are opt-in via `make test-integration`, with separate coverage through
@@ -47,9 +47,9 @@ statement denominator:
 
 | Suite | Test targets | Profile | Current coverage | CI floor |
 | --- | --- | --- | ---: | ---: |
-| Replay | `tests/replay` only | `coverage.replay.out` | 2,153/2,467 (87.27%) | 85% |
-| Unit | Co-located tests in `pkg` and `internal` | `coverage.unit.out` | 1,253/2,467 (50.79%) | 50% |
-| Combined | Replay and unit targets together | `coverage.combined.out` | 2,295/2,467 (93.03%) | 90%, plus per-package floors |
+| Replay | `tests/replay` only | `coverage.replay.out` | 2,066/2,379 (86.84%) | 85% |
+| Unit | Co-located tests in `pkg` and `internal` | `coverage.unit.out` | 1,230/2,379 (51.70%) | 50% |
+| Combined | Replay and unit targets together | `coverage.combined.out` | 2,214/2,379 (93.06%) | 90%, plus per-package floors |
 
 The replay floor preserves the current baseline; it is not the desired endpoint.
 Replay coverage should rise as captured and synthetic interactions become

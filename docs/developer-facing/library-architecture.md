@@ -24,7 +24,7 @@ flowchart LR
 ```
 
 `Client` owns reusable transports and opened signaling connections. An
-`AccountAuth` value is attached to each account-level request and travels
+`AuthContext` value is attached to each account-level request and travels
 through the REST layer without changing shared client authorization. Login
 sessions own their own PKCE state and cookies. A signaling or event connection
 keeps the account selected when it opens; its children cannot switch accounts.

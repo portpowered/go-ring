@@ -21,12 +21,13 @@ func run() error {
 	if token == "" || deviceID == "" {
 		return fmt.Errorf("set RING_ACCESS_TOKEN and RING_DEVICE_ID")
 	}
-	client, err := ring.NewClientWithToken(token)
+	client, err := ring.NewClient()
 	if err != nil {
 		return err
 	}
 	defer client.Close()
-	if err := client.RebootDevice(context.Background(), ring.DeviceIDRequest{DeviceID: deviceID}); err != nil {
+	auth := ring.AuthContext{AccessToken: token}
+	if err := client.RebootDevice(context.Background(), ring.DeviceIDRequest{Auth: auth, DeviceID: deviceID}); err != nil {
 		return err
 	}
 	fmt.Printf("Reboot request accepted for device %s\n", deviceID)

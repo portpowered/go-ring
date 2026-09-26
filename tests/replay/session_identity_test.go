@@ -47,14 +47,14 @@ func openRecordedPeer(t *testing.T, script func(*websocket.Conn)) *ring.Signalin
 		script(c)
 	}))
 	t.Cleanup(peer.Close)
-	client, err := ring.NewClient(ring.WithAccessToken("synthetic"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL("ws"+strings.TrimPrefix(peer.URL, "http")))
+	client, err := ring.NewClient(ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL("ws"+strings.TrimPrefix(peer.URL, "http")))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = client.Close() })
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	t.Cleanup(cancel)
-	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{})
+	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: "synthetic"}})
 	if err != nil {
 		t.Fatal(err)
 	}

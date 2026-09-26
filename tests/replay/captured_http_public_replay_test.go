@@ -57,48 +57,48 @@ func TestCapturedHTTPPublicReads(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			x := capturedExchange(t, name)
 			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithAccessToken("captured-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}))
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
 			ctx := context.Background()
 			switch name {
 			case "device-detail", "device-detail-02", "device-detail-03":
-				result, callErr := client.GetDeviceDetail(ctx, ring.GetDeviceDetailRequest{DeviceID: "1000"})
+				result, callErr := client.GetDeviceDetail(ctx, ring.GetDeviceDetailRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
 				require.NoError(t, callErr)
 				require.Equal(t, int64(1000), result.Device.Id)
 			case "location-list":
-				result, callErr := client.ListLocations(ctx)
+				result, callErr := client.ListLocations(ctx, ring.ListLocationsRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
 				require.NoError(t, callErr)
 				require.NotEmpty(t, result.UserLocations)
 			case "location-detail":
 				include := capturedQueryValue(x, "include")
-				result, callErr := client.GetLocation(ctx, ring.GetLocationRequest{LocationID: "location-1", Params: generatedhttp.GetLocationParams{Include: &include}})
+				result, callErr := client.GetLocation(ctx, ring.GetLocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, LocationID: "location-1", Params: generatedhttp.GetLocationParams{Include: &include}})
 				require.NoError(t, callErr)
 				require.NotEmpty(t, result.Data.Id)
 			case "groups":
-				result, callErr := client.ListLocationGroups(ctx, ring.LocationRequest{LocationID: "location-1"})
+				result, callErr := client.ListLocationGroups(ctx, ring.LocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, LocationID: "location-1"})
 				require.NoError(t, callErr)
 				require.NotNil(t, result.IsOwner)
 			case "group-devices":
-				result, callErr := client.ListLocationDevices(ctx, ring.LocationRequest{LocationID: "location-1"})
+				result, callErr := client.ListLocationDevices(ctx, ring.LocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, LocationID: "location-1"})
 				require.NoError(t, callErr)
 				require.NotNil(t, result.Groups)
 			case "device-timeline", "device-timeline-02":
-				result, callErr := client.GetDeviceTimeline(ctx, ring.GetDeviceTimelineRequest{DeviceID: "1000", Params: capturedTimelineParams(t, x)})
+				result, callErr := client.GetDeviceTimeline(ctx, ring.GetDeviceTimelineRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000", Params: capturedTimelineParams(t, x)})
 				require.NoError(t, callErr)
 				var recorded generatedhttp.DeviceTimeline
 				require.NoError(t, json.Unmarshal(x.Response.Body, &recorded))
 				require.Len(t, result.Items, len(recorded.Items))
 			case "history-devices", "history-devices-02":
 				sourceIDs, capabilities := capturedQueryValue(x, "source_ids"), capturedQueryValue(x, "capabilities")
-				result, callErr := client.GetHistoryDevices(ctx, ring.GetHistoryDevicesRequest{Params: generatedhttp.GetHistoryDevicesParams{SourceIds: &sourceIDs, Capabilities: &capabilities}})
+				result, callErr := client.GetHistoryDevices(ctx, ring.GetHistoryDevicesRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, Params: generatedhttp.GetHistoryDevicesParams{SourceIds: &sourceIDs, Capabilities: &capabilities}})
 				require.NoError(t, callErr)
 				require.NotEmpty(t, result.Events)
 			case "bootstrap-ticket":
 				locationID, subscription, requestedTransport := capturedQueryValue(x, "locationID"), capturedQueryValue(x, "locationSubscription"), capturedQueryValue(x, "requestedTransport")
 				allow, extended := false, true
 				params := generatedhttp.GetCapturedLocationTicketsParams{LocationID: &locationID, LocationSubscription: &subscription, RequestedTransport: &requestedTransport, AllowUserOnly: &allow, EnableExtendedEmergencyCellUsage: &extended}
-				result, callErr := client.GetCapturedTickets(ctx, ring.GetCapturedTicketsRequest{Params: params})
+				result, callErr := client.GetCapturedTickets(ctx, ring.GetCapturedTicketsRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, Params: params})
 				require.NoError(t, callErr)
 				require.NotEmpty(t, result.Ticket)
 			}
@@ -112,22 +112,22 @@ func TestCapturedHTTPPublicMutations(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			x := capturedExchange(t, name)
 			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithAccessToken("captured-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
 			ctx := context.Background()
 			switch name {
 			case "device-reboot":
-				err = client.RebootDevice(ctx, ring.DeviceIDRequest{DeviceID: "1000"})
+				err = client.RebootDevice(ctx, ring.DeviceIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
 			case "duos-update", "duos-update-02":
 				var body generatedhttp.LiveViewSettingRequest
 				require.NoError(t, json.Unmarshal(x.Request.Body, &body))
-				err = client.SetPersistentLiveViewEnabled(ctx, ring.SetPersistentLiveViewEnabledRequest{DeviceID: "1000", Enabled: body.Entity.LiveViewEnabled})
+				err = client.SetPersistentLiveViewEnabled(ctx, ring.SetPersistentLiveViewEnabledRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000", Enabled: body.Entity.LiveViewEnabled})
 			case "recording-favorite":
-				err = client.FavoriteRecording(ctx, ring.RecordingIDRequest{RecordingID: 1000})
+				err = client.FavoriteRecording(ctx, ring.RecordingIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, RecordingID: 1000})
 			case "recording-delete":
 				confirm := false
-				err = client.DeleteRecording(ctx, ring.DeleteRecordingRequest{RecordingID: 1000, ConfirmDeleteFavorite: &confirm})
+				err = client.DeleteRecording(ctx, ring.DeleteRecordingRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, RecordingID: 1000, ConfirmDeleteFavorite: &confirm})
 			}
 			require.NoError(t, err)
 			require.NoError(t, transport.AssertConsumed())
@@ -136,16 +136,16 @@ func TestCapturedHTTPPublicMutations(t *testing.T) {
 }
 
 func TestCapturedHTTPPublicValidation(t *testing.T) {
-	client, err := ring.NewClient(ring.WithAccessToken("validation-token"))
+	client, err := ring.NewClient()
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = client.Close() })
-	_, err = client.GetDeviceDetail(context.Background(), ring.GetDeviceDetailRequest{DeviceID: "0"})
+	_, err = client.GetDeviceDetail(context.Background(), ring.GetDeviceDetailRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "0"})
 	require.True(t, ringapimodels.IsBadRequestError(err))
-	_, err = client.GetLocation(context.Background(), ring.GetLocationRequest{})
+	_, err = client.GetLocation(context.Background(), ring.GetLocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
 	require.True(t, ringapimodels.IsBadRequestError(err))
-	_, err = client.GetDeviceTimeline(context.Background(), ring.GetDeviceTimelineRequest{DeviceID: "1000", Params: generatedhttp.GetDeviceTimelineParams{Limit: chimePointer(0)}})
+	_, err = client.GetDeviceTimeline(context.Background(), ring.GetDeviceTimelineRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000", Params: generatedhttp.GetDeviceTimelineParams{Limit: chimePointer(0)}})
 	require.True(t, ringapimodels.IsBadRequestError(err))
-	err = client.FavoriteRecording(context.Background(), ring.RecordingIDRequest{})
+	err = client.FavoriteRecording(context.Background(), ring.RecordingIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
 	require.True(t, ringapimodels.IsBadRequestError(err))
 }
 
@@ -171,14 +171,14 @@ func TestCapturedHTTPPublicFailureClasses(t *testing.T) {
 			x.Response.Status = tc.status
 			x.Response.Body = json.RawMessage(`{"error":"synthetic failure"}`)
 			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithAccessToken("captured-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
 			if fixture == "device-reboot" {
-				err = client.RebootDevice(context.Background(), ring.DeviceIDRequest{DeviceID: "1000"})
+				err = client.RebootDevice(context.Background(), ring.DeviceIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
 			} else {
 				var result *generatedhttp.DeviceDetail
-				result, err = client.GetDeviceDetail(context.Background(), ring.GetDeviceDetailRequest{DeviceID: "1000"})
+				result, err = client.GetDeviceDetail(context.Background(), ring.GetDeviceDetailRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
 				require.Nil(t, result)
 			}
 			require.True(t, tc.match(err), "error = %v", err)
@@ -203,10 +203,10 @@ func TestPythonFamilyHealthReplay(t *testing.T) {
 				Response: replay.Response{Status: http.StatusOK, Headers: http.Header{"Content-Type": {"application/json"}}, Body: body, JSON: true},
 			}
 			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
-			health, err := client.UpdateDeviceHealth(context.Background(), ring.UpdateDeviceHealthRequest{DeviceID: tc.id, Family: generatedhttp.DeviceFamilyCode(tc.family)})
+			health, err := client.UpdateDeviceHealth(context.Background(), ring.UpdateDeviceHealthRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: tc.id, Family: generatedhttp.DeviceFamilyCode(tc.family)})
 			require.NoError(t, err)
 			require.Equal(t, tc.firmware, *health.FirmwareVersion)
 			require.Equal(t, 100, *health.BatteryLevel)

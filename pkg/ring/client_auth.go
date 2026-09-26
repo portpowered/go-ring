@@ -3,92 +3,40 @@ package ring
 import (
 	"context"
 
-	"github.com/google/uuid"
-	"github.com/portpowered/go-ring/pkg/dependencies/rest"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-// Authenticate performs full authentication flow with username/password
-// If 2FA is required, it will return a Requires2FAError
+// Authenticate performs an isolated exchange and never binds its token to Client.
+// Use NewLoginSession when a 2FA challenge must be completed in the same flow.
 func (c *Client) Authenticate(ctx context.Context, req AuthenticateRequest) (*ringapimodels.AuthResponse, error) {
-	username, password := req.Username, req.Password
-	if username == "" {
-		username = c.username
-	}
-	if password == "" {
-		password = c.password
-	}
-	// Generate hardware ID if not set
-	hardwareID := c.hardwareID
-	if hardwareID == "" {
-		hardwareID = uuid.New().String()
-		c.hardwareID = hardwareID
-		c.restClient.Apply(rest.WithHardwareID(hardwareID))
-	}
-
-	// Perform authentication
-	tokenResp, err := c.restClient.Authenticate(ctx, username, password, hardwareID, req.OTPCode)
+	session, err := c.NewLoginSession(LoginSessionRequest{Username: req.Username, Password: req.Password, HardwareID: req.HardwareID})
 	if err != nil {
-		if ringapimodels.IsRequires2FAError(err) {
-			return nil, err
-		}
 		return nil, err
 	}
-
-	// Store tokens
-	c.accessToken = tokenResp.AccessToken
-	c.refreshToken = tokenString(tokenResp.RefreshToken)
-	c.restClient.Apply(rest.WithAccessToken(tokenResp.AccessToken))
-
-	return &ringapimodels.AuthResponse{
-		AccessToken:  tokenResp.AccessToken,
-		RefreshToken: tokenString(tokenResp.RefreshToken),
-		ExpiresIn:    tokenInt(tokenResp.ExpiresIn),
-		TokenType:    tokenResp.TokenType,
-	}, nil
+	defer session.Close()
+	return session.Authenticate(ctx, CompleteLoginRequest{OTPCode: req.OTPCode})
 }
 
-// Request2FACode requests a 2FA code by attempting authentication
+// Request2FACode starts an isolated exchange. NewLoginSession retains its
+// challenge when the caller needs to follow it with Authenticate.
 func (c *Client) Request2FACode(ctx context.Context, req Request2FACodeRequest) error {
-	hardwareID := c.hardwareID
-	if hardwareID == "" {
-		hardwareID = uuid.New().String()
-		c.hardwareID = hardwareID
-		c.restClient.Apply(rest.WithHardwareID(hardwareID))
+	session, err := c.NewLoginSession(LoginSessionRequest(req))
+	if err != nil {
+		return err
 	}
-
-	return c.restClient.Request2FACode(ctx, req.Username, req.Password, hardwareID)
+	defer session.Close()
+	return session.Request2FACode(ctx)
 }
 
 // RefreshToken refreshes an access token using a refresh token
 func (c *Client) RefreshToken(ctx context.Context, req RefreshTokenRequest) (*ringapimodels.AuthResponse, error) {
-	refreshToken := req.RefreshToken
-	if refreshToken != "" {
-		tokenResp, err := c.restClient.RefreshAccessTokenFor(ctx, refreshToken, req.HardwareID)
-		if err != nil {
-			return nil, err
-		}
-		return &ringapimodels.AuthResponse{
-			AccessToken:  tokenResp.AccessToken,
-			RefreshToken: tokenString(tokenResp.RefreshToken),
-			ExpiresIn:    tokenInt(tokenResp.ExpiresIn),
-			TokenType:    tokenResp.TokenType,
-		}, nil
+	if req.RefreshToken == "" {
+		return nil, ringapimodels.NewBadRequestError("refresh token is required", nil)
 	}
-	if refreshToken == "" {
-		refreshToken = c.refreshToken
-	}
-	tokenResp, err := c.restClient.RefreshAccessToken(ctx, refreshToken)
+	tokenResp, err := c.restClient.RefreshAccessTokenFor(ctx, req.RefreshToken, req.HardwareID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Update stored tokens
-	c.accessToken = tokenResp.AccessToken
-	if tokenResp.RefreshToken != nil && *tokenResp.RefreshToken != "" {
-		c.refreshToken = *tokenResp.RefreshToken
-	}
-	c.restClient.Apply(rest.WithAccessToken(tokenResp.AccessToken))
 
 	return &ringapimodels.AuthResponse{
 		AccessToken:  tokenResp.AccessToken,

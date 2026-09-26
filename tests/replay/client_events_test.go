@@ -37,8 +37,7 @@ func eventClient(t *testing.T, send bool) *ring.Client {
 		}
 	}))
 	t.Cleanup(server.Close)
-	client, err := ring.NewClient(ring.WithAccessToken("test_token"),
-		ring.WithEventWebSocketURL("ws"+strings.TrimPrefix(server.URL, "http")))
+	client, err := ring.NewClient(ring.WithEventWebSocketURL("ws" + strings.TrimPrefix(server.URL, "http")))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = client.Close() })
 	return client
@@ -48,7 +47,7 @@ func TestEventsReceiveAndClose(t *testing.T) {
 	client := eventClient(t, true)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	conn, err := client.ConnectEvents(ctx)
+	conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.NoError(t, err)
 	defer conn.Close()
 	event, err := conn.Receive()
@@ -73,7 +72,7 @@ func TestEventsCancellationInterruptsIdleConnection(t *testing.T) {
 	client := eventClient(t, false)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	conn, err := client.ConnectEvents(ctx)
+	conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.NoError(t, err)
 	defer conn.Close()
 	cancel()
@@ -95,14 +94,14 @@ func TestListenReturnsCallbackError(t *testing.T) {
 	err := client.Listen(ctx, func(event *ringapimodels.Event) error {
 		require.Equal(t, int64(987652), event.DeviceID)
 		return expected
-	})
+	}, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.ErrorIs(t, err, expected)
 }
 
 func TestEventsRejectInvalidEndpoint(t *testing.T) {
-	client, err := ring.NewClient(ring.WithAccessToken("test_token"), ring.WithEventWebSocketURL(":invalid"))
+	client, err := ring.NewClient(ring.WithEventWebSocketURL(":invalid"))
 	require.NoError(t, err)
 	defer client.Close()
-	_, err = client.ConnectEvents(context.Background())
+	_, err = client.ConnectEvents(context.Background(), ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.True(t, ringapimodels.IsConnectionError(err))
 }

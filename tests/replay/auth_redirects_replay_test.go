@@ -57,12 +57,12 @@ func TestPortableOAuthRedirectFailureVariants(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Case, func(t *testing.T) {
 			transport := &oauthRedirectTransport{variant: tc}
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}), ring.WithHardwareID("fixture-hardware"))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}))
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer client.Close()
-			_, got := client.Authenticate(context.Background(), ring.AuthenticateRequest{Username: "fixture-user", Password: "fixture-password", OTPCode: "123456"})
+			_, got := client.Authenticate(context.Background(), ring.AuthenticateRequest{HardwareID: "fixture-hardware", Username: "fixture-user", Password: "fixture-password", OTPCode: "123456"})
 			if strings.Contains(tc.Case, "malformed-location") {
 				if !ringapimodels.IsNetworkError(got) {
 					t.Fatalf("invalid HTTP Location error = %v", got)

@@ -25,7 +25,6 @@ func TestPortableLegacyTicketBootstrap(t *testing.T) {
 	defer peer.Close()
 	dialer := &captureDialer{delegate: websocket.DefaultDialer}
 	client, err := ring.NewClient(
-		ring.WithAccessToken("portable-token"),
 		ring.WithHTTPClient(&http.Client{Transport: transport}),
 		ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: x.Request.Origin}),
 		ring.WithSignalingWebSocketURL(peer.URL()+"?token={token}"),
@@ -34,7 +33,7 @@ func TestPortableLegacyTicketBootstrap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	conn, err := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{})
+	conn, err := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}})
 	if err != nil {
 		t.Fatal(err)
 	}

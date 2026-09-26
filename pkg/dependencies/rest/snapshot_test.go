@@ -34,8 +34,8 @@ func TestSnapshotImageBoundsAndReadErrors(t *testing.T) {
 		{"read failure", &trackedBody{readErr: errors.New("synthetic read failure")}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			client := NewClient(WithAccessToken("portable-token"), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) { return testResponse(r, 200, tc.body), nil })}))
-			data, _, err := client.GetSnapshotImage(context.Background(), 12345)
+			client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) { return testResponse(r, 200, tc.body), nil })}))
+			data, _, err := client.GetSnapshotImage(authenticatedContext(), 12345)
 			if data != nil || err == nil {
 				t.Fatalf("invalid image returned %d bytes, %v", len(data), err)
 			}
@@ -50,11 +50,11 @@ func TestSnapshotImageBoundsAndReadErrors(t *testing.T) {
 }
 
 func TestSnapshotTimestampAndImageTransportFailures(t *testing.T) {
-	client := NewClient(WithAccessToken("portable-token"), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) { return nil, errors.New("synthetic transport failure") })}))
-	if _, err := client.RefreshSnapshotTimestamp(context.Background(), 12345); !ringapimodels.IsNetworkError(err) {
+	client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) { return nil, errors.New("synthetic transport failure") })}))
+	if _, err := client.RefreshSnapshotTimestamp(authenticatedContext(), 12345); !ringapimodels.IsNetworkError(err) {
 		t.Fatalf("timestamp error = %v", err)
 	}
-	if _, _, err := client.GetSnapshotImage(context.Background(), 12345); !ringapimodels.IsNetworkError(err) {
+	if _, _, err := client.GetSnapshotImage(authenticatedContext(), 12345); !ringapimodels.IsNetworkError(err) {
 		t.Fatalf("image error = %v", err)
 	}
 }

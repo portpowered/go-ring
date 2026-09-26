@@ -31,6 +31,11 @@ func main() {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 	defer client.Close()
+	login, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password})
+	if err != nil {
+		log.Fatalf("Failed to start login: %v", err)
+	}
+	defer login.Close()
 
 	// Step 1: Authenticate with username/password to get access and refresh tokens
 	fmt.Println("Step 1: Authenticating with username/password...")
@@ -38,10 +43,7 @@ func main() {
 
 	if ringOtpCode == "" {
 
-		err = client.Request2FACode(ctx, ring.Request2FACodeRequest{
-			Username: username,
-			Password: password,
-		})
+		err = login.Request2FACode(ctx)
 		if err != nil {
 			log.Fatalf("Failed to request 2FA code: %v", err)
 		}
@@ -61,11 +63,7 @@ func main() {
 	}
 
 	fmt.Println("Authenticating with 2FA code...")
-	authResp, err := client.Authenticate(ctx, ring.AuthenticateRequest{
-		Username: username,
-		Password: password,
-		OTPCode:  otpCode,
-	})
+	authResp, err := login.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otpCode})
 	if err != nil {
 		log.Fatalf("Failed to authenticate with 2FA code: %v", err)
 	}

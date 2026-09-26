@@ -26,7 +26,7 @@ func main() {
 	// Create client with access token if available, otherwise use refresh token
 	if accessToken != "" {
 		fmt.Println("Creating client with access token...")
-		client, err = ring.NewClientWithToken(accessToken)
+		client, err = ring.NewClient()
 		if err != nil {
 			log.Fatalf("Failed to create client: %v", err)
 		}
@@ -45,12 +45,14 @@ func main() {
 			log.Fatalf("Failed to refresh token: %v", err)
 		}
 		fmt.Printf("✓ Token refreshed successfully (expires in %d seconds)\n\n", authResp.ExpiresIn)
+		accessToken = authResp.AccessToken
 	}
 	defer client.Close()
+	auth := ring.AuthContext{AccessToken: accessToken}
 
 	// List all devices
 	fmt.Println("Enumerating devices...")
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 	if err != nil {
 		log.Fatalf("Failed to list devices: %v", err)
 	}

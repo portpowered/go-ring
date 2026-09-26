@@ -65,10 +65,13 @@ func TestAuthenticate_PKCEWith2FA(t *testing.T) {
 	require.NoError(t, err)
 	defer client.Close()
 	ctx := newTestContext()
-
-	err = client.Request2FACode(ctx, ring.Request2FACodeRequest{Username: "testuser", Password: "testpass"})
+	flow, err := client.NewLoginSession(ring.LoginSessionRequest{Username: "testuser", Password: "testpass"})
 	require.NoError(t, err)
-	authResp, err := client.Authenticate(ctx, ring.AuthenticateRequest{Username: "testuser", Password: "testpass", OTPCode: "123456"})
+	defer flow.Close()
+
+	err = flow.Request2FACode(ctx)
+	require.NoError(t, err)
+	authResp, err := flow.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: "123456"})
 	require.NoError(t, err)
 	assert.Equal(t, "pkce-access-refreshed", authResp.AccessToken)
 	assert.Equal(t, "pkce-refresh-rotated", authResp.RefreshToken)
@@ -250,13 +253,12 @@ func TestRefreshToken_InvalidToken(t *testing.T) {
 	assert.True(t, ringapimodels.IsAuthenticationError(err))
 }
 
-func TestNewClientWithToken(t *testing.T) {
-	token := "test_token_12345"
-	client, err := ring.NewClientWithToken(token)
+func TestNewClientWithoutBoundToken(t *testing.T) {
+	client, err := ring.NewClient()
 	require.NoError(t, err)
 	defer client.Close()
 
-	// Client should be created with the token
+	// Client does not own account credentials.
 	assert.NotNil(t, client)
 }
 
@@ -266,15 +268,13 @@ func TestClientOptions(t *testing.T) {
 
 	// Test applying options
 	err := client.Apply(
-		ring.WithAccessToken("new_token"),
-		ring.WithHardwareID("test_hardware_id"),
 		ring.WithUserAgent("test_agent"),
 	)
 	assert.NoError(t, err)
 
 	// Verify client was configured (indirectly by making a request)
 	ctx := newTestContext()
-	_, _ = client.ListDevices(ctx)
+	_, _ = client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "new_token", HardwareID: "test_hardware_id"}})
 
 	requests := mockTransport.GetRequests()
 	if len(requests) > 0 {

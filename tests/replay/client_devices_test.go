@@ -12,11 +12,11 @@ import (
 )
 
 func TestListDevices_Success(t *testing.T) {
-	client, mockTransport := newTestClientWithToken("test_token")
+	client, mockTransport := newTestClientWithMockTransport()
 	defer client.Close()
 
 	ctx := newTestContext()
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 
 	require.NoError(t, err)
 	require.NotNil(t, devices)
@@ -38,7 +38,7 @@ func TestListDevices_Success(t *testing.T) {
 }
 
 func TestListDevices_Empty(t *testing.T) {
-	client, mockTransport := newTestClientWithToken("test_token")
+	client, mockTransport := newTestClientWithMockTransport()
 	defer client.Close()
 
 	// Set up empty devices response
@@ -47,7 +47,7 @@ func TestListDevices_Empty(t *testing.T) {
 	})
 
 	ctx := newTestContext()
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 
 	require.NoError(t, err)
 	require.NotNil(t, devices)
@@ -58,19 +58,19 @@ func TestListDevices_Empty(t *testing.T) {
 }
 
 func TestGetDevice_Found(t *testing.T) {
-	client, _ := newTestClientWithToken("test_token")
+	client, _ := newTestClientWithMockTransport()
 	defer client.Close()
 
 	ctx := newTestContext()
 
 	// First list devices to get a device ID
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.NoError(t, err)
 
 	// Get a device (should use the first one from the list)
 	if len(devices.Doorbells) > 0 {
 		deviceID := devices.Doorbells[0].ID
-		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{
+		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
 			DeviceID: deviceID,
 		})
 		require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestGetDevice_Found(t *testing.T) {
 		assert.Equal(t, deviceID, device.GetID())
 	} else if len(devices.Chimes) > 0 {
 		deviceID := devices.Chimes[0].ID
-		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{
+		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
 			DeviceID: deviceID,
 		})
 		require.NoError(t, err)
@@ -86,7 +86,7 @@ func TestGetDevice_Found(t *testing.T) {
 		assert.Equal(t, deviceID, device.GetID())
 	} else if len(devices.StickUpCams) > 0 {
 		deviceID := devices.StickUpCams[0].ID
-		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{
+		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
 			DeviceID: deviceID,
 		})
 		require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestGetDevice_Found(t *testing.T) {
 		assert.Equal(t, deviceID, device.GetID())
 	} else if len(devices.Other) > 0 {
 		deviceID := devices.Other[0].ID
-		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{
+		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
 			DeviceID: deviceID,
 		})
 		require.NoError(t, err)
@@ -106,12 +106,12 @@ func TestGetDevice_Found(t *testing.T) {
 }
 
 func TestGetDevice_NotFound(t *testing.T) {
-	client, _ := newTestClientWithToken("test_token")
+	client, _ := newTestClientWithMockTransport()
 	defer client.Close()
 
 	ctx := newTestContext()
 
-	device, err := client.GetDevice(ctx, ring.GetDeviceRequest{
+	device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
 		DeviceID: "999999999",
 	})
 
@@ -121,13 +121,13 @@ func TestGetDevice_NotFound(t *testing.T) {
 }
 
 func TestUpdateDeviceHealth_Success(t *testing.T) {
-	client, mockTransport := newTestClientWithToken("test_token")
+	client, mockTransport := newTestClientWithMockTransport()
 	defer client.Close()
 
 	ctx := newTestContext()
 	deviceID := "987653"
 
-	health, err := client.UpdateDeviceHealth(ctx, ring.UpdateDeviceHealthRequest{
+	health, err := client.UpdateDeviceHealth(ctx, ring.UpdateDeviceHealthRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
 		DeviceID: deviceID,
 	})
 	require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestUpdateDeviceHealth_Success(t *testing.T) {
 }
 
 func TestUpdateDeviceHealth_NotFound(t *testing.T) {
-	client, mockTransport := newTestClientWithToken("test_token")
+	client, mockTransport := newTestClientWithMockTransport()
 	defer client.Close()
 
 	// Set up 404 response
@@ -151,7 +151,7 @@ func TestUpdateDeviceHealth_NotFound(t *testing.T) {
 	})
 
 	ctx := newTestContext()
-	health, err := client.UpdateDeviceHealth(ctx, ring.UpdateDeviceHealthRequest{
+	health, err := client.UpdateDeviceHealth(ctx, ring.UpdateDeviceHealthRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
 		DeviceID: "999999",
 	})
 
@@ -165,11 +165,11 @@ func TestUpdateDeviceHealth_NotFound(t *testing.T) {
 }
 
 func TestGetAllDevices(t *testing.T) {
-	client, _ := newTestClientWithToken("test_token")
+	client, _ := newTestClientWithMockTransport()
 	defer client.Close()
 
 	ctx := newTestContext()
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.NoError(t, err)
 
 	allDevices := devices.GetAllDevices()

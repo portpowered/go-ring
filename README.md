@@ -32,7 +32,7 @@ client, err := ring.NewClient()
 if err != nil { return err }
 defer client.Close()
 
-account := ring.AccountAuth{AccessToken: customerAccessToken, HardwareID: customerHardwareID}
+account := ring.AuthContext{AccessToken: customerAccessToken, HardwareID: customerHardwareID}
 devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: account})
 if err != nil { return err }
 _ = devices
@@ -57,32 +57,30 @@ We go through auth, enumeration, reboot, webRTC, and then finally PTZ.
 
 ### 1. Authenticate
 
-Create a client, request a 2FA code, then authenticate with the code.
+Create an isolated login session so the 2FA challenge, cookies, and hardware ID
+stay with one exchange.
 
 
 
 ```go
 client, _ := ring.NewClient()
-
 defer client.Close()
+login, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password})
+if err != nil { return err }
+defer login.Close()
 
 // Request a OTP code for the user.
-client.Request2FACode(ctx, ring.Request2FACodeRequest{
-    Username: username,
-    Password: password,
-});
+if err := login.Request2FACode(ctx); err != nil { return err }
 
 
 // Here you'll want to take in a buffer and get the otp code somehow
 otpCode := "123123"
 
 // Read otpCode from the user's 2FA channel before continuing.
-tokens, _ := client.Authenticate(ctx, ring.AuthenticateRequest{
-    Username: username,
-    Password: password,
-    OTPCode:  otpCode,
-})
+tokens, err := login.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otpCode})
+if err != nil { return err }
 accessToken := tokens.AccessToken
+auth := ring.AuthContext{AccessToken: accessToken, HardwareID: login.HardwareID()}
 ```
 
 [access token example](examples/token-exchange/main.go).
@@ -90,11 +88,11 @@ accessToken := tokens.AccessToken
 
 
 ```go
-client, err := ring.NewClientWithToken(accessToken)
+client, err := ring.NewClient()
 if err != nil { return err }
 defer client.Close()
 
-devices, err := client.ListDevices(ctx)
+devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
 if err != nil { return err }
 for _, doorbell := range devices.Doorbells {
     fmt.Printf("%s: %s\n", doorbell.ID, doorbell.Name)
@@ -115,11 +113,11 @@ for _, other := range devices.Other {
 ### 3. Reboot a device
 
 ```go
-client, err := ring.NewClientWithToken(accessToken)
+client, err := ring.NewClient()
 if err != nil { return err }
 defer client.Close()
 
-if err := client.RebootDevice(ctx, ring.DeviceIDRequest{DeviceID: deviceID}); err != nil {
+if err := client.RebootDevice(ctx, ring.DeviceIDRequest{Auth: ring.AuthContext{AccessToken: accessToken}, DeviceID: deviceID}); err != nil {
     return err
 }
 ```
@@ -129,11 +127,12 @@ if err := client.RebootDevice(ctx, ring.DeviceIDRequest{DeviceID: deviceID}); er
 ### 4. Play a chime test sound
 
 ```go
-client, err := ring.NewClientWithToken(accessToken)
+client, err := ring.NewClient()
 if err != nil { return err }
 defer client.Close()
 
 if err := client.TestSound(ctx, ring.TestSoundRequest{
+    Auth:     ring.AuthContext{AccessToken: accessToken},
     DeviceID: chimeID,
     Kind:     ringapimodels.SoundKindDing,
 }); err != nil {
@@ -174,12 +173,12 @@ case <-ctx.Done(): return ctx.Err()
 }
 
 
-client, err := ring.NewClientWithToken(accessToken)
+client, err := ring.NewClient()
 if err != nil { return err }
 defer client.Close()
 
 // establish persistent connection session
-conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{})
+conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
 if err != nil { return err }
 defer conn.Close()
 
@@ -251,13 +250,13 @@ More examples below
 
 These are the public SDK methods.
 1. `Client` handles account and HTTP operations.
-2. After you create a client you can create a persistent websocket connection with the `SignalConnection`, which is a stateful network connection.
+2. After you create a client you can create a persistent websocket connection with `SignalingConnection`, which is a stateful network connection.
 3. From that stateful network connection, you can establish device sessions for live viewing video camera feeds, and what not.
 
 | Feature | Object and Go calls | Notes |
 | --- | --- | --- |
-| Client setup and shutdown | `ring.NewClient`, `ring.NewClientWithToken`, `Client.Apply`, `Client.Close` | One client can own several signaling connections. |
-| Login and tokens | `Client.Request2FACode`, `Client.Authenticate`, `Client.RefreshToken` | See [token exchange](examples/token-exchange/main.go). |
+| Client setup and shutdown | `ring.NewClient`, `Client.Apply`, `Client.Close` | One client can own several signaling connections. |
+| Login and tokens | `Client.NewLoginSession`, `LoginSession.Request2FACode`, `LoginSession.Authenticate`, `Client.RefreshToken` | Login state stays in one session; refresh tokens are passed per request. See [token exchange](examples/token-exchange/main.go). |
 | Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail` | `GetDeviceDetail` returns the captured v3 wire envelope. |
 | Device health and settings | `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Health can select a doorbell or chime family route. |
 | Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Returns OpenAPI-generated wire models. |

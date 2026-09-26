@@ -77,7 +77,7 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 		}
 	case "devices":
 		if len(args) == 2 && args[1] == "list" {
-			return withClient(ctx, store, func(client *ring.Client) error { return listDevices(ctx, client, out) })
+			return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error { return listDevices(ctx, client, auth, out) })
 		}
 	case "snapshot":
 		return snapshotCommand(ctx, store, args[1:], out)
@@ -114,12 +114,12 @@ func safeEndpoint(raw string) error {
 	return errors.New("insecure endpoint overrides must use loopback")
 }
 
-func withClient(ctx context.Context, store tokenStore, action func(*ring.Client) error) error {
+func withClient(ctx context.Context, store tokenStore, action func(*ring.Client, ring.AuthContext) error) error {
 	tokens, err := store.load()
 	if err != nil {
 		return fmt.Errorf("load saved login: %w", err)
 	}
-	client, err := ring.NewClientWithToken(tokens.AccessToken, append([]ring.Option{ring.WithHardwareID(tokens.HardwareID)}, store.clientOptions...)...)
+	client, err := ring.NewClient(store.clientOptions...)
 	if err != nil {
 		return err
 	}
@@ -135,15 +135,12 @@ func withClient(ctx context.Context, store tokenStore, action func(*ring.Client)
 		if refreshed.RefreshToken == "" {
 			refreshed.RefreshToken = tokens.RefreshToken
 		}
-		if err := client.Apply(ring.WithAccessToken(refreshed.AccessToken)); err != nil {
-			return err
-		}
 		tokens = storedTokens{AuthResponse: *refreshed, HardwareID: tokens.HardwareID, ReceivedAt: time.Now()}
 		if err := store.save(tokens); err != nil {
 			return fmt.Errorf("save refreshed login: %w", err)
 		}
 	}
-	return action(client)
+	return action(client, ring.AuthContext{AccessToken: tokens.AccessToken, HardwareID: tokens.HardwareID})
 }
 
 func snapshotCommand(ctx context.Context, store tokenStore, args []string, out io.Writer) error {
@@ -159,8 +156,8 @@ func snapshotCommand(ctx context.Context, store tokenStore, args []string, out i
 	if *output == "" || flags.NArg() != 0 {
 		return errors.New("snapshot requires --output file")
 	}
-	return withClient(ctx, store, func(client *ring.Client) error {
-		picture, err := client.GetSnapshot(ctx, ring.GetSnapshotRequest{DeviceID: args[0], PollInterval: time.Second})
+	return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error {
+		picture, err := client.GetSnapshot(ctx, ring.GetSnapshotRequest{Auth: auth, DeviceID: args[0], PollInterval: time.Second})
 		if err != nil {
 			return err
 		}
@@ -176,8 +173,8 @@ func sirenCommand(ctx context.Context, store tokenStore, args []string, out io.W
 	if len(args) != 2 || (args[1] != "on" && args[1] != "off") {
 		return errors.New("usage: siren <device-id> on|off")
 	}
-	return withClient(ctx, store, func(client *ring.Client) error {
-		if err := client.SetSiren(ctx, ring.SetSirenRequest{DeviceID: args[0], Enabled: args[1] == "on"}); err != nil {
+	return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error {
+		if err := client.SetSiren(ctx, ring.SetSirenRequest{Auth: auth, DeviceID: args[0], Enabled: args[1] == "on"}); err != nil {
 			return err
 		}
 		_, _ = fmt.Fprintf(out, "Siren %s request acknowledged\n", args[1])
@@ -185,8 +182,8 @@ func sirenCommand(ctx context.Context, store tokenStore, args []string, out io.W
 	})
 }
 
-func listDevices(ctx context.Context, client *ring.Client, out io.Writer) error {
-	devices, err := client.ListDevices(ctx)
+func listDevices(ctx context.Context, client *ring.Client, auth ring.AuthContext, out io.Writer) error {
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 	if err != nil {
 		return err
 	}

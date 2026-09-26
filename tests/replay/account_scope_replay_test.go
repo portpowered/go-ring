@@ -75,7 +75,7 @@ func TestAccountRequestScopeReplay(t *testing.T) {
 		go func(account replayAccount) {
 			defer group.Done()
 			for range 10 {
-				_, callErr := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AccountAuth{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
+				_, callErr := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
 				if callErr != nil {
 					t.Error(callErr)
 					return
@@ -86,7 +86,7 @@ func TestAccountRequestScopeReplay(t *testing.T) {
 	group.Wait()
 	require.Equal(t, 10, seen[accounts[0].AccessToken])
 	require.Equal(t, 10, seen[accounts[1].AccessToken])
-	_, err = client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AccountAuth{HardwareID: "missing-token"}})
+	_, err = client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{HardwareID: "missing-token"}})
 	require.True(t, ringapimodels.IsTokenError(err), "missing request token: %v", err)
 }
 
@@ -186,7 +186,7 @@ func TestSignalingConnectionsBindRequestAccount(t *testing.T) {
 	require.NoError(t, err)
 	defer client.Close()
 	for _, account := range accounts {
-		conn, openErr := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AccountAuth{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
+		conn, openErr := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
 		require.NoError(t, openErr)
 		require.NoError(t, conn.Close())
 	}
@@ -214,7 +214,7 @@ func TestEventConnectionsUseRequestAccount(t *testing.T) {
 	require.NoError(t, err)
 	defer client.Close()
 	for _, account := range accounts {
-		conn, connectErr := client.ConnectEvents(context.Background(), ring.ConnectEventsRequest{Auth: ring.AccountAuth{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
+		conn, connectErr := client.ConnectEvents(context.Background(), ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
 		require.NoError(t, connectErr)
 		event, receiveErr := conn.Receive()
 		require.NoError(t, receiveErr)
@@ -236,7 +236,7 @@ func TestGeneratedTicketRequestUsesAccountScope(t *testing.T) {
 	client, err := ring.NewClient(ring.WithHTTPClient(server.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: server.URL}))
 	require.NoError(t, err)
 	defer client.Close()
-	ticket, err := client.GetCapturedTickets(context.Background(), ring.GetCapturedTicketsRequest{Auth: ring.AccountAuth{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
+	ticket, err := client.GetCapturedTickets(context.Background(), ring.GetCapturedTicketsRequest{Auth: ring.AuthContext{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
 	require.NoError(t, err)
 	require.Equal(t, "synthetic-ticket", ticket.Ticket)
 }

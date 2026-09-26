@@ -45,11 +45,11 @@ func TestPortableRecordingBytes(t *testing.T) {
 		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/recording", Headers: http.Header{"Accept": []string{"video/mp4,*/*"}}, HeadersMode: replay.HeadersRequired},
 		Response: replay.Response{Status: 200, Headers: http.Header{"Content-Type": []string{"video/mp4"}}, Body: responseBody},
 	})
-	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	stream, err := client.GetRecording(context.Background(), ring.GetRecordingRequest{RecordingID: 42})
+	stream, err := client.GetRecording(context.Background(), ring.GetRecordingRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, RecordingID: 42})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,11 +78,11 @@ func TestPortableRecordingShareURL(t *testing.T) {
 		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/share/play", HeadersMode: replay.HeadersRequired},
 		Response: replay.Response{Status: 200, Body: responseBody, JSON: true},
 	})
-	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{RecordingID: 42})
+	got, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, RecordingID: 42})
 	if err != nil || got != media.Recording.ShareURL {
 		t.Fatalf("share URL = %q, %v", got, err)
 	}
@@ -97,14 +97,14 @@ func TestPortableRecordingShareURLInvalidAndMissing(t *testing.T) {
 		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/share/play", HeadersMode: replay.HeadersRequired},
 		Response: replay.Response{Status: 200, Body: json.RawMessage(`{}`), JSON: true},
 	})
-	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{RecordingID: 0}); err == nil {
+	if _, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, RecordingID: 0}); err == nil {
 		t.Fatal("zero recording ID accepted")
 	}
-	if _, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{RecordingID: 42}); err == nil {
+	if _, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, RecordingID: 42}); err == nil {
 		t.Fatal("missing share URL accepted")
 	}
 	if err := transport.AssertConsumed(); err != nil {
@@ -145,11 +145,11 @@ func TestPortableHTTPFailures(t *testing.T) {
 			} else if tc.Outcome != "" {
 				f.err = errors.New(tc.Outcome)
 			}
-			client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: f}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: f}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = client.SetSiren(context.Background(), ring.SetSirenRequest{DeviceID: "12345", Enabled: false})
+			err = client.SetSiren(context.Background(), ring.SetSirenRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Enabled: false})
 			if err == nil {
 				t.Fatal("transport failure was accepted")
 			}

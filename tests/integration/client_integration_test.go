@@ -111,13 +111,13 @@ func TestDeviceEnumeration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	client, err := ring.NewClientWithToken(accessToken)
+	client, err := ring.NewClient()
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 	defer client.Close()
 
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
 	if err != nil {
 		t.Fatalf("Failed to list devices: %v", err)
 	}
@@ -155,14 +155,14 @@ func TestGetDevice(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	client, err := ring.NewClientWithToken(accessToken)
+	client, err := ring.NewClient()
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 	defer client.Close()
 
 	// First, list devices to get an ID
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
 	if err != nil {
 		t.Fatalf("Failed to list devices: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestGetDevice(t *testing.T) {
 		deviceID = devices.StickUpCams[0].ID
 	}
 
-	device, err := client.GetDevice(ctx, ring.GetDeviceRequest{
+	device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: accessToken},
 		DeviceID: deviceID,
 	})
 	if err != nil {
@@ -205,14 +205,14 @@ func TestRecordingDownload(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	client, err := ring.NewClientWithToken(accessToken)
+	client, err := ring.NewClient()
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 	defer client.Close()
 
 	// List devices
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
 	if err != nil {
 		t.Fatalf("Failed to list devices: %v", err)
 	}
@@ -224,7 +224,7 @@ func TestRecordingDownload(t *testing.T) {
 	deviceID := devices.Doorbells[0].ID
 
 	// Get device history
-	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{
+	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: accessToken},
 		DeviceID: deviceID,
 		Limit:    1,
 		Kind:     "",
@@ -270,14 +270,14 @@ func TestDeviceControl(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	client, err := ring.NewClientWithToken(accessToken)
+	client, err := ring.NewClient()
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 	defer client.Close()
 
 	// List devices
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
 	if err != nil {
 		t.Fatalf("Failed to list devices: %v", err)
 	}
@@ -300,7 +300,7 @@ func TestDeviceControl(t *testing.T) {
 	t.Logf("Testing device control on: %s (ID: %s)", deviceName, testDeviceID)
 
 	// Test volume control
-	err = client.SetVolume(ctx, ring.SetVolumeRequest{
+	err = client.SetVolume(ctx, ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: accessToken},
 		DeviceID:    testDeviceID,
 		Kind:        ringapimodels.VolumeKindDoorbell,
 		Description: deviceName,
@@ -313,7 +313,7 @@ func TestDeviceControl(t *testing.T) {
 	}
 
 	// Test motion detection (if supported)
-	err = client.SetMotionDetection(ctx, ring.SetMotionDetectionRequest{
+	err = client.SetMotionDetection(ctx, ring.SetMotionDetectionRequest{Auth: ring.AuthContext{AccessToken: accessToken},
 		DeviceID: testDeviceID,
 		Enabled:  true,
 	})
@@ -334,14 +334,14 @@ func TestEventRegistration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), eventTimeout)
 	defer cancel()
 
-	client, err := ring.NewClientWithToken(accessToken)
+	client, err := ring.NewClient()
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 	defer client.Close()
 
 	// Connect to events
-	conn, err := client.ConnectEvents(ctx)
+	conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
 	if err != nil {
 		// WebSocket connection may not be available in test environment
 		t.Logf("Note: Event connection failed (this may be expected): %v", err)

@@ -22,12 +22,13 @@ func run() error {
 	if token == "" || chimeID == "" {
 		return fmt.Errorf("set RING_ACCESS_TOKEN and RING_CHIME_ID")
 	}
-	client, err := ring.NewClientWithToken(token)
+	client, err := ring.NewClient()
 	if err != nil {
 		return err
 	}
 	defer client.Close()
-	if err := client.TestSound(context.Background(), ring.TestSoundRequest{
+	auth := ring.AuthContext{AccessToken: token}
+	if err := client.TestSound(context.Background(), ring.TestSoundRequest{Auth: auth,
 		DeviceID: chimeID,
 		Kind:     ringapimodels.SoundKindDing,
 	}); err != nil {

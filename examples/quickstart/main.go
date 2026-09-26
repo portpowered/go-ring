@@ -9,12 +9,13 @@ import (
 )
 
 func main() {
-	client, err := ring.NewClient(ring.WithAccessToken(os.Getenv("RING_ACCESS_TOKEN")))
+	client, err := ring.NewClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer client.Close()
-	devices, err := client.ListDevices(context.Background())
+	auth := ring.AuthContext{AccessToken: os.Getenv("RING_ACCESS_TOKEN")}
+	devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: auth})
 	if err != nil {
 		log.Fatal(err)
 	}

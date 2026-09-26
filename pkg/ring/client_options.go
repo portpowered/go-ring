@@ -1,7 +1,6 @@
 package ring
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -36,74 +35,6 @@ func (w withEndpoints) Apply(c *Client) error {
 	return c.applyEndpointConfiguration()
 }
 
-// WithAccessToken creates a client with an access token
-func WithAccessToken(token string) Option {
-	return withAccessToken(token)
-}
-
-type withAccessToken string
-
-func (w withAccessToken) Apply(c *Client) error {
-	token := string(w)
-	c.accessToken = token
-	c.restClient.Apply(
-		rest.WithAccessToken(token),
-	)
-	return nil
-}
-
-// WithRefreshToken creates a client with a refresh token
-func WithRefreshToken(refreshToken string) Option {
-	return withRefreshToken(refreshToken)
-}
-
-type withRefreshToken string
-
-func (w withRefreshToken) Apply(c *Client) error {
-	c.refreshToken = string(w)
-	return nil
-}
-
-// WithUsername sets the username for authentication
-func WithUsername(username string) Option {
-	return withUsername(username)
-}
-
-type withUsername string
-
-func (w withUsername) Apply(c *Client) error {
-	c.username = string(w)
-	return nil
-}
-
-// WithPassword sets the password for authentication
-func WithPassword(password string) Option {
-	return withPassword(password)
-}
-
-type withPassword string
-
-func (w withPassword) Apply(c *Client) error {
-	c.password = string(w)
-	return nil
-}
-
-// WithHardwareID sets the hardware ID for authentication
-func WithHardwareID(hardwareID string) Option {
-	return withHardwareID(hardwareID)
-}
-
-type withHardwareID string
-
-func (w withHardwareID) Apply(c *Client) error {
-	id := string(w)
-	c.hardwareID = id
-	c.restClient.Apply(
-		rest.WithHardwareID(id),
-	)
-	return nil
-}
-
 // WithHTTPClient sets a custom HTTP client for REST API calls.
 func WithHTTPClient(httpClient *http.Client) Option {
 	return withHTTPClient{httpClient: httpClient}
@@ -136,23 +67,6 @@ func (w withUserAgent) Apply(c *Client) error {
 	c.userAgent = ua
 	c.restClient.Apply(
 		rest.WithUserAgent(ua),
-	)
-	return nil
-}
-
-// WithTokenGetter sets a function to retrieve tokens dynamically
-func WithTokenGetter(getter func(ctx context.Context) (string, error)) Option {
-	return withTokenGetter{getter: getter}
-}
-
-type withTokenGetter struct {
-	getter func(ctx context.Context) (string, error)
-}
-
-func (w withTokenGetter) Apply(c *Client) error {
-	c.tokenGetter = w.getter
-	c.restClient.Apply(
-		rest.WithTokenGetter(w.getter),
 	)
 	return nil
 }

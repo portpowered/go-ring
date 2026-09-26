@@ -47,11 +47,11 @@ func snapshotExchanges(t *testing.T, timestamp int64, withImage bool) ([]replay.
 func TestPortableSnapshotFreshnessAndImage(t *testing.T) {
 	exchanges, media := snapshotExchanges(t, 9_000_000_000_000, true)
 	transport := replay.NewTransport(exchanges...)
-	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	snapshot, err := client.GetSnapshot(context.Background(), ring.GetSnapshotRequest{DeviceID: "12345"})
+	snapshot, err := client.GetSnapshot(context.Background(), ring.GetSnapshotRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,11 +66,11 @@ func TestPortableSnapshotFreshnessAndImage(t *testing.T) {
 func TestPortableSnapshotStaleTimestamp(t *testing.T) {
 	exchanges, _ := snapshotExchanges(t, 1, false)
 	transport := replay.NewTransport(exchanges...)
-	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	snapshot, err := client.GetSnapshot(context.Background(), ring.GetSnapshotRequest{DeviceID: "12345", MaxAttempts: 1})
+	snapshot, err := client.GetSnapshot(context.Background(), ring.GetSnapshotRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", MaxAttempts: 1})
 	if snapshot != nil || !errors.Is(err, ring.ErrSnapshotNotReady) {
 		t.Fatalf("stale snapshot = %+v, %v", snapshot, err)
 	}
@@ -85,11 +85,11 @@ func TestPortableSnapshotMissingTimestampThenFresh(t *testing.T) {
 	empty.Response.Body = json.RawMessage(`{}`)
 	exchanges = append(exchanges[:1], append([]replay.Exchange{empty}, exchanges[1:]...)...)
 	transport := replay.NewTransport(exchanges...)
-	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	snapshot, err := client.GetSnapshot(context.Background(), ring.GetSnapshotRequest{DeviceID: "12345", MaxAttempts: 2})
+	snapshot, err := client.GetSnapshot(context.Background(), ring.GetSnapshotRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", MaxAttempts: 2})
 	if err != nil || string(snapshot.Bytes) != media.Snapshot.BodyText {
 		t.Fatalf("delayed snapshot = %+v, %v", snapshot, err)
 	}
@@ -100,7 +100,7 @@ func TestPortableSnapshotMissingTimestampThenFresh(t *testing.T) {
 
 func TestPortableSnapshotInvalidRequestsBeforeHTTP(t *testing.T) {
 	transport := replay.NewTransport()
-	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,11 +127,11 @@ func TestPortableSnapshotImageFailure(t *testing.T) {
 			exchanges[2].Response.Status = tc.status
 			exchanges[2].Response.Body = tc.body
 			transport := replay.NewTransport(exchanges...)
-			client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if snapshot, err := client.GetSnapshot(context.Background(), ring.GetSnapshotRequest{DeviceID: "12345", MaxAttempts: 1}); snapshot != nil || err == nil {
+			if snapshot, err := client.GetSnapshot(context.Background(), ring.GetSnapshotRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", MaxAttempts: 1}); snapshot != nil || err == nil {
 				t.Fatalf("bad image returned %+v, %v", snapshot, err)
 			}
 			if err := transport.AssertConsumed(); err != nil {
@@ -160,14 +160,14 @@ func TestPortableSnapshotCancellationDuringPoll(t *testing.T) {
 	exchanges, _ := snapshotExchanges(t, 1, false)
 	inner := replay.NewTransport(exchanges[0])
 	transport := &signalFirstTransport{inner: inner, first: make(chan struct{})}
-	client, err := ring.NewClient(ring.WithAccessToken("portable-token"), ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		_, err := client.GetSnapshot(ctx, ring.GetSnapshotRequest{DeviceID: "12345", MaxAttempts: 1, PollInterval: time.Hour})
+		_, err := client.GetSnapshot(ctx, ring.GetSnapshotRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", MaxAttempts: 1, PollInterval: time.Hour})
 		done <- err
 	}()
 	select {

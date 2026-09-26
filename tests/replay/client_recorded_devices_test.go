@@ -52,20 +52,19 @@ func TestRecordedDeviceListAndGetDevice(t *testing.T) {
 		id, name, kind, address, timezone := recordedDeviceValues(t, exchange)
 		transport := replay.NewTransport(exchange)
 		client, err := ring.NewClient(
-			ring.WithAccessToken("recorded-test-token"),
 			ring.WithHTTPClient(&http.Client{Transport: transport}),
 		)
 		require.NoError(t, err)
 		ctx := context.Background()
 		var cams []ringapimodels.StickUpCam
 		if lookup {
-			device, getErr := client.GetDevice(ctx, ring.GetDeviceRequest{DeviceID: fmt.Sprint(id)})
+			device, getErr := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}, DeviceID: fmt.Sprint(id)})
 			require.NoError(t, getErr)
 			cam, ok := device.(*ringapimodels.StickUpCam)
 			require.True(t, ok)
 			cams = []ringapimodels.StickUpCam{*cam}
 		} else {
-			devices, listErr := client.ListDevices(ctx)
+			devices, listErr := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}})
 			require.NoError(t, listErr)
 			require.Len(t, devices.StickUpCams, 1)
 			cams = devices.StickUpCams
@@ -92,7 +91,7 @@ func TestRecordedDeviceListAcrossRegionsAndEndpointOverrides(t *testing.T) {
 				APIBaseURL:       origin,
 				SolutionsBaseURL: "https://" + string(region) + ".solutions.example.test",
 			})
-			options := []ring.Option{ring.WithAccessToken("recorded-test-token"), ring.WithHTTPClient(httpClient)}
+			options := []ring.Option{ring.WithHTTPClient(httpClient)}
 			if reverse {
 				options = append(options, endpointOption, regionOption)
 			} else {
@@ -100,7 +99,7 @@ func TestRecordedDeviceListAcrossRegionsAndEndpointOverrides(t *testing.T) {
 			}
 			client, err := ring.NewClient(options...)
 			require.NoError(t, err)
-			devices, err := client.ListDevices(context.Background())
+			devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}})
 			require.NoError(t, err)
 			require.Len(t, devices.StickUpCams, 1)
 			require.NoError(t, transport.AssertConsumed())

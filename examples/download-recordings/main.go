@@ -21,15 +21,16 @@ func main() {
 	}
 
 	// Create client with access token
-	client, err := ring.NewClientWithToken(accessToken)
+	client, err := ring.NewClient()
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 	defer client.Close()
+	auth := ring.AuthContext{AccessToken: accessToken}
 
 	// Step 1: List devices to select one
 	fmt.Println("Step 1: Enumerating devices...")
-	devices, err := client.ListDevices(ctx)
+	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 	if err != nil {
 		log.Fatalf("Failed to list devices: %v", err)
 	}
@@ -65,7 +66,7 @@ func main() {
 
 	// Step 3: Get device history (recordings)
 	fmt.Printf("Step 3: Retrieving recording history for device %s...\n", deviceName)
-	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{
+	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{Auth: auth,
 		DeviceID: deviceID,
 		Limit:    5,
 		Kind:     "",
@@ -101,7 +102,7 @@ func main() {
 			i+1, len(history.Recordings), recording.ID, recording.Kind)
 
 		// Get the video stream
-		stream, err := client.GetRecording(ctx, ring.GetRecordingRequest{
+		stream, err := client.GetRecording(ctx, ring.GetRecordingRequest{Auth: auth,
 			RecordingID: recording.ID,
 		})
 		if err != nil {

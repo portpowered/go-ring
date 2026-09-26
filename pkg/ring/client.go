@@ -46,16 +46,6 @@ func NewClient(opts ...Option) (*Client, error) {
 	return client, nil
 }
 
-// NewClientWithToken creates a client with an access token (convenience function)
-func NewClientWithToken(accessToken string, opts ...Option) (*Client, error) {
-	baseOptions := []Option{WithAccessToken(accessToken)}
-	if hardwareID := hardwareIDFromAccessToken(accessToken); hardwareID != "" {
-		baseOptions = append(baseOptions, WithHardwareID(hardwareID))
-	}
-	opts = append(baseOptions, opts...)
-	return NewClient(opts...)
-}
-
 type accessTokenClaims struct {
 	HardwareID string `json:"hardware_id"`
 }
@@ -77,27 +67,11 @@ func hardwareIDFromAccessToken(accessToken string) string {
 }
 
 func (c *Client) ensureSession(ctx context.Context) error {
-	if auth, ok := requestauth.FromContext(ctx); ok {
-		if auth.HardwareID == "" {
-			return nil
-		}
-		// A shared client cannot use a single registration bit for multiple
-		// accounts. Register each explicit account operation independently.
-		return c.restClient.RegisterSession(ctx)
-	}
-	if c.hardwareID == "" {
+	auth, ok := requestauth.FromContext(ctx)
+	if !ok || auth.HardwareID == "" {
 		return nil
 	}
-	c.sessionMu.Lock()
-	defer c.sessionMu.Unlock()
-	if c.sessionRegistered {
-		return nil
-	}
-	if err := c.restClient.RegisterSession(ctx); err != nil {
-		return err
-	}
-	c.sessionRegistered = true
-	return nil
+	return c.restClient.RegisterSession(ctx)
 }
 
 // getToken retrieves the access token
@@ -108,23 +82,10 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 		}
 		return auth.AccessToken, nil
 	}
-	if c.accessToken != "" {
-		return c.accessToken, nil
-	}
-	if c.tokenGetter != nil {
-		token, err := c.tokenGetter(ctx)
-		if err != nil {
-			return "", ringapimodels.NewTokenError("token getter failed", err)
-		}
-		return token, nil
-	}
-	return "", ringapimodels.NewTokenError("no token available", nil)
+	return "", ringapimodels.NewTokenError("no token in request", nil)
 }
 
-func (c *Client) accountContext(ctx context.Context, auth AccountAuth) context.Context {
-	if auth.AccessToken == "" && auth.HardwareID == "" {
-		return ctx // legacy client credentials
-	}
+func (c *Client) accountContext(ctx context.Context, auth AuthContext) context.Context {
 	hardwareID := auth.HardwareID
 	if hardwareID == "" {
 		hardwareID = hardwareIDFromAccessToken(auth.AccessToken)
@@ -139,7 +100,7 @@ func (c *Client) hardwareIDFor(ctx context.Context) string {
 	if auth, ok := requestauth.FromContext(ctx); ok {
 		return auth.HardwareID
 	}
-	return c.hardwareID
+	return ""
 }
 
 // Close closes the client and all connections

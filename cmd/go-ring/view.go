@@ -45,12 +45,12 @@ func viewCommand(parent context.Context, store tokenStore, args []string, in io.
 	interrupts := make(chan os.Signal, 1)
 	signal.Notify(interrupts, os.Interrupt)
 	defer signal.Stop(interrupts)
-	return withClient(parent, store, func(client *ring.Client) error {
-		return view(parent, client, args[0], viewOptions{*player, *iceFile, *continuous, *speed}, in, out, interrupts)
+	return withClient(parent, store, func(client *ring.Client, auth ring.AuthContext) error {
+		return view(parent, client, auth, args[0], viewOptions{*player, *iceFile, *continuous, *speed}, in, out, interrupts)
 	})
 }
 
-func view(parent context.Context, client *ring.Client, deviceID string, opts viewOptions, in io.Reader, out io.Writer, interrupts <-chan os.Signal) error {
+func view(parent context.Context, client *ring.Client, auth ring.AuthContext, deviceID string, opts viewOptions, in io.Reader, out io.Writer, interrupts <-chan os.Signal) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	config := webrtc.Configuration{}
@@ -98,7 +98,7 @@ func view(parent context.Context, client *ring.Client, deviceID string, opts vie
 	if err != nil {
 		return err
 	}
-	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{})
+	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
 	if err != nil {
 		return err
 	}

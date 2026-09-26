@@ -11,10 +11,8 @@ import (
 )
 
 // ListDevices retrieves all devices associated with the account
-func (c *Client) ListDevices(ctx context.Context, requests ...ListDevicesRequest) (*ringapimodels.DevicesResponse, error) {
-	if len(requests) > 0 {
-		ctx = c.accountContext(ctx, requests[0].Auth)
-	}
+func (c *Client) ListDevices(ctx context.Context, req ListDevicesRequest) (*ringapimodels.DevicesResponse, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	if err := c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
@@ -44,7 +42,7 @@ func (c *Client) ListDevices(ctx context.Context, requests ...ListDevicesRequest
 // GetDevice retrieves a specific device by ID
 func (c *Client) GetDevice(ctx context.Context, req GetDeviceRequest) (ringapimodels.Device, error) {
 	ctx = c.accountContext(ctx, req.Auth)
-	devices, err := c.ListDevices(ctx)
+	devices, err := c.ListDevices(ctx, ListDevicesRequest{Auth: req.Auth})
 	if err != nil {
 		return nil, err
 	}

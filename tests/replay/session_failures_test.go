@@ -29,11 +29,11 @@ func TestStartSessionRejectsInvalidOfferBeforeOpeningSession(t *testing.T) {
 	}))
 	defer ws.Close()
 	url := "ws" + strings.TrimPrefix(ws.URL, "http")
-	client, err := ring.NewClient(ring.WithAccessToken("x"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL(url))
+	client, err := ring.NewClient(ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL(url))
 	if err != nil {
 		t.Fatal(err)
 	}
-	conn, err := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{})
+	conn, err := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: "x"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,11 +54,11 @@ func TestOversizedTicketResponseIsRejected(t *testing.T) {
 		_, _ = w.Write([]byte(strings.Repeat("x", (1<<20)+1)))
 	}))
 	defer tickets.Close()
-	client, err := ring.NewClient(ring.WithAccessToken("x"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL("ws://127.0.0.1/unused"))
+	client, err := ring.NewClient(ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL("ws://127.0.0.1/unused"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{}); err == nil || !strings.Contains(err.Error(), "size limit") {
+	if _, err = client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: "x"}}); err == nil || !strings.Contains(err.Error(), "size limit") {
 		t.Fatalf("oversized ticket response error = %v", err)
 	}
 }
@@ -167,11 +167,11 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 			}))
 			defer ws.Close()
 			url := "ws" + strings.TrimPrefix(ws.URL, "http")
-			client, err := ring.NewClient(ring.WithAccessToken("x"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL(url))
+			client, err := ring.NewClient(ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL(url))
 			if err != nil {
 				t.Fatal(err)
 			}
-			conn, err := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{})
+			conn, err := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: "x"}})
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -39,10 +39,8 @@ func (c *Client) GetDeviceHistory(ctx context.Context, req GetDeviceHistoryReque
 }
 
 // GetActiveDings retrieves currently active dings
-func (c *Client) GetActiveDings(ctx context.Context, requests ...GetActiveDingsRequest) (*ringapimodels.RecordingHistoryResponse, error) {
-	if len(requests) > 0 {
-		ctx = c.accountContext(ctx, requests[0].Auth)
-	}
+func (c *Client) GetActiveDings(ctx context.Context, req GetActiveDingsRequest) (*ringapimodels.RecordingHistoryResponse, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	rawResponse, err := c.restClient.GetActiveDings(ctx)
 	if err != nil {
 		return nil, err
@@ -83,6 +81,7 @@ func (c *Client) GetRecordingShareURL(ctx context.Context, req GetRecordingShare
 func (c *Client) GetLastRecordingID(ctx context.Context, req GetLastRecordingIDRequest) (int64, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	history, err := c.GetDeviceHistory(ctx, GetDeviceHistoryRequest{
+		Auth:     req.Auth,
 		DeviceID: req.DeviceID,
 		Limit:    1,
 		Kind:     "",

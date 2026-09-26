@@ -21,8 +21,6 @@ type Client struct {
 	httpClient   *http.Client
 	baseURI      string
 	oauthBaseURI string
-	accessToken  string
-	tokenGetter  func(ctx context.Context) (string, error)
 	userAgent    string
 	hardwareID   string
 	authMu       sync.Mutex
@@ -49,20 +47,6 @@ func WithBaseURI(baseURL string) ClientOption {
 // WithEndpointBases configures per-client Ring service origins.
 func WithEndpointBases(apiBase, oauthBase string) ClientOption {
 	return func(c *Client) { c.baseURI, c.oauthBaseURI = apiBase, oauthBase }
-}
-
-// WithAccessToken sets an access token directly
-func WithAccessToken(token string) ClientOption {
-	return func(c *Client) {
-		c.accessToken = token
-	}
-}
-
-// WithTokenGetter sets a function to retrieve tokens dynamically
-func WithTokenGetter(getter func(ctx context.Context) (string, error)) ClientOption {
-	return func(c *Client) {
-		c.tokenGetter = getter
-	}
 }
 
 // WithUserAgent sets a custom user agent
@@ -104,7 +88,7 @@ func (c *Client) Apply(opts ...ClientOption) {
 	}
 }
 
-// getToken retrieves the access token, either from direct token or token getter
+// getToken retrieves credentials scoped to the current operation.
 func (c *Client) getToken(ctx context.Context) (string, error) {
 	if auth, ok := requestauth.FromContext(ctx); ok {
 		if auth.AccessToken == "" {
@@ -112,17 +96,7 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 		}
 		return auth.AccessToken, nil
 	}
-	if c.accessToken != "" {
-		return c.accessToken, nil
-	}
-	if c.tokenGetter != nil {
-		token, err := c.tokenGetter(ctx)
-		if err != nil {
-			return "", ringerrors.NewTokenError("token getter failed", err)
-		}
-		return token, nil
-	}
-	return "", ringerrors.NewTokenError("no token available", nil)
+	return "", ringerrors.NewTokenError("no token in request", nil)
 }
 
 func (c *Client) hardwareIDFor(ctx context.Context) string {
@@ -154,12 +128,10 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 
 	// Get token and set authorization header
 	token, err := c.getToken(ctx)
-	if err != nil && (c.tokenGetter != nil || hasRequestAccount(ctx)) {
+	if err != nil {
 		return nil, ringerrors.NewTokenError("failed to retrieve access token", err)
 	}
-	if err == nil && token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
@@ -210,11 +182,6 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	return resp, nil
-}
-
-func hasRequestAccount(ctx context.Context) bool {
-	_, ok := requestauth.FromContext(ctx)
-	return ok
 }
 
 // doJSONRequest performs a request and unmarshals the JSON response
