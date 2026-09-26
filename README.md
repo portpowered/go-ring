@@ -16,50 +16,13 @@ Requires Go 1.24 or later.
 go get github.com/portpowered/go-ring
 ```
 
-## Reuse one client across accounts
-
-`NewClient()` does not require a token. Pass each account's access token in the
-request; the client can handle concurrent requests for different accounts
-without changing its authorization. Supply the account's hardware ID when
-available (or let the client read the `hardware_id` claim from its access
-token). Refreshing an explicit token returns new tokens for the application to
-store and does not change the shared client. A client uses one configured
-endpoint profile; use separate clients for accounts that require different
-regional endpoints. A custom shared HTTP client must not have a cookie jar.
-
-```go
-client, err := ring.NewClient()
-if err != nil { return err }
-defer client.Close()
-
-account := ring.AuthContext{AccessToken: customerAccessToken, HardwareID: customerHardwareID}
-devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: account})
-if err != nil { return err }
-_ = devices
-
-err = client.RebootDevice(ctx, ring.DeviceIDRequest{Auth: account, DeviceID: deviceID})
-if err != nil { return err }
-
-connection, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: account})
-if err != nil { return err }
-defer connection.Close()
-```
-
-The signaling and event connections keep the account selected when they open;
-their child sessions, playback sessions, and push subscriptions use that
-connection's authorization. Open another connection for another account. For
-concurrent 2FA flows, create a separate `client.NewLoginSession(...)` per user
-so PKCE challenges and cookies stay isolated.
-
-
 ## Examples
-We go through auth, enumeration, reboot, webRTC, and then finally PTZ.
+We go through auth, enumeration, reboot, webRTC, and then finally pan/tilt in an active webRTC session.
 
 ### 1. Authenticate
 
 Create an isolated login session so the 2FA challenge, cookies, and hardware ID
 stay with one exchange.
-
 
 
 ```go
