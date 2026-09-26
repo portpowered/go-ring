@@ -115,6 +115,13 @@ func (ec *EventConnection) Receive() (map[string]interface{}, error) {
 		}
 		return nil, err
 	case <-ec.ctx.Done():
+		// A peer read failure queues its error before cancelling the context.
+		// If both are ready, report the failure rather than a generic close.
+		select {
+		case err := <-ec.errChan:
+			return nil, err
+		default:
+		}
 		return nil, ringerrors.NewClosedError("context cancelled")
 	}
 }
