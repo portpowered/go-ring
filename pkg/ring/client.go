@@ -27,7 +27,7 @@ func (c *Client) Apply(opts ...Option) error {
 func NewClient(opts ...Option) (*Client, error) {
 	client := &Client{
 		restClient:           rest.NewClient(),
-		userAgent:            ringapimodels.DefaultUserAgent,
+		userAgent:            protocol.DefaultUserAgent,
 		region:               RegionUS,
 		eventWebSocketURL:    protocol.ExperimentalEventWebSocketURL,
 		signalingConnections: make(map[*SignalingConnection]struct{}),

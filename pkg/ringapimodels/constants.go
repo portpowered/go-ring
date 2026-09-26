@@ -1,34 +1,5 @@
 package ringapimodels
 
-import "github.com/portpowered/go-ring/internal/protocol"
-
-const (
-	// Ring API base URIs
-	RingAPIBaseURI   = protocol.APIBaseURL
-	RingOAuthBaseURI = protocol.OAuthBaseURL
-	RingOAuthURI     = protocol.OAuthBaseURL + protocol.OAuthTokenPath
-
-	// Ring API endpoints
-	RingDevicesEndpoint      = protocol.DevicesPath
-	RingDevicesV3Endpoint    = protocol.DevicesV3Path
-	RingSessionEndpoint      = protocol.SessionPath
-	RingDingsActiveEndpoint  = protocol.DingsActivePath
-	RingDingsHistoryEndpoint = protocol.DingsHistoryPath
-	RingRecordingEndpoint    = protocol.RecordingPath
-
-	// Shared signaling endpoints for live view, playback and push.
-	RingAppAPIURI             = protocol.USSolutionsBaseURL
-	RingSignalingTicketPath   = protocol.TicketPath
-	RingSignalingWebSocketURL = protocol.SignalingURL
-
-	// Default user agent
-	DefaultUserAgent = protocol.DefaultUserAgent
-
-	// OAuth constants
-	RingClientID = protocol.RingClientID
-	RingScope    = protocol.RingScope
-)
-
 // DeviceFamily represents the family/type of a Ring device
 type DeviceFamily string
 
