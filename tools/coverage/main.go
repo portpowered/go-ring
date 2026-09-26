@@ -1,5 +1,5 @@
-// Command coverage verifies the maintained library coverage budget. Examples,
-// test helpers, and maintainer tools are exercised but excluded from the budget.
+// Command coverage measures maintained library code by the test suite that
+// exercises it. Replay is the primary compatibility gate.
 package main
 
 import (
@@ -10,15 +10,24 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 func main() {
-	minimum := flag.Float64("minimum", 90, "minimum maintained library statement coverage")
+	suite := flag.String("suite", "replay", "test suite: replay, unit, integration, or combined")
+	minimum := flag.Float64("minimum", -1, "override the suite's minimum statement coverage")
 	baselinePath := flag.String("baselines", "tools/coverage/baselines.json", "per-package minimum coverage floors")
 	flag.Parse()
-	if *minimum < 0 || *minimum > 100 {
+	spec, err := suiteSpecFor(*suite)
+	if err != nil {
+		fail(err)
+	}
+	if *minimum != -1 {
+		spec.minimum = *minimum
+	}
+	if spec.minimum < 0 || spec.minimum > 100 {
 		fail(fmt.Errorf("minimum must be between zero and 100"))
 	}
 	os.Setenv("GOWORK", "off")
@@ -36,6 +45,9 @@ func main() {
 	if len(packages) == 0 {
 		fail(fmt.Errorf("no maintained library packages found"))
 	}
+	if spec.name == "integration" && os.Getenv("RING_ACCESS_TOKEN") == "" {
+		fail(fmt.Errorf("integration coverage requires RING_ACCESS_TOKEN; otherwise live tests skip and the report is misleading"))
+	}
 	profileFile, err := os.CreateTemp(".", "coverage.*.out")
 	if err != nil {
 		fail(err)
@@ -45,7 +57,10 @@ func main() {
 		fail(err)
 	}
 	defer os.Remove(profilePath)
-	cmd := exec.Command("go", "test", "-race", "-coverpkg="+strings.Join(packages, ","), "-coverprofile="+profilePath, "-covermode=atomic", "./...", "-timeout", "120s")
+	args := []string{"test", "-race", "-coverpkg=" + strings.Join(packages, ","), "-coverprofile=" + profilePath, "-covermode=atomic"}
+	args = append(args, spec.args...)
+	args = append(args, "-timeout", spec.timeout)
+	cmd := exec.Command("go", args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
 		fail(err)
@@ -64,21 +79,59 @@ func main() {
 	}
 	// Publish only the completed profile; parallel runs cannot corrupt each
 	// other's instrumentation or coverage calculation.
-	if err = os.Rename(profilePath, "coverage.out"); err != nil {
+	if err = os.Rename(profilePath, spec.profile); err != nil {
 		fail(err)
 	}
 	percent := 100 * float64(covered) / float64(total)
-	fmt.Printf("Maintained library coverage: %.2f%% (%d/%d statements); required %.2f%%\n", percent, covered, total, *minimum)
+	fmt.Printf("%s coverage: %.2f%% (%d/%d maintained statements); required %.2f%%; profile %s\n", spec.name, percent, covered, total, spec.minimum, spec.profile)
 	fmt.Println("Includes maintained pkg and internal; excludes generated models/wire code, testkit, examples, tests, and tools.")
-	if percent < *minimum {
-		fail(fmt.Errorf("library coverage target not met"))
+	if percent < spec.minimum {
+		fail(fmt.Errorf("%s coverage target not met", spec.name))
 	}
 	packageCoverage, err := packageTotals(profile)
 	if err != nil {
 		fail(err)
 	}
-	if err = checkPackageFloors(packageCoverage, *baselinePath); err != nil {
-		fail(err)
+	if spec.name == "combined" {
+		if err = checkPackageFloors(packageCoverage, *baselinePath); err != nil {
+			fail(err)
+		}
+	} else {
+		printPackageCoverage(packageCoverage)
+	}
+}
+
+type suiteSpec struct {
+	name    string
+	args    []string
+	profile string
+	minimum float64
+	timeout string
+}
+
+func suiteSpecFor(name string) (suiteSpec, error) {
+	switch name {
+	case "replay":
+		return suiteSpec{name, []string{"./tests/replay/..."}, "coverage.replay.out", 49, "120s"}, nil
+	case "unit":
+		return suiteSpec{name, []string{"./pkg/...", "./internal/..."}, "coverage.unit.out", 75, "120s"}, nil
+	case "integration":
+		return suiteSpec{name, []string{"-tags=integration", "./tests/integration/..."}, "coverage.integration.out", 0, "5m"}, nil
+	case "combined":
+		return suiteSpec{name, []string{"./tests/replay/...", "./pkg/...", "./internal/..."}, "coverage.combined.out", 90, "120s"}, nil
+	default:
+		return suiteSpec{}, fmt.Errorf("unknown suite %q", name)
+	}
+}
+
+func printPackageCoverage(coverage map[string]float64) {
+	names := make([]string, 0, len(coverage))
+	for name := range coverage {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		fmt.Printf("  %s: %.1f%%\n", name, coverage[name])
 	}
 }
 

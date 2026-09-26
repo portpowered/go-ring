@@ -139,6 +139,7 @@ unknown, not be treated as unsupported.
 - [OpenAPI HTTP contracts](api/openapi.yaml), [OpenAPI public model projections](api/client-models.openapi.yaml), and [AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
 - [Complete client interface](pkg/ring/interface.go), [generated HTTP client](pkg/generatedhttp/client.gen.go), [generated public models](pkg/ringapimodels/models.gen.go), and [generated signaling models](pkg/generatedsignaling): run `make generate-api` after editing the schemas. This invokes pinned `oapi-codegen` and Modelina CLIs directly (Go 1.25+ for generation, Node 22; consumers still build with Go 1.24). The HTTP client handles the signaling-ticket request; generated public models describe normalized device, auth, event, and recording results; generated signaling bodies cover live view, ICE, push, playback, and keepalive. `Client`, `SignalingConnection`, `DeviceSession`, `PlaybackSession`, and `PushSubscription` own behavior and lifecycle. Generated code is excluded from the maintained-code coverage budget and checked through recorded replay tests.
 - [Recording formats and verification order](docs/replay-format.md)
+- [Replay, unit, and live integration coverage](docs/coverage.md)
 - [Python fixture replay and original-test migration index](docs/python-replay-harness.md)
 - [Remaining migration scope](docs/migration-scope.md)
 - [Sanitized recordings](tests/replay/fixtures/recordings/README.md) and [legacy fixture provenance](tests/replay/fixtures/legacy/README.md)
@@ -166,10 +167,14 @@ the shared fixture replay with its 95% selected-code coverage gate, and
 schema/sanitizer checks in separate local
 environments. The private mitmproxy file is not required for CI.
 
-The maintained library coverage gate requires 90% statement coverage, alongside
-behavioral and race tests. The completed offline verification run passed at
-91.10%; see [verification results](docs/verification.md) for scope and commands. Live tests are opt-in via
-`make test-integration` and require explicit credentials and device configuration.
+`make test-cover` measures replay, unit, and their combined coverage separately.
+Replay is the primary compatibility metric: it currently reaches 49.29% of
+maintained Go statements; unit tests reach 75.38%, and their union reaches
+91.10%. These suites have separate CI floors and profiles. The Python replay
+gate covers 96.13% of selected Python lines, a different denominator; compare
+ported behavior through the [test mapping](docs/porting-progress.md). Live tests
+are opt-in via `make test-integration`, with separate coverage through
+`make test-cover-integration`.
 
 ## Compatibility and license
 

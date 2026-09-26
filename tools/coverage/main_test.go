@@ -3,8 +3,33 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
+
+func TestCoverageSuitesUseDisjointTestTargetsAndProfiles(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		profile string
+	}{
+		{"replay", []string{"./tests/replay/..."}, "coverage.replay.out"},
+		{"unit", []string{"./pkg/...", "./internal/..."}, "coverage.unit.out"},
+		{"integration", []string{"-tags=integration", "./tests/integration/..."}, "coverage.integration.out"},
+		{"combined", []string{"./tests/replay/...", "./pkg/...", "./internal/..."}, "coverage.combined.out"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := suiteSpecFor(tc.name)
+			if err != nil || got.profile != tc.profile || !reflect.DeepEqual(got.args, tc.args) {
+				t.Fatalf("suite = %+v, %v", got, err)
+			}
+		})
+	}
+	if _, err := suiteSpecFor("unknown"); err == nil {
+		t.Fatal("unknown suite was accepted")
+	}
+}
 
 func TestTotalsMergeDuplicatesAndCountStatements(t *testing.T) {
 	covered, total, err := totals([]byte("mode: atomic\na.go:1.1,2.1 3 0\na.go:1.1,2.1 3 4\nb.go:1.1,4.1 7 0\n"))

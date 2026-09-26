@@ -94,8 +94,9 @@ CI on Windows and Linux. It needs the reference submodule and package downloads
 during setup; the reference tests themselves prohibit external connections.
 
 Next run `go test -race ./... -timeout 120s` with `GOWORK=off`, followed by
-`go run ./tools/coverage` to check the enforced 90% handwritten-library
-coverage budget. Neither command
+`make test-cover` to measure replay coverage, co-located unit coverage, and
+their combined 90% handwritten-library budget independently. See the
+[coverage guide](coverage.md). Neither command
 requires the private native recording: committed sanitized files are the test
 inputs. Extraction of a new recording is a separate maintainer operation.
 Passing these commands is one completion gate; the remaining feature mapping

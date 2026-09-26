@@ -14,6 +14,11 @@ test-race:
 	$(GO) test -race ./... -timeout $(GO_TEST_TIMEOUT)
 test-cover:
 	$(GO) run ./tools/coverage
+	$(GO) run ./tools/coverage -suite unit
+	$(GO) run ./tools/coverage -suite combined
+.PHONY: test-cover-integration
+test-cover-integration:
+	$(GO) run ./tools/coverage -suite integration
 test-integration:
 	$(GO) test -tags integration ./tests/integration/... -timeout 5m
 fmt:

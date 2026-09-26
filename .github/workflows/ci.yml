@@ -56,12 +56,24 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version: '1.24.x'
-      - run: go run ./tools/coverage
-      - name: Upload coverage to Codecov
+      - name: Replay coverage (primary compatibility gate)
+        run: go run ./tools/coverage -suite replay
+      - name: Unit coverage
+        run: go run ./tools/coverage -suite unit
+      - name: Combined coverage
+        run: go run ./tools/coverage -suite combined
+      - name: Upload replay coverage to Codecov
         uses: codecov/codecov-action@v7
         with:
-          files: ./coverage.out
-          flags: unittests
+          files: ./coverage.replay.out
+          flags: replay
+          fail_ci_if_error: false
+          use_oidc: true
+      - name: Upload unit coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          files: ./coverage.unit.out
+          flags: unit
           fail_ci_if_error: false
           use_oidc: true
   lint:

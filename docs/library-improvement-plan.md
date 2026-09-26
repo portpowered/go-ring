@@ -252,7 +252,7 @@ Strengthen the Go mock first: full host/method/path/query/header/body matching, 
 
 ### Coverage and release gates
 
-- Library statement coverage >=90% overall, with per-package baselines that cannot regress. Include maintained handwritten code under `pkg` and future `internal`; exclude examples, test helpers and generated code explicitly and report exclusions.
+- Library statement coverage >=90% for the union of replay and co-located unit tests, with per-package baselines that cannot regress. Report replay and unit coverage separately over the same maintained-code denominator, gate the replay baseline independently, and raise it as Python cases and recordings are migrated. Keep live integration coverage in its own opt-in profile. Include maintained handwritten code under `pkg` and future `internal`; exclude examples, test helpers and generated code explicitly and report exclusions. See the [coverage guide](coverage.md) for current results.
 - Publish both raw total and handwritten coverage if code generation materially changes the denominator. Do not count generated getters to meet the target.
 - Maintain a behavioral matrix in addition to percentages: every stable method has happy, invalid-input, upstream-error and cancellation cases where applicable; every session transition has failure/cleanup tests.
 - Run existing supported OS/Go matrix, race detector, vet, formatting and example builds. Use deterministic peer synchronization; add focused leak/termination assertions rather than fragile global goroutine counts.

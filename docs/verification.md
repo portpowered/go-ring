@@ -13,7 +13,9 @@ Verified locally on Windows with `GOWORK=off`:
 
 | Check | Result |
 |---|---|
-| `go run ./tools/coverage` | Passed, including full Go race suite; 1913/2100 maintained library statements, 91.10% |
+| Replay-only coverage | 1035/2100 maintained library statements, 49.29%; 49% baseline gate |
+| Unit-only coverage | 1583/2100 maintained library statements, 75.38%; 75% baseline gate |
+| Combined replay and unit coverage | 1913/2100 maintained library statements, 91.10%; 90% gate |
 | Per-package coverage floors | Passed; `internal/protocol` 100%, `internal/signaling` 96.7%, REST 92.2%, public `ring` 88.6%, API models 100% |
 | `go vet ./...` | Passed |
 | `go build ./...` | Passed, including examples |
@@ -31,7 +33,9 @@ HTTP/WebSocket peers permitted. The private mitmproxy file is not required.
 Coverage includes handwritten code under `pkg` and `internal`; generated models and wire clients, test harnesses,
 examples, tests, and maintainer tools are exercised but excluded from the
 library denominator. Minor scheduling-dependent branch counts can vary; the
-90% overall gate and per-package floors remain enforced.
+replay, unit, and 90% combined gates remain enforced. See the
+[coverage guide](coverage.md) for separate profiles, denominators, and the
+Python comparison limit. Live integration coverage is opt-in and was not run.
 
 ## Delivered scope
 
