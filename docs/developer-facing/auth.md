@@ -19,9 +19,33 @@ All calls must be made from a backend process. Ring's OAuth pages do not support
 
 `WithUsername` and `WithPassword` provide fallback credentials to `Authenticate` when its request fields are empty; non-empty request values take precedence. `Request2FACode` still takes its credentials directly in `Request2FACodeRequest`. `WithRefreshToken` provides the analogous fallback when `RefreshTokenRequest.RefreshToken` is empty. These options do not trigger automatic authentication or token refresh.
 
+## Concurrent authentication
+
+Use `client.NewLoginSession` for each account when one client serves multiple
+users. Each login session owns its PKCE verifier, OAuth state, cookies, and
+hardware ID. `Request2FACode` and `Authenticate` on that session do not change
+the shared client. Close the session after saving its returned tokens.
+
+```go
+flow, err := client.NewLoginSession(ring.LoginSessionRequest{
+    Username: username, Password: password, HardwareID: hardwareID,
+})
+if err != nil { return err }
+defer flow.Close()
+if err := flow.Request2FACode(ctx); err != nil { return err }
+tokens, err := flow.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otpCode})
+```
+
+If `HardwareID` is omitted, the session generates one; save
+`flow.HardwareID()` with the tokens. Supplying a refresh token in
+`RefreshTokenRequest` returns rotated tokens without changing the shared
+client. Pass `HardwareID` in that request for the matching account.
+
 ## Initial authentication
 
-Create one client and use it for both 2FA calls. The client retains the PKCE verifier, OAuth state, CSRF token, cookies, and hardware ID between calls.
+The older client-level `Request2FACode` and `Authenticate` pair retains its
+challenge on the client for existing single-account callers. Use a separate
+login session per user on a shared server client.
 
 
 The flow performs these steps:
@@ -64,22 +88,24 @@ go run ./examples/token-exchange
 
 ## Using stored tokens
 
-Load the current access token when constructing the client:
+For a shared client, pass the current access token in each request:
 
 ```go
-client, err := ring.NewClientWithToken(tokens.AccessToken)
+client, err := ring.NewClient()
 if err != nil {
 	return err
 }
 defer client.Close()
 
-devices, err := client.ListDevices(ctx)
+auth := ring.AccountAuth{AccessToken: tokens.AccessToken, HardwareID: hardwareID}
+devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 ```
 
-Before device discovery or RTC signaling, the client:
+Before device discovery or RTC signaling for that request, the client:
 
-1. Recovers and reuses the token's hardware ID.
-2. Registers `/clients_api/session` once per client instance.
+1. Uses the supplied hardware ID, or recovers it from the token's claim.
+2. Registers `/clients_api/session` for a request with a hardware ID. The
+   shared client never uses one account's registration for another account.
 3. Fetches inventory from `/device_info/v3/devices` and maps the flat response into the library's existing doorbell, chime, camera, and other-device collections.
 
 Applications that explicitly call `RefreshToken` must persist the returned `AuthResponse`, including its rotated refresh token.
@@ -87,13 +113,14 @@ Applications that explicitly call `RefreshToken` must persist the returned `Auth
 ## Refresh flow
 
 ```go
-client, err := ring.NewClientWithToken(stored.AccessToken)
+client, err := ring.NewClient()
 if err != nil {
 	return err
 }
 
 tokens, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
 	RefreshToken: stored.RefreshToken,
+	HardwareID:   hardwareID,
 })
 if err != nil {
 	return err
@@ -106,7 +133,7 @@ The refresh request uses `grant_type=refresh_token`, `client_id=ring_official_an
 
 ## Error handling
 
-- `Requires2FAError`: a verification code was sent and must be submitted through the same client.
+- `Requires2FAError`: a verification code was sent and must be submitted through the same login session.
 - `AuthenticationError`: credentials, verification code, authorization state, or token were rejected.
 - `RateLimitError`: Ring rate-limited authentication or code delivery.
 - `TokenError`: no usable token exists or an expired token could not be refreshed.
@@ -119,7 +146,7 @@ Treat all authentication errors as sensitive. Response bodies may contain accoun
 - Keep username, password, OTP codes, access tokens, and refresh tokens out of source control and logs.
 - Prefer refresh-token authentication after the initial 2FA flow.
 - Persist each rotated refresh token before discarding the prior token.
-- Use one stable hardware ID per installation.
+- Use one stable hardware ID per account installation; do not share it across customer accounts.
 - Use HTTPS exclusively.
 - Restrict token-file permissions and encrypt secrets at rest where practical.
 - Never implement this flow directly in frontend JavaScript; use a trusted backend.

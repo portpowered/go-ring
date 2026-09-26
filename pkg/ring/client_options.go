@@ -117,6 +117,9 @@ func (w withHTTPClient) Apply(c *Client) error {
 	if w.httpClient == nil {
 		return ringapimodels.NewBadRequestError("HTTP client must not be nil", nil)
 	}
+	if w.httpClient.Jar != nil {
+		return ringapimodels.NewBadRequestError("shared HTTP client must not have a cookie jar", nil)
+	}
 	c.restClient.Apply(rest.WithHTTPClient(w.httpClient))
 	return nil
 }

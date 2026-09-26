@@ -12,6 +12,7 @@ import (
 )
 
 func (c *Client) GetDeviceDetail(ctx context.Context, req GetDeviceDetailRequest) (*generatedhttp.DeviceDetail, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return nil, err
@@ -22,7 +23,10 @@ func (c *Client) GetDeviceDetail(ctx context.Context, req GetDeviceDetailRequest
 	return c.restClient.GetDeviceDetail(ctx, id)
 }
 
-func (c *Client) ListLocations(ctx context.Context) (*generatedhttp.LocationList, error) {
+func (c *Client) ListLocations(ctx context.Context, requests ...ListLocationsRequest) (*generatedhttp.LocationList, error) {
+	if len(requests) > 0 {
+		ctx = c.accountContext(ctx, requests[0].Auth)
+	}
 	if err := c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
@@ -37,6 +41,7 @@ func locationID(value string) (string, error) {
 }
 
 func (c *Client) GetLocation(ctx context.Context, req GetLocationRequest) (*generatedhttp.LocationDetail, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := locationID(req.LocationID)
 	if err != nil {
 		return nil, err
@@ -48,6 +53,7 @@ func (c *Client) GetLocation(ctx context.Context, req GetLocationRequest) (*gene
 }
 
 func (c *Client) ListLocationGroups(ctx context.Context, req LocationRequest) (*generatedhttp.LocationGroups, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := locationID(req.LocationID)
 	if err != nil {
 		return nil, err
@@ -59,6 +65,7 @@ func (c *Client) ListLocationGroups(ctx context.Context, req LocationRequest) (*
 }
 
 func (c *Client) ListLocationDevices(ctx context.Context, req LocationRequest) (*generatedhttp.LocationGroupDevices, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := locationID(req.LocationID)
 	if err != nil {
 		return nil, err
@@ -70,6 +77,7 @@ func (c *Client) ListLocationDevices(ctx context.Context, req LocationRequest) (
 }
 
 func (c *Client) GetDeviceTimeline(ctx context.Context, req GetDeviceTimelineRequest) (*generatedhttp.DeviceTimeline, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return nil, err
@@ -84,6 +92,7 @@ func (c *Client) GetDeviceTimeline(ctx context.Context, req GetDeviceTimelineReq
 }
 
 func (c *Client) GetHistoryDevices(ctx context.Context, req GetHistoryDevicesRequest) (*generatedhttp.HistoryDevices, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	if err := c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
@@ -91,6 +100,7 @@ func (c *Client) GetHistoryDevices(ctx context.Context, req GetHistoryDevicesReq
 }
 
 func (c *Client) RebootDevice(ctx context.Context, req DeviceIDRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err
@@ -102,6 +112,7 @@ func (c *Client) RebootDevice(ctx context.Context, req DeviceIDRequest) error {
 }
 
 func (c *Client) SetPersistentLiveViewEnabled(ctx context.Context, req SetPersistentLiveViewEnabledRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err
@@ -120,6 +131,7 @@ func recordingID(value int64) (int64, error) {
 }
 
 func (c *Client) FavoriteRecording(ctx context.Context, req RecordingIDRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := recordingID(req.RecordingID)
 	if err != nil {
 		return err
@@ -131,6 +143,7 @@ func (c *Client) FavoriteRecording(ctx context.Context, req RecordingIDRequest) 
 }
 
 func (c *Client) DeleteRecording(ctx context.Context, req DeleteRecordingRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := recordingID(req.RecordingID)
 	if err != nil {
 		return err
@@ -144,6 +157,7 @@ func (c *Client) DeleteRecording(ctx context.Context, req DeleteRecordingRequest
 // GetCapturedTickets reads the recorded location ticket resource. It does not
 // replace the separate POST ticket used by OpenSignaling.
 func (c *Client) GetCapturedTickets(ctx context.Context, req GetCapturedTicketsRequest) (*generatedhttp.CapturedTickets, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	if c.endpoints.SolutionsBaseURL == "" {
 		return nil, ringapimodels.NewConnectionError("Solutions endpoint is not configured for this region", nil)
 	}
@@ -159,8 +173,8 @@ func (c *Client) GetCapturedTickets(ctx context.Context, req GetCapturedTicketsR
 		request.Header.Set("Authorization", "Bearer "+token)
 		request.Header.Set("Accept", "application/json")
 		request.Header.Set("User-Agent", c.userAgent)
-		if c.hardwareID != "" {
-			request.Header.Set("hardware_id", c.hardwareID)
+		if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
+			request.Header.Set("hardware_id", hardwareID)
 		}
 		return nil
 	})

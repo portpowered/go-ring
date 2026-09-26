@@ -10,6 +10,7 @@ import (
 // GetDeviceSettings reads the motion_detection_enabled field from the captured
 // v1 settings resource. Unrecognized settings are ignored.
 func (c *Client) GetDeviceSettings(ctx context.Context, req GetDeviceSettingsRequest) (DeviceSettings, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return DeviceSettings{}, err
@@ -24,6 +25,7 @@ func (c *Client) GetDeviceSettings(ctx context.Context, req GetDeviceSettingsReq
 // PatchDeviceSettings updates only the supported motion detection flag. A nil
 // field is rejected instead of silently sending an empty or guessed patch.
 func (c *Client) PatchDeviceSettings(ctx context.Context, req PatchDeviceSettingsRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err
@@ -37,6 +39,7 @@ func (c *Client) PatchDeviceSettings(ctx context.Context, req PatchDeviceSetting
 // SetSiren calls the captured on/off doorbot route. The captured server response
 // reports 30 seconds for the on call, but the request does not accept duration.
 func (c *Client) SetSiren(ctx context.Context, req SetSirenRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err

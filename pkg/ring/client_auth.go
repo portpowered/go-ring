@@ -63,6 +63,18 @@ func (c *Client) Request2FACode(ctx context.Context, req Request2FACodeRequest) 
 // RefreshToken refreshes an access token using a refresh token
 func (c *Client) RefreshToken(ctx context.Context, req RefreshTokenRequest) (*ringapimodels.AuthResponse, error) {
 	refreshToken := req.RefreshToken
+	if refreshToken != "" {
+		tokenResp, err := c.restClient.RefreshAccessTokenFor(ctx, refreshToken, req.HardwareID)
+		if err != nil {
+			return nil, err
+		}
+		return &ringapimodels.AuthResponse{
+			AccessToken:  tokenResp.AccessToken,
+			RefreshToken: tokenString(tokenResp.RefreshToken),
+			ExpiresIn:    tokenInt(tokenResp.ExpiresIn),
+			TokenType:    tokenResp.TokenType,
+		}, nil
+	}
 	if refreshToken == "" {
 		refreshToken = c.refreshToken
 	}

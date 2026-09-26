@@ -44,8 +44,8 @@ func (c *Client) GetSnapshotImage(ctx context.Context, deviceID int64) ([]byte, 
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "image/jpeg")
 	req.Header.Set("User-Agent", c.userAgent)
-	if c.hardwareID != "" {
-		req.Header.Set("hardware_id", c.hardwareID)
+	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
+		req.Header.Set("hardware_id", hardwareID)
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

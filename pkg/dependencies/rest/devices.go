@@ -23,7 +23,7 @@ func (c *Client) GetDevices(ctx context.Context) (*generatedhttp.DeviceList, err
 func (c *Client) RegisterSession(ctx context.Context) error {
 	body := generatedhttp.ClientSessionRegistration{
 		Device: generatedhttp.ClientSessionRegistration_Device{
-			HardwareId: c.hardwareID,
+			HardwareId: c.hardwareIDFor(ctx),
 			Metadata: generatedhttp.ClientSessionRegistration_Device_Metadata{
 				ApiVersion:  generatedhttp.N11,
 				DeviceModel: deviceModel,

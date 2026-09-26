@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/requestauth"
 	"github.com/portpowered/go-ring/internal/ringerrors"
 )
 
@@ -105,6 +106,12 @@ func (c *Client) Apply(opts ...ClientOption) {
 
 // getToken retrieves the access token, either from direct token or token getter
 func (c *Client) getToken(ctx context.Context) (string, error) {
+	if auth, ok := requestauth.FromContext(ctx); ok {
+		if auth.AccessToken == "" {
+			return "", ringerrors.NewTokenError("no token in request", nil)
+		}
+		return auth.AccessToken, nil
+	}
 	if c.accessToken != "" {
 		return c.accessToken, nil
 	}
@@ -116,6 +123,13 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 		return token, nil
 	}
 	return "", ringerrors.NewTokenError("no token available", nil)
+}
+
+func (c *Client) hardwareIDFor(ctx context.Context) string {
+	if auth, ok := requestauth.FromContext(ctx); ok {
+		return auth.HardwareID
+	}
+	return c.hardwareID
 }
 
 // doRequest performs an HTTP request with retry logic
@@ -140,7 +154,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 
 	// Get token and set authorization header
 	token, err := c.getToken(ctx)
-	if err != nil && c.tokenGetter != nil {
+	if err != nil && (c.tokenGetter != nil || hasRequestAccount(ctx)) {
 		return nil, ringerrors.NewTokenError("failed to retrieve access token", err)
 	}
 	if err == nil && token != "" {
@@ -151,8 +165,8 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.userAgent)
 
-	if c.hardwareID != "" {
-		req.Header.Set("hardware_id", c.hardwareID)
+	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
+		req.Header.Set("hardware_id", hardwareID)
 	}
 
 	// Retry logic
@@ -196,6 +210,11 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	}
 
 	return resp, nil
+}
+
+func hasRequestAccount(ctx context.Context) bool {
+	_, ok := requestauth.FromContext(ctx)
+	return ok
 }
 
 // doJSONRequest performs a request and unmarshals the JSON response

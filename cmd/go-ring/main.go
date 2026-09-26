@@ -128,12 +128,15 @@ func withClient(ctx context.Context, store tokenStore, action func(*ring.Client)
 		if tokens.RefreshToken == "" {
 			return errors.New("token expired; run auth login")
 		}
-		refreshed, refreshErr := client.RefreshToken(ctx, ring.RefreshTokenRequest{RefreshToken: tokens.RefreshToken})
+		refreshed, refreshErr := client.RefreshToken(ctx, ring.RefreshTokenRequest{RefreshToken: tokens.RefreshToken, HardwareID: tokens.HardwareID})
 		if refreshErr != nil {
 			return fmt.Errorf("refresh login: %w", refreshErr)
 		}
 		if refreshed.RefreshToken == "" {
 			refreshed.RefreshToken = tokens.RefreshToken
+		}
+		if err := client.Apply(ring.WithAccessToken(refreshed.AccessToken)); err != nil {
+			return err
 		}
 		tokens = storedTokens{AuthResponse: *refreshed, HardwareID: tokens.HardwareID, ReceivedAt: time.Now()}
 		if err := store.save(tokens); err != nil {

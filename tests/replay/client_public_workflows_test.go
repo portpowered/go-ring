@@ -160,7 +160,11 @@ func TestRefreshTokenUsesConfiguredFallbackAndExplicitTokenWins(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
 
-			_, err = client.RefreshToken(context.Background(), ring.RefreshTokenRequest{RefreshToken: tc.request})
+			request := ring.RefreshTokenRequest{RefreshToken: tc.request}
+			if tc.request != "" {
+				request.HardwareID = "hardware-refresh"
+			}
+			_, err = client.RefreshToken(context.Background(), request)
 			require.NoError(t, err)
 			require.Len(t, transport.requests, 1)
 			form, parseErr := url.ParseQuery(string(transport.bodies[0]))

@@ -11,7 +11,10 @@ import (
 )
 
 // ListDevices retrieves all devices associated with the account
-func (c *Client) ListDevices(ctx context.Context) (*ringapimodels.DevicesResponse, error) {
+func (c *Client) ListDevices(ctx context.Context, requests ...ListDevicesRequest) (*ringapimodels.DevicesResponse, error) {
+	if len(requests) > 0 {
+		ctx = c.accountContext(ctx, requests[0].Auth)
+	}
 	if err := c.ensureSession(ctx); err != nil {
 		return nil, err
 	}
@@ -40,6 +43,7 @@ func (c *Client) ListDevices(ctx context.Context) (*ringapimodels.DevicesRespons
 
 // GetDevice retrieves a specific device by ID
 func (c *Client) GetDevice(ctx context.Context, req GetDeviceRequest) (ringapimodels.Device, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	devices, err := c.ListDevices(ctx)
 	if err != nil {
 		return nil, err
@@ -58,6 +62,7 @@ func (c *Client) GetDevice(ctx context.Context, req GetDeviceRequest) (ringapimo
 
 // UpdateDeviceHealth refreshes health data for a device
 func (c *Client) UpdateDeviceHealth(ctx context.Context, req UpdateDeviceHealthRequest) (*ringapimodels.DeviceHealth, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	// Convert string deviceID to int64 for REST API call
 	deviceIDInt, err := strconv.ParseInt(req.DeviceID, 10, 64)
 	if err != nil {

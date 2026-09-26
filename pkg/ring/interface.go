@@ -55,13 +55,14 @@ type ClientAPI interface {
 	Authenticate(context.Context, AuthenticateRequest) (*ringapimodels.AuthResponse, error)
 	Request2FACode(context.Context, Request2FACodeRequest) error
 	RefreshToken(context.Context, RefreshTokenRequest) (*ringapimodels.AuthResponse, error)
+	NewLoginSession(LoginSessionRequest) (*LoginSession, error)
 
 	// APIs for enumerating and getting data
-	ListDevices(context.Context) (*ringapimodels.DevicesResponse, error)
+	ListDevices(context.Context, ...ListDevicesRequest) (*ringapimodels.DevicesResponse, error)
 	GetDevice(context.Context, GetDeviceRequest) (ringapimodels.Device, error)
 	GetDeviceSettings(context.Context, GetDeviceSettingsRequest) (DeviceSettings, error)
 	GetDeviceDetail(context.Context, GetDeviceDetailRequest) (*generatedhttp.DeviceDetail, error)
-	ListLocations(context.Context) (*generatedhttp.LocationList, error)
+	ListLocations(context.Context, ...ListLocationsRequest) (*generatedhttp.LocationList, error)
 	GetLocation(context.Context, GetLocationRequest) (*generatedhttp.LocationDetail, error)
 	ListLocationGroups(context.Context, LocationRequest) (*generatedhttp.LocationGroups, error)
 	ListLocationDevices(context.Context, LocationRequest) (*generatedhttp.LocationGroupDevices, error)
@@ -84,7 +85,7 @@ type ClientAPI interface {
 
 	// Various recording APIs
 	GetDeviceHistory(context.Context, GetDeviceHistoryRequest) (*ringapimodels.RecordingHistoryResponse, error)
-	GetActiveDings(context.Context) (*ringapimodels.RecordingHistoryResponse, error)
+	GetActiveDings(context.Context, ...GetActiveDingsRequest) (*ringapimodels.RecordingHistoryResponse, error)
 	GetRecording(context.Context, GetRecordingRequest) (*ringapimodels.VideoStream, error)
 	GetRecordingShareURL(context.Context, GetRecordingShareURLRequest) (string, error)
 	GetLastRecordingID(context.Context, GetLastRecordingIDRequest) (int64, error)
@@ -93,8 +94,8 @@ type ClientAPI interface {
 
 	// Event and signaling connections
 	OpenSignaling(context.Context, OpenSignalingRequest) (*SignalingConnection, error)
-	ConnectEvents(context.Context) (*EventConnection, error)
-	Listen(context.Context, ringapimodels.EventCallback) error
+	ConnectEvents(context.Context, ...ConnectEventsRequest) (*EventConnection, error)
+	Listen(context.Context, ringapimodels.EventCallback, ...ConnectEventsRequest) error
 }
 
 // SignalingConnection owns one authenticated signaling socket and its child sessions.
@@ -216,12 +217,21 @@ type EventConnectionAPI interface {
 	Close() error
 }
 
+// LoginSessionAPI is one isolated OAuth/2FA exchange.
+type LoginSessionAPI interface {
+	HardwareID() string
+	Request2FACode(context.Context) error
+	Authenticate(context.Context, CompleteLoginRequest) (*ringapimodels.AuthResponse, error)
+	Close() error
+}
+
 var _ ClientAPI = (*Client)(nil)
 var _ SignalingConnectionAPI = (*SignalingConnection)(nil)
 var _ DeviceSessionAPI = (*DeviceSession)(nil)
 var _ PlaybackSessionAPI = (*PlaybackSession)(nil)
 var _ PushSubscriptionAPI = (*PushSubscription)(nil)
 var _ EventConnectionAPI = (*EventConnection)(nil)
+var _ LoginSessionAPI = (*LoginSession)(nil)
 
 // AuthenticateRequest contains parameters for Authenticate
 type AuthenticateRequest struct {
@@ -239,45 +249,78 @@ type Request2FACodeRequest struct {
 // RefreshTokenRequest contains parameters for RefreshToken
 type RefreshTokenRequest struct {
 	RefreshToken string
+	HardwareID   string
 }
 
 // GetDeviceRequest contains parameters for GetDevice
 type GetDeviceRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 }
 
+// AccountAuth is supplied with each account-level operation. Its values are
+// scoped to that call and never mutate a shared Client.
+type AccountAuth struct {
+	AccessToken string
+	HardwareID  string
+}
+
+type ListDevicesRequest struct{ Auth AccountAuth }
+type ListLocationsRequest struct{ Auth AccountAuth }
+type GetActiveDingsRequest struct{ Auth AccountAuth }
+type ConnectEventsRequest struct{ Auth AccountAuth }
+
 // Captured HTTP operations return generated wire models without an additional projection.
-type DeviceIDRequest struct{ DeviceID string }
-type GetDeviceDetailRequest struct{ DeviceID string }
-type LocationRequest struct{ LocationID string }
+type DeviceIDRequest struct {
+	Auth     AccountAuth
+	DeviceID string
+}
+type GetDeviceDetailRequest struct {
+	Auth     AccountAuth
+	DeviceID string
+}
+type LocationRequest struct {
+	Auth       AccountAuth
+	LocationID string
+}
 type GetLocationRequest struct {
+	Auth       AccountAuth
 	LocationID string
 	Params     generatedhttp.GetLocationParams
 }
 type GetDeviceTimelineRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	Params   generatedhttp.GetDeviceTimelineParams
 }
 type GetHistoryDevicesRequest struct {
+	Auth   AccountAuth
 	Params generatedhttp.GetHistoryDevicesParams
 }
 
 // GetCapturedTickets is the recorded GET profile, separate from OpenSignaling's POST ticket.
 type GetCapturedTicketsRequest struct {
+	Auth   AccountAuth
 	Params generatedhttp.GetCapturedLocationTicketsParams
 }
 type SetPersistentLiveViewEnabledRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	Enabled  bool
 }
-type RecordingIDRequest struct{ RecordingID int64 }
+type RecordingIDRequest struct {
+	Auth        AccountAuth
+	RecordingID int64
+}
 type DeleteRecordingRequest struct {
+	Auth                  AccountAuth
 	RecordingID           int64
 	ConfirmDeleteFavorite *bool
 }
 
 // UpdateDeviceHealthRequest contains parameters for UpdateDeviceHealth
 type UpdateDeviceHealthRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	// Family selects the Python-compatible family endpoint; an empty value uses the legacy generic route.
 	Family generatedhttp.DeviceFamilyCode
@@ -285,6 +328,7 @@ type UpdateDeviceHealthRequest struct {
 
 // SetVolumeRequest contains parameters for SetVolume
 type SetVolumeRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	// Kind is "chime" or "doorbell"; Description is the current device name.
 	Kind        ringapimodels.VolumeKind
@@ -294,6 +338,7 @@ type SetVolumeRequest struct {
 
 // SetLightsRequest contains parameters for SetLights
 type SetLightsRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	State    ringapimodels.LightState
 	Duration *int
@@ -301,18 +346,21 @@ type SetLightsRequest struct {
 
 // SetMotionDetectionRequest contains parameters for SetMotionDetection
 type SetMotionDetectionRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	Enabled  bool
 }
 
 // TestSoundRequest contains parameters for TestSound
 type TestSoundRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	Kind     ringapimodels.SoundKind
 }
 
 // SetInHomeChimeRequest contains parameters for SetInHomeChime
 type SetInHomeChimeRequest struct {
+	Auth        AccountAuth
 	DeviceID    string
 	Description string
 	Settings    ringapimodels.InHomeChimeSettings
@@ -320,6 +368,7 @@ type SetInHomeChimeRequest struct {
 
 // GetDeviceHistoryRequest contains parameters for GetDeviceHistory
 type GetDeviceHistoryRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	Limit    int
 	// OlderThan is an optional Unix timestamp cursor for older recordings.
@@ -330,13 +379,18 @@ type GetDeviceHistoryRequest struct {
 
 // GetRecordingRequest contains parameters for GetRecording
 type GetRecordingRequest struct {
+	Auth        AccountAuth
 	RecordingID int64
 }
 
-type GetRecordingShareURLRequest struct{ RecordingID int64 }
+type GetRecordingShareURLRequest struct {
+	Auth        AccountAuth
+	RecordingID int64
+}
 
 // GetLastRecordingIDRequest contains parameters for GetLastRecordingID
 type GetLastRecordingIDRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 }
 
@@ -382,16 +436,21 @@ type DeviceSettings struct {
 }
 
 // GetDeviceSettingsRequest identifies a device whose supported settings are read.
-type GetDeviceSettingsRequest struct{ DeviceID string }
+type GetDeviceSettingsRequest struct {
+	Auth     AccountAuth
+	DeviceID string
+}
 
 // PatchDeviceSettingsRequest changes only explicitly supplied supported fields.
 type PatchDeviceSettingsRequest struct {
+	Auth                   AccountAuth
 	DeviceID               string
 	MotionDetectionEnabled *bool
 }
 
 // SetSirenRequest controls the captured legacy doorbot siren endpoint.
 type SetSirenRequest struct {
+	Auth     AccountAuth
 	DeviceID string
 	Enabled  bool
 }
@@ -400,6 +459,7 @@ type SetSirenRequest struct {
 // GetSnapshotRequest controls the bounded Python-legacy freshness poll.
 // Zero attempts defaults to three; a zero interval polls without delay.
 type GetSnapshotRequest struct {
+	Auth         AccountAuth
 	DeviceID     string
 	MaxAttempts  int
 	PollInterval time.Duration
@@ -414,7 +474,7 @@ type Snapshot struct {
 }
 
 // Signaling connection request
-type OpenSignalingRequest struct{}
+type OpenSignalingRequest struct{ Auth AccountAuth }
 
 // Live and playback session values
 type SessionState string

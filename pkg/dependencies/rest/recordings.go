@@ -79,16 +79,17 @@ func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringmedi
 
 	// Get token and set authorization header
 	token, err := c.getToken(ctx)
-	if err == nil && token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	if err != nil {
+		return nil, ringerrors.NewTokenError("failed to get recording token", err)
 	}
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	// Don't set JSON headers for video requests - accept video/mp4
 	req.Header.Set("Accept", "video/mp4,*/*")
 	req.Header.Set("User-Agent", c.userAgent)
 
-	if c.hardwareID != "" {
-		req.Header.Set("hardware_id", c.hardwareID)
+	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
+		req.Header.Set("hardware_id", hardwareID)
 	}
 
 	resp, err := c.httpClient.Do(req)

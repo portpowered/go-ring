@@ -9,6 +9,7 @@ import (
 
 // SetVolume sets the volume for a device
 func (c *Client) SetVolume(ctx context.Context, req SetVolumeRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	if req.Volume < 0 || req.Volume > 11 {
 		return ringapimodels.NewBadRequestError("volume must be between 0 and 11", nil)
 	}
@@ -32,6 +33,7 @@ func (c *Client) SetVolume(ctx context.Context, req SetVolumeRequest) error {
 // req.State can be "on" or "off"
 // req.Duration is optional and specifies how long to keep lights on (in seconds)
 func (c *Client) SetLights(ctx context.Context, req SetLightsRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	if !req.State.Valid() {
 		return ringapimodels.NewBadRequestError("state must be 'on' or 'off'", nil)
 	}
@@ -47,6 +49,7 @@ func (c *Client) SetLights(ctx context.Context, req SetLightsRequest) error {
 
 // SetMotionDetection sets motion detection for a device
 func (c *Client) SetMotionDetection(ctx context.Context, req SetMotionDetectionRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	deviceIDInt, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err
@@ -57,6 +60,7 @@ func (c *Client) SetMotionDetection(ctx context.Context, req SetMotionDetectionR
 // TestSound tests a sound on a chime device
 // req.Kind can be "ding" or "motion"
 func (c *Client) TestSound(ctx context.Context, req TestSoundRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	wireKind := generatedhttp.TestChimeSoundParamsKind(req.Kind)
 	if !req.Kind.Valid() || !wireKind.Valid() {
 		return ringapimodels.NewBadRequestError("kind must be 'ding' or 'motion'", nil)
@@ -71,6 +75,7 @@ func (c *Client) TestSound(ctx context.Context, req TestSoundRequest) error {
 // SetInHomeChime sets in-home chime settings for a doorbell
 // req.Settings can include: "type" (e.g., "Mechanical"), "enabled" (bool), "duration" (int)
 func (c *Client) SetInHomeChime(ctx context.Context, req SetInHomeChimeRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 	deviceIDInt, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err

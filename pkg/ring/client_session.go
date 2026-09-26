@@ -17,7 +17,8 @@ import (
 
 // OpenSignaling obtains the currently supported legacy signaling ticket and opens its websocket.
 // The captured C1 GET /api/v1/clap/tickets profile is intentionally not substituted for this POST route.
-func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*SignalingConnection, error) {
+func (c *Client) OpenSignaling(ctx context.Context, req OpenSignalingRequest) (*SignalingConnection, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	if err := ctx.Err(); err != nil {
 		return nil, ringapimodels.NewConnectionError("signaling open canceled", err)
 	}
@@ -41,8 +42,8 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	h.Set("Authorization", "Bearer "+token)
 	h.Set("User-Agent", c.userAgent)
 	h.Set("Content-Type", "application/json")
-	if c.hardwareID != "" {
-		h.Set("hardware_id", c.hardwareID)
+	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
+		h.Set("hardware_id", hardwareID)
 	}
 	wire, err := generatedhttp.NewClient(c.endpoints.SolutionsBaseURL, generatedhttp.WithHTTPClient(c.restClient.HTTPClient()))
 	if err != nil {
@@ -75,8 +76,8 @@ func (c *Client) OpenSignaling(ctx context.Context, _ OpenSignalingRequest) (*Si
 	wsURL = strings.Replace(wsURL, "{token}", url.QueryEscape(ticket.Ticket), 1)
 	wsHeaders := http.Header{}
 	wsHeaders.Set("User-Agent", c.userAgent)
-	if c.hardwareID != "" {
-		wsHeaders.Set("hardware_id", c.hardwareID)
+	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
+		wsHeaders.Set("hardware_id", hardwareID)
 	}
 	conn, err := dependencywebsocket.DialSignaling(ctx, wsURL, wsHeaders, c.signalingDialer)
 	if err != nil {

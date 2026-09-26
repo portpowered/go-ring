@@ -335,6 +335,12 @@ func (c *Client) RefreshAccessToken(ctx context.Context, refreshToken string) (*
 	return c.refreshAccessToken(ctx, refreshToken, c.hardwareID)
 }
 
+// RefreshAccessTokenFor uses a caller-supplied device identity without
+// changing authorization state on a shared REST client.
+func (c *Client) RefreshAccessTokenFor(ctx context.Context, refreshToken, hardwareID string) (*TokenResponse, error) {
+	return c.refreshAccessToken(ctx, refreshToken, hardwareID)
+}
+
 func (c *Client) refreshAccessToken(ctx context.Context, refreshToken, hardwareID string) (*TokenResponse, error) {
 	data := url.Values{"grant_type": {"refresh_token"}, "refresh_token": {refreshToken}, "client_id": {protocol.RingClientID}, "scope": {protocol.RingScope}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.oauthBaseURI+protocol.OAuthTokenPath, strings.NewReader(data.Encode()))

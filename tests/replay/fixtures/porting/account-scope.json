@@ -1,0 +1,6 @@
+{
+  "accounts": [
+    {"access_token": "replay-account-a", "hardware_id": "replay-hardware-a"},
+    {"access_token": "replay-account-b", "hardware_id": "replay-hardware-b"}
+  ]
+}

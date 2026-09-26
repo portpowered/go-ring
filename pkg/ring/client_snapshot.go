@@ -13,6 +13,7 @@ var ErrSnapshotNotReady = ringapimodels.NewNotFoundError("fresh snapshot not ava
 // fetches the image. This follows pinned Python behavior; it is not the C1
 // app-snaps endpoint, whose response was absent from the capture.
 func (c *Client) GetSnapshot(ctx context.Context, req GetSnapshotRequest) (*Snapshot, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return nil, err

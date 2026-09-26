@@ -9,6 +9,7 @@ import (
 
 // GetDeviceHistory retrieves the history of recordings for a device
 func (c *Client) GetDeviceHistory(ctx context.Context, req GetDeviceHistoryRequest) (*ringapimodels.RecordingHistoryResponse, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	deviceIDInt, err := strconv.ParseInt(req.DeviceID, 10, 64)
 	if err != nil {
 		return nil, ringapimodels.NewBadRequestError("invalid device ID format", err)
@@ -38,7 +39,10 @@ func (c *Client) GetDeviceHistory(ctx context.Context, req GetDeviceHistoryReque
 }
 
 // GetActiveDings retrieves currently active dings
-func (c *Client) GetActiveDings(ctx context.Context) (*ringapimodels.RecordingHistoryResponse, error) {
+func (c *Client) GetActiveDings(ctx context.Context, requests ...GetActiveDingsRequest) (*ringapimodels.RecordingHistoryResponse, error) {
+	if len(requests) > 0 {
+		ctx = c.accountContext(ctx, requests[0].Auth)
+	}
 	rawResponse, err := c.restClient.GetActiveDings(ctx)
 	if err != nil {
 		return nil, err
@@ -61,12 +65,14 @@ func (c *Client) GetActiveDings(ctx context.Context) (*ringapimodels.RecordingHi
 
 // GetRecording retrieves a video stream for a recording
 func (c *Client) GetRecording(ctx context.Context, req GetRecordingRequest) (*ringapimodels.VideoStream, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	return c.restClient.GetRecording(ctx, req.RecordingID)
 }
 
 // GetRecordingShareURL returns the legacy playback share URL for a recording.
 // Access permissions and subscription checks are resolved by the server.
 func (c *Client) GetRecordingShareURL(ctx context.Context, req GetRecordingShareURLRequest) (string, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	if req.RecordingID <= 0 {
 		return "", ringapimodels.NewBadRequestError("invalid recording ID", nil)
 	}
@@ -75,6 +81,7 @@ func (c *Client) GetRecordingShareURL(ctx context.Context, req GetRecordingShare
 
 // GetLastRecordingID retrieves the ID of the most recent recording for a device
 func (c *Client) GetLastRecordingID(ctx context.Context, req GetLastRecordingIDRequest) (int64, error) {
+	ctx = c.accountContext(ctx, req.Auth)
 	history, err := c.GetDeviceHistory(ctx, GetDeviceHistoryRequest{
 		DeviceID: req.DeviceID,
 		Limit:    1,

@@ -6,8 +6,7 @@
 [![License](https://img.shields.io/github/license/portpowered/go-ring)](LICENSE)
 
 A Go client for Ring authentication, device discovery and controls, recordings,
-and persistent signaling sessions. Live sessions support SDP/ICE exchange and
-PTZ controls. The application supplies its own WebRTC peer for media.
+and persistent signaling sessions.
 
 ## Install
 
@@ -17,46 +16,78 @@ Requires Go 1.24 or later.
 go get github.com/portpowered/go-ring
 ```
 
+## Reuse one client across accounts
 
-## Examples
-
-The examples progress from authentication to device discovery, HTTP controls,
-and live sessions. The code below is inline for SDK users; complete programs
-are linked alongside each step. The [go-ring CLI](cmd/go-ring/README.md) can
-also save tokens and run interactive diagnostics.
-
-### 1. Authenticate
-
-Create a client, request a 2FA code, then authenticate with the code.
-`Authenticate` stores the tokens on that client
-and returns them so an application can save or refresh them. See the runnable
-[token-exchange example](examples/token-exchange/main.go).
+`NewClient()` does not require a token. Pass each account's access token in the
+request; the client can handle concurrent requests for different accounts
+without changing its authorization. Supply the account's hardware ID when
+available (or let the client read the `hardware_id` claim from its access
+token). Refreshing an explicit token returns new tokens for the application to
+store and does not change the shared client. A client uses one configured
+endpoint profile; use separate clients for accounts that require different
+regional endpoints. A custom shared HTTP client must not have a cookie jar.
 
 ```go
 client, err := ring.NewClient()
 if err != nil { return err }
 defer client.Close()
 
-if err := client.Request2FACode(ctx, ring.Request2FACodeRequest{
+account := ring.AccountAuth{AccessToken: customerAccessToken, HardwareID: customerHardwareID}
+devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: account})
+if err != nil { return err }
+_ = devices
+
+err = client.RebootDevice(ctx, ring.DeviceIDRequest{Auth: account, DeviceID: deviceID})
+if err != nil { return err }
+
+connection, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: account})
+if err != nil { return err }
+defer connection.Close()
+```
+
+The signaling and event connections keep the account selected when they open;
+their child sessions, playback sessions, and push subscriptions use that
+connection's authorization. Open another connection for another account. For
+concurrent 2FA flows, create a separate `client.NewLoginSession(...)` per user
+so PKCE challenges and cookies stay isolated.
+
+
+## Examples
+We go through auth, enumeration, reboot, webRTC, and then finally PTZ.
+
+### 1. Authenticate
+
+Create a client, request a 2FA code, then authenticate with the code.
+
+
+
+```go
+client, _ := ring.NewClient()
+
+defer client.Close()
+
+// Request a OTP code for the user.
+client.Request2FACode(ctx, ring.Request2FACodeRequest{
     Username: username,
     Password: password,
-}); err != nil { return err }
+});
+
+
+// Here you'll want to take in a buffer and get the otp code somehow
+otpCode := "123123"
 
 // Read otpCode from the user's 2FA channel before continuing.
-tokens, err := client.Authenticate(ctx, ring.AuthenticateRequest{
+tokens, _ := client.Authenticate(ctx, ring.AuthenticateRequest{
     Username: username,
     Password: password,
     OTPCode:  otpCode,
 })
-if err != nil { return err }
 accessToken := tokens.AccessToken
 ```
 
+[access token example](examples/token-exchange/main.go).
 ### 2. List devices
 
-Use the access token from authentication or one you previously saved. This
-returns the account's typed device families; see the runnable
-[enumerate-devices example](examples/enumerate-devices/main.go).
 
 ```go
 client, err := ring.NewClientWithToken(accessToken)
@@ -79,11 +110,9 @@ for _, other := range devices.Other {
 }
 ```
 
-### 3. Reboot a device
+[enumerate-devices example](examples/enumerate-devices/main.go).
 
-Select a device ID from the inventory and send one reboot request. The
-standalone [reboot-device example](examples/reboot-device/main.go) reads the ID
-from `RING_DEVICE_ID`.
+### 3. Reboot a device
 
 ```go
 client, err := ring.NewClientWithToken(accessToken)
@@ -95,11 +124,9 @@ if err := client.RebootDevice(ctx, ring.DeviceIDRequest{DeviceID: deviceID}); er
 }
 ```
 
-### 4. Play a chime test sound
+[reboot-device example](examples/reboot-device/main.go).
 
-To test a chime, use its chime ID and a typed sound kind. The runnable
-[chime-sound example](examples/chime-sound/main.go) does not fall back to a
-doorbell or camera:
+### 4. Play a chime test sound
 
 ```go
 client, err := ring.NewClientWithToken(accessToken)
@@ -114,15 +141,17 @@ if err := client.TestSound(ctx, ring.TestSoundRequest{
 }
 ```
 
+[chime-sound example](examples/chime-sound/main.go)
+
 ### 5. Establish a live WebRTC session
 
-For a live feed, create a real local WebRTC offer, start a device session,
-then apply the answer to the same peer. This uses non-trickle ICE; the full
-[rtc_stream example](examples/rtc_stream/rtc_stream.go) also shows trickle ICE,
-remote candidates, and session events. The library handles signaling, while
-your application owns the Pion peer and media rendering.
+For a live feed, you do the following:
+1. create a local webRTC offer
+2. start a device session with said offer
+3. apply the answer for the offer to the webRTC session on your peer.
 
 ```go
+// create new peer connection
 pc, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 if err != nil { return err }
 defer pc.Close()
@@ -144,20 +173,25 @@ case <-gathered:
 case <-ctx.Done(): return ctx.Err()
 }
 
+
 client, err := ring.NewClientWithToken(accessToken)
 if err != nil { return err }
 defer client.Close()
 
+// establish persistent connection session
 conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{})
 if err != nil { return err }
 defer conn.Close()
 
+// establish device session
 session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{
     DeviceID:     deviceID,
     Offer:        ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: pc.LocalDescription().SDP},
     VideoEnabled: true,
     ICEMode:      ring.ICENonTrickle,
 })
+
+// set auth description.
 if err != nil { return err }
 defer session.Close()
 if err := pc.SetRemoteDescription(webrtc.SessionDescription{
@@ -166,19 +200,18 @@ if err := pc.SetRemoteDescription(webrtc.SessionDescription{
 }); err != nil { return err }
 ```
 
-Keep the session alive with `session.Receive(ctx)` or `session.Wait(ctx)` if no
-PTZ operation follows. The runnable stream example applies remote ICE and
-keeps reading events until interruption. Its `-trickle` flag sends locally
-gathered ICE candidates through `DeviceSession.SendICE`.
+
+then apply the answer to the same peer. This uses non-trickle ICE; the full
+[rtc_stream example](examples/rtc_stream/rtc_stream.go) also shows trickle ICE,
+remote candidates, and session events. The library handles signaling, while
+your application owns the Pion peer and media rendering.
 
 ### 6. Move the camera and stop
 
-Once `StartDeviceSession` returns, call PTZ methods on that `DeviceSession`.
-This continues from the live-session code above. Stop a continuous movement
-even if the original context is canceled; [rtc_ptz](examples/rtc_ptz/rtc_ptz.go)
-contains the complete runnable sequence:
+Once `StartDeviceSession` returns you can move the camera around if your camera supports it.
 
 ```go
+// move around
 _, err := session.PanContinuous(ctx, ring.PanContinuousRequest{
     Direction: ring.PanRight,
     Speed:     0.5, // normalized range: 0 to 1
@@ -190,21 +223,18 @@ case <-ctx.Done():
 }
 stopCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 defer cancel()
+// stop the move.
 _, err = session.StopPTZ(stopCtx, ring.StopPTZRequest{Axis: ring.PanAxis})
 return err
 ```
 
-For `TiltContinuous`, stop with `ring.TiltAxis`; `PanStep` and `TiltStep` send
-single-step commands. The deferred closes release the session, signaling
-connection, and peer. See the [example index](examples/README.md) for other
-flows.
+For `TiltContinuous`, stop with `ring.TiltAxis`;
+[pan, tilt, zoom examples](examples/rtc_ptz/rtc_ptz.go)
+
 
 ## More examples
 
-The runnable device examples use `RING_ACCESS_TOKEN`. The RTC and PTZ examples
-also use `RING_DEVICE_ID`; `RING_ICE_SERVERS_JSON` optionally configures ICE
-servers. The CLI has its own Go module, so its terminal dependencies do not
-become library dependencies.
+More examples below
 
 | Task | Runnable source | Run | Additional input |
 | --- | --- | --- | --- |
@@ -219,10 +249,10 @@ become library dependencies.
 
 ## Supported operations
 
-These are the public SDK methods. `Client` handles account and HTTP operations;
-`SignalingConnection` owns a persistent socket; its live, playback, and push
-objects own their respective conversations. The [feature matrix](docs/developer-facing/parity-matrix.md)
-distinguishes captured routes from Python-profile and legacy routes.
+These are the public SDK methods.
+1. `Client` handles account and HTTP operations.
+2. After you create a client you can create a persistent websocket connection with the `SignalConnection`, which is a stateful network connection.
+3. From that stateful network connection, you can establish device sessions for live viewing video camera feeds, and what not.
 
 | Feature | Object and Go calls | Notes |
 | --- | --- | --- |

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/requestauth"
 	"github.com/portpowered/go-ring/pkg/dependencies/rest"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
@@ -76,6 +77,14 @@ func hardwareIDFromAccessToken(accessToken string) string {
 }
 
 func (c *Client) ensureSession(ctx context.Context) error {
+	if auth, ok := requestauth.FromContext(ctx); ok {
+		if auth.HardwareID == "" {
+			return nil
+		}
+		// A shared client cannot use a single registration bit for multiple
+		// accounts. Register each explicit account operation independently.
+		return c.restClient.RegisterSession(ctx)
+	}
 	if c.hardwareID == "" {
 		return nil
 	}
@@ -93,6 +102,12 @@ func (c *Client) ensureSession(ctx context.Context) error {
 
 // getToken retrieves the access token
 func (c *Client) getToken(ctx context.Context) (string, error) {
+	if auth, ok := requestauth.FromContext(ctx); ok {
+		if auth.AccessToken == "" {
+			return "", ringapimodels.NewTokenError("no token in request", nil)
+		}
+		return auth.AccessToken, nil
+	}
 	if c.accessToken != "" {
 		return c.accessToken, nil
 	}
@@ -104,6 +119,27 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 		return token, nil
 	}
 	return "", ringapimodels.NewTokenError("no token available", nil)
+}
+
+func (c *Client) accountContext(ctx context.Context, auth AccountAuth) context.Context {
+	if auth.AccessToken == "" && auth.HardwareID == "" {
+		return ctx // legacy client credentials
+	}
+	hardwareID := auth.HardwareID
+	if hardwareID == "" {
+		hardwareID = hardwareIDFromAccessToken(auth.AccessToken)
+	}
+	return requestauth.WithAccount(ctx, requestauth.Account{
+		AccessToken: auth.AccessToken,
+		HardwareID:  hardwareID,
+	})
+}
+
+func (c *Client) hardwareIDFor(ctx context.Context) string {
+	if auth, ok := requestauth.FromContext(ctx); ok {
+		return auth.HardwareID
+	}
+	return c.hardwareID
 }
 
 // Close closes the client and all connections
