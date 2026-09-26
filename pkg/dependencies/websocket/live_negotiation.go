@@ -23,6 +23,7 @@ type LiveNegotiation struct {
 // AwaitLiveAnswer pairs session_created with the SDP answer and validates their identities.
 func AwaitLiveAnswer(ctx context.Context, parentDone <-chan struct{}, parentErr func() error, events <-chan signaling.Message, deviceID int64, deadlineError func() error) (LiveNegotiation, error) {
 	state := LiveNegotiation{Heartbeat: signaling.DefaultHeartbeatInterval}
+	created := false
 	for state.AnswerSDP == "" || state.SignalID == "" {
 		select {
 		case m := <-events:
@@ -32,8 +33,18 @@ func AwaitLiveAnswer(ctx context.Context, parentDone <-chan struct{}, parentErr 
 				if json.Unmarshal(m.Body, &body) != nil || int64(body.DoorbotId) != deviceID || body.SessionId == "" {
 					return state, fmt.Errorf("invalid session_created response")
 				}
-				state.SignalID, state.RIID = body.SessionId, m.RIID
+				if created && (body.SessionId != state.SignalID || (m.RIID != "" && state.RIID != "" && m.RIID != state.RIID)) {
+					return state, fmt.Errorf("conflicting session_created response")
+				}
+				created = true
+				state.SignalID = body.SessionId
+				if m.RIID != "" {
+					state.RIID = m.RIID
+				}
 			case protocol.MethodSDP:
+				if !created {
+					return state, fmt.Errorf("SDP answer before session_created")
+				}
 				var err error
 				state, err = acceptLiveAnswer(state, m, deviceID)
 				if err != nil {

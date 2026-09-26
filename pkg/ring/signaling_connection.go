@@ -88,7 +88,7 @@ func (c *SignalingConnection) Err() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.terminal != nil {
-		return c.terminal
+		return sessionError("signaling connection ended", c.terminal)
 	}
 	return ringapimodels.NewClosedError("signaling connection is closed", signaling.ErrClosed)
 }

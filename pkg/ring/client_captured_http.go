@@ -2,6 +2,8 @@ package ring
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -163,9 +165,17 @@ func (c *Client) GetCapturedTickets(ctx context.Context, req GetCapturedTicketsR
 		return nil
 	})
 	if err != nil {
+		var syntax *json.SyntaxError
+		var unmarshal *json.UnmarshalTypeError
+		if errors.As(err, &syntax) || errors.As(err, &unmarshal) {
+			return nil, ringapimodels.NewInternalServerError("captured ticket response is malformed", err)
+		}
 		return nil, ringapimodels.NewNetworkError("captured ticket request failed", err)
 	}
 	if response.JSON200 != nil {
+		if response.JSON200.Ticket == "" {
+			return nil, ringapimodels.NewInternalServerError("captured ticket response lacks a ticket", nil)
+		}
 		return response.JSON200, nil
 	}
 	if response.StatusCode() < 200 || response.StatusCode() >= 300 {

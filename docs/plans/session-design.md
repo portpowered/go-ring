@@ -92,6 +92,8 @@ The `examples/rtc_stream` program generates real peer offers and supports non-tr
 
 Connection states: connecting -> open -> closing -> closed/failed. Device-session states: negotiating -> activating -> active -> closing -> closed/expired/failed. Track media readiness separately in the caller peer. Session close must be possible from every state.
 
+For the recorded live profile, `session_created` must establish the signaling identity before an SDP answer is accepted. A repeated `session_created` must retain that identity. A `camera_started` frame sent before identity negotiation is complete cannot make the session ready; a frame queued after the answer may establish readiness once the client has sent activation, microphone, and stream options. Closing a connection closes its child sessions before the socket and repeated closes are safe. The focused replay cases are in `tests/replay/session_ordering_replay_test.go`.
+
 The **60-minute maximum is an intended SDK policy requested for this design**. C1's populated socket conversations span approximately 762.79 and 362.88 seconds; they cannot demonstrate a vendor-enforced one-hour lifetime. Python's caller keep_alive timeout (default 30 seconds) is a different concept. The new Go DeviceSession enforces this maximum; the legacy RTC API and Python baseline do not establish a vendor limit.
 
 | Timer | Proposed rule | Evidence / origin |
