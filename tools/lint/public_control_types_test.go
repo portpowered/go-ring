@@ -8,8 +8,10 @@ import (
 // These assignments fail to compile if a closed public control regresses to
 // an untyped string or an arbitrary settings map.
 var (
-	_ ringapimodels.VolumeKind          = ring.SetVolumeRequest{}.Kind
-	_ ringapimodels.LightState          = ring.SetLightsRequest{}.State
-	_ ringapimodels.SoundKind           = ring.TestSoundRequest{}.Kind
+	_ string                            = ring.SetVolumeRequest{}.DeviceID
+	_ string                            = ring.UpdateDeviceHealthRequest{}.DeviceID
+	_ bool                              = ring.SetLightsRequest{}.Enabled
+	_ ringapimodels.SoundKind           = ring.TestSoundRequest{}.Sound
+	_ string                            = ring.SetInHomeChimeRequest{}.DeviceID
 	_ ringapimodels.InHomeChimeSettings = ring.SetInHomeChimeRequest{}.Settings
 )

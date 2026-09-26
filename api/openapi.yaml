@@ -168,28 +168,11 @@ paths:
     get:
       operationId: getLegacyDeviceHealth
       description: >-
-        Existing Go GetDeviceHealth route. Python uses family-specific doorbot
-        and chime health routes. The captured HTTP set has no matching health
-        response; SDK tests use local fixtures only.
+        Generic device health route. The captured HTTP set has no matching
+        health response; SDK tests use local fixtures only.
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses:
         '200': {description: Legacy device health response, content: {application/json: {schema: {$ref: '#/components/schemas/LegacyDeviceHealth'}}}}
-        default: {$ref: '#/components/responses/HTTPFailure'}
-  /clients_api/doorbots/{device_id}/health:
-    get:
-      operationId: getDoorbotHealth
-      description: Python doorbell family route, covered by the portable Python fixture.
-      parameters: [{$ref: '#/components/parameters/device_id'}]
-      responses:
-        '200': {description: Doorbot health response, content: {application/json: {schema: {$ref: '#/components/schemas/FamilyHealthResponse'}}}}
-        default: {$ref: '#/components/responses/HTTPFailure'}
-  /clients_api/chimes/{device_id}/health:
-    get:
-      operationId: getChimeHealth
-      description: Python chime family route, covered by the portable Python fixture.
-      parameters: [{$ref: '#/components/parameters/device_id'}]
-      responses:
-        '200': {description: Chime health response, content: {application/json: {schema: {$ref: '#/components/schemas/FamilyHealthResponse'}}}}
         default: {$ref: '#/components/responses/HTTPFailure'}
   /clients_api/doorbots/{device_id}/history:
     get:
@@ -674,28 +657,6 @@ components:
         signal_strength: {type: integer}
         firmware_version: {type: string}
         last_update: {type: string}
-      additionalProperties: true
-    FamilyHealthResponse:
-      type: object
-      required: [device_health]
-      properties:
-        device_health: {$ref: '#/components/schemas/FamilyHealth'}
-      additionalProperties: true
-    FamilyHealth:
-      type: object
-      properties:
-        id: {type: integer, format: int64}
-        battery_percentage: {type: integer, minimum: 0, maximum: 100}
-        battery_percentage_category: {type: string, nullable: true}
-        latest_signal_strength: {type: integer}
-        latest_signal_category: {type: string}
-        average_signal_strength: {type: integer}
-        average_signal_category: {type: string}
-        firmware: {type: string}
-        firmware_out_of_date: {type: boolean}
-        updated_at: {type: string, format: date-time}
-        wifi_name: {type: string}
-        wifi_is_ring_network: {type: boolean}
       additionalProperties: true
     DeviceDetail:
       type: object

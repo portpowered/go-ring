@@ -43,16 +43,3 @@ func (c *Client) GetDeviceHealth(ctx context.Context, deviceID int64) (*generate
 	}
 	return &health, nil
 }
-
-func (c *Client) GetFamilyDeviceHealth(ctx context.Context, deviceID int64, family generatedhttp.DeviceFamilyCode) (*generatedhttp.FamilyHealthResponse, error) {
-	pattern := protocol.DoorbotHealthPath
-	if family == generatedhttp.Chimes {
-		pattern = protocol.ChimeHealthPath
-	}
-	endpoint := capturedIDPath(pattern, deviceID)
-	var health generatedhttp.FamilyHealthResponse
-	if err := c.doJSONRequest(ctx, http.MethodGet, endpoint, nil, &health); err != nil {
-		return nil, err
-	}
-	return &health, nil
-}

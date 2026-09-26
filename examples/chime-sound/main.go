@@ -30,7 +30,7 @@ func run() error {
 	auth := ring.AuthContext{AccessToken: token}
 	if err := client.TestSound(context.Background(), ring.TestSoundRequest{Auth: auth,
 		DeviceID: chimeID,
-		Kind:     ringapimodels.SoundKindDing,
+		Sound:    ringapimodels.SoundKindDing,
 	}); err != nil {
 		return err
 	}

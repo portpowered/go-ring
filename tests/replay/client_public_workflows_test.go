@@ -301,10 +301,9 @@ func TestInvalidPublicDeviceRequestsDoNotReachHTTP(t *testing.T) {
 	for _, req := range volume {
 		require.Error(t, client.SetVolume(ctx, req))
 	}
-	require.Error(t, client.SetLights(ctx, ring.SetLightsRequest{DeviceID: "100", State: "blink"}))
-	require.Error(t, client.SetLights(ctx, ring.SetLightsRequest{DeviceID: "bad", State: "on"}))
+	require.Error(t, client.SetLights(ctx, ring.SetLightsRequest{DeviceID: "bad", Enabled: true}))
 	require.Error(t, client.SetMotionDetection(ctx, ring.SetMotionDetectionRequest{DeviceID: "bad"}))
-	require.Error(t, client.TestSound(ctx, ring.TestSoundRequest{DeviceID: "100", Kind: "alarm"}))
+	require.Error(t, client.TestSound(ctx, ring.TestSoundRequest{DeviceID: "100", Sound: "alarm"}))
 	require.Error(t, client.SetInHomeChime(ctx, ring.SetInHomeChimeRequest{DeviceID: "bad"}))
 	_, err = client.UpdateDeviceHealth(ctx, ring.UpdateDeviceHealthRequest{DeviceID: "bad"})
 	require.Error(t, err)
@@ -326,7 +325,7 @@ func TestCanceledPublicControlDoesNotReachHTTP(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err = client.SetVolume(ctx, ring.SetVolumeRequest{DeviceID: "100", Kind: "doorbell", Description: "Fixture Device", Volume: 5})
+	err = client.SetVolume(ctx, ring.SetVolumeRequest{DeviceID: "100", Volume: 5})
 	require.Error(t, err)
 	require.Empty(t, transport.requests)
 }

@@ -97,7 +97,7 @@ defer client.Close()
 if err := client.TestSound(ctx, ring.TestSoundRequest{
     Auth:     ring.AuthContext{AccessToken: accessToken},
     DeviceID: chimeID,
-    Kind:     ringapimodels.SoundKindDing,
+    Sound:    ringapimodels.SoundKindDing,
 }); err != nil {
     return err
 }
@@ -221,9 +221,9 @@ These are the public SDK methods.
 | Client setup and shutdown | `ring.NewClient`, `Client.Close` | Configuration is fixed at construction; one client can own several signaling connections. |
 | Login and tokens | `Client.NewLoginSession`, `LoginSession.Request2FACode`, `LoginSession.Authenticate`, `Client.RefreshToken` | Login state stays in one session; refresh tokens are passed per request. See [token exchange](examples/token-exchange/main.go). |
 | Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail` | `GetDeviceDetail` returns a typed client projection of the captured v3 response. |
-| Device health and settings | `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Health can select a doorbell or chime family route. |
+| Device health and settings | `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Health uses the generic device route and needs only a device ID. |
 | Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Requests and results use client-owned types; the generated HTTP models stay inside the transport. |
-| Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolumeForDevice`, `Client.SetVolume`, `Client.SetInHomeChime` | `SetVolumeForDevice` uses an enumerated chime or doorbell; `SetVolume` accepts explicit wire fields. |
+| Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolume`, `Client.SetInHomeChime` | Requests take a device ID; volume and in-home chime resolve legacy wire fields from the current device list. |
 | Chime sound and reboot | `Client.TestSound`, `Client.RebootDevice` | See the inline code below. |
 | Snapshot | `Client.GetSnapshot` | Returns image bytes and metadata. |
 | Recording history | `Client.GetDeviceHistory`, `Client.GetHistoryDevices`, `Client.GetDeviceTimeline`, `Client.GetActiveDings`, `Client.GetLastRecordingID` | Legacy history and captured EVM history/timeline are separate APIs. |

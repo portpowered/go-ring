@@ -301,10 +301,8 @@ func TestDeviceControl(t *testing.T) {
 
 	// Test volume control
 	err = client.SetVolume(ctx, ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: accessToken},
-		DeviceID:    testDeviceID,
-		Kind:        ringapimodels.VolumeKindDoorbell,
-		Description: deviceName,
-		Volume:      5,
+		DeviceID: testDeviceID,
+		Volume:   5,
 	})
 	if err != nil {
 		t.Logf("Warning: Failed to set volume: %v", err)

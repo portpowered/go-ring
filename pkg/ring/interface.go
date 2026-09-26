@@ -65,7 +65,6 @@ type ClientAPI interface {
 	PatchDeviceSettings(context.Context, PatchDeviceSettingsRequest) error
 	GetSnapshot(context.Context, GetSnapshotRequest) (*Snapshot, error)
 	SetVolume(context.Context, SetVolumeRequest) error
-	SetVolumeForDevice(context.Context, SetVolumeForDeviceRequest) error
 	SetLights(context.Context, SetLightsRequest) error
 	SetMotionDetection(context.Context, SetMotionDetectionRequest) error
 	SetSiren(context.Context, SetSirenRequest) error
@@ -313,38 +312,25 @@ type DeleteRecordingRequest struct {
 	ConfirmDeleteFavorite *bool
 }
 
-// UpdateDeviceHealthRequest contains parameters for UpdateDeviceHealth
+// UpdateDeviceHealthRequest identifies a device on the generic health route.
 type UpdateDeviceHealthRequest struct {
 	Auth     AuthContext
 	DeviceID string
-	// Family selects the Python-compatible family endpoint; an empty value uses the legacy generic route.
-	Family DeviceFamily
 }
 
-// SetVolumeRequest contains parameters for SetVolume
+// SetVolumeRequest identifies a chime or doorbell by ID. The client resolves
+// legacy wire fields internally.
 type SetVolumeRequest struct {
 	Auth     AuthContext
 	DeviceID string
-	// Kind is "chime" or "doorbell"; Description is the current device name.
-	Kind        ringapimodels.VolumeKind
-	Description string
-	Volume      int
+	Volume   int
 }
 
-// SetVolumeForDeviceRequest uses a device returned by ListDevices or GetDevice
-// so callers need not repeat its family, ID, and current name.
-type SetVolumeForDeviceRequest struct {
-	Auth   AuthContext
-	Device ringapimodels.Device
-	Volume int
-}
-
-// SetLightsRequest contains parameters for SetLights
+// SetLightsRequest sets a device's floodlight state.
 type SetLightsRequest struct {
 	Auth     AuthContext
 	DeviceID string
-	State    ringapimodels.LightState
-	Duration *int
+	Enabled  bool
 }
 
 // SetMotionDetectionRequest contains parameters for SetMotionDetection
@@ -354,19 +340,18 @@ type SetMotionDetectionRequest struct {
 	Enabled  bool
 }
 
-// TestSoundRequest contains parameters for TestSound
+// TestSoundRequest selects an actual sound to play on a chime.
 type TestSoundRequest struct {
 	Auth     AuthContext
 	DeviceID string
-	Kind     ringapimodels.SoundKind
+	Sound    ringapimodels.SoundKind
 }
 
-// SetInHomeChimeRequest contains parameters for SetInHomeChime
+// SetInHomeChimeRequest identifies a doorbell by ID.
 type SetInHomeChimeRequest struct {
-	Auth        AuthContext
-	DeviceID    string
-	Description string
-	Settings    ringapimodels.InHomeChimeSettings
+	Auth     AuthContext
+	DeviceID string
+	Settings ringapimodels.InHomeChimeSettings
 }
 
 // GetDeviceHistoryRequest contains parameters for GetDeviceHistory

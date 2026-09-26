@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
@@ -58,25 +57,13 @@ func (c *Client) GetDevice(ctx context.Context, req GetDeviceRequest) (ringapimo
 	return nil, ringapimodels.NewNotFoundError("device not found", nil)
 }
 
-// UpdateDeviceHealth refreshes health data for a device
+// UpdateDeviceHealth refreshes health data via the generic device route.
 func (c *Client) UpdateDeviceHealth(ctx context.Context, req UpdateDeviceHealthRequest) (*ringapimodels.DeviceHealth, error) {
 	ctx = c.accountContext(ctx, req.Auth)
-	// Convert string deviceID to int64 for REST API call
-	deviceIDInt, err := strconv.ParseInt(req.DeviceID, 10, 64)
+	deviceIDInt, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
-		return nil, ringapimodels.NewBadRequestError("invalid device ID format", err)
+		return nil, err
 	}
-	if req.Family != "" {
-		if req.Family != DeviceFamilyDoorbells && req.Family != DeviceFamilyChimes {
-			return nil, ringapimodels.NewBadRequestError("unsupported health device family", nil)
-		}
-		response, healthErr := c.restClient.GetFamilyDeviceHealth(ctx, deviceIDInt, generatedhttp.DeviceFamilyCode(req.Family))
-		if healthErr != nil {
-			return nil, healthErr
-		}
-		return convertFamilyDeviceHealth(response), nil
-	}
-
 	health, err := c.restClient.GetDeviceHealth(ctx, deviceIDInt)
 	if err != nil {
 		return nil, err
@@ -237,19 +224,4 @@ func convertToDeviceHealth(raw *generatedhttp.LegacyDeviceHealth) *ringapimodels
 		FirmwareVersion: raw.FirmwareVersion,
 		LastUpdate:      raw.LastUpdate,
 	}
-}
-
-func convertFamilyDeviceHealth(response *generatedhttp.FamilyHealthResponse) *ringapimodels.DeviceHealth {
-	raw := response.DeviceHealth
-	health := &ringapimodels.DeviceHealth{
-		BatteryLevel:    raw.BatteryPercentage,
-		BatteryStatus:   raw.BatteryPercentageCategory,
-		SignalStrength:  raw.LatestSignalStrength,
-		FirmwareVersion: raw.Firmware,
-	}
-	if raw.UpdatedAt != nil {
-		updated := raw.UpdatedAt.Format(time.RFC3339)
-		health.LastUpdate = &updated
-	}
-	return health
 }

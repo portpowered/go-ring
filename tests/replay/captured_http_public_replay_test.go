@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -221,34 +220,6 @@ func TestCapturedHTTPPublicFailureClasses(t *testing.T) {
 			}
 			require.True(t, tc.match(err), "error = %v", err)
 			require.True(t, ringapimodels.IsHTTPStatusCode(err, tc.status))
-			require.NoError(t, transport.AssertConsumed())
-		})
-	}
-}
-
-func TestPythonFamilyHealthReplay(t *testing.T) {
-	for _, tc := range []struct {
-		name, family, id, fixture, firmware string
-	}{
-		{"doorbot", "doorbots", "987652", "ring_doorboot_health_attrs.json", "1.9.2"},
-		{"chime", "chimes", "999999", "ring_chime_health_attrs.json", "1.2.3"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			body, err := os.ReadFile(filepath.Join("fixtures", "legacy", tc.fixture))
-			require.NoError(t, err)
-			x := replay.Exchange{
-				Request:  replay.Request{Method: http.MethodGet, Origin: "https://api.ring.com", Path: "/clients_api/" + tc.family + "/" + tc.id + "/health", Headers: http.Header{"Accept": {"application/json"}}, HeadersMode: replay.HeadersRequired},
-				Response: replay.Response{Status: http.StatusOK, Headers: http.Header{"Content-Type": {"application/json"}}, Body: body, JSON: true},
-			}
-			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
-			require.NoError(t, err)
-			t.Cleanup(func() { _ = client.Close() })
-			health, err := client.UpdateDeviceHealth(context.Background(), ring.UpdateDeviceHealthRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: tc.id, Family: ring.DeviceFamily(tc.family)})
-			require.NoError(t, err)
-			require.Equal(t, tc.firmware, *health.FirmwareVersion)
-			require.Equal(t, 100, *health.BatteryLevel)
-			require.NotNil(t, health.SignalStrength)
 			require.NoError(t, transport.AssertConsumed())
 		})
 	}
