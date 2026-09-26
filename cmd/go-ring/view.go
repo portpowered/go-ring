@@ -55,15 +55,9 @@ func viewCommand(parent context.Context, store tokenStore, args []string, in io.
 func view(parent context.Context, client *ring.Client, auth ring.AuthContext, deviceID string, opts viewOptions, in io.Reader, out io.Writer, interrupts <-chan os.Signal) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
-	config := webrtc.Configuration{}
-	if opts.iceFile != "" {
-		data, err := os.ReadFile(opts.iceFile)
-		if err != nil {
-			return err
-		}
-		if err := json.Unmarshal(data, &config.ICEServers); err != nil {
-			return errors.New("invalid ICE server JSON")
-		}
+	config, err := videoConfiguration(opts.iceFile)
+	if err != nil {
+		return err
 	}
 	pc, err := webrtc.NewPeerConnection(config)
 	if err != nil {
@@ -100,23 +94,12 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 			}
 		}
 	})
-	offer, err := makeVideoOffer(ctx, pc)
-	if err != nil {
-		return err
-	}
-	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
+	conn, session, err := startVideoSession(ctx, client, auth, deviceID, pc)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: deviceID, Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer}, VideoEnabled: true, ICEMode: ring.ICENonTrickle})
-	if err != nil {
-		return err
-	}
 	defer session.Close()
-	if err := pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: session.Answer().SDP}); err != nil {
-		return err
-	}
 	if opts.debug {
 		_, _ = fmt.Fprintln(out, "Remote SDP answer applied")
 	}
@@ -133,6 +116,43 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 	go readKeys(in, keys)
 	_, _ = fmt.Fprintln(out, "Session active. Arrow keys move camera; Space stops; q quits.")
 	return controlLoop(ctx, session, opts, keys, events, mediaErr, interrupts, out)
+}
+
+func videoConfiguration(iceFile string) (webrtc.Configuration, error) {
+	config := webrtc.Configuration{}
+	if iceFile == "" {
+		return config, nil
+	}
+	data, err := os.ReadFile(iceFile)
+	if err != nil {
+		return config, err
+	}
+	if err := json.Unmarshal(data, &config.ICEServers); err != nil {
+		return config, errors.New("invalid ICE server JSON")
+	}
+	return config, nil
+}
+
+func startVideoSession(ctx context.Context, client *ring.Client, auth ring.AuthContext, deviceID string, pc *webrtc.PeerConnection) (*ring.SignalingConnection, *ring.DeviceSession, error) {
+	offer, err := makeVideoOffer(ctx, pc)
+	if err != nil {
+		return nil, nil, err
+	}
+	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
+	if err != nil {
+		return nil, nil, err
+	}
+	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: deviceID, Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer}, VideoEnabled: true, ICEMode: ring.ICENonTrickle})
+	if err != nil {
+		_ = conn.Close()
+		return nil, nil, err
+	}
+	if err := pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: session.Answer().SDP}); err != nil {
+		_ = session.Close()
+		_ = conn.Close()
+		return nil, nil, err
+	}
+	return conn, session, nil
 }
 
 func makeVideoOffer(ctx context.Context, pc *webrtc.PeerConnection) (string, error) {

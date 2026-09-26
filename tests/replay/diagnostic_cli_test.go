@@ -2,7 +2,6 @@ package replay_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -35,7 +34,6 @@ func TestDiagnosticCLIHTTPReplay(t *testing.T) {
 	}
 	var mu sync.Mutex
 	var paths []string
-	snapPolls := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		paths = append(paths, r.Method+" "+r.URL.Path)
@@ -49,16 +47,6 @@ func TestDiagnosticCLIHTTPReplay(t *testing.T) {
 			_, _ = w.Write([]byte(`{}`))
 		case "/device_info/v3/devices":
 			_, _ = w.Write([]byte(`{"devices":[{"id":12345,"name":"Replay camera","family":"stickup_cams","kind":"stickup_cam"}]}`))
-		case "/clients_api/snapshots/timestamps":
-			snapPolls++
-			if snapPolls == 1 {
-				_, _ = w.Write([]byte(`{}`))
-				return
-			}
-			_, _ = fmt.Fprint(w, `{"timestamps":[{"timestamp":9000000000000}]}`)
-		case "/clients_api/snapshots/image/12345":
-			w.Header().Set("Content-Type", "image/jpeg")
-			_, _ = w.Write([]byte("replayed-jpeg"))
 		case "/clients_api/doorbots/12345/siren_on", "/clients_api/doorbots/12345/siren_off":
 			_, _ = w.Write([]byte(`{}`))
 		default:
@@ -82,14 +70,6 @@ func TestDiagnosticCLIHTTPReplay(t *testing.T) {
 	}
 	if got := runCLI("devices", "list"); !strings.Contains(got, "12345\tReplay camera") {
 		t.Fatalf("devices output: %q", got)
-	}
-	imageFile := filepath.Join(t.TempDir(), "image.jpg")
-	if got := runCLI("snapshot", "12345", "--output", imageFile); !strings.Contains(got, "Saved") {
-		t.Fatalf("snapshot output: %q", got)
-	}
-	image, err := os.ReadFile(imageFile)
-	if err != nil || string(image) != "replayed-jpeg" {
-		t.Fatalf("snapshot bytes: %q, %v", image, err)
 	}
 	if got := runCLI("siren", "12345", "on"); !strings.Contains(got, "acknowledged") {
 		t.Fatalf("siren on: %q", got)
@@ -165,7 +145,7 @@ func TestDiagnosticCLIHTTPReplay(t *testing.T) {
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	for _, expected := range []string{"GET /device_info/v3/devices", "GET /clients_api/snapshots/image/12345", "PUT /clients_api/doorbots/12345/siren_on", "PUT /clients_api/doorbots/12345/siren_off"} {
+	for _, expected := range []string{"GET /device_info/v3/devices", "PUT /clients_api/doorbots/12345/siren_on", "PUT /clients_api/doorbots/12345/siren_off"} {
 		if !containsString(paths, expected) {
 			t.Errorf("missing %s in %v", expected, paths)
 		}

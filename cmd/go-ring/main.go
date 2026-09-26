@@ -96,7 +96,7 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 }
 
 func usage(out io.Writer) error {
-	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file | siren <id> on|off | reboot <id> | health <id> [--refresh] | sound <chime-id> ding|motion | view <id> [--player ffplay] [--debug] [--ice-servers file.json] [--continuous] [--speed 0.5]")
+	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file [--timeout 30s] [--ice-servers file.json] | siren <id> on|off | reboot <id> | health <id> [--refresh] | sound <chime-id> ding|motion | view <id> [--player ffplay] [--debug] [--ice-servers file.json] [--continuous] [--speed 0.5]")
 	return errors.New("invalid command")
 }
 
@@ -156,21 +156,23 @@ func snapshotCommand(ctx context.Context, store tokenStore, args []string, out i
 	flags := flag.NewFlagSet("snapshot", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	output := flags.String("output", "", "image file")
+	iceFile := flags.String("ice-servers", "", "JSON array of ICE servers")
+	timeout := flags.Duration("timeout", snapshotFrameTimeout, "maximum time to capture a live frame")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
-	if *output == "" || flags.NArg() != 0 {
-		return errors.New("snapshot requires --output file")
+	if *output == "" || flags.NArg() != 0 || *timeout <= 0 || *timeout > 2*time.Minute {
+		return errors.New("snapshot requires --output file and a timeout between 0 and 2 minutes")
 	}
 	return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error {
-		picture, err := client.GetSnapshot(ctx, ring.GetSnapshotRequest{Auth: auth, DeviceID: args[0], PollInterval: time.Second})
+		picture, err := captureRTCSnapshot(ctx, client, auth, args[0], *iceFile, *timeout)
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(*output, picture.Bytes, privateFileMode); err != nil {
+		if err := os.WriteFile(*output, picture, privateFileMode); err != nil {
 			return err
 		}
-		_, _ = fmt.Fprintf(out, "Saved %s (%s, %s)\n", *output, picture.ContentType, picture.Timestamp.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(out, "Saved %s (image/jpeg from live view)\n", *output)
 		return nil
 	})
 }
