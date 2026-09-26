@@ -38,6 +38,8 @@ see [the examples dirctory](./examples/) for more examples.
 
 ## Auth token retrieval
 
+For interactive diagnostics, the standalone [go-ring CLI](cmd/go-ring/README.md) provides saved-token login, device listing, snapshots, siren control, and a live-view/PTZ command. It has its own Go module so its terminal and preview dependencies stay outside the library module.
+
 1. request a 2 factory auth (2FA) code for your username/password.
 2. get the 2FA code from your 2FA device
 3. login again, with the 2FA code and the corresponding username/password

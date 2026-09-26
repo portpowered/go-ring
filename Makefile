@@ -2,14 +2,18 @@ GO ?= go
 GO_TEST_TIMEOUT ?= 120s
 export GOWORK := off
 .DEFAULT_GOAL := check
-.PHONY: check build build-examples test test-race test-cover test-integration fmt vet generate-api lint
-check: build test vet
+.PHONY: check build build-examples build-cli test test-cli test-race test-cover test-integration fmt vet generate-api lint lint-cli
+check: build build-cli test test-cli vet
 build:
 	$(GO) build ./...
 build-examples:
 	$(GO) build ./examples/...
+build-cli:
+	cd cmd/go-ring && $(GO) build ./...
 test:
 	$(GO) test ./... -timeout $(GO_TEST_TIMEOUT)
+test-cli:
+	cd cmd/go-ring && $(GO) test ./...
 test-race:
 	$(GO) test -race ./... -timeout $(GO_TEST_TIMEOUT)
 test-cover:
@@ -23,6 +27,7 @@ test-integration:
 	$(GO) test -tags integration ./tests/integration/... -timeout 5m
 fmt:
 	$(GO) fmt ./...
+	cd cmd/go-ring && $(GO) fmt ./...
 vet:
 	$(GO) vet ./...
 
@@ -37,6 +42,9 @@ generate-api:
 
 lint:
 	golangci-lint run ./...
+	cd cmd/go-ring && golangci-lint run ./...
+lint-cli:
+	cd cmd/go-ring && golangci-lint run ./...
 
 # Optional maintainer checks; ordinary Go builds do not require Python or uv.
 .PHONY: test-reference

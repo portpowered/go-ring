@@ -1,6 +1,6 @@
 # Small diagnostic CLI
 
-Build a small, opt-in `cmd/go-ring` program for exercising the public library against an account and camera. It is a diagnostic companion, not a second implementation of Ring HTTP or signaling. The existing Go authentication flow, `Client`, `SignalingConnection`, and `DeviceSession` remain the source of behavior. This CLI was outside the original Python parity and replay-coverage gate.
+The `cmd/go-ring` program is implemented as a separate Go module for exercising the public library against an account and camera. It is a diagnostic companion, not a second implementation of Ring HTTP or signaling. The existing Go authentication flow, `Client`, `SignalingConnection`, and `DeviceSession` remain the source of behavior. This CLI was outside the original Python parity and replay-coverage gate. Its HTTP commands and login have CLI-level replay coverage; live media rendering remains unverified against a physical camera.
 
 ## Commands and expected behavior
 
