@@ -64,6 +64,10 @@ type rpcCommandReply struct {
 	Error   *RPCError       `json:"error"`
 }
 
+type rpcCommandWrapper struct {
+	Message json.RawMessage `json:"message"`
+}
+
 type rpcResultIdentity struct {
 	SessionID string `json:"sessionId"`
 }
@@ -333,10 +337,18 @@ func (s *Session) Handle(m Message) error {
 	if m.Method == protocol.MethodRPC {
 		var command rpcCommandReply
 		if err := json.Unmarshal(body.Command, &command); err != nil {
-			return ringerrors.NewConnectionError("invalid RPC envelope", err)
+			return ringerrors.NewConnectionError("invalid RPC envelope (command cannot be decoded)", err)
+		}
+		if command.Version == "" {
+			var wrapper rpcCommandWrapper
+			if err := json.Unmarshal(body.Command, &wrapper); err == nil && len(wrapper.Message) > 0 {
+				if err := json.Unmarshal(wrapper.Message, &command); err != nil {
+					return ringerrors.NewConnectionError("invalid wrapped RPC envelope", err)
+				}
+			}
 		}
 		if command.Version != protocol.JSONRPCVersion {
-			return ringerrors.NewConnectionError("invalid RPC envelope", nil)
+			return ringerrors.NewConnectionError("invalid RPC envelope (unsupported or missing jsonrpc version)", nil)
 		}
 		if command.Method == "" {
 			if (len(command.Result) == 0) == (command.Error == nil) {

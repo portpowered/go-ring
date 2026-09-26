@@ -179,7 +179,12 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 				serverErr <- fmt.Errorf("wrong arrow RPC: %+v", command)
 				return
 			}
-			if err := write("rpc", map[string]any{"doorbot_id": 12345, "session_id": "signal-view", "command": map[string]any{"jsonrpc": "2.0", "id": command.Body.Command.ID, "result": map[string]any{"sessionId": "control-view", "timestamp": 1700000000000, "version": 1}}}); err != nil {
+			reply := map[string]any{"jsonrpc": "2.0", "id": command.Body.Command.ID, "result": map[string]any{"sessionId": "control-view", "timestamp": 1700000000000, "version": 1}}
+			var envelope any = reply
+			if expected.direction == "LEFT" {
+				envelope = map[string]any{"destination": "client", "protocol": "jsonrpc", "message": reply}
+			}
+			if err := write("rpc", map[string]any{"doorbot_id": 12345, "session_id": "signal-view", "command": envelope}); err != nil {
 				serverErr <- err
 				return
 			}
@@ -192,7 +197,7 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 		}
 	}))
 	defer ws.Close()
-	command := exec.Command(exe, "--token-file", tokenFile, "--api-base", api.URL, "--solutions-base", api.URL, "--signaling-url", "ws"+strings.TrimPrefix(ws.URL, "http")+"?token={token}", "view", "12345", "--player", "none")
+	command := exec.Command(exe, "--token-file", tokenFile, "--api-base", api.URL, "--solutions-base", api.URL, "--signaling-url", "ws"+strings.TrimPrefix(ws.URL, "http")+"?token={token}", "view", "12345", "--player", "none", "--debug")
 	keys, keyWriter := io.Pipe()
 	command.Stdin = keys
 	go func() {
@@ -205,7 +210,7 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CLI view: %v\n%s", err, output)
 	}
-	if !strings.Contains(string(output), "Session active") || !strings.Contains(string(output), "First video packet received") {
+	if !strings.Contains(string(output), "Session active") || !strings.Contains(string(output), "First video packet received") || !strings.Contains(string(output), "PTZ command acknowledged") || !strings.Contains(string(output), "Remote SDP answer applied") {
 		t.Fatalf("view output: %s", output)
 	}
 	select {

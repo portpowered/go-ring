@@ -90,6 +90,49 @@ func reply(t *testing.T, s *Session, out Message, signal string) {
 	}
 }
 
+func TestWrappedRPCReplyResolvesPendingPTZ(t *testing.T) {
+	s, _, out := setupSession(t)
+	done := make(chan error, 1)
+	go func() {
+		_, err := s.Call(context.Background(), "PTZ.Pan.Step", map[string]any{"direction": "LEFT"})
+		done <- err
+	}()
+	request := nextMessage(t, out)
+	var body struct {
+		Command struct {
+			ID string `json:"id"`
+		} `json:"command"`
+	}
+	if err := json.Unmarshal(request.Body, &body); err != nil {
+		t.Fatal(err)
+	}
+	replyBody, err := json.Marshal(map[string]any{
+		"doorbot_id": 1001,
+		"session_id": "signal",
+		"command": map[string]any{
+			"destination": "client",
+			"protocol":    "jsonrpc",
+			"message": map[string]any{
+				"jsonrpc": "2.0",
+				"id":      body.Command.ID,
+				"result":  map[string]any{"sessionId": "control"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Handle(Message{Method: "rpc", DialogID: "dialog", Body: replyBody}); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if s.Pending() != 0 {
+		t.Fatal("wrapped PTZ reply left a pending call")
+	}
+}
+
 func TestRPCCorrelationCancellationAndLateReply(t *testing.T) {
 	s, _, out := setupSession(t)
 	ctx, cancel := context.WithCancel(context.Background())

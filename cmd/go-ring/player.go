@@ -4,83 +4,91 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
+	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v3/pkg/media/h264writer"
+	"github.com/pion/webrtc/v3/pkg/media/ivfwriter"
 )
 
-func playTrack(ctx context.Context, track *webrtc.TrackRemote) error {
-	codec := track.Codec()
-	name := strings.TrimPrefix(strings.ToUpper(codec.MimeType), "VIDEO/")
-	if name != "H264" && name != "VP8" {
-		return fmt.Errorf("ffplay preview does not support negotiated codec %s", codec.MimeType)
+type rtpVideoWriter interface {
+	WriteRTP(*rtp.Packet) error
+	Close() error
+}
+
+const (
+	previewH264 = "h264"
+	previewIVF  = "ivf"
+)
+
+func videoWriter(codec string, output io.Writer) (rtpVideoWriter, string, error) {
+	format, err := previewFormat(codec)
+	if err != nil {
+		return nil, "", err
 	}
+	switch format {
+	case previewH264:
+		return h264writer.NewWith(output), previewH264, nil
+	case previewIVF:
+		writer, err := ivfwriter.NewWith(output, ivfwriter.WithCodec(webrtc.MimeTypeVP8))
+		return writer, previewIVF, err
+	default:
+		return nil, "", fmt.Errorf("unsupported preview format %s", format)
+	}
+}
+
+func previewFormat(codec string) (string, error) {
+	switch strings.ToUpper(codec) {
+	case strings.ToUpper(webrtc.MimeTypeH264):
+		return previewH264, nil
+	case strings.ToUpper(webrtc.MimeTypeVP8):
+		return previewIVF, nil
+	default:
+		return "", fmt.Errorf("ffplay preview does not support negotiated codec %s", codec)
+	}
+}
+
+func playTrack(ctx context.Context, track *webrtc.TrackRemote) error {
 	if _, err := exec.LookPath(ffplayCommand); err != nil {
 		return errors.New("ffplay is required for preview; install FFmpeg or use --player none")
 	}
-	address, err := net.ResolveUDPAddr("udp4", "127.0.0.1:0")
+	codec := track.Codec().MimeType
+	format, err := previewFormat(codec)
 	if err != nil {
 		return err
 	}
-	reserve, err := net.ListenUDP("udp4", address)
-	if err != nil {
-		return err
-	}
-	port := reserve.LocalAddr().(*net.UDPAddr).Port
-	_ = reserve.Close()
-	file, err := os.CreateTemp("", "go-ring-preview-*.sdp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(file.Name())
-	fmtp := ""
-	if codec.SDPFmtpLine != "" {
-		fmtp = fmt.Sprintf("a=fmtp:%d %s\r\n", track.PayloadType(), codec.SDPFmtpLine)
-	}
-	sdp := fmt.Sprintf("v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=go-ring preview\r\nc=IN IP4 127.0.0.1\r\nt=0 0\r\nm=video %d RTP/AVP %d\r\na=rtpmap:%d %s/%d\r\n%s", port, track.PayloadType(), track.PayloadType(), name, codec.ClockRate, fmtp)
-	if _, err := file.WriteString(sdp); err != nil {
-		_ = file.Close()
-		return err
-	}
-	if err := file.Close(); err != nil {
-		return err
-	}
-	command := exec.CommandContext(ctx, ffplayCommand, "-loglevel", "error", "-protocol_whitelist", "file,udp,rtp", "-fflags", "nobuffer", "-flags", "low_delay", "-i", file.Name())
+	command := exec.CommandContext(ctx, ffplayCommand, "-loglevel", "error", "-fflags", "nobuffer", "-flags", "low_delay", "-f", format, "-i", "pipe:0")
 	command.Stderr = os.Stderr
+	input, err := command.StdinPipe()
+	if err != nil {
+		return err
+	}
+	writer, _, err := videoWriter(codec, input)
+	if err != nil {
+		return err
+	}
 	if err := command.Start(); err != nil {
+		_ = input.Close()
 		return err
 	}
 	defer func() {
+		_ = writer.Close()
+		_ = input.Close()
 		if command.Process != nil {
 			_ = command.Process.Kill()
 		}
 		_ = command.Wait()
 	}()
-	target, err := net.DialUDP("udp4", nil, &net.UDPAddr{IP: net.IPv4(loopbackFirstOctet, 0, 0, 1), Port: port})
-	if err != nil {
-		return err
-	}
-	defer target.Close()
-	// Let ffplay bind its local RTP port before the first packet arrives.
-	select {
-	case <-time.After(playerStartupDelay):
-	case <-ctx.Done():
-		return ctx.Err()
-	}
 	for {
 		packet, _, err := track.ReadRTP()
 		if err != nil {
 			return err
 		}
-		data, err := packet.Marshal()
-		if err != nil {
-			return err
-		}
-		if _, err := target.Write(data); err != nil {
+		if err := writer.WriteRTP(packet); err != nil {
 			return err
 		}
 	}

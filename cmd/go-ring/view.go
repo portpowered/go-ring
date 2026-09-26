@@ -24,6 +24,7 @@ type viewOptions struct {
 	iceFile    string
 	continuous bool
 	speed      float64
+	debug      bool
 }
 
 func viewCommand(parent context.Context, store tokenStore, args []string, in io.Reader, out io.Writer) error {
@@ -36,6 +37,7 @@ func viewCommand(parent context.Context, store tokenStore, args []string, in io.
 	iceFile := flags.String("ice-servers", "", "JSON array of ICE servers")
 	continuous := flags.Bool("continuous", false, "continuous PTZ with inactivity stop")
 	speed := flags.Float64("speed", defaultPTZSpeed, "continuous PTZ speed from 0 to 1")
+	debug := flags.Bool("debug", false, "show connection and control diagnostics")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -46,7 +48,7 @@ func viewCommand(parent context.Context, store tokenStore, args []string, in io.
 	signal.Notify(interrupts, os.Interrupt)
 	defer signal.Stop(interrupts)
 	return withClient(parent, store, func(client *ring.Client, auth ring.AuthContext) error {
-		return view(parent, client, auth, args[0], viewOptions{*player, *iceFile, *continuous, *speed}, in, out, interrupts)
+		return view(parent, client, auth, args[0], viewOptions{player: *player, iceFile: *iceFile, continuous: *continuous, speed: *speed, debug: *debug}, in, out, interrupts)
 	})
 }
 
@@ -68,6 +70,10 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 		return err
 	}
 	defer pc.Close()
+	if opts.debug {
+		pc.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) { _, _ = fmt.Fprintf(out, "ICE connection: %s\n", state) })
+		pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) { _, _ = fmt.Fprintf(out, "Peer connection: %s\n", state) })
+	}
 	if _, err := pc.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo, webrtc.RtpTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly}); err != nil {
 		return err
 	}
@@ -111,6 +117,9 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 	if err := pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: session.Answer().SDP}); err != nil {
 		return err
 	}
+	if opts.debug {
+		_, _ = fmt.Fprintln(out, "Remote SDP answer applied")
+	}
 	events := make(chan error, 1)
 	go receiveICE(ctx, session, pc, events)
 	keys := make(chan rune)
@@ -123,7 +132,7 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 	}
 	go readKeys(in, keys)
 	_, _ = fmt.Fprintln(out, "Session active. Arrow keys move camera; Space stops; q quits.")
-	return controlLoop(ctx, session, opts, keys, events, mediaErr, interrupts)
+	return controlLoop(ctx, session, opts, keys, events, mediaErr, interrupts, out)
 }
 
 func makeVideoOffer(ctx context.Context, pc *webrtc.PeerConnection) (string, error) {
@@ -214,7 +223,7 @@ func readKeys(in io.Reader, keys chan<- rune) {
 	}
 }
 
-func controlLoop(ctx context.Context, session *ring.DeviceSession, opts viewOptions, keys <-chan rune, events, mediaErr <-chan error, interrupts <-chan os.Signal) error {
+func controlLoop(ctx context.Context, session *ring.DeviceSession, opts viewOptions, keys <-chan rune, events, mediaErr <-chan error, interrupts <-chan os.Signal, out io.Writer) error {
 	control := &ptzController{session: session, opts: opts}
 	defer func() {
 		_ = control.stop()
@@ -236,6 +245,9 @@ func controlLoop(ctx context.Context, session *ring.DeviceSession, opts viewOpti
 			if err := control.stop(); err != nil {
 				return err
 			}
+			if opts.debug {
+				_, _ = fmt.Fprintln(out, "PTZ idle stop acknowledged")
+			}
 			control.timeout = nil
 		case key, ok := <-keys:
 			if !ok || key == 'q' || key == 'Q' {
@@ -244,7 +256,29 @@ func controlLoop(ctx context.Context, session *ring.DeviceSession, opts viewOpti
 			if err := control.key(ctx, key); err != nil {
 				return err
 			}
+			if opts.debug {
+				if _, valid := keyAxis(key); valid {
+					_, _ = fmt.Fprintf(out, "PTZ command acknowledged: %s\n", keyDirection(key))
+				} else if key == ' ' {
+					_, _ = fmt.Fprintln(out, "PTZ stop acknowledged")
+				}
+			}
 		}
+	}
+}
+
+func keyDirection(key rune) string {
+	switch key {
+	case 'A':
+		return "up"
+	case 'B':
+		return "down"
+	case 'C':
+		return "right"
+	case 'D':
+		return "left"
+	default:
+		return "unknown"
 	}
 }
 
