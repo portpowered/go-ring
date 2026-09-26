@@ -1,4 +1,4 @@
-package ring_test
+package replay_test
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 // getFixtureDir returns the path to the test fixtures directory
 func getFixtureDir() string {
 	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filename), "..", "..", "tests", "replay", "fixtures", "legacy")
+	return filepath.Join(filepath.Dir(filename), "fixtures", "legacy")
 }
 
 // newTestClient creates a new Ring client with a mock HTTP transport

@@ -17,6 +17,24 @@ import (
 // These are synthetic mutations of the recorded signaling envelope shapes.
 func identityPeer(t *testing.T, script func(*websocket.Conn, string)) *ring.SignalingConnection {
 	t.Helper()
+	return openRecordedPeer(t, func(c *websocket.Conn) {
+		var first struct {
+			Method string `json:"method"`
+			Dialog string `json:"dialog_id"`
+		}
+		if err := c.ReadJSON(&first); err != nil {
+			return
+		}
+		if first.Method != "live_view" {
+			t.Errorf("unexpected initial method %s", first.Method)
+			return
+		}
+		script(c, first.Dialog)
+	})
+}
+
+func openRecordedPeer(t *testing.T, script func(*websocket.Conn)) *ring.SignalingConnection {
+	t.Helper()
 	tickets := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{"ticket":"synthetic"}`)) }))
 	t.Cleanup(tickets.Close)
 	peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -26,18 +44,7 @@ func identityPeer(t *testing.T, script func(*websocket.Conn, string)) *ring.Sign
 		}
 		defer c.Close()
 		_ = c.SetReadDeadline(time.Now().Add(4 * time.Second))
-		var first struct {
-			Method string `json:"method"`
-			Dialog string `json:"dialog_id"`
-		}
-		if err = c.ReadJSON(&first); err != nil {
-			return
-		}
-		if first.Method != "live_view" {
-			t.Errorf("unexpected initial method %s", first.Method)
-			return
-		}
-		script(c, first.Dialog)
+		script(c)
 	}))
 	t.Cleanup(peer.Close)
 	client, err := ring.NewClient(ring.WithAccessToken("synthetic"), ring.WithHTTPClient(tickets.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: tickets.URL}), ring.WithSignalingWebSocketURL("ws"+strings.TrimPrefix(peer.URL, "http")))

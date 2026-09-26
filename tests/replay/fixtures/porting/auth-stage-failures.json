@@ -1,0 +1,9 @@
+[
+  {"case":"signin-rejected","stage":"signin","status":401,"error":"authentication"},
+  {"case":"verification-rejected","stage":"verify","status":401,"error":"authentication"},
+  {"case":"authorize-rejected","stage":"authorize","status":401,"error":"authentication"},
+  {"case":"token-transport-failure","stage":"exchange","status":0,"error":"network"},
+  {"case":"refresh-rate-limit","stage":"refresh","status":429,"error":"rate-limit"},
+  {"case":"refresh-unauthorized","stage":"refresh","status":401,"error":"authentication"},
+  {"case":"refresh-malformed","stage":"refresh","status":200,"error":"server"}
+]

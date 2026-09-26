@@ -1,4 +1,4 @@
-package ring_test
+package replay_test
 
 import (
 	"context"
