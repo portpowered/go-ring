@@ -9,6 +9,17 @@
 A Go client for Ring authentication, device discovery and controls, recordings,
 and persistent signaling sessions.
 
+## API reference
+
+The go-ring API reference will be published at
+[portpowered.github.io/go-ring](https://portpowered.github.io/go-ring/) after
+the Pages workflow runs. It is generated from the supported Ring HTTP and
+signaling contracts in
+[`api/openapi.yaml`](api/openapi.yaml) and [`api/asyncapi.yaml`](api/asyncapi.yaml).
+The reference documents third-party APIs observed and modeled by this project;
+it does not describe a public API offered by go-ring itself. The GitHub Pages
+workflow rebuilds it when either contract changes.
+
 This is a bit unique compared to other ring-doorbell libraries since: 
 1. It supports PTZ over signaling WebSockets and newer API versions.
 2. Its replay suite covers sanitized 2026 network captures.
