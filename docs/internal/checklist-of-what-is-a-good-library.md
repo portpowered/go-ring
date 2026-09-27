@@ -89,6 +89,8 @@ CI:
 2. proper release versioning system
 3. generated code coverage documentation
 4. merges to main should be blocked for things that do not pass CI.
+5. Generate an API documentation website from checked-in schemas, publish it to GitHub Pages, and link it from the README when the library has API schemas.
+6. Keep library documentation and reusable templates independent of any consuming backend; document consumer-specific migration in that consumer's repository.
 
 AGENTS.md
 1. short and to the point (languages, systems)
