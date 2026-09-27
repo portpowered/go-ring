@@ -14,6 +14,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type recordedDeviceListBody struct {
+	Devices []recordedDevice `json:"devices"`
+}
+
+type recordedDevice struct {
+	ID          int64  `json:"id"`
+	Kind        string `json:"kind"`
+	Description string `json:"description"`
+	Address     string `json:"address"`
+	TimeZone    string `json:"time_zone"`
+}
+
 func deviceListExchange(t *testing.T, origin string) replay.Exchange {
 	t.Helper()
 	x, err := replay.LoadExchange(filepath.Join("fixtures", "http", "captured", "device-list.json"))
@@ -27,15 +39,7 @@ func deviceListExchange(t *testing.T, origin string) replay.Exchange {
 
 func recordedDeviceValues(t *testing.T, exchange replay.Exchange) (int64, string, string, string, string) {
 	t.Helper()
-	var body struct {
-		Devices []struct {
-			ID          int64  `json:"id"`
-			Kind        string `json:"kind"`
-			Description string `json:"description"`
-			Address     string `json:"address"`
-			TimeZone    string `json:"time_zone"`
-		} `json:"devices"`
-	}
+	var body recordedDeviceListBody
 	require.NoError(t, json.Unmarshal(exchange.Response.Body, &body))
 	require.NotEmpty(t, body.Devices)
 	d := body.Devices[0]

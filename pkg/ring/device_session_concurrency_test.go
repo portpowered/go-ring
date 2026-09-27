@@ -11,6 +11,20 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 )
 
+type deviceSessionCommandEnvelope struct {
+	Command deviceSessionCommand `json:"command"`
+}
+
+type deviceSessionCommand struct {
+	ID     string                 `json:"id"`
+	Params deviceSessionPTZParams `json:"params"`
+}
+
+type deviceSessionPTZParams struct {
+	Direction string  `json:"direction"`
+	Speed     float64 `json:"speed"`
+}
+
 // A failed command must not erase the next acknowledged movement. In particular,
 // StopPTZ must still know which direction to stop after competing callers race.
 func TestContinuousPTZFailureKeepsLaterMovement(t *testing.T) {
@@ -29,7 +43,7 @@ func TestContinuousPTZFailureKeepsLaterMovement(t *testing.T) {
 			connection := &SignalingConnection{done: make(chan struct{}), sessions: make(map[string]*DeviceSession)}
 			s := &DeviceSession{connection: connection, core: core, dialogID: "dialog", deviceID: 7, signalID: "signal", movement: make(map[PTZAxis]string), done: make(chan struct{})}
 			connection.sessions[s.dialogID] = s
-			go s.watch()
+			go s.watch(context.Background())
 
 			move := func(ctx context.Context, first bool) error {
 				if axis == PanAxis {
@@ -69,14 +83,7 @@ func TestContinuousPTZFailureKeepsLaterMovement(t *testing.T) {
 			stopDone := make(chan error, 1)
 			go func() { _, err := s.StopPTZ(context.Background(), StopPTZRequest{Axis: axis}); stopDone <- err }()
 			stop := nextPTZWrite(t, writes)
-			var body struct {
-				Command struct {
-					Params struct {
-						Direction string  `json:"direction"`
-						Speed     float64 `json:"speed"`
-					} `json:"params"`
-				} `json:"command"`
-			}
+			var body deviceSessionCommandEnvelope
 			if err := json.Unmarshal(stop.Body, &body); err != nil {
 				t.Fatal(err)
 			}
@@ -108,7 +115,7 @@ func TestFailedReplacementPTZKeepsAcknowledgedMovement(t *testing.T) {
 	connection := &SignalingConnection{done: make(chan struct{}), sessions: make(map[string]*DeviceSession)}
 	s := &DeviceSession{connection: connection, core: core, dialogID: "dialog", deviceID: 7, signalID: "signal", movement: make(map[PTZAxis]string), done: make(chan struct{})}
 	connection.sessions[s.dialogID] = s
-	go s.watch()
+	go s.watch(context.Background())
 	firstDone := make(chan error, 1)
 	go func() {
 		_, err := s.PanContinuous(context.Background(), PanContinuousRequest{Direction: PanLeft, Speed: 0.5})
@@ -133,14 +140,7 @@ func TestFailedReplacementPTZKeepsAcknowledgedMovement(t *testing.T) {
 	stopDone := make(chan error, 1)
 	go func() { _, err := s.StopPTZ(context.Background(), StopPTZRequest{Axis: PanAxis}); stopDone <- err }()
 	stop := nextPTZWrite(t, writes)
-	var body struct {
-		Command struct {
-			Params struct {
-				Direction string  `json:"direction"`
-				Speed     float64 `json:"speed"`
-			} `json:"params"`
-		} `json:"command"`
-	}
+	var body deviceSessionCommandEnvelope
 	if err := json.Unmarshal(stop.Body, &body); err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func TestCloseWaitsForInFlightPTZAndSendsSafetyStop(t *testing.T) {
 	connection := &SignalingConnection{done: make(chan struct{}), sessions: make(map[string]*DeviceSession)}
 	s := &DeviceSession{connection: connection, core: core, dialogID: "dialog", deviceID: 7, signalID: "signal", movement: make(map[PTZAxis]string), done: make(chan struct{})}
 	connection.sessions[s.dialogID] = s
-	go s.watch()
+	go s.watch(context.Background())
 	moveDone := make(chan error, 1)
 	go func() {
 		_, err := s.PanContinuous(context.Background(), PanContinuousRequest{Direction: PanRight, Speed: 0.5})
@@ -185,14 +185,7 @@ func TestCloseWaitsForInFlightPTZAndSendsSafetyStop(t *testing.T) {
 		t.Fatal(err)
 	}
 	stop := nextPTZWrite(t, writes)
-	var body struct {
-		Command struct {
-			Params struct {
-				Direction string  `json:"direction"`
-				Speed     float64 `json:"speed"`
-			} `json:"params"`
-		} `json:"command"`
-	}
+	var body deviceSessionCommandEnvelope
 	if err := json.Unmarshal(stop.Body, &body); err != nil {
 		t.Fatal(err)
 	}
@@ -221,11 +214,7 @@ func nextPTZWrite(t *testing.T, writes <-chan signaling.Message) signaling.Messa
 
 func replyPTZSuccess(t *testing.T, core *signaling.Session, request signaling.Message) {
 	t.Helper()
-	var command struct {
-		Command struct {
-			ID string `json:"id"`
-		} `json:"command"`
-	}
+	var command deviceSessionCommandEnvelope
 	if err := json.Unmarshal(request.Body, &command); err != nil {
 		t.Fatal(err)
 	}

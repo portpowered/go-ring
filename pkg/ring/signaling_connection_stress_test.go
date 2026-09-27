@@ -32,7 +32,10 @@ func TestSignalingConnectionAdversarialTerminationStress(t *testing.T) {
 	defer server.Close()
 	const iterations = 40
 	for iteration := 0; iteration < iterations; iteration++ {
-		ws, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+		ws, response, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+		if response != nil && response.Body != nil {
+			_ = response.Body.Close()
+		}
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -57,8 +60,8 @@ func TestSignalingConnectionAdversarialTerminationStress(t *testing.T) {
 		go func() { defer workers.Done(); <-start; connection.fail(signaling.ErrBackpressure) }()
 		go func() { defer workers.Done(); <-start; _ = playback.Close() }()
 		go func() { defer workers.Done(); <-start; _ = push.Close() }()
-		go func() { defer workers.Done(); <-start; playback.keepalive(time.Millisecond) }()
-		go func() { defer workers.Done(); <-start; push.heartbeatAt(time.Millisecond) }()
+		go func() { defer workers.Done(); <-start; playback.keepalive(context.Background(), time.Millisecond) }()
+		go func() { defer workers.Done(); <-start; push.heartbeatAt(context.Background(), time.Millisecond) }()
 		go func() {
 			defer workers.Done()
 			<-start

@@ -19,6 +19,19 @@ type fakeClock struct {
 	alarms []alarm
 }
 
+type rpcCommandEnvelope struct {
+	Command rpcCommand `json:"command"`
+}
+
+type rpcCommand struct {
+	ID     string         `json:"id"`
+	Params map[string]any `json:"params"`
+}
+
+type syntheticSocketFailureError struct{}
+
+func (syntheticSocketFailureError) Error() string { return "synthetic socket failure" }
+
 func newClock() *fakeClock          { return &fakeClock{now: time.Unix(1700000000, 0)} }
 func (c *fakeClock) Now() time.Time { c.mu.Lock(); defer c.mu.Unlock(); return c.now }
 func (c *fakeClock) After(d time.Duration) <-chan time.Time {
@@ -76,19 +89,17 @@ func nextMessage(t *testing.T, out chan Message) Message {
 }
 func reply(t *testing.T, s *Session, out Message, signal string) {
 	t.Helper()
-	var body struct {
-		Command struct {
-			ID     string         `json:"id"`
-			Params map[string]any `json:"params"`
-		} `json:"command"`
-	}
+	var body rpcCommandEnvelope
 	if err := json.Unmarshal(out.Body, &body); err != nil {
 		t.Fatal(err)
 	}
 	if body.Command.Params["sessionId"] != "control" {
 		t.Fatal("control identity overwritten")
 	}
-	raw, _ := json.Marshal(map[string]any{"doorbot_id": 1001, "session_id": signal, "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": map[string]any{"sessionId": "control", "timestamp": 1700000000000, "version": 1}}})
+	raw, err := json.Marshal(map[string]any{"doorbot_id": 1001, "session_id": signal, "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": map[string]any{"sessionId": "control", "timestamp": 1700000000000, "version": 1}}})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := s.Handle(Message{Method: "rpc", DialogID: "dialog", Body: raw}); err != nil {
 		t.Fatal(err)
 	}
@@ -102,11 +113,7 @@ func TestWrappedRPCReplyResolvesPendingPTZ(t *testing.T) {
 		done <- err
 	}()
 	request := nextMessage(t, out)
-	var body struct {
-		Command struct {
-			ID string `json:"id"`
-		} `json:"command"`
-	}
+	var body rpcCommandEnvelope
 	if err := json.Unmarshal(request.Body, &body); err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +286,10 @@ func TestRPCDefaultDeadlineAndProtocolError(t *testing.T) {
 	delete(command, "method")
 	delete(command, "params")
 	command["error"] = map[string]any{"code": -32602, "message": "invalid direction"}
-	encoded, _ := json.Marshal(body)
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := s.Handle(Message{Method: "rpc", DialogID: "dialog", Body: encoded}); err != nil {
 		t.Fatal(err)
 	}
@@ -311,16 +321,15 @@ func TestRPCResultRequiresControlSessionIdentity(t *testing.T) {
 		result <- err
 	}()
 	sent := nextMessage(t, out)
-	var body struct {
-		Command struct {
-			ID string `json:"id"`
-		} `json:"command"`
-	}
+	var body rpcCommandEnvelope
 	if err := json.Unmarshal(sent.Body, &body); err != nil {
 		t.Fatal(err)
 	}
 	message := func(value any) Message {
-		raw, _ := json.Marshal(map[string]any{"doorbot_id": 1001, "session_id": "signal", "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": value}})
+		raw, err := json.Marshal(map[string]any{"doorbot_id": 1001, "session_id": "signal", "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": value}})
+		if err != nil {
+			t.Fatal(err)
+		}
 		return Message{Method: "rpc", DialogID: "dialog", Body: raw}
 	}
 	if err := s.Handle(message(map[string]any{"sessionId": "another-control"})); err != nil {
@@ -447,7 +456,7 @@ func TestRPCErrorFormattingDoesNotExposePeerText(t *testing.T) {
 
 func TestBlockedRPCPreservesTerminalCause(t *testing.T) {
 	entered := make(chan struct{})
-	terminal := errors.New("synthetic socket failure")
+	terminal := syntheticSocketFailureError{}
 	s, err := NewSession(context.Background(), SessionConfig{DeviceID: 1, DialogID: "d", SignalID: "s", ControlID: "c", Heartbeat: time.Second, Clock: newClock(), Send: func(ctx context.Context, _ Message) error { close(entered); <-ctx.Done(); return ctx.Err() }})
 	if err != nil {
 		t.Fatal(err)

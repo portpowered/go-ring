@@ -8,6 +8,8 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 )
 
+const recordedClockStep = 10 * time.Second
+
 type recordedAlarm struct {
 	when time.Time
 	ch   chan time.Time
@@ -37,10 +39,10 @@ func (c *recordedClock) After(d time.Duration) <-chan time.Time {
 	return ch
 }
 
-func (c *recordedClock) advance(d time.Duration) {
+func (c *recordedClock) advance() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.now = c.now.Add(d)
+	c.now = c.now.Add(recordedClockStep)
 	remaining := c.alarms[:0]
 	for _, alarm := range c.alarms {
 		if !alarm.when.After(c.now) {

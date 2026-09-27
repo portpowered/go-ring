@@ -36,7 +36,7 @@ func eventsCommand(ctx context.Context, store tokenStore, args []string, out io.
 	watchCtx, cancel := context.WithTimeout(watchCtx, *duration)
 	defer cancel()
 	credentialsPath := filepath.Join(filepath.Dir(store.path), "push.json")
-	credentials, err := os.ReadFile(credentialsPath)
+	credentials, err := os.ReadFile(credentialsPath) // #nosec G304 -- The path is derived from the user-selected token file in their config directory.
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
@@ -79,7 +79,7 @@ func eventsCommand(ctx context.Context, store tokenStore, args []string, out io.
 
 func savePushCredentials(path string, credentials json.RawMessage) error {
 	if !json.Valid(credentials) {
-		return errors.New("FCM credentials are invalid JSON")
+		return commandError("FCM credentials are invalid JSON")
 	}
 	if err := os.MkdirAll(filepath.Dir(path), privateDirMode); err != nil {
 		return err

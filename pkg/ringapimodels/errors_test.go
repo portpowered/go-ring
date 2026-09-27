@@ -25,7 +25,7 @@ func TestErrorClassificationSurvivesCallerWrapping(t *testing.T) {
 		{"unauthorized", m.NewUnauthorizedError("denied", context.Canceled), m.IsUnauthorizedError},
 		{"not found", m.NewNotFoundError("missing", context.Canceled), m.IsNotFoundError},
 		{"server", m.NewInternalServerError("failed", context.Canceled), m.IsInternalServerError},
-		{"HTTP", m.NewHTTPError(&http.Response{StatusCode: 429, Status: "429 Too Many Requests"}, "private"), m.IsHTTPError},
+		{"HTTP", m.NewHTTPError(&http.Response{StatusCode: http.StatusTooManyRequests, Status: "429 Too Many Requests"}, "private"), m.IsHTTPError},
 		{"closed", m.NewClosedError("closed"), m.IsClosedError},
 		{"2FA", m.NewRequires2FAError("code needed"), m.IsRequires2FAError},
 		{"rate", m.NewRateLimitError("slow down"), m.IsRateLimitError},
@@ -54,7 +54,7 @@ func TestErrorClassificationSurvivesCallerWrapping(t *testing.T) {
 }
 
 func TestHTTPErrorStatusAndBodySafety(t *testing.T) {
-	e := m.NewHTTPError(&http.Response{StatusCode: 503, Status: "503 Service Unavailable"}, `{"token":"do-not-log"}`)
+	e := m.NewHTTPError(&http.Response{StatusCode: http.StatusServiceUnavailable, Status: "503 Service Unavailable"}, `{"token":"do-not-log"}`)
 	wrapped := fmt.Errorf("operation: %w", e)
 	if !m.IsHTTPStatusCode(wrapped, 503) || m.IsHTTPStatusCode(wrapped, 404) || m.IsHTTPStatusCode(errors.New("other"), 503) {
 		t.Fatal("incorrect wrapped HTTP status")

@@ -18,6 +18,25 @@ type portableSessionCase struct {
 	Message json.RawMessage `json:"message"`
 }
 
+type portableICEMessage struct {
+	Method string          `json:"method"`
+	Body   portableICEBody `json:"body"`
+}
+
+type portableICEBody struct {
+	ICE   string `json:"ice"`
+	MID   string `json:"mid"`
+	Index int    `json:"mlineindex"`
+}
+
+type recordedSignalFrame struct {
+	Body recordedSignalBody `json:"body"`
+}
+
+type recordedSignalBody struct {
+	SessionID string `json:"session_id"`
+}
+
 func portableSessionCases(t *testing.T) map[string]json.RawMessage {
 	t.Helper()
 	rows, err := replay.LoadCases[portableSessionCase](filepath.Join("fixtures", "signaling", "synthetic", "session-variants.json"))
@@ -107,14 +126,7 @@ func TestRecordedLiveViewBehaviors(t *testing.T) {
 				}
 				switch scenario {
 				case "outbound ICE":
-					var sent struct {
-						Method string `json:"method"`
-						Body   struct {
-							ICE   string `json:"ice"`
-							MID   string `json:"mid"`
-							Index int    `json:"mlineindex"`
-						} `json:"body"`
-					}
+					var sent portableICEMessage
 					if err := c.ReadJSON(&sent); err != nil || sent.Method != "ice" || sent.Body.ICE != "candidate:01 synthetic" || sent.Body.MID != "0" || sent.Body.Index != 0 {
 						t.Errorf("outbound ICE = %+v, %v", sent, err)
 						return
@@ -182,11 +194,7 @@ func TestRecordedLiveViewBehaviors(t *testing.T) {
 
 func recordedSignalID(t *testing.T, raw json.RawMessage) string {
 	t.Helper()
-	var frame struct {
-		Body struct {
-			SessionID string `json:"session_id"`
-		} `json:"body"`
-	}
+	var frame recordedSignalFrame
 	if err := json.Unmarshal(raw, &frame); err != nil {
 		t.Fatal(err)
 	}

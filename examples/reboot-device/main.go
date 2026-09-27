@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
@@ -19,7 +20,7 @@ func main() {
 func run() error {
 	token, deviceID := os.Getenv("RING_ACCESS_TOKEN"), os.Getenv("RING_DEVICE_ID")
 	if token == "" || deviceID == "" {
-		return fmt.Errorf("set RING_ACCESS_TOKEN and RING_DEVICE_ID")
+		return ringapimodels.NewBadRequestError("set RING_ACCESS_TOKEN and RING_DEVICE_ID", nil)
 	}
 	client, err := ring.NewClient()
 	if err != nil {

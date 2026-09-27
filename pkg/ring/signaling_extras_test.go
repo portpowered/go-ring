@@ -207,7 +207,7 @@ func TestPushReplayIdentityAndReceiveCancellation(t *testing.T) {
 	replayReply(t, c, request, "push_subscription_ack")
 	s := <-ready
 	heartbeatDone := make(chan struct{})
-	go func() { s.heartbeatAt(100 * time.Millisecond); close(heartbeatDone) }()
+	go func() { s.heartbeatAt(context.Background(), 100*time.Millisecond); close(heartbeatDone) }()
 	select {
 	case m := <-writes:
 		if m.Method != "push_heartbeat" {
@@ -256,7 +256,7 @@ func TestPlaybackReplayReceiveCancellation(t *testing.T) {
 	replayReply(t, c, request, "sdp")
 	s := <-ready
 	keepaliveDone := make(chan struct{})
-	go func() { s.keepalive(100 * time.Millisecond); close(keepaliveDone) }()
+	go func() { s.keepalive(context.Background(), 100*time.Millisecond); close(keepaliveDone) }()
 	select {
 	case m := <-writes:
 		if m.Method != "ping" {
@@ -308,7 +308,7 @@ func TestSignalingExtraValidationBeforeWire(t *testing.T) {
 	c.closed = true
 	c.terminal = signaling.ErrClosed
 	c.mu.Unlock()
-	if _, _, err := c.registerChannel(); err != signaling.ErrClosed {
+	if _, _, err := c.registerChannel(); !errors.Is(err, signaling.ErrClosed) {
 		t.Fatalf("closed registration=%v", err)
 	}
 }
@@ -365,7 +365,7 @@ func TestPlaybackMissingPongTerminates(t *testing.T) {
 	s := <-ready
 	s.lastPong.Store(time.Now().Add(-time.Minute).UnixNano())
 	finished := make(chan struct{})
-	go func() { s.keepalive(time.Millisecond); close(finished) }()
+	go func() { s.keepalive(context.Background(), time.Millisecond); close(finished) }()
 	select {
 	case <-finished:
 	case <-time.After(time.Second):

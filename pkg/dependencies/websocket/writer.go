@@ -150,7 +150,9 @@ func (w *SignalingWriter) Run() {
 
 func (w *SignalingWriter) drain() {
 	w.mu.Lock()
-	queued := append(w.priority, w.normal...)
+	queued := make([]*signalingWriteRequest, 0, len(w.priority)+len(w.normal))
+	queued = append(queued, w.priority...)
+	queued = append(queued, w.normal...)
 	w.priority, w.normal = nil, nil
 	w.mu.Unlock()
 	for _, request := range queued {

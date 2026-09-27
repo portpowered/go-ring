@@ -12,9 +12,33 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type recordedHTTPContractExchange struct {
+	Request  recordedHTTPContractRequest  `json:"request"`
+	Response recordedHTTPContractResponse `json:"response"`
+}
+
+type recordedHTTPContractRequest struct {
+	Method string `json:"method"`
+	Path   string `json:"path"`
+	Origin string `json:"origin"`
+}
+
+type recordedHTTPContractResponse struct {
+	Status int `json:"status"`
+}
+
+type recordedSignalingContract struct {
+	Messages []recordedSignalingContractMessage `json:"messages"`
+}
+
+type recordedSignalingContractMessage struct {
+	Direction string         `json:"direction"`
+	Payload   map[string]any `json:"payload"`
+}
+
 func loadYAML(t *testing.T, path string) map[string]any {
 	t.Helper()
-	b, e := os.ReadFile(path)
+	b, e := os.ReadFile(path) // #nosec G304 -- the test supplies a repository-owned OpenAPI path.
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -42,14 +66,11 @@ func TestRecordedHTTPMethodsAreInOpenAPI(t *testing.T) {
 	}
 	for _, f := range files {
 		t.Run(filepath.Base(f), func(t *testing.T) {
-			b, e := os.ReadFile(f)
+			b, e := os.ReadFile(f) // #nosec G304 -- f is returned by the fixed captured-fixture glob above.
 			if e != nil {
 				t.Fatal(e)
 			}
-			var x struct {
-				Request  struct{ Method, Path, Origin string } `json:"request"`
-				Response struct{ Status int }                  `json:"response"`
-			}
+			var x recordedHTTPContractExchange
 			if e = json.Unmarshal(b, &x); e != nil {
 				t.Fatal(e)
 			}
@@ -119,16 +140,11 @@ func TestSessionRecordingsUseAsyncAPIEnvelopeAndPTZMethods(t *testing.T) {
 	}
 	found := map[string]bool{}
 	for _, f := range files {
-		b, e := os.ReadFile(f)
+		b, e := os.ReadFile(f) // #nosec G304 -- f is returned by the fixed signaling-fixture glob above.
 		if e != nil {
 			t.Fatal(e)
 		}
-		var x struct {
-			Messages []struct {
-				Direction string         `json:"direction"`
-				Payload   map[string]any `json:"payload"`
-			} `json:"messages"`
-		}
+		var x recordedSignalingContract
 		if e = json.Unmarshal(b, &x); e != nil {
 			t.Fatal(e)
 		}

@@ -91,7 +91,8 @@ func (o *Other) GetTimezone() string {
 
 // GetAllDevices returns all devices as a slice of Device interfaces
 func (d *DevicesResponse) GetAllDevices() []Device {
-	var devices []Device
+	count := len(d.Doorbells) + len(d.Chimes) + len(d.StickUpCams) + len(d.Other)
+	devices := make([]Device, 0, count)
 	for i := range d.Doorbells {
 		devices = append(devices, &d.Doorbells[i])
 	}

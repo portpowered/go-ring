@@ -31,7 +31,7 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 	}
 	config, err := os.UserConfigDir()
 	if err != nil {
-		return fmt.Errorf("find user configuration directory: %w", err)
+		return wrapCommandError("find user configuration directory", err)
 	}
 	defaultTokens := filepath.Join(config, "go-ring", "tokens.json")
 	cmd := flag.NewFlagSet("go-ring", flag.ContinueOnError)
@@ -111,7 +111,7 @@ func authCommand(ctx context.Context, store tokenStore, args []string, in io.Rea
 
 func usage(out io.Writer) error {
 	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file [--timeout 30s] [--ice-servers file.json] | siren <id> on|off | reboot <id> | health <id> [--refresh] | sound <chime-id> ding|motion | view <id> [--player ffplay] [--debug] [--record-rtp file] [--ice-servers file.json] [--continuous] [--speed 0.5] | events watch <id> [--duration 60s] | replay-video <recording> --output file.h264")
-	return errors.New("invalid command")
+	return commandError("invalid command")
 }
 
 func safeEndpoint(raw string) error {
@@ -131,13 +131,13 @@ func safeEndpoint(raw string) error {
 	if (u.Scheme == loopbackHTTPScheme || u.Scheme == "ws") && u.Hostname() == "localhost" {
 		return nil
 	}
-	return errors.New("insecure endpoint overrides must use loopback")
+	return commandError("insecure endpoint overrides must use loopback")
 }
 
 func withClient(ctx context.Context, store tokenStore, action func(*ring.Client, ring.AuthContext) error) error {
 	tokens, err := store.load()
 	if err != nil {
-		return fmt.Errorf("load saved login: %w", err)
+		return wrapCommandError("load saved login", err)
 	}
 	client, err := ring.NewClient(store.clientOptions...)
 	if err != nil {
@@ -146,18 +146,18 @@ func withClient(ctx context.Context, store tokenStore, action func(*ring.Client,
 	defer func() { _ = client.Close() }()
 	if time.Now().After(tokens.ReceivedAt.Add(time.Duration(tokens.ExpiresIn-refreshSkewSeconds) * time.Second)) {
 		if tokens.RefreshToken == "" {
-			return errors.New("token expired; run auth login")
+			return commandError("token expired; run auth login")
 		}
 		refreshed, refreshErr := client.RefreshToken(ctx, ring.RefreshTokenRequest{RefreshToken: tokens.RefreshToken, HardwareID: tokens.HardwareID})
 		if refreshErr != nil {
-			return fmt.Errorf("refresh login: %w", refreshErr)
+			return wrapCommandError("refresh login", refreshErr)
 		}
 		if refreshed.RefreshToken == "" {
 			refreshed.RefreshToken = tokens.RefreshToken
 		}
 		tokens = storedTokens{AuthResponse: *refreshed, HardwareID: tokens.HardwareID, ReceivedAt: time.Now()}
 		if err := store.save(tokens); err != nil {
-			return fmt.Errorf("save refreshed login: %w", err)
+			return wrapCommandError("save refreshed login", err)
 		}
 	}
 	return action(client, ring.AuthContext{AccessToken: tokens.AccessToken, HardwareID: tokens.HardwareID})
@@ -165,7 +165,7 @@ func withClient(ctx context.Context, store tokenStore, action func(*ring.Client,
 
 func snapshotCommand(ctx context.Context, store tokenStore, args []string, out io.Writer) error {
 	if len(args) < 1 || strings.HasPrefix(args[0], "-") {
-		return errors.New("snapshot requires a device ID")
+		return commandError("snapshot requires a device ID")
 	}
 	flags := flag.NewFlagSet("snapshot", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
@@ -176,7 +176,7 @@ func snapshotCommand(ctx context.Context, store tokenStore, args []string, out i
 		return err
 	}
 	if *output == "" || flags.NArg() != 0 || *timeout <= 0 || *timeout > 2*time.Minute {
-		return errors.New("snapshot requires --output file and a timeout between 0 and 2 minutes")
+		return commandError("snapshot requires --output file and a timeout between 0 and 2 minutes")
 	}
 	return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error {
 		picture, err := captureRTCSnapshot(ctx, client, auth, args[0], *iceFile, *timeout)
@@ -193,7 +193,7 @@ func snapshotCommand(ctx context.Context, store tokenStore, args []string, out i
 
 func sirenCommand(ctx context.Context, store tokenStore, args []string, out io.Writer) error {
 	if len(args) != 2 || (args[1] != "on" && args[1] != "off") {
-		return errors.New("usage: siren <device-id> on|off")
+		return commandError("usage: siren <device-id> on|off")
 	}
 	return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error {
 		if err := client.SetSiren(ctx, ring.SetSirenRequest{Auth: auth, DeviceID: args[0], Enabled: args[1] == "on"}); err != nil {

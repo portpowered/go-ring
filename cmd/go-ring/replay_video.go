@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -10,7 +9,7 @@ import (
 
 func replayVideoCommand(args []string, out io.Writer) error {
 	if len(args) < 1 {
-		return errors.New("replay-video requires an RTP recording")
+		return commandError("replay-video requires an RTP recording")
 	}
 	flags := flag.NewFlagSet("replay-video", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
@@ -19,7 +18,7 @@ func replayVideoCommand(args []string, out io.Writer) error {
 		return err
 	}
 	if *outputPath == "" || flags.NArg() != 0 {
-		return errors.New("usage: replay-video <recording> --output file.h264")
+		return commandError("usage: replay-video <recording> --output file.h264")
 	}
 	input, err := os.Open(args[0])
 	if err != nil {

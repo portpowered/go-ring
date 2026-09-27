@@ -3,13 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx := context.Background()
 
 	// Get credentials from environment variables
@@ -17,7 +24,7 @@ func main() {
 	refreshToken := os.Getenv("RING_REFRESH_TOKEN")
 
 	if accessToken == "" && refreshToken == "" {
-		log.Fatal("Either RING_ACCESS_TOKEN or RING_REFRESH_TOKEN environment variable must be set")
+		return ringapimodels.NewBadRequestError("Either RING_ACCESS_TOKEN or RING_REFRESH_TOKEN environment variable must be set", nil)
 	}
 
 	var client *ring.Client
@@ -28,13 +35,13 @@ func main() {
 		fmt.Println("Creating client with access token...")
 		client, err = ring.NewClient()
 		if err != nil {
-			log.Fatalf("Failed to create client: %v", err)
+			return err
 		}
 	} else {
 		fmt.Println("Creating client to refresh token...")
 		client, err = ring.NewClient()
 		if err != nil {
-			log.Fatalf("Failed to create client: %v", err)
+			return err
 		}
 
 		// Refresh token to get access token
@@ -42,7 +49,7 @@ func main() {
 			RefreshToken: refreshToken,
 		})
 		if err != nil {
-			log.Fatalf("Failed to refresh token: %v", err)
+			return err
 		}
 		fmt.Printf("✓ Token refreshed successfully (expires in %d seconds)\n\n", authResp.ExpiresIn)
 		accessToken = authResp.AccessToken
@@ -54,11 +61,11 @@ func main() {
 	fmt.Println("Enumerating devices...")
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 	if err != nil {
-		log.Fatalf("Failed to list devices: %v", err)
+		return err
 	}
 
 	if devices == nil {
-		log.Fatal("Devices response is nil")
+		return ringapimodels.NewConnectionError("Devices response is nil", nil)
 	}
 
 	// Display device counts
@@ -130,4 +137,5 @@ func main() {
 	} else {
 		fmt.Println("Example completed successfully!")
 	}
+	return nil
 }

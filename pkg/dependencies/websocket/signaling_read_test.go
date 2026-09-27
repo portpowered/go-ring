@@ -34,7 +34,10 @@ func TestReadSignalingPreservesDecoderAndCloseCauses(t *testing.T) {
 				_ = peer.WriteMessage(tc.frameType, tc.payload)
 			}))
 			defer server.Close()
-			conn, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+			conn, response, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
 			if err != nil {
 				t.Fatal(err)
 			}

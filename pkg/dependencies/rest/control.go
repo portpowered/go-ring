@@ -22,6 +22,8 @@ func (c *Client) GetMotionDetectionEnabled(ctx context.Context, deviceID int64) 
 		return nil, err
 	}
 	if response.MotionSettings == nil {
+		// A missing setting is a valid unknown state for this optional endpoint.
+		//nolint:nilnil // nil, nil represents the API's missing motion state.
 		return nil, nil
 	}
 	return response.MotionSettings.MotionDetectionEnabled, nil

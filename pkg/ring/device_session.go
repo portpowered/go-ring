@@ -43,7 +43,7 @@ func (c *SignalingConnection) waitForCameraStarted(ctx, negotiationCtx context.C
 		case <-c.done:
 			return c.Err()
 		case <-session.done:
-			return session.Wait(context.Background())
+			return session.terminalError()
 		}
 	}
 }
@@ -101,13 +101,19 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	c.mu.Unlock()
 	cleanup := func() { c.mu.Lock(); delete(c.pending, dialog); c.mu.Unlock() }
 	body := generatedsignaling.LiveViewBody{DoorbotId: int(id), StreamOptions: &generatedsignaling.LiveStreamOptions{AudioEnabled: req.AudioEnabled, VideoEnabled: req.VideoEnabled}, Sdp: req.Offer.SDP, ReservedType: protocol.SDPTypeOffer}
-	raw, _ := json.Marshal(body)
+	raw, err := json.Marshal(body)
+	if err != nil {
+		cleanup()
+		return nil, ringapimodels.NewInternalServerError("failed to encode live-view offer", err)
+	}
 	if err = c.send(negotiationCtx, signaling.Message{Method: protocol.MethodLiveView, DialogID: dialog, Body: raw}); err != nil {
 		cleanup()
 		return nil, sessionError("failed to send live-view offer", err)
 	}
 	var signalID, riid string
 	startedSuccessfully := false
+	// Failed negotiation cleanup must outlive the negotiation context that triggered this defer.
+	//nolint:contextcheck // The close frame needs an independent bounded context after caller cancellation.
 	defer func() {
 		if !startedSuccessfully && signalID != "" {
 			ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
@@ -155,21 +161,11 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 		cleanup()
 		return nil, sessionError("failed to create device session", err)
 	}
-	go created.watch()
-	if err = c.send(negotiationCtx, signaling.Message{Method: protocol.MethodActivateSession, DialogID: dialog, RIID: riid, Body: mustJSON(generatedsignaling.SessionBody{DoorbotId: int(id), SessionId: signalID})}); err != nil {
+	go created.watch(ctx)
+	if err = c.activateDeviceSession(negotiationCtx, created, id, signalID, req); err != nil {
 		created.terminate(err)
 		cleanup()
-		return nil, sessionError("failed to activate device session", err)
-	}
-	if err = created.core.Send(negotiationCtx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: req.AudioEnabled}); err != nil {
-		created.terminate(err)
-		cleanup()
-		return nil, sessionError("failed to set microphone state", err)
-	}
-	if err = created.core.Send(negotiationCtx, protocol.MethodStreamOptions, map[string]any{protocol.FieldAudioEnabled: req.AudioEnabled}); err != nil {
-		created.terminate(err)
-		cleanup()
-		return nil, sessionError("failed to set stream options", err)
+		return nil, err
 	}
 	if err = c.waitForCameraStarted(ctx, negotiationCtx, events, created, negotiationError); err != nil {
 		created.terminate(err)
@@ -198,12 +194,32 @@ drained:
 	return created, nil
 }
 
-func mustJSON(v any) json.RawMessage { b, _ := json.Marshal(v); return b }
-func (s *DeviceSession) watch() {
-	err := s.core.Wait(context.Background())
+func (c *SignalingConnection) activateDeviceSession(ctx context.Context, session *DeviceSession, deviceID int64, signalID string, req StartDeviceSessionRequest) error {
+	if err := c.send(ctx, signaling.Message{Method: protocol.MethodActivateSession, DialogID: session.dialogID, RIID: session.riid, Body: mustJSON(generatedsignaling.SessionBody{DoorbotId: int(deviceID), SessionId: signalID})}); err != nil {
+		return sessionError("failed to activate device session", err)
+	}
+	if err := session.core.Send(ctx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: req.AudioEnabled}); err != nil {
+		return sessionError("failed to set microphone state", err)
+	}
+	if err := session.core.Send(ctx, protocol.MethodStreamOptions, map[string]any{protocol.FieldAudioEnabled: req.AudioEnabled}); err != nil {
+		return sessionError("failed to set stream options", err)
+	}
+	return nil
+}
+
+func mustJSON(v any) json.RawMessage {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+func (s *DeviceSession) watch(ctx context.Context) {
+	err := s.core.Wait(ctx)
 	if errors.Is(err, signaling.ErrExpired) || errors.Is(err, signaling.ErrHeartbeat) {
+		// This bounded close must outlive the context whose expiry ended the session.
 		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
-		_ = s.connection.send(ctx, signaling.Message{Method: protocol.MethodClose, DialogID: s.dialogID, RIID: s.riid, Body: mustJSON(generatedsignaling.SessionBody{DoorbotId: int(s.deviceID), SessionId: s.signalID})})
+		_ = s.connection.send(ctx, signaling.Message{Method: protocol.MethodClose, DialogID: s.dialogID, RIID: s.riid, Body: mustJSON(generatedsignaling.SessionBody{DoorbotId: int(s.deviceID), SessionId: s.signalID})}) //nolint:contextcheck // Session teardown sends a final close after the parent context may be canceled.
 		cancel()
 	}
 	s.mu.Lock()
@@ -269,6 +285,12 @@ func (s *DeviceSession) Wait(ctx context.Context) error {
 	}
 	return sessionError("device session ended", err)
 }
+
+func (s *DeviceSession) terminalError() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.terminal
+}
 func (s *DeviceSession) Receive(ctx context.Context) (*SessionEvent, error) {
 	m, e := s.core.Receive(ctx)
 	if e != nil {
@@ -322,59 +344,44 @@ func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousReques
 	if r.Direction != PanLeft && r.Direction != PanRight {
 		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid pan direction %q", r.Direction), nil)
 	}
-	if r.Speed < 0 || r.Speed > protocol.PTZMaxSpeed || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
-		return nil, ringapimodels.NewBadRequestError("invalid pan speed", nil)
-	}
-	s.panMu.Lock()
-	defer s.panMu.Unlock()
-	s.mu.Lock()
-	if s.closed {
-		s.mu.Unlock()
-		return nil, ringapimodels.NewClosedError("device session is closed", signaling.ErrClosed)
-	}
-	previousDirection, hadPrevious := s.movement[PanAxis]
-	s.movement[PanAxis] = string(r.Direction)
-	s.mu.Unlock()
-	v, e := s.call(ctx, protocol.RPCPanContinuous, map[string]any{protocol.FieldDirection: r.Direction, protocol.FieldSpeed: r.Speed})
-	if e != nil {
-		s.mu.Lock()
-		if hadPrevious {
-			s.movement[PanAxis] = previousDirection
-		} else {
-			delete(s.movement, PanAxis)
-		}
-		s.mu.Unlock()
-	}
-	return v, e
+	return s.continuous(ctx, PanAxis, string(r.Direction), r.Speed, protocol.RPCPanContinuous)
 }
 func (s *DeviceSession) TiltContinuous(ctx context.Context, r TiltContinuousRequest) (*PTZResult, error) {
 	if r.Direction != TiltUp && r.Direction != TiltDown {
 		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid tilt direction %q", r.Direction), nil)
 	}
-	if r.Speed < 0 || r.Speed > protocol.PTZMaxSpeed || math.IsNaN(r.Speed) || math.IsInf(r.Speed, 0) {
-		return nil, ringapimodels.NewBadRequestError("invalid tilt speed", nil)
+	return s.continuous(ctx, TiltAxis, string(r.Direction), r.Speed, protocol.RPCTiltContinuous)
+}
+
+func (s *DeviceSession) continuous(ctx context.Context, axis PTZAxis, direction string, speed float64, method string) (*PTZResult, error) {
+	if speed < 0 || speed > protocol.PTZMaxSpeed || math.IsNaN(speed) || math.IsInf(speed, 0) {
+		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid %s speed", axis), nil)
 	}
-	s.tiltMu.Lock()
-	defer s.tiltMu.Unlock()
+	axisMu := &s.panMu
+	if axis == TiltAxis {
+		axisMu = &s.tiltMu
+	}
+	axisMu.Lock()
+	defer axisMu.Unlock()
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
 		return nil, ringapimodels.NewClosedError("device session is closed", signaling.ErrClosed)
 	}
-	previousDirection, hadPrevious := s.movement[TiltAxis]
-	s.movement[TiltAxis] = string(r.Direction)
+	previousDirection, hadPrevious := s.movement[axis]
+	s.movement[axis] = direction
 	s.mu.Unlock()
-	v, e := s.call(ctx, protocol.RPCTiltContinuous, map[string]any{protocol.FieldDirection: r.Direction, protocol.FieldSpeed: r.Speed})
-	if e != nil {
+	result, err := s.call(ctx, method, map[string]any{protocol.FieldDirection: direction, protocol.FieldSpeed: speed})
+	if err != nil {
 		s.mu.Lock()
 		if hadPrevious {
-			s.movement[TiltAxis] = previousDirection
+			s.movement[axis] = previousDirection
 		} else {
-			delete(s.movement, TiltAxis)
+			delete(s.movement, axis)
 		}
 		s.mu.Unlock()
 	}
-	return v, e
+	return result, err
 }
 func (s *DeviceSession) StopPTZ(ctx context.Context, r StopPTZRequest) (*PTZResult, error) {
 	var axisMu *sync.Mutex
@@ -426,14 +433,14 @@ func (s *DeviceSession) SetStreamOptions(ctx context.Context, r SetStreamOptions
 	}
 	return sessionError("stream-options command failed", s.core.Send(ctx, protocol.MethodStreamOptions, body))
 }
-func (s *DeviceSession) Close() error { return s.close(true) }
-func (s *DeviceSession) close(sendClose bool) error {
+func (s *DeviceSession) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 	defer cancel()
-	return s.closeWithContext(ctx, sendClose)
+	s.closeWithContext(ctx, true)
+	return nil
 }
 
-func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) error {
+func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) {
 	s.panMu.Lock()
 	s.tiltMu.Lock()
 	s.mu.Lock()
@@ -441,7 +448,7 @@ func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) er
 		s.mu.Unlock()
 		s.tiltMu.Unlock()
 		s.panMu.Unlock()
-		return nil
+		return
 	}
 	s.closed = true
 	s.terminal = signaling.ErrClosed
@@ -468,5 +475,4 @@ func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) er
 	_ = s.core.Close()
 	s.connection.removeSession(s.dialogID)
 	s.doneOnce.Do(func() { close(s.done) })
-	return nil
 }

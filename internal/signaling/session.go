@@ -10,15 +10,15 @@ import (
 	"time"
 )
 
-type terminalReason string
+type terminalError string
 
-func (r terminalReason) Error() string { return string(r) }
+func (r terminalError) Error() string { return string(r) }
 
 var (
-	ErrClosed       error = terminalReason("session closed")
-	ErrExpired      error = terminalReason("session reached maximum age")
-	ErrHeartbeat    error = terminalReason("session heartbeat timed out")
-	ErrBackpressure error = terminalReason("session event queue full")
+	ErrClosed       error = terminalError("session closed")
+	ErrExpired      error = terminalError("session reached maximum age")
+	ErrHeartbeat    error = terminalError("session heartbeat timed out")
+	ErrBackpressure error = terminalError("session event queue full")
 )
 
 // Clock allows deterministic deadlines without waiting real session lifetimes.
@@ -202,6 +202,11 @@ func (s *Session) Wait(ctx context.Context) error {
 		return ctx.Err()
 	}
 }
+func (s *Session) terminalCause() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.terminal
+}
 func (s *Session) Close() error { s.finish(ErrClosed); s.workers.Wait(); return nil }
 
 // Fail terminates from the connection reader without joining any worker.
@@ -241,6 +246,8 @@ func (s *Session) Send(ctx context.Context, method string, fields map[string]any
 	}
 	writeCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	// The session context must also cancel a write when the caller context is still active.
+	//nolint:contextcheck // AfterFunc explicitly links the inherited write context to the session lifetime.
 	stop := context.AfterFunc(s.ctx, cancel)
 	defer stop()
 	return s.send(writeCtx, Message{Method: method, DialogID: s.dialogID, Body: encoded})
@@ -262,7 +269,7 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 		select {
 		case <-finished:
 		case <-s.done:
-			cancel(s.Wait(context.Background()))
+			cancel(s.terminalCause())
 		case <-callCtx.Done():
 		case <-timeout:
 			cancel(context.DeadlineExceeded)
@@ -300,7 +307,7 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 		// internal context.Canceled used only to interrupt the transport.
 		select {
 		case <-s.done:
-			return nil, s.Wait(context.Background())
+			return nil, s.terminalCause()
 		default:
 		}
 		return nil, err
@@ -311,7 +318,7 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 	case <-ctx.Done():
 		return nil, context.Cause(callCtx)
 	case <-s.done:
-		return nil, s.Wait(context.Background())
+		return nil, s.terminalCause()
 	}
 }
 
@@ -393,7 +400,7 @@ func (s *Session) Receive(ctx context.Context) (Message, error) {
 	case m := <-s.events:
 		return m, nil
 	case <-s.done:
-		return Message{}, s.Wait(context.Background())
+		return Message{}, s.terminalCause()
 	case <-ctx.Done():
 		return Message{}, ctx.Err()
 	}

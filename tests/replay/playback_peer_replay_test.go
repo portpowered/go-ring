@@ -15,6 +15,43 @@ import (
 	"github.com/portpowered/go-ring/pkg/ring"
 )
 
+type playbackRequestEnvelope struct {
+	Method string              `json:"method"`
+	Dialog string              `json:"dialog_id"`
+	Body   playbackRequestBody `json:"body"`
+}
+
+type playbackRequestBody struct {
+	DeviceID   int64  `json:"doorbot_id"`
+	EntryPoint string `json:"entry_point"`
+	SDP        string `json:"sdp"`
+	Type       string `json:"type"`
+}
+
+type playbackICEEnvelope struct {
+	Method string          `json:"method"`
+	Dialog string          `json:"dialog_id"`
+	Body   playbackICEBody `json:"body"`
+}
+
+type playbackICEBody struct {
+	DeviceID   int64  `json:"doorbot_id"`
+	SessionID  string `json:"session_id"`
+	ICE        string `json:"ice"`
+	MLineIndex uint16 `json:"mlineindex"`
+}
+
+type playbackCloseEnvelope struct {
+	Method string            `json:"method"`
+	Dialog string            `json:"dialog_id"`
+	Body   playbackCloseBody `json:"body"`
+}
+
+type playbackCloseBody struct {
+	DeviceID  int64  `json:"doorbot_id"`
+	SessionID string `json:"session_id"`
+}
+
 // The recorded playback envelope is replayed with fresh peer-generated SDP and
 // ICE credentials. Captured credentials cannot establish a new media session.
 func TestPlaybackReplayConnectsPeersAndReceivesMedia(t *testing.T) {
@@ -140,16 +177,7 @@ func TestPlaybackReplayConnectsPeersAndReceivesMedia(t *testing.T) {
 }
 
 func runPlaybackPeer(t *testing.T, ctx context.Context, socket *websocket.Conn) error {
-	var request struct {
-		Method string `json:"method"`
-		Dialog string `json:"dialog_id"`
-		Body   struct {
-			DeviceID   int64  `json:"doorbot_id"`
-			EntryPoint string `json:"entry_point"`
-			SDP        string `json:"sdp"`
-			Type       string `json:"type"`
-		} `json:"body"`
-	}
+	var request playbackRequestEnvelope
 	if err := socket.ReadJSON(&request); err != nil {
 		return err
 	}
@@ -233,16 +261,7 @@ func runPlaybackPeer(t *testing.T, ctx context.Context, socket *websocket.Conn) 
 	case <-ctx.Done():
 		return ctx.Err()
 	}
-	var localCandidate struct {
-		Method string `json:"method"`
-		Dialog string `json:"dialog_id"`
-		Body   struct {
-			DeviceID   int64  `json:"doorbot_id"`
-			SessionID  string `json:"session_id"`
-			ICE        string `json:"ice"`
-			MLineIndex uint16 `json:"mlineindex"`
-		} `json:"body"`
-	}
+	var localCandidate playbackICEEnvelope
 	if err = socket.ReadJSON(&localCandidate); err != nil {
 		return err
 	}
@@ -252,14 +271,7 @@ func runPlaybackPeer(t *testing.T, ctx context.Context, socket *websocket.Conn) 
 	if err = peer.AddICECandidate(webrtc.ICECandidateInit{Candidate: localCandidate.Body.ICE, SDPMLineIndex: &localCandidate.Body.MLineIndex}); err != nil {
 		return err
 	}
-	var closed struct {
-		Method string `json:"method"`
-		Dialog string `json:"dialog_id"`
-		Body   struct {
-			DeviceID  int64  `json:"doorbot_id"`
-			SessionID string `json:"session_id"`
-		} `json:"body"`
-	}
+	var closed playbackCloseEnvelope
 	if err = socket.ReadJSON(&closed); err != nil {
 		return err
 	}

@@ -84,7 +84,10 @@ func readActivation(c *websocket.Conn) bool {
 }
 func TestNegotiatedHeartbeatRejectsInvalidPresentValues(t *testing.T) {
 	for _, value := range []any{0, -1, 61, 1.5, "10", nil} {
-		encoded, _ := json.Marshal(value)
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Run(string(encoded), func(t *testing.T) {
 			conn := identityPeer(t, func(c *websocket.Conn, dialog string) {
 				beginIdentity(c, dialog, value, true)

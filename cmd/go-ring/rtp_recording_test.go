@@ -20,7 +20,7 @@ func TestRTPRecordingReplaysExactPackets(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A CLI exit may happen before Close, so each packet must already be readable.
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path is created inside this test's temporary directory.
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,12 +46,16 @@ func TestReplayVideoCommandProducesH264(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for sequence, payload := range [][]byte{
-		{0x67, 0x42, 0, 0x1f, 0x80},
-		{0x68, 0xc0},
-		{0x65, 0xb8},
+	for _, packetData := range []struct {
+		sequence  uint16
+		timestamp uint32
+		payload   []byte
+	}{
+		{sequence: 1, timestamp: 1, payload: []byte{0x67, 0x42, 0, 0x1f, 0x80}},
+		{sequence: 2, timestamp: 2, payload: []byte{0x68, 0xc0}},
+		{sequence: 3, timestamp: 3, payload: []byte{0x65, 0xb8}},
 	} {
-		packet := &rtp.Packet{Header: rtp.Header{Version: 2, SequenceNumber: uint16(sequence + 1), Timestamp: uint32(sequence + 1), Marker: true}, Payload: payload}
+		packet := &rtp.Packet{Header: rtp.Header{Version: 2, SequenceNumber: packetData.sequence, Timestamp: packetData.timestamp, Marker: true}, Payload: packetData.payload}
 		if err := recording.WritePacket(packet); err != nil {
 			t.Fatal(err)
 		}
@@ -63,7 +67,7 @@ func TestReplayVideoCommandProducesH264(t *testing.T) {
 	if err := replayVideoCommand([]string{path, "--output", outputPath}, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(outputPath)
+	data, err := os.ReadFile(outputPath) // #nosec G304 -- outputPath is created inside this test's temporary directory.
 	if err != nil {
 		t.Fatal(err)
 	}

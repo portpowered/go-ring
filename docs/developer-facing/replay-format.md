@@ -75,19 +75,17 @@ captured. HTTP PTZ routes are not part of these recordings or specifications.
 synthetic-replay HTTP/auth operations; `api/asyncapi.yaml` describes observed
 signaling envelope methods and PTZ RPC shapes. `tests/replay/contracts_test.go`
 checks recorded HTTP method/path/status/origin and signaling method constants.
-`tools/protocols/test_contracts.py` validates recorded payloads against the
-schemas, while `tools/protocols/test_document_structure.py` validates the full
-OpenAPI and AsyncAPI documents. `tests/replay/contracts.md` records historical
+The Go tests in `tools/protocols` validate recorded payloads against the
+schemas and validate the full OpenAPI and AsyncAPI documents. `tests/replay/contracts.md` records historical
 test mappings and labels signaling and other route-only additions as
 capture-only. See that file before treating a captured route as proof of
 equivalent high-level behavior.
 
 ## Repeatable verification order
 
-Run the Go replay suite, then the independent protocol and capture contract
-tests. CI installs the pinned contract-tool requirements and Node.js dependencies,
-then runs `python -m unittest discover -s tools/protocols -v` and
-`python -m unittest discover -s tools/capture -v`.
+Run the Go replay suite, then `make test-contracts` for independent protocol
+and capture contract tests. CI installs Node.js dependencies for the AsyncAPI
+validator, then runs the Go tests.
 
 Next run `go test -race ./... -timeout 120s` with `GOWORK=off`, followed by
 `make test-cover` to measure replay coverage, co-located unit coverage, and

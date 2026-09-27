@@ -50,15 +50,15 @@ func TestSessionAdversarialTerminationStress(t *testing.T) {
 					if message.Method != "rpc" {
 						continue
 					}
-					var body struct {
-						Command struct {
-							ID string `json:"id"`
-						} `json:"command"`
-					}
+					var body rpcCommandEnvelope
 					if json.Unmarshal(message.Body, &body) != nil {
 						continue
 					}
-					reply, _ := json.Marshal(map[string]any{"doorbot_id": 7, "session_id": "signal", "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": map[string]any{"sessionId": "control"}}})
+					reply, err := json.Marshal(map[string]any{"doorbot_id": 7, "session_id": "signal", "command": map[string]any{"jsonrpc": "2.0", "id": body.Command.ID, "result": map[string]any{"sessionId": "control"}}})
+					if err != nil {
+						t.Errorf("marshal RPC reply: %v", err)
+						return
+					}
 					_ = s.Handle(Message{Method: "rpc", DialogID: "dialog", Body: reply})
 				case <-s.done:
 					return

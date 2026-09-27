@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -20,25 +19,45 @@ import (
 	"github.com/pion/webrtc/v3/pkg/media"
 )
 
+type viewOfferEnvelope struct {
+	Method string        `json:"method"`
+	Dialog string        `json:"dialog_id"`
+	Body   viewOfferBody `json:"body"`
+}
+
+type viewOfferBody struct {
+	SDP string `json:"sdp"`
+}
+
+type viewRPCEnvelope struct {
+	Method string      `json:"method"`
+	Body   viewRPCBody `json:"body"`
+}
+
+type viewRPCBody struct {
+	Command viewRPCCommand `json:"command"`
+}
+
+type viewRPCCommand struct {
+	ID     string        `json:"id"`
+	Method string        `json:"method"`
+	Params viewRPCParams `json:"params"`
+}
+
+type viewRPCParams struct {
+	Direction string `json:"direction"`
+}
+
 func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds nested CLI module")
 	}
-	cliDir, err := filepath.Abs(filepath.Join("..", "..", "cmd", "go-ring"))
+	exe := buildReplayCLI(t)
+	tokenFile := filepath.Join(t.TempDir(), "tokens.json")
+	tokens, err := json.Marshal(map[string]any{"access_token": "view-token", "refresh_token": "view-refresh", "token_type": "Bearer", "expires_in": 3600, "hardware_id": "view-hardware", "received_at": time.Now()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	exe := filepath.Join(t.TempDir(), "go-ring")
-	if runtime.GOOS == "windows" {
-		exe += ".exe"
-	}
-	build := exec.Command("go", "build", "-o", exe, ".")
-	build.Dir, build.Env = cliDir, append(os.Environ(), "GOFLAGS=-buildvcs=false")
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build CLI: %v\n%s", err, output)
-	}
-	tokenFile := filepath.Join(t.TempDir(), "tokens.json")
-	tokens, _ := json.Marshal(map[string]any{"access_token": "view-token", "refresh_token": "view-refresh", "token_type": "Bearer", "expires_in": 3600, "hardware_id": "view-hardware", "received_at": time.Now()})
 	if err := os.WriteFile(tokenFile, tokens, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -66,13 +85,7 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 			serverErr <- fmt.Errorf("missing ticket")
 			return
 		}
-		var first struct {
-			Method string `json:"method"`
-			Dialog string `json:"dialog_id"`
-			Body   struct {
-				SDP string `json:"sdp"`
-			} `json:"body"`
-		}
+		var first viewOfferEnvelope
 		if err := conn.ReadJSON(&first); err != nil {
 			serverErr <- err
 			return
@@ -159,18 +172,7 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 			}
 		}()
 		for _, expected := range []struct{ method, direction string }{{"PTZ.Pan.Step", "RIGHT"}, {"PTZ.Pan.Step", "LEFT"}, {"PTZ.Tilt.Step", "UP"}, {"PTZ.Tilt.Step", "DOWN"}} {
-			var command struct {
-				Method string `json:"method"`
-				Body   struct {
-					Command struct {
-						ID     string `json:"id"`
-						Method string `json:"method"`
-						Params struct {
-							Direction string `json:"direction"`
-						} `json:"params"`
-					} `json:"command"`
-				} `json:"body"`
-			}
+			var command viewRPCEnvelope
 			if err := conn.ReadJSON(&command); err != nil {
 				serverErr <- err
 				return
@@ -197,7 +199,7 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 		}
 	}))
 	defer ws.Close()
-	command := exec.Command(exe, "--token-file", tokenFile, "--api-base", api.URL, "--solutions-base", api.URL, "--signaling-url", "ws"+strings.TrimPrefix(ws.URL, "http")+"?token={token}", "view", "12345", "--player", "none", "--debug")
+	command := exec.Command(exe, "--token-file", tokenFile, "--api-base", api.URL, "--solutions-base", api.URL, "--signaling-url", "ws"+strings.TrimPrefix(ws.URL, "http")+"?token={token}", "view", "12345", "--player", "none", "--debug") // #nosec G204 -- executes the CLI binary built in this test with local servers and temporary token.
 	keys, keyWriter := io.Pipe()
 	command.Stdin = keys
 	go func() {

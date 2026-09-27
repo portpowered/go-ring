@@ -12,6 +12,14 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 )
 
+type writerRPCEnvelope struct {
+	Command writerRPCCommand `json:"command"`
+}
+
+type writerRPCCommand struct {
+	Method string `json:"method"`
+}
+
 func mustJSON(value any) json.RawMessage {
 	encoded, err := json.Marshal(value)
 	if err != nil {
@@ -27,11 +35,7 @@ func TestSignalingWriterPrioritizesSafetyWritesAndRemovesCanceledQueueEntry(t *t
 	w := NewSignalingWriter(done, func(ctx context.Context, m signaling.Message) error {
 		name := m.Method
 		if m.Method == protocol.MethodRPC {
-			var body struct {
-				Command struct {
-					Method string `json:"method"`
-				} `json:"command"`
-			}
+			var body writerRPCEnvelope
 			_ = json.Unmarshal(m.Body, &body)
 			name = body.Command.Method
 		}

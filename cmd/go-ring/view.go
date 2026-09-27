@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -30,7 +29,7 @@ type viewOptions struct {
 
 func viewCommand(parent context.Context, store tokenStore, args []string, in io.Reader, out io.Writer) error {
 	if len(args) == 0 {
-		return errors.New("view requires a device ID")
+		return commandError("view requires a device ID")
 	}
 	flags := flag.NewFlagSet("view", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
@@ -44,7 +43,7 @@ func viewCommand(parent context.Context, store tokenStore, args []string, in io.
 		return err
 	}
 	if flags.NArg() != 0 || (*player != "none" && *player != ffplayCommand) || *speed <= 0 || *speed > 1 {
-		return errors.New("invalid view options")
+		return commandError("invalid view options")
 	}
 	interrupts := make(chan os.Signal, 1)
 	signal.Notify(interrupts, os.Interrupt)
@@ -142,12 +141,12 @@ func videoConfiguration(iceFile string) (webrtc.Configuration, error) {
 	if iceFile == "" {
 		return config, nil
 	}
-	data, err := os.ReadFile(iceFile)
+	data, err := os.ReadFile(iceFile) // #nosec G304 -- ICE configuration is read from the path explicitly selected by the CLI user.
 	if err != nil {
 		return config, err
 	}
 	if err := json.Unmarshal(data, &config.ICEServers); err != nil {
-		return config, errors.New("invalid ICE server JSON")
+		return config, commandError("invalid ICE server JSON")
 	}
 	return config, nil
 }
@@ -189,7 +188,7 @@ func makeVideoOffer(ctx context.Context, pc *webrtc.PeerConnection) (string, err
 	case <-complete:
 		return pc.LocalDescription().SDP, nil
 	case <-timer.C:
-		return "", errors.New("ICE gathering timed out")
+		return "", commandError("ICE gathering timed out")
 	case <-ctx.Done():
 		return "", ctx.Err()
 	}
@@ -210,7 +209,7 @@ func receiveICE(ctx context.Context, session *ring.DeviceSession, pc *webrtc.Pee
 			Index     uint16 `json:"mlineindex"`
 		}
 		if json.Unmarshal(event.Body, &body) != nil || body.Candidate == "" {
-			done <- errors.New("invalid remote ICE candidate")
+			done <- commandError("invalid remote ICE candidate")
 			return
 		}
 		if err := pc.AddICECandidate(webrtc.ICECandidateInit{Candidate: body.Candidate, SDPMLineIndex: &body.Index}); err != nil {

@@ -52,7 +52,7 @@ func TestRecordedHeartbeatVirtualHourDoesNotRenewSession(t *testing.T) {
 	out := make(chan signaling.Message, 2)
 	session := newHeartbeatReplaySession(t, ping, clock, out)
 	for elapsed := 10 * time.Second; elapsed < signaling.MaxSessionAge; elapsed += 10 * time.Second {
-		clock.advance(10 * time.Second)
+		clock.advance()
 		actual := recordedNextMessage(t, out)
 		if actual.Method != "ping" || actual.DialogID != ping.DialogID {
 			t.Fatalf("virtual heartbeat = %+v", actual)
@@ -61,7 +61,7 @@ func TestRecordedHeartbeatVirtualHourDoesNotRenewSession(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	clock.advance(10 * time.Second)
+	clock.advance()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if err := session.Wait(ctx); !errors.Is(err, signaling.ErrExpired) {
@@ -76,13 +76,13 @@ func TestRecordedWrongIdentityPongDoesNotPreventTimeout(t *testing.T) {
 	session := newHeartbeatReplaySession(t, ping, clock, out)
 	pong.DialogID = "unrelated-dialog"
 	for range 2 {
-		clock.advance(10 * time.Second)
+		clock.advance()
 		_ = recordedNextMessage(t, out)
 		if err := session.Handle(pong); err != nil {
 			t.Fatal(err)
 		}
 	}
-	clock.advance(10 * time.Second)
+	clock.advance()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if err := session.Wait(ctx); !errors.Is(err, signaling.ErrHeartbeat) {

@@ -68,41 +68,24 @@ func TestGetDevice_Found(t *testing.T) {
 	require.NoError(t, err)
 
 	// Get a device (should use the first one from the list)
-	if len(devices.Doorbells) > 0 {
-		deviceID := devices.Doorbells[0].ID
-		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-			DeviceID: deviceID,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, device)
-		assert.Equal(t, deviceID, device.GetID())
-	} else if len(devices.Chimes) > 0 {
-		deviceID := devices.Chimes[0].ID
-		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-			DeviceID: deviceID,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, device)
-		assert.Equal(t, deviceID, device.GetID())
-	} else if len(devices.StickUpCams) > 0 {
-		deviceID := devices.StickUpCams[0].ID
-		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-			DeviceID: deviceID,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, device)
-		assert.Equal(t, deviceID, device.GetID())
-	} else if len(devices.Other) > 0 {
-		deviceID := devices.Other[0].ID
-		device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-			DeviceID: deviceID,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, device)
-		assert.Equal(t, deviceID, device.GetID())
-	} else {
+	var deviceID string
+	switch {
+	case len(devices.Doorbells) > 0:
+		deviceID = devices.Doorbells[0].ID
+	case len(devices.Chimes) > 0:
+		deviceID = devices.Chimes[0].ID
+	case len(devices.StickUpCams) > 0:
+		deviceID = devices.StickUpCams[0].ID
+	case len(devices.Other) > 0:
+		deviceID = devices.Other[0].ID
+	default:
 		t.Skip("No devices in fixture to test GetDevice")
+		return
 	}
+	device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: deviceID})
+	require.NoError(t, err)
+	require.NotNil(t, device)
+	assert.Equal(t, deviceID, device.GetID())
 }
 
 func TestGetDevice_NotFound(t *testing.T) {
@@ -159,7 +142,8 @@ func TestUpdateDeviceHealth_NotFound(t *testing.T) {
 	assert.Error(t, err)
 	// The REST client returns HTTPError for 404 status codes
 	assert.True(t, ringapimodels.IsHTTPError(err))
-	if httpErr, ok := err.(*ringapimodels.HTTPError); ok {
+	var httpErr *ringapimodels.HTTPError
+	if assert.ErrorAs(t, err, &httpErr) {
 		assert.Equal(t, 404, httpErr.StatusCode)
 	}
 }

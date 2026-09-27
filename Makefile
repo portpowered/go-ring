@@ -2,8 +2,8 @@ GO ?= go
 GO_TEST_TIMEOUT ?= 120s
 export GOWORK := off
 .DEFAULT_GOAL := check
-.PHONY: check build build-examples build-cli test test-cli test-race test-stress test-cover test-integration fmt vet generate-api lint lint-cli
-check: build build-cli test test-cli vet
+.PHONY: check build build-examples build-cli test test-cli test-race test-stress test-cover test-integration test-contracts fmt vet generate-api lint lint-cli
+check: build build-cli test-contracts test test-cli vet
 build:
 	$(GO) build ./...
 build-examples:
@@ -14,6 +14,9 @@ test:
 	$(GO) test ./... -timeout $(GO_TEST_TIMEOUT)
 test-cli:
 	cd cmd/go-ring && $(GO) test ./...
+test-contracts:
+	npm ci --prefix tools/protocols --ignore-scripts
+	$(GO) test ./tools/protocols ./tools/capture
 test-race:
 	$(GO) test -race ./... -timeout $(GO_TEST_TIMEOUT)
 test-stress:

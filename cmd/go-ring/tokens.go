@@ -36,10 +36,10 @@ func (s tokenStore) load() (storedTokens, error) {
 		return tokens, err
 	}
 	if err := json.Unmarshal(data, &tokens); err != nil {
-		return tokens, errors.New("invalid token file")
+		return tokens, commandError("invalid token file")
 	}
 	if tokens.AccessToken == "" || tokens.HardwareID == "" || tokens.ReceivedAt.IsZero() {
-		return tokens, errors.New("incomplete token file")
+		return tokens, commandError("incomplete token file")
 	}
 	return tokens, nil
 }
@@ -101,7 +101,7 @@ func login(ctx context.Context, store tokenStore, in io.Reader, out io.Writer) e
 		}
 	}
 	if username == "" || password == "" {
-		return errors.New("username and password required")
+		return commandError("username and password required")
 	}
 	identity := uuid.NewString()
 	client, err := ring.NewClient(store.clientOptions...)
@@ -122,15 +122,15 @@ func login(ctx context.Context, store tokenStore, in io.Reader, out io.Writer) e
 			return err
 		}
 		if otp == "" {
-			return errors.New("verification code required")
+			return commandError("verification code required")
 		}
 		response, err = session.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otp})
 	}
 	if err != nil {
-		return fmt.Errorf("authenticate: %w", err)
+		return wrapCommandError("authenticate", err)
 	}
 	if err := store.save(storedTokens{AuthResponse: *response, HardwareID: identity, ReceivedAt: time.Now()}); err != nil {
-		return fmt.Errorf("save login: %w", err)
+		return wrapCommandError("save login", err)
 	}
 	_, _ = fmt.Fprintf(out, "Authenticated; tokens saved to %s\n", store.path)
 	return nil

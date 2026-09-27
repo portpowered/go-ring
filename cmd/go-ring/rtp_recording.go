@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 
@@ -24,9 +23,9 @@ type rtpRecording struct {
 }
 
 func newRTPRecording(path string) (*rtpRecording, error) {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, privateFileMode)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, privateFileMode) // #nosec G304 -- The CLI caller explicitly selects the private recording output path.
 	if err != nil {
-		return nil, fmt.Errorf("create RTP recording: %w", err)
+		return nil, wrapCommandError("create RTP recording", err)
 	}
 	if err := file.Chmod(privateFileMode); err != nil {
 		_ = file.Close()
@@ -52,8 +51,9 @@ func (r *rtpRecording) WritePacket(packet *rtp.Packet) error {
 		return err
 	}
 	if len(data) > maxRecordedPacket {
-		return errors.New("RTP packet exceeds recording limit")
+		return commandError("RTP packet exceeds recording limit")
 	}
+	// #nosec G115 -- Packet length is checked against the 64 KiB recording limit above.
 	if err := binary.Write(r.writer, binary.BigEndian, uint32(len(data))); err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func replayRTP(reader io.Reader, consume func(*rtp.Packet) error) error {
 		return err
 	}
 	if string(magic) != rtpRecordingMagic {
-		return errors.New("invalid RTP recording header")
+		return commandError("invalid RTP recording header")
 	}
 	for {
 		var size uint32
@@ -90,7 +90,7 @@ func replayRTP(reader io.Reader, consume func(*rtp.Packet) error) error {
 			return err
 		}
 		if size == 0 || size > maxRecordedPacket {
-			return errors.New("invalid recorded RTP packet length")
+			return commandError("invalid recorded RTP packet length")
 		}
 		data := make([]byte, size)
 		if _, err := io.ReadFull(reader, data); err != nil {

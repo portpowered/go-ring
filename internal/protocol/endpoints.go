@@ -7,7 +7,7 @@ const (
 	USSolutionsBaseURL            = "https://prd-api-us.prd.rings.solutions"
 	SignalingURL                  = "wss://api.prod.signalling.ring.devices.a2z.com:443/ws?api_version=4.0&auth_type=ring_solutions&client_id=ring_site-{client_id}&token={token}"
 	ExperimentalEventWebSocketURL = "wss://api.ring.com/clients_api/ws"
-	OAuthTokenPath                = "/oauth/token"
+	OAuthTokenPath                = "/oauth/token" // #nosec G101 -- endpoint path, not credential material.
 	OAuthAuthorizePath            = "/oauth/v2/authorize"
 	OAuthSigninPath               = "/oauth/v2/signin"
 	OAuthCallbackURL              = "https://ring.com/signin/callback"

@@ -20,14 +20,16 @@ type portableControlCase struct {
 	Response replay.Response `json:"response"`
 }
 
+type portableRequestShape struct {
+	Method string         `json:"method"`
+	Path   string         `json:"path"`
+	Query  map[string]any `json:"query"`
+}
+
 type portableChimeCase struct {
-	Case    string `json:"case"`
-	Request struct {
-		Method string         `json:"method"`
-		Path   string         `json:"path"`
-		Query  map[string]any `json:"query"`
-	} `json:"request"`
-	Response replay.Response `json:"response"`
+	Case     string               `json:"case"`
+	Request  portableRequestShape `json:"request"`
+	Response replay.Response      `json:"response"`
 }
 
 // Every Python legacy control case is replayed through the corresponding Go

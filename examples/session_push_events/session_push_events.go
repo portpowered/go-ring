@@ -3,13 +3,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
 
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func run() error {
 	token := os.Getenv("RING_ACCESS_TOKEN")
 	deviceID, err := strconv.ParseInt(os.Getenv("RING_DEVICE_ID"), 10, 64)
 	if token == "" || err != nil || deviceID <= 0 {
-		return errors.New("set RING_ACCESS_TOKEN and a positive RING_DEVICE_ID")
+		return ringapimodels.NewBadRequestError("set RING_ACCESS_TOKEN and a positive RING_DEVICE_ID", err)
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()

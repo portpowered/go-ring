@@ -11,6 +11,14 @@ import (
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
 )
 
+type capturedHTTPExchange struct {
+	Response capturedHTTPResponse `json:"response"`
+}
+
+type capturedHTTPResponse struct {
+	Body json.RawMessage `json:"body"`
+}
+
 // A captured field must have a named generated member, rather than surviving
 // only in AdditionalProperties. This protects the schema when captures grow.
 func TestCapturedDeviceFieldsHaveGeneratedTypes(t *testing.T) {
@@ -26,15 +34,11 @@ func TestCapturedDeviceFieldsHaveGeneratedTypes(t *testing.T) {
 	}
 	for _, name := range paths {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("fixtures", "http", "captured", name))
+			data, err := os.ReadFile(filepath.Join("fixtures", "http", "captured", name)) // #nosec G304 -- name comes from fixed fixture names or the variants glob above.
 			if err != nil {
 				t.Fatal(err)
 			}
-			var exchange struct {
-				Response struct {
-					Body json.RawMessage `json:"body"`
-				} `json:"response"`
-			}
+			var exchange capturedHTTPExchange
 			if err := json.Unmarshal(data, &exchange); err != nil {
 				t.Fatal(err)
 			}

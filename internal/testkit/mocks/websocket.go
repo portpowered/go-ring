@@ -3,12 +3,15 @@ package mocks
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+type mockWebSocketError string
+
+func (e mockWebSocketError) Error() string { return string(e) }
 
 // MockWebSocketConn is a mock WebSocket connection for testing
 type MockWebSocketConn struct {
@@ -42,7 +45,7 @@ func (m *MockWebSocketConn) ReadMessage() (messageType int, message []byte, err 
 	m.mu.RUnlock()
 
 	if closed {
-		return 0, nil, errors.New("connection closed")
+		return 0, nil, mockWebSocketError("connection closed")
 	}
 
 	if readErr != nil {
@@ -65,7 +68,7 @@ func (m *MockWebSocketConn) ReadMessage() (messageType int, message []byte, err 
 			return websocket.TextMessage, msg, nil
 		}
 		m.mu.RUnlock()
-		return 0, nil, errors.New("no message available")
+		return 0, nil, mockWebSocketError("no message available")
 	}
 }
 
@@ -77,7 +80,7 @@ func (m *MockWebSocketConn) WriteMessage(messageType int, data []byte) error {
 	m.mu.RUnlock()
 
 	if closed {
-		return errors.New("connection closed")
+		return mockWebSocketError("connection closed")
 	}
 
 	if writeErr != nil {

@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -49,7 +50,8 @@ func (c *Client) Authenticate(ctx context.Context, username, password, hardwareI
 
 	if c.pendingPKCE == nil {
 		if err := c.initiatePKCE(ctx, hardwareID); err != nil {
-			if authErr, ok := err.(*ringerrors.AuthenticationError); ok && authErr.Status == http.StatusNotFound {
+			var authErr *ringerrors.AuthenticationError
+			if errors.As(err, &authErr) && authErr.Status == http.StatusNotFound {
 				return c.authenticateLegacy(ctx, username, password, hardwareID, otpCode)
 			}
 			return nil, err
@@ -255,7 +257,12 @@ func (c *Client) verify2FA(ctx context.Context, code string) error {
 	return nil
 }
 
-func (c *Client) authFormRequest(ctx context.Context, client *http.Client, path string, form url.Values) (*http.Response, []byte, error) {
+type authFormResponse struct {
+	StatusCode int
+	Header     http.Header
+}
+
+func (c *Client) authFormRequest(ctx context.Context, client *http.Client, path string, form url.Values) (*authFormResponse, []byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.oauthBaseURI+path, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, nil, ringerrors.NewNetworkError("failed to create OAuth request", err)
@@ -271,7 +278,7 @@ func (c *Client) authFormRequest(ctx context.Context, client *http.Client, path 
 	if readErr != nil {
 		return nil, nil, ringerrors.NewNetworkError("failed to read OAuth response", readErr)
 	}
-	return resp, body, nil
+	return &authFormResponse{StatusCode: resp.StatusCode, Header: resp.Header.Clone()}, body, nil
 }
 
 func (c *Client) authorizationCode(ctx context.Context) (string, error) {

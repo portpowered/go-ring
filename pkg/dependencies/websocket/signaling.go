@@ -23,7 +23,10 @@ func DialSignaling(ctx context.Context, wsURL string, headers http.Header, diale
 	if dialer == nil {
 		dialer = &websocket.Dialer{HandshakeTimeout: signaling.HandshakeTimeout}
 	}
-	conn, _, err := dialer.DialContext(ctx, wsURL, headers)
+	conn, response, err := dialer.DialContext(ctx, wsURL, headers)
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}

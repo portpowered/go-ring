@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,7 +11,11 @@ import (
 
 	"github.com/pion/webrtc/v3"
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
+
+const iceGatheringTimeout = 15 * time.Second
+const stopPTZTimeout = 3 * time.Second
 
 func main() {
 	if err := run(); err != nil {
@@ -24,13 +27,13 @@ func main() {
 func run() error {
 	token, deviceID := os.Getenv("RING_ACCESS_TOKEN"), os.Getenv("RING_DEVICE_ID")
 	if token == "" || deviceID == "" {
-		return errors.New("set RING_ACCESS_TOKEN and RING_DEVICE_ID")
+		return ringapimodels.NewBadRequestError("set RING_ACCESS_TOKEN and RING_DEVICE_ID", nil)
 	}
 
 	config := webrtc.Configuration{}
 	if raw := os.Getenv("RING_ICE_SERVERS_JSON"); raw != "" {
 		if err := json.Unmarshal([]byte(raw), &config.ICEServers); err != nil {
-			return fmt.Errorf("invalid RING_ICE_SERVERS_JSON: %w", err)
+			return ringapimodels.NewBadRequestError("invalid RING_ICE_SERVERS_JSON", err)
 		}
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -62,8 +65,8 @@ func run() error {
 	case <-gathered:
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-time.After(15 * time.Second):
-		return errors.New("timed out gathering local ICE candidates")
+	case <-time.After(iceGatheringTimeout):
+		return ringapimodels.NewConnectionError("timed out gathering local ICE candidates", context.DeadlineExceeded)
 	}
 
 	client, err := ring.NewClient()
@@ -91,7 +94,7 @@ func run() error {
 	}
 	defer func() { _ = session.Close() }()
 	if answer := session.Answer(); answer.Type != ring.SDPTypeAnswer {
-		return fmt.Errorf("unexpected SDP type: %s", answer.Type)
+		return ringapimodels.NewBadRequestError(fmt.Sprintf("unexpected SDP type: %s", answer.Type), nil)
 	} else if err = pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: answer.SDP}); err != nil {
 		return err
 	}
@@ -104,7 +107,7 @@ func run() error {
 	case <-ctx.Done():
 	}
 	// Stop even if Ctrl+C canceled the session context.
-	stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	stopCtx, stopCancel := context.WithTimeout(context.Background(), stopPTZTimeout)
 	defer stopCancel()
 	_, err = session.StopPTZ(stopCtx, ring.StopPTZRequest{Axis: ring.PanAxis})
 	return err

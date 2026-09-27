@@ -23,11 +23,7 @@ func TestDeviceSessionAdversarialCloseStress(t *testing.T) {
 				if message.Method != protocol.MethodRPC {
 					return nil
 				}
-				var request struct {
-					Command struct {
-						ID string `json:"id"`
-					} `json:"command"`
-				}
+				var request deviceSessionCommandEnvelope
 				if decodeErr := json.Unmarshal(message.Body, &request); decodeErr != nil {
 					return decodeErr
 				}
@@ -45,7 +41,7 @@ func TestDeviceSessionAdversarialCloseStress(t *testing.T) {
 		connection := &SignalingConnection{done: make(chan struct{}), sessions: make(map[string]*DeviceSession)}
 		session := &DeviceSession{connection: connection, core: core, dialogID: "dialog", deviceID: 7, signalID: "signal", movement: make(map[PTZAxis]string), done: make(chan struct{})}
 		connection.sessions[session.dialogID] = session
-		go session.watch()
+		go session.watch(context.Background())
 		start := make(chan struct{})
 		var workers sync.WaitGroup
 		workers.Add(6)

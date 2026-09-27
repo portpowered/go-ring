@@ -27,6 +27,5 @@ presented as captured vendor behavior. Live integration tests remain separate.
 Go replay tests load these files through `internal/testkit/replay`; protocol
 and capture contract tests validate the captured files against OpenAPI,
 AsyncAPI, and the schemas here. To regenerate captured fixtures from a private
-mitmproxy dump, install `tools/capture/requirements.txt` and run
-`python tools/capture/extract.py <capture-file>`. Never commit the source dump
+mitmproxy dump, run `go run ./tools/capture <capture-file>`. Never commit the source dump
 or unredacted credentials, video, account details, or network addresses.

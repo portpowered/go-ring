@@ -25,10 +25,8 @@ registries; a higher statement percentage alone does not establish those
 properties.
 
 Set `GOWORK=off` when testing this module independently of a surrounding workspace.
-The fixture-contract checks use `tools/protocols` and `tools/capture`. Install
-their pinned requirements and run `python -m unittest discover -s tools/protocols`
-and `python -m unittest discover -s tools/capture`. The private mitmproxy file
-is not required.
+Run `make test-contracts` for the Go fixture and schema contract checks in
+`tools/protocols` and `tools/capture`. The private mitmproxy file is not required.
 
 `make test-cover` measures replay, unit, and their combined coverage separately.
 Replay is the primary compatibility metric: the local account-scope replay run

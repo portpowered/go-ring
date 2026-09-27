@@ -8,14 +8,18 @@ import (
 	mediavalidation "github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 )
 
+type recordedAnswerFrame struct {
+	Body recordedAnswerBody `json:"body"`
+}
+
+type recordedAnswerBody struct {
+	SDP string `json:"sdp"`
+}
+
 func recordedAnswerSDP(t *testing.T) (string, string) {
 	t.Helper()
 	offer, captured := recordedLiveView(t)
-	var frame struct {
-		Body struct {
-			SDP string `json:"sdp"`
-		} `json:"body"`
-	}
+	var frame recordedAnswerFrame
 	if err := json.Unmarshal(captured["sdp"], &frame); err != nil {
 		t.Fatal(err)
 	}
