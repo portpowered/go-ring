@@ -27,7 +27,7 @@ func TestDiagnosticCLIHealthSoundAndRebootReplay(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		exe += ".exe"
 	}
-	build := exec.Command("go", "build", "-o", exe, ".")
+	build := exec.Command("go", "build", "-o", exe, ".") // #nosec G204 -- fixed Go compiler invocation; output and working directory are test-owned.
 	build.Dir, build.Env = cliDir, append(os.Environ(), "GOFLAGS=-buildvcs=false")
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build CLI: %v\n%s", err, output)
@@ -71,7 +71,7 @@ func TestDiagnosticCLIHealthSoundAndRebootReplay(t *testing.T) {
 	run := func(args ...string) string {
 		t.Helper()
 		base := []string{"--token-file", tokenFile, "--api-base", api.URL, "--solutions-base", api.URL}
-		command := exec.Command(exe, append(base, args...)...)
+		command := exec.Command(exe, append(base, args...)...) // #nosec G204 -- exe is the CLI binary built into this test's temp directory.
 		output, err := command.CombinedOutput()
 		if err != nil {
 			t.Fatalf("CLI %v: %v\n%s", args, err, output)

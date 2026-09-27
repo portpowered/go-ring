@@ -31,7 +31,10 @@ func TestSignalingWriteDeadlineInterruptsBlockedSocketWrite(t *testing.T) {
 	}))
 	defer server.Close()
 	url := "ws" + strings.TrimPrefix(server.URL, "http")
-	ws, _, err := websocket.DefaultDialer.Dial(url, nil)
+	ws, response, err := websocket.DefaultDialer.Dial(url, nil)
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

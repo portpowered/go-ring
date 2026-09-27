@@ -12,6 +12,8 @@ import (
 	"sync"
 )
 
+const ringOAuthFixtureFilename = "ring_oauth.json"
+
 // RequestRecord represents a recorded HTTP request
 type RequestRecord struct {
 	Method      string
@@ -120,7 +122,7 @@ func (m *MockTransport) loadFixtureResponse(req *http.Request) *http.Response {
 	}
 
 	fixturePath := filepath.Join(m.fixtureDir, fixtureName)
-	data, err := os.ReadFile(fixturePath)
+	data, err := os.ReadFile(fixturePath) // #nosec G304 -- fixtureName is selected from fixed filenames in getFixtureName.
 	if err != nil {
 		return nil
 	}
@@ -166,14 +168,14 @@ func (m *MockTransport) getFixtureName(req *http.Request) string {
 
 	// OAuth token endpoint
 	if strings.Contains(url, "/oauth/token") {
-		if req.Method == "POST" {
+		if req.Method == http.MethodPost {
 			// Check if it's a refresh token request
 			bodyBytes := m.readBody(req)
 			if strings.Contains(req.URL.RawQuery, "refresh_token") ||
 				strings.Contains(string(bodyBytes), "refresh_token") {
-				return "ring_oauth.json" // Same fixture for now
+				return ringOAuthFixtureFilename // Same fixture for now
 			}
-			return "ring_oauth.json"
+			return ringOAuthFixtureFilename
 		}
 	}
 
@@ -285,7 +287,10 @@ func (m *MockTransport) SetResponse(method, path string, response *http.Response
 
 // SetResponseWithBody sets a response with JSON body
 func (m *MockTransport) SetResponseWithBody(method, path string, statusCode int, body interface{}) {
-	bodyBytes, _ := json.Marshal(body)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		panic(fmt.Sprintf("marshal mock response body: %v", err))
+	}
 	response := &http.Response{
 		StatusCode: statusCode,
 		Status:     fmt.Sprintf("%d", statusCode),

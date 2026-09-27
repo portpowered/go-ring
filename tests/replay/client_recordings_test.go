@@ -178,7 +178,8 @@ func TestGetRecording_NotFound(t *testing.T) {
 	assert.Error(t, err)
 	// The REST client returns HTTPError for 404 status codes
 	assert.True(t, ringapimodels.IsHTTPError(err))
-	if httpErr, ok := err.(*ringapimodels.HTTPError); ok {
+	var httpErr *ringapimodels.HTTPError
+	if assert.ErrorAs(t, err, &httpErr) {
 		assert.Equal(t, 404, httpErr.StatusCode)
 	}
 }

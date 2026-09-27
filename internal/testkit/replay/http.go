@@ -52,9 +52,28 @@ type Pair struct {
 	Value string `json:"value"`
 }
 
+type noMatchingExchangeError struct {
+	method string
+	url    string
+}
+
+func (e noMatchingExchangeError) Error() string {
+	return fmt.Sprintf("replay: no unused exchange matches %s %s", e.method, e.url)
+}
+
+type unconsumedExchangesError struct{ exchanges string }
+
+func (e unconsumedExchangesError) Error() string {
+	return "replay: unconsumed exchanges: " + e.exchanges
+}
+
+type multipleJSONValuesError struct{}
+
+func (multipleJSONValuesError) Error() string { return "multiple JSON values" }
+
 // LoadExchange decodes a JSON cassette file. Response bodies are represented as JSON strings.
 func LoadExchange(path string) (Exchange, error) {
-	b, e := os.ReadFile(path)
+	b, e := os.ReadFile(path) // #nosec G304 -- cassette paths are supplied by the test harness.
 	if e != nil {
 		return Exchange{}, e
 	}
@@ -112,7 +131,7 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		}
 		t.mu.Unlock()
 	}
-	err = fmt.Errorf("replay: no unused exchange matches %s %s", r.Method, r.URL)
+	err = noMatchingExchangeError{method: r.Method, url: r.URL.String()}
 	t.mu.Lock()
 	t.err = errors.Join(t.err, err)
 	t.mu.Unlock()
@@ -129,7 +148,7 @@ func (t *Transport) AssertConsumed() error {
 	}
 	var errs []error
 	if len(left) > 0 {
-		errs = append(errs, fmt.Errorf("replay: unconsumed exchanges: %s", strings.Join(left, ", ")))
+		errs = append(errs, unconsumedExchangesError{exchanges: strings.Join(left, ", ")})
 	}
 	if t.err != nil {
 		errs = append(errs, t.err)
@@ -233,7 +252,7 @@ func semanticJSONEqual(a, b []byte) bool {
 		}
 		var extra any
 		if e = d.Decode(&extra); e != io.EOF {
-			return nil, fmt.Errorf("multiple JSON values")
+			return nil, multipleJSONValuesError{}
 		}
 		return normalizeNumbers(x), nil
 	}

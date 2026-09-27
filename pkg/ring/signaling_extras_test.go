@@ -207,7 +207,7 @@ func TestPushReplayIdentityAndReceiveCancellation(t *testing.T) {
 	replayReply(t, c, request, "push_subscription_ack")
 	s := <-ready
 	heartbeatDone := make(chan struct{})
-	go func() { s.heartbeatAt(100 * time.Millisecond); close(heartbeatDone) }()
+	go func() { s.heartbeatAt(context.Background(), 100*time.Millisecond); close(heartbeatDone) }()
 	select {
 	case m := <-writes:
 		if m.Method != "push_heartbeat" {
@@ -256,7 +256,7 @@ func TestPlaybackReplayReceiveCancellation(t *testing.T) {
 	replayReply(t, c, request, "sdp")
 	s := <-ready
 	keepaliveDone := make(chan struct{})
-	go func() { s.keepalive(100 * time.Millisecond); close(keepaliveDone) }()
+	go func() { s.keepalive(context.Background(), 100*time.Millisecond); close(keepaliveDone) }()
 	select {
 	case m := <-writes:
 		if m.Method != "ping" {
@@ -308,7 +308,7 @@ func TestSignalingExtraValidationBeforeWire(t *testing.T) {
 	c.closed = true
 	c.terminal = signaling.ErrClosed
 	c.mu.Unlock()
-	if _, _, err := c.registerChannel(); err != signaling.ErrClosed {
+	if _, _, err := c.registerChannel(); !errors.Is(err, signaling.ErrClosed) {
 		t.Fatalf("closed registration=%v", err)
 	}
 }
@@ -365,7 +365,7 @@ func TestPlaybackMissingPongTerminates(t *testing.T) {
 	s := <-ready
 	s.lastPong.Store(time.Now().Add(-time.Minute).UnixNano())
 	finished := make(chan struct{})
-	go func() { s.keepalive(time.Millisecond); close(finished) }()
+	go func() { s.keepalive(context.Background(), time.Millisecond); close(finished) }()
 	select {
 	case <-finished:
 	case <-time.After(time.Second):
@@ -409,5 +409,61 @@ func TestPushBackpressureIsolatesDialog(t *testing.T) {
 	case <-other:
 	default:
 		t.Fatal("other dialog stopped receiving after push backpressure")
+	}
+}
+
+func TestSessionKeepalivesStopWithOwnerCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	connection := &SignalingConnection{done: make(chan struct{})}
+	for _, test := range []struct {
+		name string
+		run  func()
+	}{
+		{"push", func() {
+			(&PushSubscription{connection: connection, done: make(chan struct{})}).heartbeatAt(ctx, time.Hour)
+		}},
+		{"playback", func() {
+			(&PlaybackSession{connection: connection, done: make(chan struct{})}).keepalive(ctx, time.Hour)
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			completed := make(chan struct{})
+			go func() { test.run(); close(completed) }()
+			select {
+			case <-completed:
+			case <-time.After(time.Second):
+				t.Fatal("keepalive ignored owner cancellation")
+			}
+		})
+	}
+}
+
+func TestPlaybackLifetimeExpiresAndSendsClose(t *testing.T) {
+	connection, writes := replayConnection(t)
+	session := &PlaybackSession{
+		connection: connection, dialog: "lifetime", riid: "request", id: "session",
+		deviceID: 1000, done: make(chan struct{}),
+	}
+	finished := make(chan struct{})
+	go func() {
+		session.keepaliveFor(context.Background(), time.Hour, time.Millisecond)
+		close(finished)
+	}()
+	select {
+	case <-finished:
+	case <-time.After(time.Second):
+		t.Fatal("playback lifetime did not expire")
+	}
+	select {
+	case message := <-writes:
+		if message.Method != protocol.MethodClose {
+			t.Fatalf("expired playback sent %s, want close", message.Method)
+		}
+	default:
+		t.Fatal("expired playback did not send close")
+	}
+	if !errors.Is(session.terminal, signaling.ErrClosed) {
+		t.Fatalf("terminal error = %v, want closed", session.terminal)
 	}
 }

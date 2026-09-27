@@ -14,7 +14,11 @@ import (
 
 	"github.com/pion/webrtc/v3"
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
+
+const localCandidateQueueCapacity = 128
+const offerTimeout = 15 * time.Second
 
 func main() {
 	if err := run(); err != nil {
@@ -28,13 +32,11 @@ func run() error {
 	flag.Parse()
 	token, device := os.Getenv("RING_ACCESS_TOKEN"), os.Getenv("RING_DEVICE_ID")
 	if token == "" || device == "" {
-		return errors.New("set RING_ACCESS_TOKEN and RING_DEVICE_ID")
+		return ringapimodels.NewBadRequestError("set RING_ACCESS_TOKEN and RING_DEVICE_ID", nil)
 	}
-	config := webrtc.Configuration{}
-	if raw := os.Getenv("RING_ICE_SERVERS_JSON"); raw != "" {
-		if json.Unmarshal([]byte(raw), &config.ICEServers) != nil {
-			return errors.New("invalid RING_ICE_SERVERS_JSON")
-		}
+	config, err := iceConfigurationFromEnvironment()
+	if err != nil {
+		return err
 	}
 	signalCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
@@ -45,7 +47,7 @@ func run() error {
 		return err
 	}
 	defer func() { _ = pc.Close() }()
-	localCandidates := make(chan webrtc.ICECandidateInit, 128)
+	localCandidates := make(chan webrtc.ICECandidateInit, localCandidateQueueCapacity)
 	if *trickle {
 		pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
 			if candidate == nil {
@@ -55,7 +57,7 @@ func run() error {
 			case localCandidates <- candidate.ToJSON():
 			case <-ctx.Done():
 			default:
-				fail(errors.New("local ICE candidate queue full"))
+				fail(ringapimodels.NewConnectionError("local ICE candidate queue full", nil))
 			}
 		})
 	}
@@ -68,7 +70,7 @@ func run() error {
 			}
 		}
 	})
-	offerCtx, offerCancel := context.WithTimeout(ctx, 15*time.Second)
+	offerCtx, offerCancel := context.WithTimeout(ctx, offerTimeout)
 	offer, err := makeOffer(offerCtx, pc, *audio, *trickle)
 	offerCancel()
 	if err != nil {
@@ -98,29 +100,50 @@ func run() error {
 		return err
 	}
 	if *trickle {
-		senderDone := make(chan struct{})
-		go func() {
-			defer close(senderDone)
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case candidate := <-localCandidates:
-					if candidate.SDPMid == nil || candidate.SDPMLineIndex == nil {
-						fail(errors.New("local candidate lacks MID or index"))
-						return
-					}
-					err := session.SendICE(ctx, ring.ICECandidateRequest{Candidate: candidate.Candidate, MID: *candidate.SDPMid, MLineIndex: int(*candidate.SDPMLineIndex)})
-					if err != nil {
-						fail(err)
-						return
-					}
-				}
-			}
-		}()
+		senderDone := forwardLocalCandidates(ctx, fail, localCandidates, session)
 		defer func() { fail(nil); <-senderDone }()
 	}
 	fmt.Println("Signaling session active; Ctrl+C closes the session and local peer.")
+	return receiveRemoteICE(ctx, session, pc)
+}
+
+func iceConfigurationFromEnvironment() (webrtc.Configuration, error) {
+	config := webrtc.Configuration{}
+	raw := os.Getenv("RING_ICE_SERVERS_JSON")
+	if raw == "" {
+		return config, nil
+	}
+	if err := json.Unmarshal([]byte(raw), &config.ICEServers); err != nil {
+		return webrtc.Configuration{}, ringapimodels.NewBadRequestError("invalid RING_ICE_SERVERS_JSON", err)
+	}
+	return config, nil
+}
+
+func forwardLocalCandidates(ctx context.Context, fail context.CancelCauseFunc, candidates <-chan webrtc.ICECandidateInit, session *ring.DeviceSession) <-chan struct{} {
+	senderDone := make(chan struct{})
+	go func() {
+		defer close(senderDone)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case candidate := <-candidates:
+				if candidate.SDPMid == nil || candidate.SDPMLineIndex == nil {
+					fail(ringapimodels.NewBadRequestError("local candidate lacks MID or index", nil))
+					return
+				}
+				err := session.SendICE(ctx, ring.ICECandidateRequest{Candidate: candidate.Candidate, MID: *candidate.SDPMid, MLineIndex: int(*candidate.SDPMLineIndex)})
+				if err != nil {
+					fail(err)
+					return
+				}
+			}
+		}
+	}()
+	return senderDone
+}
+
+func receiveRemoteICE(ctx context.Context, session *ring.DeviceSession, pc *webrtc.PeerConnection) error {
 	for {
 		event, err := session.Receive(ctx)
 		if err != nil {
@@ -142,8 +165,11 @@ func run() error {
 			Candidate string `json:"ice"`
 			Index     uint16 `json:"mlineindex"`
 		}
-		if json.Unmarshal(event.Body, &body) != nil || body.Candidate == "" {
-			return errors.New("invalid remote ICE event")
+		if err := json.Unmarshal(event.Body, &body); err != nil {
+			return ringapimodels.NewConnectionError("invalid remote ICE event", err)
+		}
+		if body.Candidate == "" {
+			return ringapimodels.NewConnectionError("invalid remote ICE event", nil)
 		}
 		if err = pc.AddICECandidate(webrtc.ICECandidateInit{Candidate: body.Candidate, SDPMLineIndex: &body.Index}); err != nil {
 			return err

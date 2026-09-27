@@ -32,182 +32,7 @@ func TestSignalingSessionIntegrationSmoke(t *testing.T) {
 	}))
 	defer httpPeer.Close()
 	serverErrors := make(chan error, 1)
-	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
-	wsPeer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Get("token") != "synthetic-ticket" {
-			t.Errorf("ticket was not placed in signaling URL query")
-		}
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			serverErrors <- err
-			return
-		}
-		defer func() { _ = conn.Close() }()
-		fail := func(e error) { serverErrors <- e }
-		read := func() (map[string]any, error) {
-			_, b, e := conn.ReadMessage()
-			if e != nil {
-				return nil, e
-			}
-			var v map[string]any
-			e = json.Unmarshal(b, &v)
-			return v, e
-		}
-		write := func(v any) error {
-			b, e := json.Marshal(v)
-			if e != nil {
-				return e
-			}
-			return conn.WriteMessage(websocket.TextMessage, b)
-		}
-		first, e := read()
-		if e != nil {
-			fail(e)
-			return
-		}
-		if first["method"] != "live_view" {
-			fail(fmt.Errorf("first method %v", first["method"]))
-			return
-		}
-		dialog, _ := first["dialog_id"].(string)
-		body, _ := first["body"].(map[string]any)
-		if dialog == "" || body["doorbot_id"] != float64(1001) {
-			fail(fmt.Errorf("bad live_view envelope"))
-			return
-		}
-		offer, _ := body["sdp"].(string)
-		if !strings.Contains(offer, "a=mid:0") {
-			fail(fmt.Errorf("offer not sent"))
-			return
-		}
-		if e = write(map[string]any{"method": "session_created", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1"}}); e != nil {
-			fail(e)
-			return
-		}
-		if e = write(map[string]any{"method": "sdp", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "type": "answer", "sdp": answerSDP, "session_info": map[string]any{"session_id": "control-1", "ping_interval": 10}}}); e != nil {
-			fail(e)
-			return
-		}
-		activation, e := read()
-		if e != nil {
-			fail(e)
-			return
-		}
-		mic, e := read()
-		if e != nil || mic["method"] != "mic_enable" {
-			fail(fmt.Errorf("expected microphone setting: %v", e))
-			return
-		}
-		options, e := read()
-		if e != nil || options["method"] != "stream_options" {
-			fail(fmt.Errorf("expected stream options: %v", e))
-			return
-		}
-		if activation["method"] != "activate_session" {
-			fail(fmt.Errorf("expected activate_session, got %v", activation["method"]))
-			return
-		}
-		if e = write(map[string]any{"method": "camera_started", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1"}}); e != nil {
-			fail(e)
-			return
-		}
-		ice, e := read()
-		iceBody, _ := ice["body"].(map[string]any)
-		if e != nil || ice["method"] != "ice" || iceBody["mid"] != "0" || iceBody["mlineindex"] != float64(0) {
-			fail(fmt.Errorf("expected valid trickle ICE: %v", e))
-			return
-		}
-		for i, expected := range []string{"mic_enable", "stream_options"} {
-			m, e := read()
-			if e != nil || m["method"] != expected {
-				fail(fmt.Errorf("expected caller %s control: %v", expected, e))
-				return
-			}
-			b, _ := m["body"].(map[string]any)
-			if i == 0 && b["enabled"] != false {
-				fail(fmt.Errorf("microphone value was not forwarded: %v", b))
-				return
-			}
-			if i == 1 && (b["audio_enabled"] != false || b["video_enabled"] != true) {
-				fail(fmt.Errorf("stream options were not forwarded: %v", b))
-				return
-			}
-		}
-		rpcMethods := []string{"PTZ.Pan.Step", "PTZ.Pan.Step", "PTZ.Pan.Continuous", "PTZ.Tilt.Step", "PTZ.Tilt.Continuous", "PTZ.Pan.Continuous", "PTZ.Pan.Step", "PTZ.Tilt.Step"}
-		for i, expected := range rpcMethods {
-			msg, e := read()
-			if e != nil {
-				fail(e)
-				return
-			}
-			if msg["method"] != "rpc" {
-				fail(fmt.Errorf("expected rpc, got %v", msg["method"]))
-				return
-			}
-			mBody, _ := msg["body"].(map[string]any)
-			cmd, _ := mBody["command"].(map[string]any)
-			if cmd["method"] != expected {
-				fail(fmt.Errorf("expected %s, got %v", expected, cmd["method"]))
-				return
-			}
-			if mBody["session_id"] != "signal-1" {
-				fail(fmt.Errorf("outer signal session ID missing"))
-				return
-			}
-			params, _ := cmd["params"].(map[string]any)
-			if params["sessionId"] != "control-1" {
-				fail(fmt.Errorf("PTZ session ID domain missing"))
-				return
-			}
-			if expected == "PTZ.Pan.Continuous" && params["speed"] != float64(0.5) {
-				if i != 5 || params["speed"] != float64(0) {
-					fail(fmt.Errorf("unexpected pan speed, got %v", params["speed"]))
-					return
-				}
-			}
-			if expected == "PTZ.Tilt.Continuous" && params["speed"] != float64(0.25) {
-				fail(fmt.Errorf("expected tilt speed, got %v", params["speed"]))
-				return
-			}
-			if i == len(rpcMethods)-2 {
-				e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": cmd["id"], "error": map[string]any{"code": 422, "message": "denied"}}}})
-			} else if i < len(rpcMethods)-1 {
-				e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": cmd["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": int64(1700000000001 + i), "version": 1}}}})
-			}
-			if e != nil {
-				fail(e)
-				return
-			}
-		}
-		for range 1 {
-			stop, e := read()
-			if e != nil {
-				fail(e)
-				return
-			}
-			stopBody, _ := stop["body"].(map[string]any)
-			stopCommand, _ := stopBody["command"].(map[string]any)
-			stopParams, _ := stopCommand["params"].(map[string]any)
-			if (stopCommand["method"] != "PTZ.Pan.Continuous" && stopCommand["method"] != "PTZ.Tilt.Continuous") || stopParams["speed"] != float64(0) {
-				fail(fmt.Errorf("close did not stop tracked movement: %v", stopCommand))
-				return
-			}
-			if e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": stopCommand["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": 1700000000010, "version": 1}}}}); e != nil {
-				fail(e)
-				return
-			}
-		}
-		closeMsg, e := read()
-		if e != nil {
-			fail(e)
-			return
-		}
-		if closeMsg["method"] != "close" {
-			fail(fmt.Errorf("expected close, got %v", closeMsg["method"]))
-			return
-		}
-		serverErrors <- nil
-	}))
+	wsPeer := newSignalingSmokeWSPeer(t, serverErrors)
 	defer wsPeer.Close()
 	wsURL := "ws" + strings.TrimPrefix(wsPeer.URL, "http") + "?token={token}"
 	dialer := &captureDialer{delegate: websocket.DefaultDialer}
@@ -323,6 +148,203 @@ func TestSignalingSessionIntegrationSmoke(t *testing.T) {
 	}
 }
 
+func newSignalingSmokeWSPeer(t *testing.T, serverErrors chan error) *httptest.Server {
+	t.Helper()
+	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
+	wsPeer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("token") != "synthetic-ticket" {
+			t.Errorf("ticket was not placed in signaling URL query")
+		}
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			serverErrors <- err
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		fail := func(e error) { serverErrors <- e }
+		read := func() (map[string]any, error) {
+			_, b, e := conn.ReadMessage()
+			if e != nil {
+				return nil, e
+			}
+			var v map[string]any
+			e = json.Unmarshal(b, &v)
+			return v, e
+		}
+		write := func(v any) error {
+			b, e := json.Marshal(v)
+			if e != nil {
+				return e
+			}
+			return conn.WriteMessage(websocket.TextMessage, b)
+		}
+		first, e := read()
+		if e != nil {
+			fail(e)
+			return
+		}
+		if first["method"] != "live_view" {
+			fail(fmt.Errorf("first method %v", first["method"]))
+			return
+		}
+		dialog, _ := first["dialog_id"].(string)
+		body, _ := first["body"].(map[string]any)
+		if dialog == "" || body["doorbot_id"] != float64(1001) {
+			fail(fmt.Errorf("bad live_view envelope"))
+			return
+		}
+		offer, _ := body["sdp"].(string)
+		if !strings.Contains(offer, "a=mid:0") {
+			fail(fmt.Errorf("offer not sent"))
+			return
+		}
+		if e = write(map[string]any{"method": "session_created", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1"}}); e != nil {
+			fail(e)
+			return
+		}
+		if e = write(map[string]any{"method": "sdp", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "type": "answer", "sdp": answerSDP, "session_info": map[string]any{"session_id": "control-1", "ping_interval": 10}}}); e != nil {
+			fail(e)
+			return
+		}
+		activation, e := read()
+		if e != nil {
+			fail(e)
+			return
+		}
+		mic, e := read()
+		if e != nil {
+			fail(fmt.Errorf("read microphone control: %w", e))
+			return
+		}
+		if mic["method"] != "mic_enable" {
+			fail(fmt.Errorf("expected microphone setting"))
+			return
+		}
+		options, e := read()
+		if e != nil {
+			fail(fmt.Errorf("read stream options: %w", e))
+			return
+		}
+		if options["method"] != "stream_options" {
+			fail(fmt.Errorf("expected stream options"))
+			return
+		}
+		if activation["method"] != "activate_session" {
+			fail(fmt.Errorf("expected activate_session, got %v", activation["method"]))
+			return
+		}
+		if e = write(map[string]any{"method": "camera_started", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1"}}); e != nil {
+			fail(e)
+			return
+		}
+		ice, e := read()
+		if e != nil {
+			fail(fmt.Errorf("read trickle ICE: %w", e))
+			return
+		}
+		iceBody, _ := ice["body"].(map[string]any)
+		if ice["method"] != "ice" || iceBody["mid"] != "0" || iceBody["mlineindex"] != float64(0) {
+			fail(fmt.Errorf("expected valid trickle ICE"))
+			return
+		}
+		for i, expected := range []string{"mic_enable", "stream_options"} {
+			m, e := read()
+			if e != nil {
+				fail(fmt.Errorf("read caller %s control: %w", expected, e))
+				return
+			}
+			if m["method"] != expected {
+				fail(fmt.Errorf("expected caller %s control, got %v", expected, m["method"]))
+				return
+			}
+			b, _ := m["body"].(map[string]any)
+			if i == 0 && b["enabled"] != false {
+				fail(fmt.Errorf("microphone value was not forwarded: %v", b))
+				return
+			}
+			if i == 1 && (b["audio_enabled"] != false || b["video_enabled"] != true) {
+				fail(fmt.Errorf("stream options were not forwarded: %v", b))
+				return
+			}
+		}
+		rpcMethods := []string{"PTZ.Pan.Step", "PTZ.Pan.Step", "PTZ.Pan.Continuous", "PTZ.Tilt.Step", "PTZ.Tilt.Continuous", "PTZ.Pan.Continuous", "PTZ.Pan.Step", "PTZ.Tilt.Step"}
+		for i, expected := range rpcMethods {
+			msg, e := read()
+			if e != nil {
+				fail(e)
+				return
+			}
+			if msg["method"] != "rpc" {
+				fail(fmt.Errorf("expected rpc, got %v", msg["method"]))
+				return
+			}
+			mBody, _ := msg["body"].(map[string]any)
+			cmd, _ := mBody["command"].(map[string]any)
+			if cmd["method"] != expected {
+				fail(fmt.Errorf("expected %s, got %v", expected, cmd["method"]))
+				return
+			}
+			if mBody["session_id"] != "signal-1" {
+				fail(fmt.Errorf("outer signal session ID missing"))
+				return
+			}
+			params, _ := cmd["params"].(map[string]any)
+			if params["sessionId"] != "control-1" {
+				fail(fmt.Errorf("PTZ session ID domain missing"))
+				return
+			}
+			if expected == "PTZ.Pan.Continuous" && params["speed"] != float64(0.5) {
+				if i != 5 || params["speed"] != float64(0) {
+					fail(fmt.Errorf("unexpected pan speed, got %v", params["speed"]))
+					return
+				}
+			}
+			if expected == "PTZ.Tilt.Continuous" && params["speed"] != float64(0.25) {
+				fail(fmt.Errorf("expected tilt speed, got %v", params["speed"]))
+				return
+			}
+			if i == len(rpcMethods)-2 {
+				e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": cmd["id"], "error": map[string]any{"code": 422, "message": "denied"}}}})
+			} else if i < len(rpcMethods)-1 {
+				e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": cmd["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": int64(1700000000001 + i), "version": 1}}}})
+			}
+			if e != nil {
+				fail(e)
+				return
+			}
+		}
+		for range 1 {
+			stop, e := read()
+			if e != nil {
+				fail(e)
+				return
+			}
+			stopBody, _ := stop["body"].(map[string]any)
+			stopCommand, _ := stopBody["command"].(map[string]any)
+			stopParams, _ := stopCommand["params"].(map[string]any)
+			if (stopCommand["method"] != "PTZ.Pan.Continuous" && stopCommand["method"] != "PTZ.Tilt.Continuous") || stopParams["speed"] != float64(0) {
+				fail(fmt.Errorf("close did not stop tracked movement: %v", stopCommand))
+				return
+			}
+			if e = write(map[string]any{"method": "rpc", "dialog_id": dialog, "riid": "route-1", "body": map[string]any{"doorbot_id": 1001, "session_id": "signal-1", "command": map[string]any{"jsonrpc": "2.0", "id": stopCommand["id"], "result": map[string]any{"sessionId": "control-1", "timestamp": 1700000000010, "version": 1}}}}); e != nil {
+				fail(e)
+				return
+			}
+		}
+		closeMsg, e := read()
+		if e != nil {
+			fail(e)
+			return
+		}
+		if closeMsg["method"] != "close" {
+			fail(fmt.Errorf("expected close, got %v", closeMsg["method"]))
+			return
+		}
+		serverErrors <- nil
+	}))
+	return wsPeer
+}
+
 func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 	tickets := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -377,14 +399,22 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 				return
 			}
 			activation, e := read()
-			if e != nil || activation["method"] != "activate_session" {
-				serverErr <- fmt.Errorf("expected activation: %v", e)
+			if e != nil {
+				serverErr <- fmt.Errorf("read activation: %w", e)
+				return
+			}
+			if activation["method"] != "activate_session" {
+				serverErr <- fmt.Errorf("expected activation, got %v", activation["method"])
 				return
 			}
 			for _, method := range []string{"mic_enable", "stream_options"} {
 				setup, e := read()
-				if e != nil || setup["method"] != method {
-					serverErr <- fmt.Errorf("expected %s: %v", method, e)
+				if e != nil {
+					serverErr <- fmt.Errorf("read %s: %w", method, e)
+					return
+				}
+				if setup["method"] != method {
+					serverErr <- fmt.Errorf("expected %s, got %v", method, setup["method"])
 					return
 				}
 			}
@@ -435,8 +465,12 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 		}
 		for i := 0; i < 2; i++ {
 			m, e := read()
-			if e != nil || m["method"] != "close" {
-				serverErr <- fmt.Errorf("expected child close: %v", e)
+			if e != nil {
+				serverErr <- fmt.Errorf("read child close: %w", e)
+				return
+			}
+			if m["method"] != "close" {
+				serverErr <- fmt.Errorf("expected child close, got %v", m["method"])
 				return
 			}
 		}

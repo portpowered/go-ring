@@ -20,6 +20,10 @@ func authTestClient(transport roundTripFunc) *Client {
 	)
 }
 
+type authEdgeMockError string
+
+func (e authEdgeMockError) Error() string { return string(e) }
+
 func TestExtractCSRFMalformedAndEmptyProvidersFallThrough(t *testing.T) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
@@ -105,7 +109,7 @@ func TestInitiatePKCERedirectAndProviderFailures(t *testing.T) {
 				}
 				calls++
 				if calls > len(tt.responses) {
-					return nil, errors.New("unexpected extra authorization request")
+					return nil, authEdgeMockError("unexpected extra authorization request")
 				}
 				resp := tt.responses[calls-1]
 				resp.Request = req
@@ -115,16 +119,19 @@ func TestInitiatePKCERedirectAndProviderFailures(t *testing.T) {
 			if calls != tt.wantCalls {
 				t.Fatalf("authorization requests = %d, want %d", calls, tt.wantCalls)
 			}
-			if tt.name == "absolute redirect to csrf page" {
+			switch tt.name {
+			case "absolute redirect to csrf page":
 				if err != nil || client.pendingPKCE == nil || client.pendingPKCE.csrfToken != "page-token" {
 					t.Fatalf("initiatePKCE() pending = %#v, error = %v", client.pendingPKCE, err)
 				}
-			} else if tt.name == "invalid absolute redirect" {
+			case "invalid absolute redirect":
 				if !ringapimodels.IsNetworkError(err) {
 					t.Fatalf("initiatePKCE() error = %v, want NetworkError for malformed Location", err)
 				}
-			} else if !ringapimodels.IsAuthenticationError(err) {
-				t.Fatalf("initiatePKCE() error = %v, want AuthenticationError", err)
+			default:
+				if !ringapimodels.IsAuthenticationError(err) {
+					t.Fatalf("initiatePKCE() error = %v, want AuthenticationError", err)
+				}
 			}
 		})
 	}
@@ -225,7 +232,7 @@ func TestAuthFormRequestContextAndResponseReadFailures(t *testing.T) {
 				return nil, err
 			}
 			t.Fatal("transport should see the canceled request context")
-			return nil, errors.New("unreachable")
+			return nil, context.Canceled
 		})
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()

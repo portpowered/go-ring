@@ -17,14 +17,18 @@ import (
 )
 
 type portableMedia struct {
-	Recording struct {
-		BodyText string `json:"body_text"`
-		ShareURL string `json:"share_url"`
-	} `json:"recording"`
-	Snapshot struct {
-		TimestampMS int64  `json:"timestamp_ms"`
-		BodyText    string `json:"body_text"`
-	} `json:"snapshot"`
+	Recording portableRecording `json:"recording"`
+	Snapshot  portableSnapshot  `json:"snapshot"`
+}
+
+type portableRecording struct {
+	BodyText string `json:"body_text"`
+	ShareURL string `json:"share_url"`
+}
+
+type portableSnapshot struct {
+	TimestampMS int64  `json:"timestamp_ms"`
+	BodyText    string `json:"body_text"`
 }
 
 func TestPortableRecordingBytes(t *testing.T) {
@@ -40,7 +44,10 @@ func TestPortableRecordingBytes(t *testing.T) {
 		t.Fatal("incomplete shared media fixture")
 	}
 	const origin = "https://portable.example.test"
-	responseBody, _ := json.Marshal(media.Recording.BodyText)
+	responseBody, err := json.Marshal(media.Recording.BodyText)
+	if err != nil {
+		t.Fatal(err)
+	}
 	transport := replay.NewTransport(replay.Exchange{
 		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/recording", Headers: http.Header{"Accept": []string{"video/mp4,*/*"}}, HeadersMode: replay.HeadersRequired},
 		Response: replay.Response{Status: 200, Headers: http.Header{"Content-Type": []string{"video/mp4"}}, Body: responseBody},
@@ -73,7 +80,10 @@ func TestPortableRecordingShareURL(t *testing.T) {
 		t.Fatal(err)
 	}
 	const origin = "https://portable.example.test"
-	responseBody, _ := json.Marshal(map[string]string{"url": media.Recording.ShareURL})
+	responseBody, err := json.Marshal(map[string]string{"url": media.Recording.ShareURL})
+	if err != nil {
+		t.Fatal(err)
+	}
 	transport := replay.NewTransport(replay.Exchange{
 		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/share/play", HeadersMode: replay.HeadersRequired},
 		Response: replay.Response{Status: 200, Body: responseBody, JSON: true},

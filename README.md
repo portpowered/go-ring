@@ -10,8 +10,8 @@ A Go client for Ring authentication, device discovery and controls, recordings,
 and persistent signaling sessions.
 
 This is a bit unique compared to other ring-doorbell libraries since: 
-1. It support PTZ support on the websockets, and other new APIs/versions that were not available prior.
-2. It has some more modern trace streams from 2026 that captures the new APIs.
+1. It supports PTZ over signaling WebSockets and newer API versions.
+2. Its replay suite covers sanitized 2026 network captures.
 
 ## Install
 
@@ -62,19 +62,17 @@ defer client.Close()
 
 devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 if err != nil { return err }
-for _, doorbell := range devices.Doorbells {
-    fmt.Printf("%s: %s\n", doorbell.ID, doorbell.Name)
-}
-for _, chime := range devices.Chimes {
-    fmt.Printf("%s: %s\n", chime.ID, chime.Name)
-}
-for _, camera := range devices.StickUpCams {
-    fmt.Printf("%s: %s\n", camera.ID, camera.Name)
-}
-for _, other := range devices.Other {
-    fmt.Printf("%s: %s\n", other.ID, other.Name)
+for _, device := range devices.Devices {
+    fmt.Printf("%s: %s (%s)\n", device.ID, device.Name, device.Kind)
+    if device.Supports(ringapimodels.DeviceCapabilityPtzPanStep) {
+        fmt.Println("  supports step pan control")
+    }
 }
 ```
+
+Each device reports capabilities confirmed by its inventory response. An absent
+capability means support is unknown, so the server remains the final authority
+for a control request. See the [device enumeration plan](docs/plans/device-enumeration.md).
 
 [enumerate-devices example](examples/enumerate-devices/main.go).
 
@@ -296,7 +294,7 @@ sessions, and push subscriptions.
 | --- | --- | --- |
 | Client setup and shutdown | `ring.NewClient`, `Client.Close` | Configuration is fixed at construction; one client can own several signaling connections. |
 | Login and tokens | `Client.NewLoginSession`, `LoginSession.Request2FACode`, `LoginSession.Authenticate`, `Client.RefreshToken` | Login state stays in one session; refresh tokens are passed per request. See [token exchange](examples/token-exchange/main.go). |
-| Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail` | `GetDeviceDetail` returns a typed client projection of the captured v3 response. |
+| Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail`, `Device.Supports` | One list of devices; capabilities come from explicit inventory fields. `GetDeviceDetail` returns the typed captured v3 detail. |
 | Device status, health, and settings | `Client.GetDeviceStatus`, `DeviceDetailDevice.Status`, `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Battery is unknown on wired devices unless battery presence is explicit; missing connection state is not treated as offline. |
 | Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Requests and results use client-owned types; the generated HTTP models stay inside the transport. |
 | Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolume`, `Client.SetInHomeChime` | Volume and in-home chime updates require the current device description for their legacy routes. |
@@ -318,13 +316,19 @@ sessions, and push subscriptions.
 | Captured GET ticket | `Client.GetCapturedTickets` | Separate from the POST ticket used by `OpenSignaling`. |
 ## References
 
+### Reverse engineering resources
+
+- [Ring API architecture](docs/developer-facing/ring-api-architecture.md)
+- [Reverse engineering process](docs/internal/process-of-reverse-engineering.md)
+- [Ring OpenAPI HTTP contracts](api/openapi.yaml) and [Ring AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
+
+### Internal development resources
+
 - [Architecture and ownership](docs/developer-facing/library-architecture.md)
-- [OpenAPI HTTP contracts](api/openapi.yaml) and [AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
 - [Public model schema](api/client-models.openapi.yaml)
 - [Recording formats and verification order](docs/developer-facing/replay-format.md)
 - [Replay, unit, and live integration coverage](docs/developer-facing/coverage.md)
-- [Ring API architecture](docs/developer-facing/ring-api-architecture.md)
-- [Reverse engineering process](docs/internal/process-of-reverse-engineering.md)
+- [Device enumeration and capabilities](docs/plans/device-enumeration.md)
 - [API replay recordings](tests/replay/fixtures/README.md)
 - [Contributing](CONTRIBUTING.md)
 

@@ -31,7 +31,10 @@ func OpenEvents(ctx context.Context, wsURL, token, hardwareID string) (*EventCon
 		header.Set("hardware_id", hardwareID)
 	}
 	dialer := websocket.Dialer{HandshakeTimeout: 10 * time.Second}
-	conn, _, err := dialer.DialContext(ctx, wsURL, header)
+	conn, response, err := dialer.DialContext(ctx, wsURL, header)
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}

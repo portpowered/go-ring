@@ -43,7 +43,7 @@ func TestFCMConnectionReplaysRegistrationAndMotion(t *testing.T) {
 		Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceIDs: []string{"1000"}, Motion: true,
 	})
 	require.NoError(t, err)
-	var kinds []ring.FCMEventKind
+	kinds := make([]ring.FCMEventKind, 0, 4)
 	for event := range connection.Events() {
 		kinds = append(kinds, event.Kind)
 		require.NoError(t, event.Err)

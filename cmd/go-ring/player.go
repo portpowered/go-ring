@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -36,7 +34,7 @@ func videoWriter(codec string, output io.Writer) (rtpVideoWriter, string, error)
 		writer, err := ivfwriter.NewWith(output, ivfwriter.WithCodec(webrtc.MimeTypeVP8))
 		return writer, previewIVF, err
 	default:
-		return nil, "", fmt.Errorf("unsupported preview format %s", format)
+		return nil, "", commandError("unsupported preview format " + format)
 	}
 }
 
@@ -47,7 +45,7 @@ func previewFormat(codec string) (string, error) {
 	case strings.ToUpper(webrtc.MimeTypeVP8):
 		return previewIVF, nil
 	default:
-		return "", fmt.Errorf("ffplay preview does not support negotiated codec %s", codec)
+		return "", commandError("ffplay preview does not support negotiated codec " + codec)
 	}
 }
 
@@ -62,14 +60,14 @@ func playTrack(ctx context.Context, track *webrtc.TrackRemote, recordPath string
 		defer func() { _ = recording.Close() }()
 	}
 	if _, err := exec.LookPath(ffplayCommand); err != nil {
-		return errors.New("ffplay is required for preview; install FFmpeg or use --player none")
+		return commandError("ffplay is required for preview; install FFmpeg or use --player none")
 	}
 	codec := track.Codec().MimeType
 	format, err := previewFormat(codec)
 	if err != nil {
 		return err
 	}
-	command := exec.CommandContext(ctx, ffplayCommand, "-loglevel", "error", "-f", format, "-i", "pipe:0")
+	command := exec.CommandContext(ctx, ffplayCommand, "-loglevel", "error", "-f", format, "-i", "pipe:0") // #nosec G204 -- ffplayCommand is fixed and format is allowlisted by previewFormat.
 	command.Stderr = os.Stderr
 	input, err := command.StdinPipe()
 	if err != nil {

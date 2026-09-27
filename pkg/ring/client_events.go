@@ -29,7 +29,7 @@ func (c *EventConnection) Receive() (*ringapimodels.Event, error) {
 	}
 	event := &ringapimodels.Event{Data: raw}
 	if kind, ok := raw["kind"].(string); ok {
-		event.Kind = ringapimodels.EventKind(kind)
+		event.Kind = kind
 	}
 	if deviceID, ok := raw["device_id"].(float64); ok {
 		event.DeviceID = int64(deviceID)

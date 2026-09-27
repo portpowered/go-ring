@@ -94,27 +94,29 @@ func (c *SignalingConnection) SubscribePush(ctx context.Context, filters []PushF
 			}
 			c.pushes[dialog] = s
 			c.mu.Unlock()
-			go s.heartbeat()
+			go s.heartbeat(c.ctx) //nolint:contextcheck // The subscription belongs to the connection after the request is acknowledged.
 			return s, nil
 		}
 	}
 }
-func (s *PushSubscription) heartbeat() {
+func (s *PushSubscription) heartbeat(ctx context.Context) {
 	const pushHeartbeatInterval = 30 * time.Second
-	s.heartbeatAt(pushHeartbeatInterval)
+	s.heartbeatAt(ctx, pushHeartbeatInterval)
 }
-func (s *PushSubscription) heartbeatAt(interval time.Duration) {
+func (s *PushSubscription) heartbeatAt(ctx context.Context, interval time.Duration) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-s.done:
 			return
 		case <-s.connection.done:
 			return
 		case <-t.C:
-			ctx, cancel := context.WithTimeout(s.connection.ctx, signaling.SendTimeout)
-			_ = s.connection.sendTyped(ctx, protocol.MethodPushHeartbeat, s.dialog, "", generatedsignaling.PushSubscriptionBody{SubscriptionId: s.id})
+			sendCtx, cancel := context.WithTimeout(ctx, signaling.SendTimeout)
+			_ = s.connection.sendTyped(sendCtx, protocol.MethodPushHeartbeat, s.dialog, "", generatedsignaling.PushSubscriptionBody{SubscriptionId: s.id})
 			cancel()
 		}
 	}
@@ -227,7 +229,7 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 			if interval <= 0 || interval > signaling.MaxHeartbeatInterval {
 				interval = signaling.DefaultHeartbeatInterval
 			}
-			go s.keepalive(interval)
+			go s.keepalive(c.ctx, interval) //nolint:contextcheck // Playback lifetime is owned by the signaling connection.
 			return s, nil
 		}
 	}
@@ -261,27 +263,34 @@ func (s *PlaybackSession) terminate(err error) {
 		s.connection.mu.Unlock()
 	})
 }
-func (s *PlaybackSession) keepalive(interval time.Duration) {
+func (s *PlaybackSession) keepalive(ctx context.Context, interval time.Duration) {
+	s.keepaliveFor(ctx, interval, signaling.MaxSessionAge)
+}
+func (s *PlaybackSession) keepaliveFor(ctx context.Context, interval, lifetime time.Duration) {
 	ping := time.NewTicker(interval)
 	defer ping.Stop()
-	expiry := time.NewTimer(signaling.MaxSessionAge)
+	expiry := time.NewTimer(lifetime)
 	defer expiry.Stop()
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-s.done:
 			return
 		case <-s.connection.done:
 			return
 		case <-expiry.C:
-			_ = s.Close()
+			closeCtx, cancel := context.WithTimeout(ctx, signaling.CloseTimeout)
+			_ = s.closeWithContext(closeCtx)
+			cancel()
 			return
 		case <-ping.C:
 			if time.Since(time.Unix(0, s.lastPong.Load())) > 3*interval {
 				s.terminate(signaling.ErrHeartbeat)
 				return
 			}
-			ctx, cancel := context.WithTimeout(s.connection.ctx, signaling.SendTimeout)
-			_ = s.connection.sendTyped(ctx, protocol.MethodPing, s.dialog, s.riid, generatedsignaling.SessionBody{DoorbotId: int(s.deviceID), SessionId: s.id})
+			sendCtx, cancel := context.WithTimeout(ctx, signaling.SendTimeout)
+			_ = s.connection.sendTyped(sendCtx, protocol.MethodPing, s.dialog, s.riid, generatedsignaling.SessionBody{DoorbotId: int(s.deviceID), SessionId: s.id})
 			cancel()
 		}
 	}
@@ -305,6 +314,12 @@ func (s *PlaybackSession) Receive(ctx context.Context) (SessionEvent, error) {
 	}
 }
 func (s *PlaybackSession) Close() error {
+	ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
+	defer cancel()
+	return s.closeWithContext(ctx)
+}
+
+func (s *PlaybackSession) closeWithContext(ctx context.Context) error {
 	var err error
 	s.once.Do(func() {
 		s.terminal = signaling.ErrClosed
@@ -313,8 +328,6 @@ func (s *PlaybackSession) Close() error {
 		delete(s.connection.playbacks, s.dialog)
 		delete(s.connection.channels, s.dialog)
 		s.connection.mu.Unlock()
-		ctx, cancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
-		defer cancel()
 		err = s.connection.sendTyped(ctx, protocol.MethodClose, s.dialog, s.riid, generatedsignaling.PlaybackCloseBody{DoorbotId: int(s.deviceID), SessionId: s.id, Reason: &generatedsignaling.PlaybackCloseReason{Code: 0, Text: "client_closed"}})
 	})
 	return err

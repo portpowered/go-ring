@@ -144,7 +144,7 @@ func (c *SignalingConnection) Close() error {
 	closeCtx, closeCancel := context.WithTimeout(context.Background(), signaling.CloseTimeout)
 	defer closeCancel()
 	for _, s := range children {
-		_ = s.closeWithContext(closeCtx, true)
+		s.closeWithContext(closeCtx, true)
 	}
 	c.mu.Lock()
 	c.terminal = signaling.ErrClosed

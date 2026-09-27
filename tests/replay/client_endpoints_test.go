@@ -15,7 +15,7 @@ type endpointTransport struct{ urls []string }
 
 func (t *endpointTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	t.urls = append(t.urls, req.URL.String())
-	return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{}`)), Request: req}, nil
+	return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{}`)), Request: req}, nil
 }
 
 func TestEndpointRegionsAndOverridesArePerClient(t *testing.T) {

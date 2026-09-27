@@ -16,7 +16,7 @@ import (
 
 const (
 	eventBufferSize = 16
-	apiKey          = "AIzaSyCv-hdFBmmdBBJadNy-TFwB-xN_H5m3Bk8"
+	apiKey          = "AIzaSyCv-hdFBmmdBBJadNy-TFwB-xN_H5m3Bk8" // #nosec G101 -- public Android app API key required by FCM registration.
 	projectID       = "ring-17770"
 	appID           = "1:876313859327:android:e10ec6ddb3c81f39"
 )

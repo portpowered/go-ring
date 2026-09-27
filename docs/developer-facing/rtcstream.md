@@ -36,9 +36,8 @@ Close the session when finished, close the connection to release its children,
 and close the client when its work is done. Keep the connection and session
 contexts alive for their intended lifetime. Cancellation ends owned work.
 Sessions have a maximum lifetime of 60 minutes, an SDK policy rather than a
-proven vendor timeout. See [session design](../plans/session-design.md) for SDP
-construction, identity domains, heartbeat and teardown rules; sections marked
-as target behavior remain implementation requirements.
+proven vendor timeout. This document describes session setup and teardown;
+the signaling contract is in [AsyncAPI](../../api/asyncapi.yaml).
 
 | Surface | Evidence and limits |
 |---|---|

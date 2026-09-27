@@ -32,10 +32,16 @@ func snapshotExchanges(t *testing.T, timestamp int64, withImage bool) ([]replay.
 			Response: replay.Response{Status: 200, Headers: http.Header{"Content-Type": []string{"application/json"}}, Body: body, JSON: true},
 		}
 	}
-	pollBody, _ := json.Marshal(map[string]any{"timestamps": []map[string]int64{{"timestamp": timestamp}}})
+	pollBody, err := json.Marshal(map[string]any{"timestamps": []map[string]int64{{"timestamp": timestamp}}})
+	if err != nil {
+		t.Fatal(err)
+	}
 	exchanges := []replay.Exchange{post(json.RawMessage(`{}`)), post(pollBody)}
 	if withImage {
-		imageBody, _ := json.Marshal(media.Snapshot.BodyText)
+		imageBody, err := json.Marshal(media.Snapshot.BodyText)
+		if err != nil {
+			t.Fatal(err)
+		}
 		exchanges = append(exchanges, replay.Exchange{
 			Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/snapshots/image/12345", HeadersMode: replay.HeadersRequired, Headers: http.Header{"Accept": []string{"image/jpeg"}, "Authorization": []string{"Bearer portable-token"}}},
 			Response: replay.Response{Status: 200, Headers: http.Header{"Content-Type": []string{"image/jpeg"}}, Body: imageBody},

@@ -159,7 +159,7 @@ func TestRefreshTokenUsesOnlyRequestCredentials(t *testing.T) {
 // test_other.py::test_other_attributes using values from the existing Go
 // fixture. The C1 v3 capture establishes only a camera row, so this fixture
 // tests conversion and generic getters, not a vendor v3 family wire contract.
-func TestGetAllDevicesUniformMetadataAndDefaultsAcrossFamilies(t *testing.T) {
+func TestGenericDeviceInventoryPreservesMetadataAcrossKinds(t *testing.T) {
 	const body = `{"devices":[
 		{"id":101,"kind":"lpd_v1","family":"doorbots","owned":true,"description":"Front Door","name":"","address":"123 Main St","timezone":"America/New_York","time_zone":"ignored","volume":1,"has_light":true,"light_brightness":2,"motion_detection_enabled":true,"health":{"signal_strength":-58}},
 		{"id":102,"kind":"lpd_v1","family":"doorbots","owned":false,"description":"Shared Door","address":"2 Side St","time_zone":"America/New_York"},
@@ -175,37 +175,36 @@ func TestGetAllDevicesUniformMetadataAndDefaultsAcrossFamilies(t *testing.T) {
 
 	devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "inventory-token"}})
 	require.NoError(t, err)
-	require.Len(t, devices.Doorbells, 2, "owned and shared doorbells are both exposed")
-	require.Len(t, devices.Chimes, 1)
-	require.Len(t, devices.StickUpCams, 1)
-	require.Len(t, devices.Other, 2, "intercom and unfamiliar kinds remain available as generic devices")
-
-	all := devices.GetAllDevices()
+	all := devices.Devices
 	require.Len(t, all, 6)
 	for _, device := range all {
-		require.NotEmpty(t, device.GetID())
-		require.NotEmpty(t, device.GetFamily())
+		require.NotEmpty(t, device.ID)
+		require.NotEmpty(t, device.Kind)
 		// Missing optional text values normalize to the empty string, not panic.
-		_ = device.GetName()
-		_ = device.GetAddress()
-		_ = device.GetTimezone()
+		_ = device.Name
+		_ = device.Address
+		_ = device.Timezone
 	}
-	require.Equal(t, "Front Door", devices.Doorbells[0].GetName(), "description is used if name is empty")
-	require.Equal(t, "America/New_York", devices.Doorbells[0].GetTimezone(), "primary timezone wins")
-	require.Equal(t, "Shared Door", devices.Doorbells[1].GetName())
-	require.Equal(t, "", devices.Chimes[0].GetAddress())
-	require.Equal(t, "", devices.Chimes[0].GetTimezone())
-	require.Equal(t, ringapimodels.DeviceFamilyChime, devices.Chimes[0].GetFamily())
-	require.Equal(t, "Camera", devices.StickUpCams[0].GetName())
-	require.Equal(t, "America/Phoenix", devices.StickUpCams[0].GetTimezone())
-	require.Equal(t, "Lobby Intercom", devices.Other[0].GetName())
-	require.Equal(t, ringapimodels.DeviceFamilyOther, devices.Other[0].GetFamily())
-	require.Equal(t, "future_device_kind", devices.Other[1].Kind)
-	require.Equal(t, "future_family", devices.Other[1].Family)
-	require.Equal(t, "Unknown", devices.Other[1].GetName())
-	require.Equal(t, "", devices.Other[1].GetAddress())
-	require.Equal(t, "", devices.Other[1].GetTimezone())
-	if health := devices.Doorbells[0].Health; health != nil {
+	require.Equal(t, "Front Door", all[0].Name, "description is used if name is empty")
+	require.Equal(t, "America/New_York", all[0].Timezone, "primary timezone wins")
+	require.Equal(t, "Shared Door", all[1].Name)
+	require.Equal(t, "", all[2].Address)
+	require.Equal(t, "", all[2].Timezone)
+	require.Equal(t, string(ringapimodels.DeviceFamilyChime), all[2].Family)
+	require.Equal(t, "Camera", all[3].Name)
+	require.Equal(t, "America/Phoenix", all[3].Timezone)
+	require.Equal(t, "Lobby Intercom", all[4].Name)
+	require.Equal(t, string(ringapimodels.DeviceFamilyOther), all[4].Family)
+	require.Equal(t, "future_device_kind", all[5].Kind)
+	require.Equal(t, "future_family", all[5].Family)
+	require.Equal(t, "Unknown", all[5].Name)
+	require.Equal(t, "", all[5].Address)
+	require.Equal(t, "", all[5].Timezone)
+	require.True(t, all[0].Supports(ringapimodels.DeviceCapabilityLight))
+	require.True(t, all[0].Supports(ringapimodels.DeviceCapabilityMotionDetection))
+	require.Empty(t, all[5].Capabilities, "unrecognized hardware does not gain inferred capabilities")
+	require.False(t, all[5].Supports(ringapimodels.DeviceCapabilityLight))
+	if health := all[0].Health; health != nil {
 		require.NotNil(t, health.SignalStrength)
 		require.Equal(t, -58, *health.SignalStrength)
 	} else {

@@ -17,6 +17,18 @@ type capturedRPCPair struct {
 	reply   map[string]any
 }
 
+type recordedSessionEnvelope struct {
+	Body recordedSessionBody `json:"body"`
+}
+
+type recordedSessionBody struct {
+	Info recordedSessionInfo `json:"session_info"`
+}
+
+type recordedSessionInfo struct {
+	SessionID string `json:"session_id"`
+}
+
 func recordedRPCPair(t *testing.T, method string, speed *float64) capturedRPCPair {
 	t.Helper()
 	var pending map[string]any
@@ -128,13 +140,7 @@ func replayPTZReply(t *testing.T, c *websocket.Conn, dialog string, pair capture
 
 func TestRecordedConnectionPTZResponses(t *testing.T) {
 	offer, captured := recordedLiveView(t)
-	var answer struct {
-		Body struct {
-			Info struct {
-				SessionID string `json:"session_id"`
-			} `json:"session_info"`
-		} `json:"body"`
-	}
+	var answer recordedSessionEnvelope
 	if err := json.Unmarshal(captured["sdp"], &answer); err != nil {
 		t.Fatal(err)
 	}

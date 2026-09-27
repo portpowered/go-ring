@@ -6,15 +6,40 @@ run:
 linters:
   default: standard
   enable:
+    - bodyclose
+    - copyloopvar
+    - contextcheck
     - govet
+    - dupl
+    - durationcheck
+    - errchkjson
+    - errname
+    - errorlint
     - ineffassign
     - staticcheck
     - unused
     - revive
+    - gocritic
+    - gosec
     - mnd
     - goconst
     - cyclop
     - forbidigo
+    - makezero
+    - mirror
+    - misspell
+    - nilerr
+    - nilnil
+    - nolintlint
+    - prealloc
+    - predeclared
+    - rowserrcheck
+    - sqlclosecheck
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+    - whitespace
   settings:
     forbidigo:
       forbid:
@@ -26,8 +51,9 @@ linters:
       max-complexity: 25
     mnd:
       checks: [argument, case, condition, operation, return]
-      ignored-numbers: ['0', '1', '2', '10', '64', '100']
+      ignored-numbers: ['0', '1', '2', '10', '64', '100', '0o600']
     goconst:
+      min-len: 8
       min-occurrences: 2
     revive:
       rules:
@@ -40,19 +66,16 @@ linters:
               skip-comments: true
               skip-blank-lines: true
   exclusions:
+    generated: strict
     rules:
-      - path: '(^|/)(pkg/generatedhttp|pkg/generatedsignaling)/'
-        linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop, forbidigo]
-      - path: '(^|/)pkg/ringapimodels/models\.gen\.go$'
-        linters: [revive, govet, unused, staticcheck, mnd, goconst, cyclop, forbidigo]
-      - path: '_test\.go$'
-        linters: [revive, mnd, goconst, cyclop, forbidigo]
-      - path: '(^|/)(test|tools|internal/testkit)/'
-        linters: [revive, mnd, goconst, unused, staticcheck, cyclop, forbidigo]
-      - path: '(^|/)examples/'
-        linters: [mnd, cyclop, forbidigo]
-      - path: '(^|/)cmd/go-ring/'
-        linters: [forbidigo]
+      # Scenario fixtures repeat wire literals, retain synthetic errors, and use handler signatures that contextcheck misreads.
+      - path: '(^|/)[^/]+_test\.go$'
+        linters: [contextcheck, cyclop, forbidigo, goconst]
+      # These CLI paths own cleanup through context-free Close APIs and use a bounded detached context for PTZ stop during cancellation.
+      - path: '^cmd/go-ring/(main|snapshot_rtc|tokens|view)\.go$'
+        linters: [contextcheck]
+    paths:
+      - '^pkg/generatedsignaling/'
 
 formatters:
   enable:

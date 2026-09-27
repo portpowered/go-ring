@@ -19,7 +19,7 @@ type SessionRecording struct {
 
 func LoadSessionRecording(path string) (SessionRecording, error) {
 	var recording SessionRecording
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- test replay paths are supplied by the test harness.
 	if err != nil {
 		return recording, err
 	}
@@ -29,7 +29,7 @@ func LoadSessionRecording(path string) (SessionRecording, error) {
 
 // LoadCases reads portable synthetic case arrays used by both language suites.
 func LoadCases[T any](path string) ([]T, error) {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- test case paths are supplied by the test harness.
 	if err != nil {
 		return nil, err
 	}

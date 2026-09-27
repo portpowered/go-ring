@@ -4,13 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx := context.Background()
 
 	// Get credentials from environment variables
@@ -22,18 +29,18 @@ func main() {
 		tokenFile = "tokens.json"
 	}
 	if username == "" || password == "" {
-		log.Fatal("RING_USERNAME and RING_PASSWORD environment variables must be set")
+		return ringapimodels.NewBadRequestError("RING_USERNAME and RING_PASSWORD environment variables must be set", nil)
 	}
 
 	// Create a new Ring client
 	client, err := ring.NewClient()
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		return err
 	}
 	defer func() { _ = client.Close() }()
 	login, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password})
 	if err != nil {
-		log.Fatalf("Failed to start login: %v", err)
+		return err
 	}
 	defer func() { _ = login.Close() }()
 
@@ -42,21 +49,20 @@ func main() {
 	var otpCode string
 
 	if ringOtpCode == "" {
-
 		err = login.Request2FACode(ctx)
 		if err != nil {
-			log.Fatalf("Failed to request 2FA code: %v", err)
+			return err
 		}
 		fmt.Println("✓ 2FA code requested. Please check your email or authenticator app for the code.")
 		fmt.Print("Enter 2FA code: ")
 
 		_, err = fmt.Scanln(&otpCode)
 		if err != nil {
-			log.Fatalf("Failed to read 2FA code: %v", err)
+			return ringapimodels.NewBadRequestError("Failed to read 2FA code", err)
 		}
 
 		if otpCode == "" {
-			log.Fatal("2FA code cannot be empty")
+			return ringapimodels.NewBadRequestError("2FA code cannot be empty", nil)
 		}
 	} else {
 		otpCode = ringOtpCode
@@ -65,11 +71,11 @@ func main() {
 	fmt.Println("Authenticating with 2FA code...")
 	authResp, err := login.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otpCode})
 	if err != nil {
-		log.Fatalf("Failed to authenticate with 2FA code: %v", err)
+		return err
 	}
 
 	if authResp == nil {
-		log.Fatal("Authentication response is nil")
+		return ringapimodels.NewConnectionError("Authentication response is nil", nil)
 	}
 
 	fmt.Printf("✓ Authentication successful!\n")
@@ -88,10 +94,10 @@ func main() {
 	}
 	encoded, err := json.MarshalIndent(tokenData, "", "  ")
 	if err != nil {
-		log.Fatalf("Failed to encode tokens: %v", err)
+		return ringapimodels.NewInternalServerError("Failed to encode tokens", err)
 	}
 	if err := os.WriteFile(tokenFile, append(encoded, '\n'), 0o600); err != nil {
-		log.Fatalf("Failed to write tokens to %s: %v", tokenFile, err)
+		return ringapimodels.NewInternalServerError("Failed to write tokens", err)
 	}
 	fmt.Printf("✓ Tokens saved to %s (mode 0600)\n\n", tokenFile)
 
@@ -123,4 +129,5 @@ func main() {
 	// fmt.Println()
 
 	fmt.Println("Example completed successfully!")
+	return nil
 }

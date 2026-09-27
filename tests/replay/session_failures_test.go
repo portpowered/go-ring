@@ -216,7 +216,7 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 			}
 			if mode == "session_expiry" || mode == "heartbeat_timeout" || mode == "event_backpressure" {
 				waitLimit := time.Second
-				want := error(ring.ErrSessionExpired)
+				want := ring.ErrSessionExpired
 				state := ring.SessionExpired
 				if mode == "heartbeat_timeout" {
 					waitLimit = 5 * time.Second

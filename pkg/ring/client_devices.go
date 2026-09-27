@@ -3,8 +3,8 @@ package ring
 import (
 	"context"
 	"strconv"
-	"strings"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
@@ -20,37 +20,25 @@ func (c *Client) ListDevices(ctx context.Context, req ListDevicesRequest) (*ring
 		return nil, err
 	}
 
-	response := &ringapimodels.DevicesResponse{}
-
+	response := &ringapimodels.DevicesResponse{Devices: make([]ringapimodels.Device, 0, len(rawResponse.Devices))}
 	for _, raw := range rawResponse.Devices {
-		switch classifyDevice(raw) {
-		case generatedhttp.Doorbots:
-			response.Doorbells = append(response.Doorbells, *convertToDoorbell(raw))
-		case generatedhttp.Chimes:
-			response.Chimes = append(response.Chimes, *convertToChime(raw))
-		case generatedhttp.StickupCams:
-			response.StickUpCams = append(response.StickUpCams, *convertToStickUpCam(raw))
-		default:
-			response.Other = append(response.Other, *convertToOther(raw))
-		}
+		response.Devices = append(response.Devices, convertDevice(raw))
 	}
 
 	return response, nil
 }
 
 // GetDevice retrieves a specific device by ID
-func (c *Client) GetDevice(ctx context.Context, req GetDeviceRequest) (ringapimodels.Device, error) {
+func (c *Client) GetDevice(ctx context.Context, req GetDeviceRequest) (*ringapimodels.Device, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	devices, err := c.ListDevices(ctx, ListDevicesRequest{Auth: req.Auth})
 	if err != nil {
 		return nil, err
 	}
 
-	// Search through all devices
-	allDevices := devices.GetAllDevices()
-	for _, device := range allDevices {
-		if device.GetID() == req.DeviceID {
-			return device, nil
+	for i := range devices.Devices {
+		if devices.Devices[i].ID == req.DeviceID {
+			return &devices.Devices[i], nil
 		}
 	}
 
@@ -96,112 +84,60 @@ func wireValue[T any](value *T) T {
 	return zero
 }
 
-// classifyDevice uses the kind catalog generated from OpenAPI. The wire kind
-// and family fields stay open so unknown hardware is still decoded.
-func classifyDevice(raw generatedhttp.Device) generatedhttp.DeviceFamilyCode {
-	kind := strings.ToLower(raw.Kind)
-	switch {
-	case generatedhttp.DoorbellDeviceKind(kind).Valid():
-		return generatedhttp.Doorbots
-	case generatedhttp.ChimeDeviceKind(kind).Valid():
-		return generatedhttp.Chimes
-	case generatedhttp.CameraDeviceKind(kind).Valid():
-		return generatedhttp.StickupCams
-	case generatedhttp.OtherDeviceKind(kind).Valid():
-		return generatedhttp.Other
+func convertDevice(raw generatedhttp.Device) ringapimodels.Device {
+	device := ringapimodels.Device{
+		ID:                     strconv.FormatInt(raw.Id, 10),
+		Name:                   getDeviceName(raw),
+		Kind:                   raw.Kind,
+		Family:                 wireValue(raw.Family),
+		Address:                wireValue(raw.Address),
+		Timezone:               getDeviceTimezone(raw),
+		WifiName:               raw.WifiName,
+		WifiSignalStrength:     raw.WifiSignalStrength,
+		Volume:                 raw.Volume,
+		LightBrightness:        raw.LightBrightness,
+		MotionDetectionEnabled: raw.MotionDetectionEnabled,
+		Capabilities:           deviceCapabilities(raw),
 	}
-	if raw.Family != nil {
-		family := generatedhttp.DeviceFamilyCode(strings.ToLower(*raw.Family))
-		if family.Valid() {
-			return family
+	if raw.Health != nil {
+		device.Health = convertInventoryHealth(raw.Health)
+	}
+	return device
+}
+
+func deviceCapabilities(raw generatedhttp.Device) []ringapimodels.DeviceCapability {
+	capabilities := make([]ringapimodels.DeviceCapability, 0)
+	if raw.HasLight != nil && *raw.HasLight {
+		capabilities = append(capabilities, ringapimodels.DeviceCapabilityLight)
+	}
+	if raw.MotionDetectionEnabled != nil {
+		capabilities = append(capabilities, ringapimodels.DeviceCapabilityMotionDetection)
+	}
+	if raw.Health == nil {
+		return capabilities
+	}
+	if raw.Health.SirenOn != nil {
+		capabilities = append(capabilities, ringapimodels.DeviceCapabilitySiren)
+	}
+	if raw.Health.VodEnabled != nil && *raw.Health.VodEnabled {
+		capabilities = append(capabilities, ringapimodels.DeviceCapabilityLiveView)
+	}
+	if raw.Health.SupportedRpcCommands == nil {
+		return capabilities
+	}
+	for _, command := range *raw.Health.SupportedRpcCommands {
+		switch command {
+		case protocol.RPCPanStep:
+			capabilities = append(capabilities, ringapimodels.DeviceCapabilityPtzPanStep)
+		case protocol.RPCTiltStep:
+			capabilities = append(capabilities, ringapimodels.DeviceCapabilityPtzTiltStep)
+		case protocol.RPCPanContinuous:
+			capabilities = append(capabilities, ringapimodels.DeviceCapabilityPtzPanContinuous)
+		case protocol.RPCTiltContinuous:
+			capabilities = append(capabilities, ringapimodels.DeviceCapabilityPtzTiltContinuous)
 		}
 	}
-	return generatedhttp.Other
-}
-
-// convertToDoorbell converts a raw device to a Doorbell
-func convertToDoorbell(raw generatedhttp.Device) *ringapimodels.Doorbell {
-	doorbell := &ringapimodels.Doorbell{
-		ID:                     strconv.FormatInt(raw.Id, 10),
-		Name:                   getDeviceName(raw),
-		Family:                 wireValue(raw.Family),
-		Address:                wireValue(raw.Address),
-		Timezone:               getDeviceTimezone(raw),
-		WifiName:               wireValue(raw.WifiName),
-		WifiSignalStrength:     wireValue(raw.WifiSignalStrength),
-		Volume:                 wireValue(raw.Volume),
-		HasLight:               wireValue(raw.HasLight),
-		LightBrightness:        raw.LightBrightness,
-		MotionDetectionEnabled: wireValue(raw.MotionDetectionEnabled),
-	}
-
-	if raw.Health != nil {
-		doorbell.Health = convertInventoryHealth(raw.Health)
-	}
-
-	return doorbell
-}
-
-// convertToChime converts a raw device to a Chime
-func convertToChime(raw generatedhttp.Device) *ringapimodels.Chime {
-	chime := &ringapimodels.Chime{
-		ID:                 strconv.FormatInt(raw.Id, 10),
-		Name:               getDeviceName(raw),
-		Family:             wireValue(raw.Family),
-		Address:            wireValue(raw.Address),
-		Timezone:           getDeviceTimezone(raw),
-		WifiName:           wireValue(raw.WifiName),
-		WifiSignalStrength: wireValue(raw.WifiSignalStrength),
-		Volume:             wireValue(raw.Volume),
-	}
-
-	if raw.Health != nil {
-		chime.Health = convertInventoryHealth(raw.Health)
-	}
-
-	return chime
-}
-
-// convertToStickUpCam converts a raw device to a StickUpCam
-func convertToStickUpCam(raw generatedhttp.Device) *ringapimodels.StickUpCam {
-	stickupCam := &ringapimodels.StickUpCam{
-		ID:                     strconv.FormatInt(raw.Id, 10),
-		Name:                   getDeviceName(raw),
-		Description:            raw.Kind,
-		Family:                 wireValue(raw.Family),
-		Address:                wireValue(raw.Address),
-		Timezone:               getDeviceTimezone(raw),
-		WifiName:               wireValue(raw.WifiName),
-		WifiSignalStrength:     wireValue(raw.WifiSignalStrength),
-		Volume:                 wireValue(raw.Volume),
-		HasLight:               wireValue(raw.HasLight),
-		LightBrightness:        raw.LightBrightness,
-		MotionDetectionEnabled: wireValue(raw.MotionDetectionEnabled),
-	}
-
-	if raw.Health != nil {
-		stickupCam.Health = convertInventoryHealth(raw.Health)
-	}
-
-	return stickupCam
-}
-
-// convertToOther converts a raw device to an Other device (e.g., Intercom)
-func convertToOther(raw generatedhttp.Device) *ringapimodels.Other {
-	other := &ringapimodels.Other{
-		ID:       strconv.FormatInt(raw.Id, 10),
-		Name:     getDeviceName(raw),
-		Family:   wireValue(raw.Family),
-		Address:  wireValue(raw.Address),
-		Timezone: getDeviceTimezone(raw),
-		Kind:     raw.Kind,
-	}
-
-	if raw.Health != nil {
-		other.Health = convertInventoryHealth(raw.Health)
-	}
-
-	return other
+	return capabilities
 }
 
 // convertInventoryHealth maps typed inventory health into the public projection.

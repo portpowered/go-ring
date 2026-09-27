@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -13,7 +12,7 @@ import (
 
 func rebootCommand(ctx context.Context, store tokenStore, args []string, out io.Writer) error {
 	if len(args) != 1 || args[0] == "" {
-		return errors.New("usage: reboot <device-id>")
+		return commandError("usage: reboot <device-id>")
 	}
 	return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error {
 		if err := client.RebootDevice(ctx, ring.DeviceIDRequest{Auth: auth, DeviceID: args[0]}); err != nil {
@@ -26,7 +25,7 @@ func rebootCommand(ctx context.Context, store tokenStore, args []string, out io.
 
 func healthCommand(ctx context.Context, store tokenStore, args []string, out io.Writer) error {
 	if len(args) == 0 || args[0] == "" {
-		return errors.New("usage: health <device-id> [--refresh]")
+		return commandError("usage: health <device-id> [--refresh]")
 	}
 	flags := flag.NewFlagSet("health", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
@@ -35,7 +34,7 @@ func healthCommand(ctx context.Context, store tokenStore, args []string, out io.
 		return err
 	}
 	if flags.NArg() != 0 {
-		return errors.New("usage: health <device-id> [--refresh]")
+		return commandError("usage: health <device-id> [--refresh]")
 	}
 	return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error {
 		detail, err := client.GetDeviceDetail(ctx, ring.GetDeviceDetailRequest{Auth: auth, DeviceID: args[0]})
@@ -85,11 +84,11 @@ func printHealthValue[T any](out io.Writer, label string, value *T) {
 
 func soundCommand(ctx context.Context, store tokenStore, args []string, out io.Writer) error {
 	if len(args) != 2 || args[0] == "" {
-		return errors.New("usage: sound <chime-id> ding|motion")
+		return commandError("usage: sound <chime-id> ding|motion")
 	}
 	sound := ringapimodels.SoundKind(args[1])
 	if !sound.Valid() {
-		return errors.New("sound must be ding or motion")
+		return commandError("sound must be ding or motion")
 	}
 	return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error {
 		if err := client.TestSound(ctx, ring.TestSoundRequest{Auth: auth, DeviceID: args[0], Sound: sound}); err != nil {

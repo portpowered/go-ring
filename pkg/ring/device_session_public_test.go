@@ -22,7 +22,7 @@ func newPublicTestSession(t *testing.T) (*DeviceSession, *signaling.Session) {
 	conn := &SignalingConnection{done: make(chan struct{}), sessions: make(map[string]*DeviceSession)}
 	s := &DeviceSession{connection: conn, core: core, dialogID: "dialog", deviceID: 7, signalID: "signal", offerSDP: publicTestOffer, iceMode: ICETrickle, movement: map[PTZAxis]string{}, done: make(chan struct{})}
 	conn.sessions[s.dialogID] = s
-	go s.watch()
+	go s.watch(context.Background())
 	return s, core
 }
 

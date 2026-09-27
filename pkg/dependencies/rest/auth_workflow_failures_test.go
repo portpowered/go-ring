@@ -69,7 +69,7 @@ func TestAuthenticateStopsAtFailedStage(t *testing.T) {
 func TestPendingAuthenticationRequiresCodeWithoutHTTP(t *testing.T) {
 	client := authTestClient(func(*http.Request) (*http.Response, error) {
 		t.Fatal("must not send without verification code")
-		return nil, nil
+		return nil, context.Canceled
 	})
 	client.pendingPKCE = &pkceState{client: client.httpClient}
 	token, err := client.Authenticate(context.Background(), "", "", "", "")

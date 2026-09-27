@@ -16,10 +16,51 @@ import (
 )
 
 type recordedMessages struct {
-	Messages []struct {
-		Direction string            `json:"direction"`
-		Payload   signaling.Message `json:"payload"`
-	} `json:"messages"`
+	Messages []recordedMessage `json:"messages"`
+}
+
+type recordedMessage struct {
+	Direction string            `json:"direction"`
+	Payload   signaling.Message `json:"payload"`
+}
+
+type recordedSDPFrame struct {
+	Body recordedSDPFrameBody `json:"body"`
+}
+
+type recordedSDPFrameBody struct {
+	SDP string `json:"sdp"`
+}
+
+type recordedRPCCommand struct {
+	ID     string         `json:"id"`
+	Method string         `json:"method"`
+	Params map[string]any `json:"params"`
+}
+
+type recordedRPCResultCommand struct {
+	ID     string          `json:"id"`
+	Result json.RawMessage `json:"result"`
+}
+
+type recordedSessionRPC struct {
+	DeviceID  int64              `json:"doorbot_id"`
+	SessionID string             `json:"session_id"`
+	Command   recordedRPCCommand `json:"command"`
+}
+
+type recordedSignalRPC struct {
+	DeviceID int64              `json:"doorbot_id"`
+	SignalID string             `json:"session_id"`
+	Command  recordedRPCCommand `json:"command"`
+}
+
+type recordedRPCResult struct {
+	Command recordedRPCResultCommand `json:"command"`
+}
+
+type recordedRPCBody struct {
+	Command recordedRPCCommand `json:"command"`
 }
 
 // Each malformed SDP is a labeled mutation of a captured offer. The parser
@@ -60,11 +101,7 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 			t.Fatalf("invalid candidate media identity accepted: %+v", tc)
 		}
 	}
-	var answerFrame struct {
-		Body struct {
-			SDP string `json:"sdp"`
-		} `json:"body"`
-	}
+	var answerFrame recordedSDPFrame
 	if err := json.Unmarshal(captured["sdp"], &answerFrame); err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +124,7 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 
 func loadConversation(t *testing.T, name string) recordedMessages {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("fixtures", "signaling", "captured", name))
+	b, err := os.ReadFile(filepath.Join("fixtures", "signaling", "captured", name)) // #nosec G304 -- name comes from fixed captured-recording cases in this test package.
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,15 +193,7 @@ func TestRecordedPTZConversations(t *testing.T) {
 				if m.Method != "rpc" {
 					continue
 				}
-				var body struct {
-					DeviceID  int64  `json:"doorbot_id"`
-					SessionID string `json:"session_id"`
-					Command   struct {
-						ID     string         `json:"id"`
-						Method string         `json:"method"`
-						Params map[string]any `json:"params"`
-					} `json:"command"`
-				}
+				var body recordedSessionRPC
 				if err := json.Unmarshal(m.Body, &body); err != nil {
 					t.Fatal(err)
 				}
@@ -268,12 +297,7 @@ func TestRecordedPTZCommandsIndividually(t *testing.T) {
 			if row.Direction != "server_to_client" || row.Payload.Method != "rpc" {
 				continue
 			}
-			var body struct {
-				Command struct {
-					ID     string          `json:"id"`
-					Result json.RawMessage `json:"result"`
-				} `json:"command"`
-			}
+			var body recordedRPCResult
 			if err := json.Unmarshal(row.Payload.Body, &body); err != nil {
 				t.Fatal(err)
 			}
@@ -286,15 +310,7 @@ func TestRecordedPTZCommandsIndividually(t *testing.T) {
 			if row.Direction != "client_to_server" || row.Payload.Method != "rpc" {
 				continue
 			}
-			var body struct {
-				DeviceID int64  `json:"doorbot_id"`
-				SignalID string `json:"session_id"`
-				Command  struct {
-					ID     string         `json:"id"`
-					Method string         `json:"method"`
-					Params map[string]any `json:"params"`
-				} `json:"command"`
-			}
+			var body recordedSignalRPC
 			if err := json.Unmarshal(row.Payload.Body, &body); err != nil {
 				t.Fatal(err)
 			}
@@ -323,13 +339,7 @@ func TestRecordedPTZCommandsIndividually(t *testing.T) {
 				done := make(chan error, 1)
 				go func() { _, err := s.Call(context.Background(), body.Command.Method, params); done <- err }()
 				actual := recordedNextMessage(t, out)
-				var actualBody struct {
-					Command struct {
-						ID     string         `json:"id"`
-						Method string         `json:"method"`
-						Params map[string]any `json:"params"`
-					} `json:"command"`
-				}
+				var actualBody recordedRPCBody
 				if err := json.Unmarshal(actual.Body, &actualBody); err != nil {
 					t.Fatal(err)
 				}
@@ -408,7 +418,7 @@ func TestRecordedHeartbeatPairsIndividually(t *testing.T) {
 					t.Fatal(err)
 				}
 				defer func() { _ = s.Close() }()
-				clock.advance(10 * time.Second)
+				clock.advance()
 				actual := recordedNextMessage(t, out)
 				if actual.Method != "ping" || actual.DialogID != ping.DialogID || !replay.SemanticEqual(actual.Body, ping.Body) {
 					t.Fatalf("ping differs from capture: %+v", actual)

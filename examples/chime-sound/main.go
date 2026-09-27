@@ -20,7 +20,7 @@ func main() {
 func run() error {
 	token, chimeID := os.Getenv("RING_ACCESS_TOKEN"), os.Getenv("RING_CHIME_ID")
 	if token == "" || chimeID == "" {
-		return fmt.Errorf("set RING_ACCESS_TOKEN and RING_CHIME_ID")
+		return ringapimodels.NewBadRequestError("set RING_ACCESS_TOKEN and RING_CHIME_ID", nil)
 	}
 	client, err := ring.NewClient()
 	if err != nil {

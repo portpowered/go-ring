@@ -25,10 +25,8 @@ registries; a higher statement percentage alone does not establish those
 properties.
 
 Set `GOWORK=off` when testing this module independently of a surrounding workspace.
-The fixture-contract checks use `tools/protocols` and `tools/capture`. Install
-their pinned requirements and run `python -m unittest discover -s tools/protocols`
-and `python -m unittest discover -s tools/capture`. The private mitmproxy file
-is not required.
+Run `make test-contracts` for the Go fixture and schema contract checks in
+`tools/protocols` and `tools/capture`. The private mitmproxy file is not required.
 
 `make test-cover` measures replay, unit, and their combined coverage separately.
 Replay is the primary compatibility metric: the local account-scope replay run
@@ -69,7 +67,7 @@ All three Go reports use the same maintained-code denominator: handwritten
 statements in `pkg` and `internal`. Generated HTTP/signaling code, generated
 public models, testkit, examples, tests, and tools are excluded. The combined
 run targets only replay and co-located unit tests, so examples or tool tests
-cannot inflate it. Use the [migration test mapping](../plans/porting-progress.md)
+cannot inflate it. Use the [replay formats](replay-format.md)
 to compare behavior case by case, then use replay coverage to find
 unexercised Go paths.
 

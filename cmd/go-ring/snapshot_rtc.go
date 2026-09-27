@@ -3,8 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
-	"fmt"
 	"image/jpeg"
 	"os/exec"
 	"time"
@@ -55,19 +53,19 @@ func captureRTCSnapshot(parent context.Context, client *ring.Client, auth ring.A
 	case err := <-events:
 		return nil, err
 	case <-ctx.Done():
-		return nil, fmt.Errorf("live snapshot timed out before a decodable frame: %w", ctx.Err())
+		return nil, wrapCommandError("live snapshot timed out before a decodable frame", ctx.Err())
 	}
 }
 
 func captureTrackFrame(ctx context.Context, track *webrtc.TrackRemote) ([]byte, error) {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		return nil, errors.New("ffmpeg is required for live snapshots")
+		return nil, commandError("ffmpeg is required for live snapshots")
 	}
 	format, err := previewFormat(track.Codec().MimeType)
 	if err != nil {
 		return nil, err
 	}
-	command := exec.CommandContext(ctx, "ffmpeg", "-hide_banner", "-loglevel", "error", "-f", format, "-i", "pipe:0", "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "pipe:1")
+	command := exec.CommandContext(ctx, "ffmpeg", "-hide_banner", "-loglevel", "error", "-f", format, "-i", "pipe:0", "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg", "pipe:1") // #nosec G204 -- format is restricted to the codec allowlist returned by previewFormat.
 	var image, diagnostics bytes.Buffer
 	command.Stdout = &image
 	command.Stderr = &diagnostics
@@ -97,10 +95,10 @@ func captureTrackFrame(ctx context.Context, track *webrtc.TrackRemote) ([]byte, 
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		return nil, fmt.Errorf("ffmpeg could not decode the live frame: %w: %s", err, diagnostics.String())
+		return nil, wrapCommandErrorDetail("ffmpeg could not decode the live frame", err, diagnostics.String())
 	}
 	if _, err := jpeg.DecodeConfig(bytes.NewReader(image.Bytes())); err != nil {
-		return nil, fmt.Errorf("live view did not produce a JPEG frame: %w", err)
+		return nil, wrapCommandError("live view did not produce a JPEG frame", err)
 	}
 	return image.Bytes(), nil
 }

@@ -119,7 +119,10 @@ func TestDoRequestDoesNotRetryMutation(t *testing.T) {
 			calls++
 			return nil, transportErr
 		})}))
-		_, err := client.doRequest(authenticatedContext(), http.MethodPost, "/command", map[string]string{"command": "reboot"})
+		resp, err := client.doRequest(authenticatedContext(), http.MethodPost, "/command", map[string]string{"command": "reboot"})
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
 		if !ringapimodels.IsNetworkError(err) || !errors.Is(err, transportErr) || calls != 1 {
 			t.Fatalf("POST error = %v, attempts = %d; want wrapped transport error and one attempt", err, calls)
 		}
@@ -136,7 +139,10 @@ func TestDoRequestCancellationDuringRetryBackoff(t *testing.T) {
 		cancel()
 		return testResponse(req, http.StatusInternalServerError, discarded), nil
 	})}))
-	_, err := client.doRequest(ctx, http.MethodGet, "/retry", nil)
+	resp, err := client.doRequest(ctx, http.MethodGet, "/retry", nil)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("doRequest() error = %v, want context cancellation", err)
 	}
@@ -153,7 +159,10 @@ func TestConfiguredTokenGetterErrorStopsBeforeSendingRequest(t *testing.T) {
 			return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader("{}"))), nil
 		})}),
 	)
-	_, err := client.doRequest(context.Background(), http.MethodGet, "/requires-auth", nil)
+	resp, err := client.doRequest(context.Background(), http.MethodGet, "/requires-auth", nil)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
 	if !ringapimodels.IsTokenError(err) || calls != 0 {
 		t.Fatalf("doRequest() error = %v, transport calls = %d", err, calls)
 	}
@@ -242,10 +251,18 @@ func TestDoRequestRejectsUnmarshalableBodyAndInvalidMethod(t *testing.T) {
 	client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader("{}"))), nil
 	})}))
-	if _, err := client.doRequest(authenticatedContext(), http.MethodPost, "/marshal", map[string]any{"callback": func() {}}); !ringapimodels.IsBadRequestError(err) {
+	response, err := client.doRequest(authenticatedContext(), http.MethodPost, "/marshal", map[string]any{"callback": func() {}})
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
+	if !ringapimodels.IsBadRequestError(err) {
 		t.Fatalf("unmarshalable request body error = %v", err)
 	}
-	if _, err := client.doRequest(authenticatedContext(), "bad\nmethod", "/invalid", nil); !ringapimodels.IsNetworkError(err) {
+	response, err = client.doRequest(authenticatedContext(), "bad\nmethod", "/invalid", nil)
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
+	if !ringapimodels.IsNetworkError(err) {
 		t.Fatalf("invalid method error = %v", err)
 	}
 }

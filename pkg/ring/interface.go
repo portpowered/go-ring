@@ -51,7 +51,7 @@ type ClientAPI interface {
 
 	// APIs for enumerating and getting data
 	ListDevices(context.Context, ListDevicesRequest) (*ringapimodels.DevicesResponse, error)
-	GetDevice(context.Context, GetDeviceRequest) (ringapimodels.Device, error)
+	GetDevice(context.Context, GetDeviceRequest) (*ringapimodels.Device, error)
 	GetDeviceSettings(context.Context, GetDeviceSettingsRequest) (DeviceSettings, error)
 	GetDeviceDetail(context.Context, GetDeviceDetailRequest) (*DeviceDetail, error)
 	GetDeviceStatus(context.Context, GetDeviceDetailRequest) (*DeviceStatus, error)

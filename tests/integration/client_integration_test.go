@@ -126,21 +126,16 @@ func TestDeviceEnumeration(t *testing.T) {
 		t.Fatal("Devices response is nil")
 	}
 
-	totalDevices := len(devices.Doorbells) + len(devices.Chimes) + len(devices.StickUpCams)
+	totalDevices := len(devices.Devices)
 	if totalDevices == 0 {
 		t.Log("Warning: No devices found (this may be expected if no devices are registered)")
 	} else {
 		t.Logf("Successfully enumerated %d devices", totalDevices)
-		t.Logf("  - Doorbells: %d", len(devices.Doorbells))
-		t.Logf("  - Chimes: %d", len(devices.Chimes))
-		t.Logf("  - StickUp Cams: %d", len(devices.StickUpCams))
-
-		// Log first few devices
-		for i, doorbell := range devices.Doorbells {
+		for i, device := range devices.Devices {
 			if i >= 3 {
 				break
 			}
-			t.Logf("  - Doorbell %d: %s (ID: %s)", i+1, doorbell.Name, doorbell.ID)
+			t.Logf("  - Device %d: %s (ID: %s, kind: %s)", i+1, device.Name, device.ID, device.Kind)
 		}
 	}
 }
@@ -167,19 +162,12 @@ func TestGetDevice(t *testing.T) {
 		t.Fatalf("Failed to list devices: %v", err)
 	}
 
-	if len(devices.Doorbells) == 0 && len(devices.Chimes) == 0 && len(devices.StickUpCams) == 0 {
+	if len(devices.Devices) == 0 {
 		t.Skip("Skipping test: No devices found")
 	}
 
 	// Get first device ID
-	var deviceID string
-	if len(devices.Doorbells) > 0 {
-		deviceID = devices.Doorbells[0].ID
-	} else if len(devices.Chimes) > 0 {
-		deviceID = devices.Chimes[0].ID
-	} else {
-		deviceID = devices.StickUpCams[0].ID
-	}
+	deviceID := devices.Devices[0].ID
 
 	device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: accessToken},
 		DeviceID: deviceID,
@@ -192,7 +180,7 @@ func TestGetDevice(t *testing.T) {
 		t.Fatal("Device is nil")
 	}
 
-	t.Logf("Successfully retrieved device: %s (ID: %s)", device.GetName(), device.GetID())
+	t.Logf("Successfully retrieved device: %s (ID: %s)", device.Name, device.ID)
 }
 
 // TestRecordingDownload tests downloading a recording
@@ -217,11 +205,11 @@ func TestRecordingDownload(t *testing.T) {
 		t.Fatalf("Failed to list devices: %v", err)
 	}
 
-	if len(devices.Doorbells) == 0 {
-		t.Skip("Skipping test: No doorbells found")
+	if len(devices.Devices) == 0 {
+		t.Skip("Skipping test: No devices found")
 	}
 
-	deviceID := devices.Doorbells[0].ID
+	deviceID := devices.Devices[0].ID
 
 	// Get device history
 	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: accessToken},
@@ -282,25 +270,18 @@ func TestDeviceControl(t *testing.T) {
 		t.Fatalf("Failed to list devices: %v", err)
 	}
 
-	if len(devices.Doorbells) == 0 && len(devices.StickUpCams) == 0 {
+	if len(devices.Devices) == 0 {
 		t.Skip("Skipping test: No controllable devices found")
 	}
 
 	// Find a device to test with
-	var testDeviceID string
-	var deviceName string
-	if len(devices.Doorbells) > 0 {
-		testDeviceID = devices.Doorbells[0].ID
-		deviceName = devices.Doorbells[0].Name
-	} else {
-		testDeviceID = devices.StickUpCams[0].ID
-		deviceName = devices.StickUpCams[0].Name
-	}
+	testDeviceID := devices.Devices[0].ID
+	deviceName := devices.Devices[0].Name
 
 	t.Logf("Testing device control on: %s (ID: %s)", deviceName, testDeviceID)
 
 	// Volume uses a legacy chime or doorbell route, not a camera route.
-	if len(devices.Doorbells) > 0 {
+	if devices.Devices[0].Family == "doorbots" {
 		err = client.SetVolume(ctx, ring.SetVolumeRequest{Auth: ring.AuthContext{AccessToken: accessToken},
 			DeviceID: testDeviceID, Kind: ringapimodels.VolumeKindDoorbell,
 			Description: deviceName, Volume: 5,

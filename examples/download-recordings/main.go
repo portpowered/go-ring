@@ -7,23 +7,32 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	ctx := context.Background()
 
 	// Get access token from environment variable
 	accessToken := os.Getenv("RING_ACCESS_TOKEN")
 	if accessToken == "" {
-		log.Fatal("RING_ACCESS_TOKEN environment variable must be set")
+		return ringapimodels.NewBadRequestError("RING_ACCESS_TOKEN environment variable must be set", nil)
 	}
 
 	// Create client with access token
 	client, err := ring.NewClient()
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		return err
 	}
 	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: accessToken}
@@ -32,36 +41,25 @@ func main() {
 	fmt.Println("Step 1: Enumerating devices...")
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 	if err != nil {
-		log.Fatalf("Failed to list devices: %v", err)
+		return ringapimodels.NewConnectionError("Failed to list devices", err)
 	}
 
 	if devices == nil {
-		log.Fatal("Devices response is nil")
+		return ringapimodels.NewConnectionError("Devices response is nil", nil)
 	}
 
-	totalDevices := len(devices.Doorbells) + len(devices.Chimes) + len(devices.StickUpCams) + len(devices.Other)
+	totalDevices := len(devices.Devices)
 	if totalDevices == 0 {
-		log.Fatal("No devices found. Cannot download recordings.")
+		return ringapimodels.NewBadRequestError("No devices found. Cannot download recordings.", nil)
 	}
 
 	fmt.Printf("✓ Found %d total device(s)\n", totalDevices)
 	fmt.Println()
 
-	// Step 2: Select a device (prefer doorbell for recordings)
-	var deviceID string
-	var deviceName string
-
-	if len(devices.Doorbells) > 0 {
-		deviceID = devices.Doorbells[0].ID
-		deviceName = devices.Doorbells[0].Name
-		fmt.Printf("Step 2: Selected device: %s (ID: %s, Type: Doorbell)\n", deviceName, deviceID)
-	} else if len(devices.StickUpCams) > 0 {
-		deviceID = devices.StickUpCams[0].ID
-		deviceName = devices.StickUpCams[0].Name
-		fmt.Printf("Step 2: Selected device: %s (ID: %s, Type: StickUp Cam)\n", deviceName, deviceID)
-	} else {
-		log.Fatal("No doorbells or stickup cams found. These device types typically have recordings.")
-	}
+	// Step 2: Select a device. Recording availability is checked by history.
+	deviceID := devices.Devices[0].ID
+	deviceName := devices.Devices[0].Name
+	fmt.Printf("Step 2: Selected device: %s (ID: %s)\n", deviceName, deviceID)
 	fmt.Println()
 
 	// Step 3: Get device history (recordings)
@@ -72,17 +70,17 @@ func main() {
 		Kind:     "",
 	}) // Get up to 5 recordings
 	if err != nil {
-		log.Fatalf("Failed to get device history: %v", err)
+		return ringapimodels.NewConnectionError("Failed to get device history", err)
 	}
 
 	if history == nil {
-		log.Fatal("History response is nil")
+		return ringapimodels.NewConnectionError("History response is nil", nil)
 	}
 
 	if len(history.Recordings) == 0 {
 		fmt.Printf("No recordings found for device %s\n", deviceName)
 		fmt.Println("Example completed (no recordings to download)")
-		return
+		return nil
 	}
 
 	fmt.Printf("✓ Found %d recording(s)\n", len(history.Recordings))
@@ -95,7 +93,7 @@ func main() {
 	fmt.Println("Step 4: Downloading recordings...")
 	for i, recording := range history.Recordings {
 		// Create filename based on recording ID
-		filename := fmt.Sprintf("recording_%d_%s.mp4", recording.ID, recording.Kind)
+		filename := fmt.Sprintf("recording_%d_%s.mp4", recording.ID, safeFilenamePart(recording.Kind))
 		filepath := filepath.Join(".", filename)
 
 		fmt.Printf("  Downloading recording %d/%d (ID: %d, Kind: %s)...\n",
@@ -111,7 +109,7 @@ func main() {
 		}
 
 		// Create the file
-		out, err := os.Create(filepath)
+		out, err := os.Create(filepath) // #nosec G304 -- filename contains only sanitized characters and stays in the current directory.
 		if err != nil {
 			log.Printf("  ✗ Failed to create file %s: %v\n", filepath, err)
 			_ = stream.Body.Close()
@@ -142,4 +140,19 @@ func main() {
 	fmt.Println()
 
 	fmt.Println("Example completed successfully!")
+	return nil
+}
+
+func safeFilenamePart(value string) string {
+	part := strings.Map(func(r rune) rune {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_' {
+			return r
+		}
+		return '_'
+	}, value)
+	part = strings.Trim(part, "_")
+	if part == "" {
+		return "unknown"
+	}
+	return part
 }
