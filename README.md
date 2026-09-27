@@ -9,9 +9,9 @@
 A Go client for Ring authentication, device discovery and controls, recordings,
 and persistent signaling sessions.
 
-The client accepts authentication on each request, so one client can serve
-multiple accounts. Live video and controls use a persistent device session;
-pan and tilt commands run while that session is active.
+This is a bit unique compared to other ring-doorbell libraries since: 
+1. It support PTZ support on the websockets, and other new APIs/versions that were not available prior.
+2. It has some more modern trace streams from 2026 that captures the new APIs.
 
 ## Install
 
