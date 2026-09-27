@@ -16,11 +16,12 @@ permissions:
 
 jobs:
   publish:
-    uses: portpowered/api-docs-website-github-action/.github/workflows/publish.yml@v0.1.0
+    uses: portpowered/api-docs-website-github-action/.github/workflows/publish.yml@v0.2.0
     with:
       title: go-ring API Reference
       openapi: api/openapi.yaml
       asyncapi: api/asyncapi.yaml
       discover: false
+      base-path: /go-ring
       source-directory: .
       output: api-docs-out
