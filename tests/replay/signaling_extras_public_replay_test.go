@@ -115,6 +115,9 @@ func recordedPlaybackOffer(t *testing.T) string {
 }
 
 func TestRecordedPublicPlaybackAnswerICEAndClose(t *testing.T) {
+	closeReceived := make(chan struct{})
+	allowPeerClose := make(chan struct{})
+	t.Cleanup(func() { close(allowPeerClose) })
 	conn := openRecordedPeer(t, func(c *websocket.Conn) {
 		request := readSignalRequest(t, c, "playback")
 		if request == nil {
@@ -128,7 +131,10 @@ func TestRecordedPublicPlaybackAnswerICEAndClose(t *testing.T) {
 		writeCapturedSignal(t, c, "dialog-2", request, "ice")
 		writeCapturedSignal(t, c, "dialog-2", request, "notification")
 		_ = readSignalRequest(t, c, "ice")
-		_ = readSignalRequest(t, c, "close")
+		if readSignalRequest(t, c, "close") != nil {
+			close(closeReceived)
+		}
+		<-allowPeerClose
 	})
 	t.Cleanup(func() { _ = conn.Close() })
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -151,6 +157,11 @@ func TestRecordedPublicPlaybackAnswerICEAndClose(t *testing.T) {
 	}
 	if err := session.Close(); err != nil {
 		t.Fatal(err)
+	}
+	select {
+	case <-closeReceived:
+	case <-time.After(time.Second):
+		t.Fatal("peer did not receive playback close")
 	}
 }
 
