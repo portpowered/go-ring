@@ -50,7 +50,7 @@ func (tr *oauthRedirectTransport) RoundTrip(req *http.Request) (*http.Response, 
 }
 
 func TestPortableOAuthRedirectFailureVariants(t *testing.T) {
-	cases, err := replay.LoadCases[oauthRedirectCase](filepath.Join("fixtures", "porting", "oauth-redirect-variants.json"))
+	cases, err := replay.LoadCases[oauthRedirectCase](filepath.Join("fixtures", "auth", "synthetic", "oauth-redirect-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

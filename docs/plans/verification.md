@@ -6,7 +6,7 @@ For active commands and coverage floors, use the
 [coverage guide](../developer-facing/coverage.md).
 
 The selected library improvement scope is implemented and locally verified.
-Execution follows the [reference-first process](internal/process-of-reverse-engineering.md):
+Execution follows the [reference-first process](../internal/process-of-reverse-engineering.md):
 Python behavior baseline, paired recording contracts, explicit Go test mappings,
 implementation, then acceptance checks. The [parity matrix](parity-matrix.md) and
 [porting progress](porting-progress.md) distinguish captured evidence, Python
@@ -37,7 +37,7 @@ Coverage includes handwritten code under `pkg` and `internal`; generated models 
 examples, tests, and maintainer tools are exercised but excluded from the
 library denominator. Minor scheduling-dependent branch counts can vary; the
 replay, unit, and 90% combined gates remain enforced. See the
-[coverage guide](coverage.md) for separate profiles, denominators, and the
+[coverage guide](../developer-facing/coverage.md) for separate profiles, denominators, and the
 Python comparison limit. Live integration coverage is opt-in and was not run.
 
 ## Delivered scope

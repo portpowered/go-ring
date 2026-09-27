@@ -24,7 +24,7 @@ type replayAccount struct {
 
 func loadReplayAccounts(t *testing.T) []replayAccount {
 	t.Helper()
-	data, err := os.ReadFile("fixtures/porting/account-scope.json")
+	data, err := os.ReadFile("fixtures/account/synthetic/account-scope.json")
 	require.NoError(t, err)
 	var fixture struct {
 		Accounts []replayAccount `json:"accounts"`

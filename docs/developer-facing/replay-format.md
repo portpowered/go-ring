@@ -1,6 +1,6 @@
 # Recorded HTTP and signaling fixtures
 
-The checked-in recordings under `tests/replay/fixtures/recordings` contain sanitized HTTP
+The checked-in recordings under `tests/replay/fixtures` contain sanitized HTTP
 exchanges and ordered WebSocket application messages. They preserve observed
 request/response fields, message directions, and JSON bodies. They do not carry
 manifests, provenance digests, capture timestamps, environment labels, or extraction
@@ -8,7 +8,7 @@ metadata. Synthetic identity replacements are consistent within each session.
 
 ## HTTP exchange JSON
 
-Each `tests/replay/fixtures/recordings/http/*.json` file has this shape:
+Each `tests/replay/fixtures/http/captured/*.json` file has this shape:
 
 ```json
 {
@@ -53,7 +53,7 @@ causes the test's final consumed assertion to fail.
 
 ## WebSocket session recordings
 
-Each `tests/replay/fixtures/recordings/sessions/*.json` file contains an ordered `messages`
+Each `tests/replay/fixtures/signaling/captured/*.json` file contains an ordered `messages`
 array. Entries have `direction`, `frame`, and structured `payload` fields. The
 current captured application messages are text JSON. The testkit script uses
 `WSStep{Kind, Frame, Body}`: map `client_to_server` to `expect`,
@@ -71,24 +71,23 @@ captured. HTTP PTZ routes are not part of these recordings or specifications.
 
 ## Contract documents and baseline pairing
 
-`api/openapi.yaml` distinguishes captured HTTP operations from existing-Go and
-Python-referenced HTTP/auth operations; `api/asyncapi.yaml` describes observed
+`api/openapi.yaml` distinguishes captured HTTP operations from existing and
+synthetic-replay HTTP/auth operations; `api/asyncapi.yaml` describes observed
 signaling envelope methods and PTZ RPC shapes. `tests/replay/contracts_test.go`
 checks recorded HTTP method/path/status/origin and signaling method constants.
 `tools/protocols/test_contracts.py` validates recorded payloads against the
 schemas, while `tools/protocols/test_document_structure.py` validates the full
-OpenAPI and AsyncAPI documents. `tests/replay/contracts.md` identifies Python
-baseline test counterparts and labels signaling and other route-only additions
-as capture-only. See that file before treating a captured route as proof of
+OpenAPI and AsyncAPI documents. `tests/replay/contracts.md` records historical
+test mappings and labels signaling and other route-only additions as
+capture-only. See that file before treating a captured route as proof of
 equivalent high-level behavior.
 
 ## Repeatable verification order
 
 Run the Go replay suite, then the independent protocol and capture contract
-tests. CI installs their pinned Python requirements and Node.js dependencies,
+tests. CI installs the pinned contract-tool requirements and Node.js dependencies,
 then runs `python -m unittest discover -s tools/protocols -v` and
-`python -m unittest discover -s tools/capture -v`. No Python reference checkout
-is required.
+`python -m unittest discover -s tools/capture -v`.
 
 Next run `go test -race ./... -timeout 120s` with `GOWORK=off`, followed by
 `make test-cover` to measure replay coverage, co-located unit coverage, and
@@ -102,7 +101,7 @@ implementation complete.
 
 ## Portable replay
 
-Additional JSON inputs under
-`tests/replay/fixtures/porting/` are synthetic test cases for legacy routes and failures
-absent from the capture. They are not capture observations. Go reads the JSON
-files directly.
+Additional JSON inputs under each feature's `synthetic/` directory are cases
+for legacy routes and failures absent from the capture. They are not capture
+observations. Go reads the JSON files directly. See the
+[fixture guide](../../tests/replay/fixtures/README.md) for the full layout.

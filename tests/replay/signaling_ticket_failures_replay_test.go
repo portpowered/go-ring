@@ -42,7 +42,7 @@ func (tr *ticketFailureTransport) RoundTrip(req *http.Request) (*http.Response, 
 }
 
 func TestPortableLegacyTicketFailureResponses(t *testing.T) {
-	cases, err := replay.LoadCases[ticketFailureCase](filepath.Join("fixtures", "porting", "legacy-ticket-failures.json"))
+	cases, err := replay.LoadCases[ticketFailureCase](filepath.Join("fixtures", "http", "synthetic", "legacy-ticket-failures.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

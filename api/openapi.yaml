@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
   title: Ring HTTP SDK and captured surface
-  version: 0.1.0
+  version: 0.3.0
   description: >-
     Contract for sanitized captures and existing Go SDK HTTP behavior. Each
     operation identifies whether its source is a capture, Go implementation, or
-    pinned Python reference. It does not claim complete coverage of Ring's
+    synthetic replay case. It does not claim complete coverage of Ring's
     evolving API. Query parameters are optional unless a capture or existing
     implementation establishes otherwise.
 servers:
@@ -53,7 +53,7 @@ paths:
       operationId: submitOAuthCredentials
       description: >-
         Existing Go PKCE credential submission using the OAuth cookie jar and
-        CSRF token. Python auth is the behavioral reference. Credentials are
+        CSRF token. Credentials are
         form data, never query parameters. No C1 capture establishes this flow.
       servers: [{url: https://oauth.ring.com}]
       security: []
@@ -110,8 +110,8 @@ paths:
       operationId: registerClientSession
       description: >-
         Existing Go session-registration body, sent once before inventory or
-        signaling when a hardware ID is configured. Python exposes the same
-        session action. The shape below follows source code; no C1 capture was
+        signaling when a hardware ID is configured. The shape below follows
+        the Go implementation; no C1 capture was
         identified.
       requestBody:
         required: true
@@ -125,8 +125,8 @@ paths:
     put:
       operationId: setChimeVolume
       description: >-
-        Legacy Python/Go volume update. The client requires description to
-        reproduce Python's tested request shape; no capture proves the server
+        Legacy volume update. The client requires description to
+        reproduce the synthetic replay request shape; no capture proves the server
         requires that query field for volume changes.
       parameters:
         - {$ref: '#/components/parameters/device_id'}
@@ -137,9 +137,9 @@ paths:
     put:
       operationId: updateLegacyDoorbotControls
       description: >-
-        Legacy Python/Go doorbell-volume or one in-home chime setting; query
+        Legacy doorbell-volume or one in-home chime setting; query
         variants come from portable synthetic fixtures, not a C1 field capture.
-        The client requires description to reproduce Python's tested shape;
+        The client requires description to reproduce the replayed request shape;
         server necessity is unverified. A separate captured doorbot PUT sent a
         description and an empty settings object.
       parameters:
@@ -153,7 +153,7 @@ paths:
   /clients_api/chimes/{device_id}/play_sound:
     post:
       operationId: testChimeSound
-      description: Python/Go legacy sound request from portable synthetic replay.
+      description: Legacy sound request from synthetic replay.
       parameters:
         - {$ref: '#/components/parameters/device_id'}
         - {in: query, name: kind, required: true, schema: {type: string, enum: [ding, motion]}}
@@ -161,13 +161,13 @@ paths:
   /clients_api/doorbots/{device_id}/floodlight_light_on:
     put:
       operationId: turnFloodlightOn
-      description: Python/Go legacy light-on request from portable synthetic replay.
+      description: Legacy light-on request from synthetic replay.
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
   /clients_api/doorbots/{device_id}/floodlight_light_off:
     put:
       operationId: turnFloodlightOff
-      description: Python/Go legacy off path; no corresponding C1 or portable request fixture.
+      description: Legacy off path; no corresponding captured or synthetic request fixture.
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses: {'200': {$ref: '#/components/responses/Json'}, default: {$ref: '#/components/responses/HTTPFailure'}}
   /clients_api/ring_devices/{device_id}/health:
@@ -184,9 +184,8 @@ paths:
     get:
       operationId: getLegacyDeviceHistory
       description: >-
-        Existing Go history operation and pinned Python doorbell history share
-        this doorbot path. The Go API exposes limit and kind; Python additionally
-        supports older_than and client-side enforcement/retries. C1 history
+        Existing Go history operation uses this doorbot path. The Go API exposes
+        limit and kind; older_than is documented but not sent by the client. C1 history
         routes use EVM endpoints and are specified separately.
       parameters:
         - {$ref: '#/components/parameters/device_id'}
@@ -199,7 +198,7 @@ paths:
   /clients_api/dings/active:
     get:
       operationId: getActiveDings
-      description: Existing Go and Python active-dings route. No matching C1 capture was identified.
+      description: Existing Go active-dings route. No matching C1 capture was identified.
       responses:
         '200': {$ref: '#/components/responses/RecordingArray'}
         default: {$ref: '#/components/responses/HTTPFailure'}
@@ -228,7 +227,7 @@ paths:
   /clients_api/dings/{recording_id}/share/play:
     get:
       operationId: getLegacyRecordingShareURL
-      description: Pinned Python legacy share/play response, replayed synthetically by Go; no matching C1 response.
+      description: Legacy share/play response, replayed synthetically; no matching C1 response.
       parameters: [{$ref: '#/components/parameters/recording_id'}]
       responses:
         '200':
@@ -293,7 +292,7 @@ paths:
     post:
       operationId: refreshLegacySnapshotTimestamp
       description: >-
-        Pinned Python legacy snapshot trigger and poll. The first response may
+        Legacy snapshot trigger and poll. The first response may
         omit timestamps. This contract comes from shared synthetic replay, not
         the C1 app-snaps request with missing response.
       requestBody:
@@ -311,7 +310,7 @@ paths:
   /clients_api/snapshots/image/{device_id}:
     get:
       operationId: getLegacySnapshotImage
-      description: Pinned Python legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+      description: Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
       parameters: [{$ref: '#/components/parameters/device_id'}]
       responses:
         '200':
@@ -425,7 +424,7 @@ components:
     include: {name: include, in: query, required: false, description: "Comma-separated location expansions. Observed tokens are capabilities, presentation and status; future tokens are possible.", schema: {type: string, x-known-tokens: [capabilities, presentation, status]}}
     confirm_delete_favorite: {name: confirm_delete_favorite, in: query, required: false, description: Boolean encoded as a query string; false was recorded and requiredness is not established., schema: {type: boolean}}
     kind: {name: kind, in: query, required: false, description: "Go forwards this value without restricting it; known history kinds are ding, motion and on_demand.", schema: {type: string, x-extensible-enum: [ding, motion, on_demand]}}
-    older_than: {name: older_than, in: query, required: false, description: Positive history cursor timestamp supported by the pinned Python helper; not currently sent by Go., schema: {type: integer, format: int64, minimum: 0}}
+    older_than: {name: older_than, in: query, required: false, description: Positive history cursor timestamp documented for this route; not currently sent by Go., schema: {type: integer, format: int64, minimum: 0}}
   requestBodies:
     Json: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
     DeviceSettingsPatch:
@@ -674,13 +673,13 @@ components:
           additionalProperties: {$ref: '#/components/schemas/DeviceOperationSet'}
       additionalProperties: true
     Device:
-      description: Shared captured inventory/detail shape, including legacy Python fixture fields; unknown hardware fields remain open.
+      description: Captured inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
       type: object
       required: [id, kind, description]
       properties:
         id: {type: integer, format: int64}
         device_id: {type: string}
-        kind: {type: string, description: "Observed v3 kind is stickup_cam_mini_ptz_v1; Python legacy fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.", x-extensible-enum: [stickup_cam_mini_ptz_v1, lpd_v1, chime, intercom_handset_audio]}
+        kind: {type: string, description: "Observed v3 kind is stickup_cam_mini_ptz_v1; baseline fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.", x-extensible-enum: [stickup_cam_mini_ptz_v1, lpd_v1, chime, intercom_handset_audio]}
         description: {type: string}
         name: {type: string, description: Legacy inventory display name; v3 capture uses description.}
         address: {type: string}
@@ -693,7 +692,7 @@ components:
         light_brightness: {type: integer}
         motion_detection_enabled: {type: boolean}
         location_id: {type: string}
-        family: {type: string, description: "Python legacy families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.", x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
+        family: {type: string, description: "Baseline families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.", x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         owned: {type: boolean}
         created_at: {type: string, format: date-time}
         deactivated_at: {type: [string, 'null'], format: date-time}
@@ -708,15 +707,15 @@ components:
       type: string
       enum: [doorbots, chimes, stickup_cams, other]
     DoorbellDeviceKind:
-      description: Known doorbell kinds from captured and Python legacy inventories; unknown kinds remain valid on Device.kind.
+      description: Known doorbell kinds from captured and baseline inventories; unknown kinds remain valid on Device.kind.
       type: string
       enum: [doorbot, doorbell, doorbell_v3, doorbell_v4, doorbell_v5, doorbell_scallop_lite, doorbell_oyster, doorbell_scallop, lpd_v1, lpd_v2, lpd_v3, lpd_v4, jbox_v1, doorbell_graham_cracker, df_doorbell_clownfish, doorbell_portal, cocoa_doorbell, cocoa_doorbell_v2]
     ChimeDeviceKind:
-      description: Known chime kinds from captured and Python legacy inventories.
+      description: Known chime kinds from captured and baseline inventories.
       type: string
       enum: [chime, chime_v2, chime_pro, chime_pro_v2]
     CameraDeviceKind:
-      description: Known camera kinds from captured and Python legacy inventories.
+      description: Known camera kinds from captured and baseline inventories.
       type: string
       enum: [hp_cam_v1, floodlight_v2, floodlight_pro, cocoa_floodlight, stickup_cam_mini, stickup_cam_mini_v2, stickup_cam_mini_ptz_v1, stickup_cam_v4, hp_cam_v2, spotlightw_v2, cocoa_spotlight, stickup_cam_longfin, stickup_cam, stickup_cam_v3, stickup_cam_lunar, stickup_cam_elite, stickup_cam_wired, cocoa_camera]
     OtherDeviceKind:
@@ -972,7 +971,7 @@ components:
         is_owner: {type: boolean}
       additionalProperties: true
     LocationGroup:
-      description: Group entries were empty or null in the capture; identity fields follow the Python group baseline.
+      description: Group entries were empty or null in the capture; identity fields follow the baseline fixtures.
       type: object
       properties:
         id: {type: string}

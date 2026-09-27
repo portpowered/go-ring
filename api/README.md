@@ -40,8 +40,9 @@ normalized scale but is a capability value, not a command. Other settings
 whose units or upper bounds are unverified remain open with explicit
 descriptions rather than guessed limits.
 
-The observed values come from `tests/replay/fixtures/recordings`, while the
-Python legacy fixtures establish additional device families and history kinds.
+The observed values come from captured fixtures under `tests/replay/fixtures`.
+Baseline fixtures with unknown capture provenance supply additional device
+families and history kinds.
 The schema contract tests check captured payloads, open-enum behavior, and
 bounded invalid variants.
 

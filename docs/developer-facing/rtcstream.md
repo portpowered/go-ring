@@ -42,8 +42,8 @@ as target behavior remain implementation requirements.
 
 | Surface | Evidence and limits |
 |---|---|
-| Authentication and existing HTTP methods | Existing Go regression tests; Python behavior baseline. The new capture contains no OAuth token exchange. |
-| v3 device inventory | Recorded Go system tests and Python device-model comparison; Python's legacy inventory route differs. |
+| Authentication and existing HTTP methods | Go regression tests; the new capture contains no OAuth token exchange. |
+| v3 device inventory | Recorded Go replay tests; legacy inventory fixtures do not establish the v3 route. |
 | SDP and PTZ | Captured conversation/schema replay plus local connection tests. Signaling ticket bootstrap is separately based on the existing POST mechanism. |
 | Other captured HTTP routes | Committed schemas and exchanges; presence in OpenAPI does not imply a public SDK method. |
 | Push and playback | Present in recordings; full public abstractions remain planned. Existing event WebSocket behavior is experimental. |

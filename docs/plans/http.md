@@ -4,7 +4,7 @@
 
 ## Authentication and client session
 
-Normal API calls use `Authorization: Bearer` from the configured access token or token getter. OAuth authorization and credential requests are a separate cookie-backed PKCE flow on `oauth.ring.com`; the existing client also retains an explicitly callable token refresh and a legacy password-grant fallback when the authorization endpoint is unavailable. Credentials and verification codes are sent as form values over HTTPS. The spec describes source-level request shapes only: no C1 capture contains OAuth token exchange. See [authentication behavior](../auth.md).
+Normal API calls use `Authorization: Bearer` from the configured access token or token getter. OAuth authorization and credential requests are a separate cookie-backed PKCE flow on `oauth.ring.com`; the existing client also retains an explicitly callable token refresh and a legacy password-grant fallback when the authorization endpoint is unavailable. Credentials and verification codes are sent as form values over HTTPS. The spec describes source-level request shapes only: no C1 capture contains OAuth token exchange. See [authentication behavior](../developer-facing/auth.md).
 
 When a hardware ID is configured or recovered from a valid access-token claim, the client registers `/clients_api/session` before inventory and signaling. The body schema reflects `RegisterSession` in the Go source. Session registration is not part of the captured recording set.
 

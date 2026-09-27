@@ -52,7 +52,7 @@ func (p *csrfPageReplay) RoundTrip(request *http.Request) (*http.Response, error
 }
 
 func TestPortableOAuthCSRFPages(t *testing.T) {
-	cases, err := replay.LoadCases[authCSRFCase](filepath.Join("fixtures", "porting", "auth-csrf-variants.json"))
+	cases, err := replay.LoadCases[authCSRFCase](filepath.Join("fixtures", "auth", "synthetic", "auth-csrf-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +124,7 @@ func (a *authStageReplay) RoundTrip(request *http.Request) (*http.Response, erro
 }
 
 func TestPortableOAuthFailureStages(t *testing.T) {
-	cases, err := replay.LoadCases[authFailureCase](filepath.Join("fixtures", "porting", "auth-stage-failures.json"))
+	cases, err := replay.LoadCases[authFailureCase](filepath.Join("fixtures", "auth", "synthetic", "auth-stage-failures.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

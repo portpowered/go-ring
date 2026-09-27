@@ -27,16 +27,14 @@ properties.
 Set `GOWORK=off` when testing this module independently of a surrounding workspace.
 The fixture-contract checks use `tools/protocols` and `tools/capture`. Install
 their pinned requirements and run `python -m unittest discover -s tools/protocols`
-and `python -m unittest discover -s tools/capture`. CI runs these checks without
-a Python reference checkout. The private mitmproxy file is not required.
+and `python -m unittest discover -s tools/capture`. The private mitmproxy file
+is not required.
 
 `make test-cover` measures replay, unit, and their combined coverage separately.
 Replay is the primary compatibility metric: the local account-scope replay run
-reaches 85.97% of maintained Go statements; unit tests reach 55.72%, and their
-union reaches 92.93%. These suites have separate CI floors and profiles. The retired Python
-replay gate covered 96.13% of selected Python lines, a different denominator;
-compare ported behavior through the [test mapping](../plans/porting-progress.md). Live tests
-are opt-in via `make test-integration`, with separate coverage through
+reaches 85.92% of maintained Go statements; unit tests reach 56.66%, and their
+union reaches 93.00%. These suites have separate CI floors and profiles. Live
+tests are opt-in via `make test-integration`, with separate coverage through
 `make test-cover-integration`.
 
 The README badge and linked HTML report are published from
@@ -50,14 +48,14 @@ handwritten library statements reached by `tests/replay` alone, using
 sanitized captured and labeled synthetic fixtures. A passing replay test proves the behavior of that fixture and local
 transport, not compatibility with an unrecorded device or live service.
 
-Run `make test-cover` to produce three separate reports with the same 2,559
+Run `make test-cover` to produce three separate reports with the same 2,529
 statement denominator:
 
 | Suite | Test targets | Profile | Current coverage | CI floor |
 | --- | --- | --- | ---: | ---: |
-| Replay | `tests/replay` only | `coverage.replay.out` | 2,200/2,559 (85.97%) | 85% |
-| Unit | Co-located tests in `pkg` and `internal` | `coverage.unit.out` | 1,426/2,559 (55.72%) | 50% |
-| Combined | Replay and unit targets together | `coverage.combined.out` | 2,378/2,559 (92.93%) | 90%, plus per-package floors |
+| Replay | `tests/replay` only | `coverage.replay.out` | 2,173/2,529 (85.92%) | 85% |
+| Unit | Co-located tests in `pkg` and `internal` | `coverage.unit.out` | 1,433/2,529 (56.66%) | 50% |
+| Combined | Replay and unit targets together | `coverage.combined.out` | 2,352/2,529 (93.00%) | 90%, plus per-package floors |
 
 The replay floor preserves the current baseline; it is not the desired endpoint.
 Replay coverage should rise as captured and synthetic interactions become
@@ -71,11 +69,9 @@ All three Go reports use the same maintained-code denominator: handwritten
 statements in `pkg` and `internal`. Generated HTTP/signaling code, generated
 public models, testkit, examples, tests, and tools are excluded. The combined
 run targets only replay and co-located unit tests, so examples or tool tests
-cannot inflate it. The retired Python replay gate covered 447/465 **selected Python
-executable lines** (96.13%). Its selection and line metric differed from the Go
-all-maintained-code statement metric, so the percentages are not directly
-comparable. Use the [porting matrix](../plans/porting-progress.md) to compare behavior
-case by case, then use replay coverage to find unexercised Go paths.
+cannot inflate it. Use the [migration test mapping](../plans/porting-progress.md)
+to compare behavior case by case, then use replay coverage to find
+unexercised Go paths.
 
 Live tests have their own opt-in report:
 

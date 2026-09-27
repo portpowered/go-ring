@@ -15,7 +15,7 @@ from mitmproxy.io import FlowReader
 
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "tests" / "replay" / "fixtures" / "recordings"
+OUT = ROOT / "tests" / "replay" / "fixtures"
 PRIVATE_KEY = re.compile(r"token|secret|password|credential|authorization|cookie|email|phone|address|postal|post.?code|zip|latitude|longitude|coordinate|(?:^|_)(?:lat|lon|lng)$|serial|mac|bssid|ssid|fingerprint|ice.?pwd|ice.?ufrag|usernamefragment|private.?key|nonce|cursor|pagination|continuation|page.?token|(?:^|_)auth(?:_|$)|(?:^|_)sid$|device.?id|doorbot.?id|location(?:.?id)?|owner|user.?id|account.?id|uuid|session.?id|dialog.?id|riid|command.?id|ticket|cell.?id|ding.?id|ip.?address|(?:^|_)ip$|(?:^|_)id$|(?:^|_)(?:name|description|text|host.?name|host|region|gateway|timezone|network.?name)$", re.I)
 SAFE_FIELDS = {"method", "jsonrpc", "direction", "reason", "type", "kind", "status", "command_name", "model", "firmware", "device_type", "device_family", "protocol", "content_type", "codec", "mid", "setup", "fingerprint_type", "network_type", "candidate_type", "sdp_type", "version", "source", "event", "event_type", "notification_type", "notification_scope", "source_type", "action", "role", "state"}
 SAFE_TEXT_ENUMS = {"camera_connected"}
@@ -227,7 +227,7 @@ def extract(source: Path) -> None:
             continue
         http_records[name] = sanitized_exchange(flow)
     for name, record in http_records.items():
-        write_json(OUT / "http" / f"{name}.json", record)
+        write_json(OUT / "http" / "captured" / f"{name}.json", record)
 
     # Add one fixture for each additional request/body/status/response-shape combination.
     baseline = {name: {variant_signature(record)} for name, record in http_records.items()}
@@ -248,7 +248,7 @@ def extract(source: Path) -> None:
     for name, records in variants.items():
         first_index = 1 if name not in http_records else 2
         for index, record in enumerate(records, first_index):
-            write_json(OUT / "http" / "variants" / f"{name}-{index:02d}.json", record)
+            write_json(OUT / "http" / "captured" / "variants" / f"{name}-{index:02d}.json", record)
 
     for flow_no in (21, 402):
         flow = flows[flow_no - 1]
@@ -268,7 +268,7 @@ def extract(source: Path) -> None:
             payload = sanitizer.value(payload)
             frame = "text"
             messages.append({"direction": direction, "frame": frame, "payload": payload})
-        write_json(OUT / "sessions" / f"flow-{flow_no}.json", {"messages": messages})
+        write_json(OUT / "signaling" / "captured" / f"flow-{flow_no}.json", {"messages": messages})
 
 
 def write_json(path: Path, value) -> None:

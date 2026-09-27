@@ -81,7 +81,7 @@ class FixtureTests(unittest.TestCase):
         ipv4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")
         email = re.compile(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}")
         uuid = re.compile(r"\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b", re.I)
-        files = list(OUT.glob("http/**/*.json")) + list(OUT.glob("sessions/*.json"))
+        files = list(OUT.glob("http/captured/**/*.json")) + list(OUT.glob("signaling/captured/*.json"))
         self.assertGreaterEqual(len(files), 30)
         for path in files:
             content = path.read_text(encoding="utf-8-sig")
@@ -95,9 +95,9 @@ class FixtureTests(unittest.TestCase):
         session_schema = json.loads((OUT / "schemas" / "session.schema.json").read_text(encoding="utf-8-sig"))
         for schema in (http_schema, session_schema):
             jsonschema.Draft202012Validator.check_schema(schema)
-        for path in (OUT / "http").rglob("*.json"):
+        for path in (OUT / "http" / "captured").rglob("*.json"):
             jsonschema.validate(json.loads(path.read_text(encoding="utf-8-sig")), http_schema)
-        for path in (OUT / "sessions").glob("*.json"):
+        for path in (OUT / "signaling" / "captured").glob("*.json"):
             jsonschema.validate(json.loads(path.read_text(encoding="utf-8-sig")), session_schema)
 
     def test_json_schema_pins_null_array_and_identity_types(self):
@@ -112,7 +112,7 @@ class FixtureTests(unittest.TestCase):
                 jsonschema.validate(bad, schema)
 
     def test_distinct_operation_variants_are_present(self):
-        variants = list((OUT / "http" / "variants").glob("*.json"))
+        variants = list((OUT / "http" / "captured" / "variants").glob("*.json"))
         self.assertGreaterEqual(len(variants), 10)
         names = {path.name for path in variants}
         self.assertTrue(any(name.startswith("device-settings-patch-") for name in names))
@@ -120,7 +120,7 @@ class FixtureTests(unittest.TestCase):
         self.assertTrue(any(name.startswith("device-timeline-") for name in names))
 
     def test_device_rpc_capabilities_keep_protocol_method_names(self):
-        fixture = json.loads((OUT / "http" / "device-list.json").read_text(encoding="utf-8-sig"))
+        fixture = json.loads((OUT / "http" / "captured" / "device-list.json").read_text(encoding="utf-8-sig"))
         arrays = []
 
         def visit(value):
@@ -139,15 +139,15 @@ class FixtureTests(unittest.TestCase):
         self.assertTrue(any(command.startswith("PTZ.") for item in arrays for command in item if isinstance(command, str)))
 
     def test_cassettes_keep_version_segments_and_template_only_identifiers(self):
-        settings = json.loads((OUT / "http" / "device-settings-patch.json").read_text(encoding="utf-8-sig"))
+        settings = json.loads((OUT / "http" / "captured" / "device-settings-patch.json").read_text(encoding="utf-8-sig"))
         self.assertEqual(settings["request"]["path"], "/devices/v1/devices/{device_id}/settings")
-        for path in (OUT / "http").rglob("*.json"):
+        for path in (OUT / "http" / "captured").rglob("*.json"):
             cassette = json.loads(path.read_text(encoding="utf-8-sig"))
             self.assertNotRegex(cassette["request"]["path"], r"/(?:v1|v2|v3|v4)/\{device_id\}")
 
     def test_session_recordings_keep_full_conversation_shapes(self):
         for flow, expected in ((21, 254), (402, 243)):
-            data = json.loads((OUT / "sessions" / f"flow-{flow}.json").read_text(encoding="utf-8-sig"))
+            data = json.loads((OUT / "signaling" / "captured" / f"flow-{flow}.json").read_text(encoding="utf-8-sig"))
             self.assertEqual(len(data["messages"]), expected)
             self.assertTrue(all("direction" in row and "frame" in row and "payload" in row for row in data["messages"]))
 

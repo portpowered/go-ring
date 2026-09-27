@@ -40,7 +40,7 @@ class SignalingContracts(unittest.TestCase):
             for direction, schema in [("client_to_server", "ClientEnvelope"), ("server_to_client", "ServerEnvelope")]
         }
         cls.messages = []
-        for path in sorted((ROOT / "tests/replay/fixtures/recordings/sessions").glob("*.json")):
+        for path in sorted((ROOT / "tests/replay/fixtures/signaling/captured").glob("*.json")):
             cls.messages.extend(json.loads(path.read_text(encoding="utf-8"))["messages"])
 
     def test_all_recorded_payloads(self):
@@ -93,7 +93,7 @@ class HTTPContracts(unittest.TestCase):
     def setUpClass(cls):
         cls.doc = document("openapi.yaml")
         cls.rows = [(path, json.loads(path.read_text(encoding="utf-8")))
-                    for path in sorted((ROOT / "tests/replay/fixtures/recordings/http").rglob("*.json"))]
+                    for path in sorted((ROOT / "tests/replay/fixtures/http/captured").rglob("*.json"))]
 
     def resolve(self, value):
         while "$ref" in value:

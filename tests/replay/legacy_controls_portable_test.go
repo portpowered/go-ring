@@ -33,7 +33,7 @@ type portableChimeCase struct {
 // Every Python legacy control case is replayed through the corresponding Go
 // public API. The siren and motion cases also match separate C1 captures.
 func TestPortableLegacyHTTPControls(t *testing.T) {
-	cases, err := replay.LoadCases[portableControlCase](filepath.Join("fixtures", "porting", "legacy-control-requests.json"))
+	cases, err := replay.LoadCases[portableControlCase](filepath.Join("fixtures", "http", "synthetic", "legacy-control-requests.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func TestPortableLegacyHTTPControls(t *testing.T) {
 }
 
 func TestPortableInHomeChimeOptions(t *testing.T) {
-	cases, err := replay.LoadCases[portableChimeCase](filepath.Join("fixtures", "porting", "legacy-in-home-chime.json"))
+	cases, err := replay.LoadCases[portableChimeCase](filepath.Join("fixtures", "http", "synthetic", "legacy-in-home-chime.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

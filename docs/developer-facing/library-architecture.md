@@ -57,7 +57,7 @@ the corresponding zero-speed safety command.
 | `internal/signaling` | Active-session RPC correlation, liveness/expiry and named policy defaults |
 | `internal/testkit/replay` | Strict offline HTTP transport and scripted local WebSocket peers |
 | `api` | Validated OpenAPI and AsyncAPI contracts; raw captured operations can exist without a public wrapper |
-| `tests/replay/fixtures/recordings` | Actual sanitized exchanges, conversations, and schemas |
+| `tests/replay/fixtures` | Actual sanitized exchanges, conversations, and schemas |
 | `tests/replay` | Public API replay tests against local HTTP/WebSocket peers, with captured and labeled synthetic fixtures |
 | `tests/integration` | Opt-in full end-to-end tests against real endpoints and hardware |
 | `tools/protocols`, `tools/capture` | Schema validation and recording extraction tools |
@@ -68,12 +68,10 @@ loops. Their public session methods can stay in `ring` while their ticker
 mechanics move to `dependencies/websocket` in a further pass. Session-specific
 RPC correlation and expiry already live in `internal/signaling`.
 
-The pinned Python library uses its Auth object, Ring inventory/cache, family
-models, and per-stream WebRTC helper. The Go port shares the behavioral
-checklist while separating a persistent signaling connection from each device
-session. Python's legacy inventory and FCM event transport are not treated as
-proof of v3 discovery or WebSocket push parity. See the
-[feature matrix](parity-matrix.md) and [test mapping](porting-progress.md).
+The Go client separates a persistent signaling connection from each device
+session. Legacy inventory and account-event transports do not establish v3
+discovery or signaling push behavior. The historical comparison and test
+mapping remain in [the migration records](../plans/parity-matrix.md).
 
 Schemas are validated by official document tooling plus actual recorded
 payloads. `api/openapi.yaml` defines captured HTTP operations;

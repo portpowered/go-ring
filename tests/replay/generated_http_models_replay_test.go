@@ -28,7 +28,7 @@ func TestGeneratedHTTPDeviceHealthFromRecording(t *testing.T) {
 }
 
 func TestGeneratedHTTPRecordingFromLegacyFixture(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("fixtures", "legacy", "ring_doorbot_history.json"))
+	data, err := os.ReadFile(filepath.Join("fixtures", "http", "baseline", "ring_doorbot_history.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

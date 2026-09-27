@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 info:
   title: Ring signaling application messages
-  version: 0.1.0
+  version: 0.3.0
   description: >-
     Observed WebSocket application envelope and PTZ RPC shapes from the included
     sanitized signaling conversations. Binary/control frames and complete media

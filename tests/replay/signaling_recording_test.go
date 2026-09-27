@@ -87,7 +87,7 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 
 func loadConversation(t *testing.T, name string) recordedMessages {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("fixtures", "recordings", "sessions", name))
+	b, err := os.ReadFile(filepath.Join("fixtures", "signaling", "captured", name))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -15,7 +15,7 @@ import (
 
 func settingsExchange(t *testing.T, fixture, origin string) replay.Exchange {
 	t.Helper()
-	x, err := replay.LoadExchange(filepath.Join("fixtures", "recordings", "http", fixture))
+	x, err := replay.LoadExchange(filepath.Join("fixtures", "http", "captured", fixture))
 	require.NoError(t, err)
 	x.Request.Origin = origin
 	x.Request.Path = strings.ReplaceAll(x.Request.Path, "{device_id}", "12345")

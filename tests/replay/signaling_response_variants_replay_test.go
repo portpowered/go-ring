@@ -18,7 +18,7 @@ type signalingResponseCase struct {
 }
 
 func TestRecordedSignalingResponseVariants(t *testing.T) {
-	cases, err := replay.LoadCases[signalingResponseCase](filepath.Join("fixtures", "porting", "signaling-response-variants.json"))
+	cases, err := replay.LoadCases[signalingResponseCase](filepath.Join("fixtures", "signaling", "synthetic", "signaling-response-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

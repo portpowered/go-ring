@@ -13,7 +13,7 @@ import (
 // getFixtureDir returns the path to the test fixtures directory
 func getFixtureDir() string {
 	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filename), "fixtures", "legacy")
+	return filepath.Join(filepath.Dir(filename), "fixtures", "http", "baseline")
 }
 
 // newTestClient creates a new Ring client with a mock HTTP transport

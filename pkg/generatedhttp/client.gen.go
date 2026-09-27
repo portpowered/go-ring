@@ -401,7 +401,7 @@ type AuthorizationCodeGrant struct {
 // AuthorizationCodeGrantGrantType defines model for AuthorizationCodeGrant.GrantType.
 type AuthorizationCodeGrantGrantType string
 
-// CameraDeviceKind Known camera kinds from captured and Python legacy inventories.
+// CameraDeviceKind Known camera kinds from captured and baseline inventories.
 type CameraDeviceKind string
 
 // CapturedTickets defines model for CapturedTickets.
@@ -413,7 +413,7 @@ type CapturedTickets struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// ChimeDeviceKind Known chime kinds from captured and Python legacy inventories.
+// ChimeDeviceKind Known chime kinds from captured and baseline inventories.
 type ChimeDeviceKind string
 
 // ChimeSettings defines model for ChimeSettings.
@@ -454,7 +454,7 @@ type ClientSessionRegistration_Device struct {
 	AdditionalProperties map[string]interface{}                    `json:"-"`
 }
 
-// Device Shared captured inventory/detail shape, including legacy Python fixture fields; unknown hardware fields remain open.
+// Device Captured inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
 type Device struct {
 	Address       *string    `json:"address,omitempty"`
 	CreatedAt     *time.Time `json:"created_at,omitempty"`
@@ -462,14 +462,14 @@ type Device struct {
 	Description   string     `json:"description"`
 	DeviceId      *string    `json:"device_id,omitempty"`
 
-	// Family Python legacy families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.
+	// Family Baseline families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.
 	Family   *string         `json:"family,omitempty"`
 	Features *DeviceFeatures `json:"features,omitempty"`
 	HasLight *bool           `json:"has_light,omitempty"`
 	Health   *DeviceHealth   `json:"health,omitempty"`
 	Id       int64           `json:"id"`
 
-	// Kind Observed v3 kind is stickup_cam_mini_ptz_v1; Python legacy fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.
+	// Kind Observed v3 kind is stickup_cam_mini_ptz_v1; baseline fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.
 	Kind                   string  `json:"kind"`
 	LightBrightness        *int    `json:"light_brightness,omitempty"`
 	LocationId             *string `json:"location_id,omitempty"`
@@ -501,7 +501,7 @@ type DeviceCommandCommandName string
 
 // DeviceDetail defines model for DeviceDetail.
 type DeviceDetail struct {
-	// Device Shared captured inventory/detail shape, including legacy Python fixture fields; unknown hardware fields remain open.
+	// Device Captured inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
 	Device               Device                         `json:"device"`
 	DeviceOperationSet   *map[string]DeviceOperationSet `json:"device_operation_set,omitempty"`
 	AdditionalProperties map[string]interface{}         `json:"-"`
@@ -605,7 +605,7 @@ type DeviceTimeline struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// DoorbellDeviceKind Known doorbell kinds from captured and Python legacy inventories; unknown kinds remain valid on Device.kind.
+// DoorbellDeviceKind Known doorbell kinds from captured and baseline inventories; unknown kinds remain valid on Device.kind.
 type DoorbellDeviceKind string
 
 // ExtensibleObject defines model for ExtensibleObject.
@@ -731,7 +731,7 @@ type LocationDetail struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// LocationGroup Group entries were empty or null in the capture; identity fields follow the Python group baseline.
+// LocationGroup Group entries were empty or null in the capture; identity fields follow the baseline fixtures.
 type LocationGroup struct {
 	Id                   *string                `json:"id,omitempty"`
 	Name                 *string                `json:"name,omitempty"`
@@ -1154,7 +1154,7 @@ type GetLegacyDeviceHistoryParams struct {
 	// Kind Go forwards this value without restricting it; known history kinds are ding, motion and on_demand.
 	Kind *Kind `form:"kind,omitempty" json:"kind,omitempty"`
 
-	// OlderThan Positive history cursor timestamp supported by the pinned Python helper; not currently sent by Go.
+	// OlderThan Positive history cursor timestamp documented for this route; not currently sent by Go.
 	OlderThan *OlderThan `form:"older_than,omitempty" json:"older_than,omitempty"`
 }
 
@@ -6871,17 +6871,17 @@ type ClientInterface interface {
 
 	// SetChimeVolume performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
 	//
-	// Legacy Python/Go volume update. The client requires description to reproduce Python's tested request shape; no capture proves the server requires that query field for volume changes.
+	// Legacy volume update. The client requires description to reproduce the synthetic replay request shape; no capture proves the server requires that query field for volume changes.
 	SetChimeVolume(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// TestChimeSound performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
 	//
-	// Python/Go legacy sound request from portable synthetic replay.
+	// Legacy sound request from synthetic replay.
 	TestChimeSound(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActiveDings performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
 	//
-	// Existing Go and Python active-dings route. No matching C1 capture was identified.
+	// Existing Go active-dings route. No matching C1 capture was identified.
 	GetActiveDings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteRecording performs a DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId) request.
@@ -6897,27 +6897,27 @@ type ClientInterface interface {
 
 	// GetLegacyRecordingShareURL performs a GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId) request.
 	//
-	// Pinned Python legacy share/play response, replayed synthetically by Go; no matching C1 response.
+	// Legacy share/play response, replayed synthetically; no matching C1 response.
 	GetLegacyRecordingShareURL(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateLegacyDoorbotControls performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
 	//
-	// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce Python's tested shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
+	// Legacy doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce the replayed request shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
 	UpdateLegacyDoorbotControls(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// TurnFloodlightOff performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
 	//
-	// Python/Go legacy off path; no corresponding C1 or portable request fixture.
+	// Legacy off path; no corresponding captured or synthetic request fixture.
 	TurnFloodlightOff(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// TurnFloodlightOn performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId) request.
 	//
-	// Python/Go legacy light-on request from portable synthetic replay.
+	// Legacy light-on request from synthetic replay.
 	TurnFloodlightOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetLegacyDeviceHistory performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
 	//
-	// Existing Go history operation and pinned Python doorbell history share this doorbot path. The Go API exposes limit and kind; Python additionally supports older_than and client-side enforcement/retries. C1 history routes use EVM endpoints and are specified separately.
+	// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
 	GetLegacyDeviceHistory(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// TurnSirenOff performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
@@ -6936,30 +6936,30 @@ type ClientInterface interface {
 	// RegisterClientSessionWithBody performs a POST /clients_api/session (the `RegisterClientSession` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. Python exposes the same session action. The shape below follows source code; no C1 capture was identified.
+	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
 	RegisterClientSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RegisterClientSession performs a POST /clients_api/session (the `RegisterClientSession` operationId) request.
 	// Takes a body of the `application/json` content type.
 	//
-	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. Python exposes the same session action. The shape below follows source code; no C1 capture was identified.
+	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
 	RegisterClientSession(ctx context.Context, body RegisterClientSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetLegacySnapshotImage performs a GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId) request.
 	//
-	// Pinned Python legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+	// Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
 	GetLegacySnapshotImage(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RefreshLegacySnapshotTimestampWithBody performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Pinned Python legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+	// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
 	RefreshLegacySnapshotTimestampWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RefreshLegacySnapshotTimestamp performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request.
 	// Takes a body of the `application/json` content type.
 	//
-	// Pinned Python legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+	// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
 	RefreshLegacySnapshotTimestamp(ctx context.Context, body RefreshLegacySnapshotTimestampJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SendDeviceCommandWithBody performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request,
@@ -7051,13 +7051,13 @@ type ClientInterface interface {
 	// SubmitOAuthCredentialsWithBody performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Python auth is the behavioral reference. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
 	SubmitOAuthCredentialsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SubmitOAuthCredentialsWithFormdataBody performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request.
 	// Takes a body of the `application/x-www-form-urlencoded` content type.
 	//
-	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Python auth is the behavioral reference. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
 	SubmitOAuthCredentialsWithFormdataBody(ctx context.Context, body SubmitOAuthCredentialsFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
@@ -7093,7 +7093,7 @@ func (c *Client) GetCapturedLocationTickets(ctx context.Context, params *GetCapt
 
 // SetChimeVolume performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
 //
-// Legacy Python/Go volume update. The client requires description to reproduce Python's tested request shape; no capture proves the server requires that query field for volume changes.
+// Legacy volume update. The client requires description to reproduce the synthetic replay request shape; no capture proves the server requires that query field for volume changes.
 func (c *Client) SetChimeVolume(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetChimeVolumeRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -7108,7 +7108,7 @@ func (c *Client) SetChimeVolume(ctx context.Context, deviceId DeviceId, params *
 
 // TestChimeSound performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
 //
-// Python/Go legacy sound request from portable synthetic replay.
+// Legacy sound request from synthetic replay.
 func (c *Client) TestChimeSound(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTestChimeSoundRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -7123,7 +7123,7 @@ func (c *Client) TestChimeSound(ctx context.Context, deviceId DeviceId, params *
 
 // GetActiveDings performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
 //
-// Existing Go and Python active-dings route. No matching C1 capture was identified.
+// Existing Go active-dings route. No matching C1 capture was identified.
 func (c *Client) GetActiveDings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActiveDingsRequest(c.Server)
 	if err != nil {
@@ -7179,7 +7179,7 @@ func (c *Client) StreamRecording(ctx context.Context, recordingId RecordingId, r
 
 // GetLegacyRecordingShareURL performs a GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId) request.
 //
-// Pinned Python legacy share/play response, replayed synthetically by Go; no matching C1 response.
+// Legacy share/play response, replayed synthetically; no matching C1 response.
 func (c *Client) GetLegacyRecordingShareURL(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLegacyRecordingShareURLRequest(c.Server, recordingId)
 	if err != nil {
@@ -7194,7 +7194,7 @@ func (c *Client) GetLegacyRecordingShareURL(ctx context.Context, recordingId Rec
 
 // UpdateLegacyDoorbotControls performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
 //
-// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce Python's tested shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
+// Legacy doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce the replayed request shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
 func (c *Client) UpdateLegacyDoorbotControls(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateLegacyDoorbotControlsRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -7209,7 +7209,7 @@ func (c *Client) UpdateLegacyDoorbotControls(ctx context.Context, deviceId Devic
 
 // TurnFloodlightOff performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
 //
-// Python/Go legacy off path; no corresponding C1 or portable request fixture.
+// Legacy off path; no corresponding captured or synthetic request fixture.
 func (c *Client) TurnFloodlightOff(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnFloodlightOffRequest(c.Server, deviceId)
 	if err != nil {
@@ -7224,7 +7224,7 @@ func (c *Client) TurnFloodlightOff(ctx context.Context, deviceId DeviceId, reqEd
 
 // TurnFloodlightOn performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId) request.
 //
-// Python/Go legacy light-on request from portable synthetic replay.
+// Legacy light-on request from synthetic replay.
 func (c *Client) TurnFloodlightOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnFloodlightOnRequest(c.Server, deviceId)
 	if err != nil {
@@ -7239,7 +7239,7 @@ func (c *Client) TurnFloodlightOn(ctx context.Context, deviceId DeviceId, reqEdi
 
 // GetLegacyDeviceHistory performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
 //
-// Existing Go history operation and pinned Python doorbell history share this doorbot path. The Go API exposes limit and kind; Python additionally supports older_than and client-side enforcement/retries. C1 history routes use EVM endpoints and are specified separately.
+// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
 func (c *Client) GetLegacyDeviceHistory(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLegacyDeviceHistoryRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -7298,7 +7298,7 @@ func (c *Client) GetLegacyDeviceHealth(ctx context.Context, deviceId DeviceId, r
 // RegisterClientSessionWithBody performs a POST /clients_api/session (the `RegisterClientSession` operationId) request,
 // with any type of body and a specified content type.
 //
-// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. Python exposes the same session action. The shape below follows source code; no C1 capture was identified.
+// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
 func (c *Client) RegisterClientSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRegisterClientSessionRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -7314,7 +7314,7 @@ func (c *Client) RegisterClientSessionWithBody(ctx context.Context, contentType 
 // RegisterClientSession performs a POST /clients_api/session (the `RegisterClientSession` operationId) request.
 // Takes a body of the `application/json` content type.
 //
-// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. Python exposes the same session action. The shape below follows source code; no C1 capture was identified.
+// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
 func (c *Client) RegisterClientSession(ctx context.Context, body RegisterClientSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRegisterClientSessionRequest(c.Server, body)
 	if err != nil {
@@ -7329,7 +7329,7 @@ func (c *Client) RegisterClientSession(ctx context.Context, body RegisterClientS
 
 // GetLegacySnapshotImage performs a GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId) request.
 //
-// Pinned Python legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+// Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
 func (c *Client) GetLegacySnapshotImage(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLegacySnapshotImageRequest(c.Server, deviceId)
 	if err != nil {
@@ -7345,7 +7345,7 @@ func (c *Client) GetLegacySnapshotImage(ctx context.Context, deviceId DeviceId, 
 // RefreshLegacySnapshotTimestampWithBody performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request,
 // with any type of body and a specified content type.
 //
-// Pinned Python legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
 func (c *Client) RefreshLegacySnapshotTimestampWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRefreshLegacySnapshotTimestampRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -7361,7 +7361,7 @@ func (c *Client) RefreshLegacySnapshotTimestampWithBody(ctx context.Context, con
 // RefreshLegacySnapshotTimestamp performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request.
 // Takes a body of the `application/json` content type.
 //
-// Pinned Python legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
 func (c *Client) RefreshLegacySnapshotTimestamp(ctx context.Context, body RefreshLegacySnapshotTimestampJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRefreshLegacySnapshotTimestampRequest(c.Server, body)
 	if err != nil {
@@ -7663,7 +7663,7 @@ func (c *Client) BeginOrContinueOAuthAuthorization(ctx context.Context, params *
 // SubmitOAuthCredentialsWithBody performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request,
 // with any type of body and a specified content type.
 //
-// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Python auth is the behavioral reference. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
 func (c *Client) SubmitOAuthCredentialsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubmitOAuthCredentialsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -7679,7 +7679,7 @@ func (c *Client) SubmitOAuthCredentialsWithBody(ctx context.Context, contentType
 // SubmitOAuthCredentialsWithFormdataBody performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request.
 // Takes a body of the `application/x-www-form-urlencoded` content type.
 //
-// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Python auth is the behavioral reference. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
 func (c *Client) SubmitOAuthCredentialsWithFormdataBody(ctx context.Context, body SubmitOAuthCredentialsFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubmitOAuthCredentialsRequestWithFormdataBody(c.Server, body)
 	if err != nil {
@@ -9576,21 +9576,21 @@ type ClientWithResponsesInterface interface {
 
 	// SetChimeVolumeWithResponse performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
 	//
-	// Legacy Python/Go volume update. The client requires description to reproduce Python's tested request shape; no capture proves the server requires that query field for volume changes.
+	// Legacy volume update. The client requires description to reproduce the synthetic replay request shape; no capture proves the server requires that query field for volume changes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	SetChimeVolumeWithResponse(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*SetChimeVolumeResponse, error)
 
 	// TestChimeSoundWithResponse performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
 	//
-	// Python/Go legacy sound request from portable synthetic replay.
+	// Legacy sound request from synthetic replay.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	TestChimeSoundWithResponse(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*TestChimeSoundResponse, error)
 
 	// GetActiveDingsWithResponse performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
 	//
-	// Existing Go and Python active-dings route. No matching C1 capture was identified.
+	// Existing Go active-dings route. No matching C1 capture was identified.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetActiveDingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetActiveDingsResponse, error)
@@ -9614,35 +9614,35 @@ type ClientWithResponsesInterface interface {
 
 	// GetLegacyRecordingShareURLWithResponse performs a GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId) request.
 	//
-	// Pinned Python legacy share/play response, replayed synthetically by Go; no matching C1 response.
+	// Legacy share/play response, replayed synthetically; no matching C1 response.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetLegacyRecordingShareURLWithResponse(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*GetLegacyRecordingShareURLResponse, error)
 
 	// UpdateLegacyDoorbotControlsWithResponse performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
 	//
-	// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce Python's tested shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
+	// Legacy doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce the replayed request shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	UpdateLegacyDoorbotControlsWithResponse(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*UpdateLegacyDoorbotControlsResponse, error)
 
 	// TurnFloodlightOffWithResponse performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
 	//
-	// Python/Go legacy off path; no corresponding C1 or portable request fixture.
+	// Legacy off path; no corresponding captured or synthetic request fixture.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	TurnFloodlightOffWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOffResponse, error)
 
 	// TurnFloodlightOnWithResponse performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId) request.
 	//
-	// Python/Go legacy light-on request from portable synthetic replay.
+	// Legacy light-on request from synthetic replay.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	TurnFloodlightOnWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOnResponse, error)
 
 	// GetLegacyDeviceHistoryWithResponse performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
 	//
-	// Existing Go history operation and pinned Python doorbell history share this doorbot path. The Go API exposes limit and kind; Python additionally supports older_than and client-side enforcement/retries. C1 history routes use EVM endpoints and are specified separately.
+	// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetLegacyDeviceHistoryWithResponse(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*GetLegacyDeviceHistoryResponse, error)
@@ -9669,7 +9669,7 @@ type ClientWithResponsesInterface interface {
 	// RegisterClientSessionWithBodyWithResponse performs a POST /clients_api/session (the `RegisterClientSession` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. Python exposes the same session action. The shape below follows source code; no C1 capture was identified.
+	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	RegisterClientSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterClientSessionResponse, error)
@@ -9677,12 +9677,12 @@ type ClientWithResponsesInterface interface {
 	// RegisterClientSessionWithResponse performs a POST /clients_api/session (the `RegisterClientSession` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. Python exposes the same session action. The shape below follows source code; no C1 capture was identified.
+	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
 	RegisterClientSessionWithResponse(ctx context.Context, body RegisterClientSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterClientSessionResponse, error)
 
 	// GetLegacySnapshotImageWithResponse performs a GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId) request.
 	//
-	// Pinned Python legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+	// Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetLegacySnapshotImageWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetLegacySnapshotImageResponse, error)
@@ -9690,7 +9690,7 @@ type ClientWithResponsesInterface interface {
 	// RefreshLegacySnapshotTimestampWithBodyWithResponse performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Pinned Python legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+	// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	RefreshLegacySnapshotTimestampWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RefreshLegacySnapshotTimestampResponse, error)
@@ -9698,7 +9698,7 @@ type ClientWithResponsesInterface interface {
 	// RefreshLegacySnapshotTimestampWithResponse performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Pinned Python legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+	// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
 	RefreshLegacySnapshotTimestampWithResponse(ctx context.Context, body RefreshLegacySnapshotTimestampJSONRequestBody, reqEditors ...RequestEditorFn) (*RefreshLegacySnapshotTimestampResponse, error)
 
 	// SendDeviceCommandWithBodyWithResponse performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request,
@@ -9820,7 +9820,7 @@ type ClientWithResponsesInterface interface {
 	// SubmitOAuthCredentialsWithBodyWithResponse performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Python auth is the behavioral reference. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	SubmitOAuthCredentialsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitOAuthCredentialsResponse, error)
@@ -9828,7 +9828,7 @@ type ClientWithResponsesInterface interface {
 	// SubmitOAuthCredentialsWithFormdataBodyWithResponse performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request.
 	// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Python auth is the behavioral reference. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
 	SubmitOAuthCredentialsWithFormdataBodyWithResponse(ctx context.Context, body SubmitOAuthCredentialsFormdataRequestBody, reqEditors ...RequestEditorFn) (*SubmitOAuthCredentialsResponse, error)
 }
 
@@ -11435,7 +11435,7 @@ func (c *ClientWithResponses) GetCapturedLocationTicketsWithResponse(ctx context
 
 // SetChimeVolumeWithResponse performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
 //
-// Legacy Python/Go volume update. The client requires description to reproduce Python's tested request shape; no capture proves the server requires that query field for volume changes.
+// Legacy volume update. The client requires description to reproduce the synthetic replay request shape; no capture proves the server requires that query field for volume changes.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) SetChimeVolumeWithResponse(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*SetChimeVolumeResponse, error) {
@@ -11448,7 +11448,7 @@ func (c *ClientWithResponses) SetChimeVolumeWithResponse(ctx context.Context, de
 
 // TestChimeSoundWithResponse performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
 //
-// Python/Go legacy sound request from portable synthetic replay.
+// Legacy sound request from synthetic replay.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) TestChimeSoundWithResponse(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*TestChimeSoundResponse, error) {
@@ -11461,7 +11461,7 @@ func (c *ClientWithResponses) TestChimeSoundWithResponse(ctx context.Context, de
 
 // GetActiveDingsWithResponse performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
 //
-// Existing Go and Python active-dings route. No matching C1 capture was identified.
+// Existing Go active-dings route. No matching C1 capture was identified.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) GetActiveDingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetActiveDingsResponse, error) {
@@ -11509,7 +11509,7 @@ func (c *ClientWithResponses) StreamRecordingWithResponse(ctx context.Context, r
 
 // GetLegacyRecordingShareURLWithResponse performs a GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId) request.
 //
-// Pinned Python legacy share/play response, replayed synthetically by Go; no matching C1 response.
+// Legacy share/play response, replayed synthetically; no matching C1 response.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) GetLegacyRecordingShareURLWithResponse(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*GetLegacyRecordingShareURLResponse, error) {
@@ -11522,7 +11522,7 @@ func (c *ClientWithResponses) GetLegacyRecordingShareURLWithResponse(ctx context
 
 // UpdateLegacyDoorbotControlsWithResponse performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
 //
-// Legacy Python/Go doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce Python's tested shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
+// Legacy doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce the replayed request shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) UpdateLegacyDoorbotControlsWithResponse(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*UpdateLegacyDoorbotControlsResponse, error) {
@@ -11535,7 +11535,7 @@ func (c *ClientWithResponses) UpdateLegacyDoorbotControlsWithResponse(ctx contex
 
 // TurnFloodlightOffWithResponse performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
 //
-// Python/Go legacy off path; no corresponding C1 or portable request fixture.
+// Legacy off path; no corresponding captured or synthetic request fixture.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) TurnFloodlightOffWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOffResponse, error) {
@@ -11548,7 +11548,7 @@ func (c *ClientWithResponses) TurnFloodlightOffWithResponse(ctx context.Context,
 
 // TurnFloodlightOnWithResponse performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId) request.
 //
-// Python/Go legacy light-on request from portable synthetic replay.
+// Legacy light-on request from synthetic replay.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) TurnFloodlightOnWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOnResponse, error) {
@@ -11561,7 +11561,7 @@ func (c *ClientWithResponses) TurnFloodlightOnWithResponse(ctx context.Context, 
 
 // GetLegacyDeviceHistoryWithResponse performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
 //
-// Existing Go history operation and pinned Python doorbell history share this doorbot path. The Go API exposes limit and kind; Python additionally supports older_than and client-side enforcement/retries. C1 history routes use EVM endpoints and are specified separately.
+// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) GetLegacyDeviceHistoryWithResponse(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*GetLegacyDeviceHistoryResponse, error) {
@@ -11612,7 +11612,7 @@ func (c *ClientWithResponses) GetLegacyDeviceHealthWithResponse(ctx context.Cont
 // RegisterClientSessionWithBodyWithResponse performs a POST /clients_api/session (the `RegisterClientSession` operationId) request,
 // with any type of body and a specified content type.
 //
-// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. Python exposes the same session action. The shape below follows source code; no C1 capture was identified.
+// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) RegisterClientSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterClientSessionResponse, error) {
@@ -11626,7 +11626,7 @@ func (c *ClientWithResponses) RegisterClientSessionWithBodyWithResponse(ctx cont
 // RegisterClientSessionWithResponse performs a POST /clients_api/session (the `RegisterClientSession` operationId) request.
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. Python exposes the same session action. The shape below follows source code; no C1 capture was identified.
+// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
 func (c *ClientWithResponses) RegisterClientSessionWithResponse(ctx context.Context, body RegisterClientSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterClientSessionResponse, error) {
 	rsp, err := c.RegisterClientSession(ctx, body, reqEditors...)
 	if err != nil {
@@ -11637,7 +11637,7 @@ func (c *ClientWithResponses) RegisterClientSessionWithResponse(ctx context.Cont
 
 // GetLegacySnapshotImageWithResponse performs a GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId) request.
 //
-// Pinned Python legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+// Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) GetLegacySnapshotImageWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetLegacySnapshotImageResponse, error) {
@@ -11651,7 +11651,7 @@ func (c *ClientWithResponses) GetLegacySnapshotImageWithResponse(ctx context.Con
 // RefreshLegacySnapshotTimestampWithBodyWithResponse performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request,
 // with any type of body and a specified content type.
 //
-// Pinned Python legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) RefreshLegacySnapshotTimestampWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RefreshLegacySnapshotTimestampResponse, error) {
@@ -11665,7 +11665,7 @@ func (c *ClientWithResponses) RefreshLegacySnapshotTimestampWithBodyWithResponse
 // RefreshLegacySnapshotTimestampWithResponse performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request.
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Pinned Python legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
 func (c *ClientWithResponses) RefreshLegacySnapshotTimestampWithResponse(ctx context.Context, body RefreshLegacySnapshotTimestampJSONRequestBody, reqEditors ...RequestEditorFn) (*RefreshLegacySnapshotTimestampResponse, error) {
 	rsp, err := c.RefreshLegacySnapshotTimestamp(ctx, body, reqEditors...)
 	if err != nil {
@@ -11913,7 +11913,7 @@ func (c *ClientWithResponses) BeginOrContinueOAuthAuthorizationWithResponse(ctx 
 // SubmitOAuthCredentialsWithBodyWithResponse performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request,
 // with any type of body and a specified content type.
 //
-// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Python auth is the behavioral reference. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) SubmitOAuthCredentialsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitOAuthCredentialsResponse, error) {
@@ -11927,7 +11927,7 @@ func (c *ClientWithResponses) SubmitOAuthCredentialsWithBodyWithResponse(ctx con
 // SubmitOAuthCredentialsWithFormdataBodyWithResponse performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request.
 // Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
 //
-// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Python auth is the behavioral reference. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
 func (c *ClientWithResponses) SubmitOAuthCredentialsWithFormdataBodyWithResponse(ctx context.Context, body SubmitOAuthCredentialsFormdataRequestBody, reqEditors ...RequestEditorFn) (*SubmitOAuthCredentialsResponse, error) {
 	rsp, err := c.SubmitOAuthCredentialsWithFormdataBody(ctx, body, reqEditors...)
 	if err != nil {
