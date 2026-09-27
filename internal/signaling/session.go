@@ -185,8 +185,11 @@ func (s *Session) finish(err error) {
 		default:
 		}
 	}
-	s.cancel()
 	close(s.done)
+	// Publish the terminal cause before canceling an in-flight transport write.
+	// Otherwise that write can return context.Canceled before Call can observe
+	// the actual session failure through done.
+	s.cancel()
 }
 
 func (s *Session) Wait(ctx context.Context) error {
