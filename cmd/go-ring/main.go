@@ -91,12 +91,14 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 		return soundCommand(ctx, store, args[1:], out)
 	case "view":
 		return viewCommand(ctx, store, args[1:], in, out)
+	case "replay-video":
+		return replayVideoCommand(args[1:], out)
 	}
 	return usage(out)
 }
 
 func usage(out io.Writer) error {
-	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file [--timeout 30s] [--ice-servers file.json] | siren <id> on|off | reboot <id> | health <id> [--refresh] | sound <chime-id> ding|motion | view <id> [--player ffplay] [--debug] [--ice-servers file.json] [--continuous] [--speed 0.5]")
+	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file [--timeout 30s] [--ice-servers file.json] | siren <id> on|off | reboot <id> | health <id> [--refresh] | sound <chime-id> ding|motion | view <id> [--player ffplay] [--debug] [--record-rtp file] [--ice-servers file.json] [--continuous] [--speed 0.5] | replay-video <recording> --output file.h264")
 	return errors.New("invalid command")
 }
 

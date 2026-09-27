@@ -28,8 +28,8 @@ type h264FrameWriter struct {
 	output       io.Writer
 	depacketizer codecs.H264Packet
 	frame        []byte
-	sps          []byte
-	pps          []byte
+	sps          map[uint64][]byte
+	pps          map[uint64]h264PPSInfo
 	timestamp    uint32
 	sequence     uint16
 	haveTime     bool
@@ -38,8 +38,13 @@ type h264FrameWriter struct {
 	ready        bool
 }
 
+type h264PPSInfo struct {
+	spsID uint64
+	data  []byte
+}
+
 func newH264FrameWriter(output io.Writer) *h264FrameWriter {
-	return &h264FrameWriter{output: output}
+	return &h264FrameWriter{output: output, sps: make(map[uint64][]byte), pps: make(map[uint64]h264PPSInfo)}
 }
 
 func (w *h264FrameWriter) WriteRTP(packet *rtp.Packet) error {
@@ -112,35 +117,56 @@ func validH264Payload(payload []byte) bool {
 
 func (w *h264FrameWriter) writeFrame() error {
 	var hasIDR bool
+	var references []uint64
 	for _, nalu := range bytes.Split(w.frame, h264StartCode) {
 		if len(nalu) == 0 {
 			continue
 		}
 		switch nalu[0] & h264NALTypeMask {
 		case h264SPS:
-			w.sps = append(w.sps[:0], nalu...)
+			id, ok := h264SPSID(nalu)
+			if !ok {
+				w.ready = false
+				return nil
+			}
+			w.sps[id] = append(w.sps[id][:0], nalu...)
 		case h264PPS:
-			w.pps = append(w.pps[:0], nalu...)
+			id, spsID, ok := h264PPSIDs(nalu)
+			if !ok {
+				w.ready = false
+				return nil
+			}
+			w.pps[id] = h264PPSInfo{spsID: spsID, data: append(w.pps[id].data[:0], nalu...)}
 		case h264IDR:
 			hasIDR = true
+			fallthrough
+		case 1:
+			id, ok := h264SlicePPSID(nalu)
+			if !ok {
+				w.ready = false
+				return nil
+			}
+			references = append(references, id)
 		}
 	}
-	if hasIDR {
-		if len(w.sps) == 0 || len(w.pps) == 0 {
+	for _, id := range references {
+		pps, ok := w.pps[id]
+		if !ok || len(w.sps[pps.spsID]) == 0 {
 			w.ready = false
 			return nil
 		}
-		if _, err := w.output.Write(h264StartCode); err != nil {
-			return err
-		}
-		if _, err := w.output.Write(w.sps); err != nil {
-			return err
-		}
-		if _, err := w.output.Write(h264StartCode); err != nil {
-			return err
-		}
-		if _, err := w.output.Write(w.pps); err != nil {
-			return err
+	}
+	if hasIDR {
+		for _, id := range references {
+			pps := w.pps[id]
+			for _, nalu := range [][]byte{w.sps[pps.spsID], pps.data} {
+				if _, err := w.output.Write(h264StartCode); err != nil {
+					return err
+				}
+				if _, err := w.output.Write(nalu); err != nil {
+					return err
+				}
+			}
 		}
 		w.ready = true
 	}

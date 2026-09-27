@@ -51,7 +51,16 @@ func previewFormat(codec string) (string, error) {
 	}
 }
 
-func playTrack(ctx context.Context, track *webrtc.TrackRemote) error {
+func playTrack(ctx context.Context, track *webrtc.TrackRemote, recordPath string) error {
+	var recording *rtpRecording
+	if recordPath != "" {
+		var err error
+		recording, err = newRTPRecording(recordPath)
+		if err != nil {
+			return err
+		}
+		defer recording.Close()
+	}
 	if _, err := exec.LookPath(ffplayCommand); err != nil {
 		return errors.New("ffplay is required for preview; install FFmpeg or use --player none")
 	}
@@ -86,6 +95,11 @@ func playTrack(ctx context.Context, track *webrtc.TrackRemote) error {
 		packet, _, err := track.ReadRTP()
 		if err != nil {
 			return err
+		}
+		if recording != nil {
+			if err := recording.WritePacket(packet); err != nil {
+				return err
+			}
 		}
 		if err := writer.WriteRTP(packet); err != nil {
 			return err

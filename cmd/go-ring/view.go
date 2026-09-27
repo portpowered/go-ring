@@ -22,6 +22,7 @@ const ffplayCommand = "ffplay"
 type viewOptions struct {
 	player     string
 	iceFile    string
+	recordRTP  string
 	continuous bool
 	speed      float64
 	debug      bool
@@ -38,6 +39,7 @@ func viewCommand(parent context.Context, store tokenStore, args []string, in io.
 	continuous := flags.Bool("continuous", false, "continuous PTZ with inactivity stop")
 	speed := flags.Float64("speed", defaultPTZSpeed, "continuous PTZ speed from 0 to 1")
 	debug := flags.Bool("debug", false, "show connection and control diagnostics")
+	recordRTP := flags.String("record-rtp", "", "record incoming video RTP packets for offline diagnosis")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -48,7 +50,7 @@ func viewCommand(parent context.Context, store tokenStore, args []string, in io.
 	signal.Notify(interrupts, os.Interrupt)
 	defer signal.Stop(interrupts)
 	return withClient(parent, store, func(client *ring.Client, auth ring.AuthContext) error {
-		return view(parent, client, auth, args[0], viewOptions{player: *player, iceFile: *iceFile, continuous: *continuous, speed: *speed, debug: *debug}, in, out, interrupts)
+		return view(parent, client, auth, args[0], viewOptions{player: *player, iceFile: *iceFile, recordRTP: *recordRTP, continuous: *continuous, speed: *speed, debug: *debug}, in, out, interrupts)
 	})
 }
 
@@ -75,7 +77,7 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 	pc.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 		_, _ = fmt.Fprintf(out, "Video track: %s\n", track.Codec().MimeType)
 		if opts.player == ffplayCommand {
-			if err := playTrack(ctx, track); err != nil && ctx.Err() == nil {
+			if err := playTrack(ctx, track, opts.recordRTP); err != nil && ctx.Err() == nil {
 				select {
 				case mediaErr <- err:
 				default:
@@ -83,10 +85,27 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 			}
 			return
 		}
+		var recording *rtpRecording
+		if opts.recordRTP != "" {
+			var err error
+			recording, err = newRTPRecording(opts.recordRTP)
+			if err != nil {
+				mediaErr <- err
+				return
+			}
+			defer recording.Close()
+		}
 		var packets uint64
 		for {
-			if _, _, err := track.ReadRTP(); err != nil {
+			packet, _, err := track.ReadRTP()
+			if err != nil {
 				return
+			}
+			if recording != nil {
+				if err := recording.WritePacket(packet); err != nil {
+					mediaErr <- err
+					return
+				}
 			}
 			packets++
 			if packets == 1 {
