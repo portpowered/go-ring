@@ -1,0 +1,26 @@
+name: API Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/openapi.yaml"
+      - "api/asyncapi.yaml"
+      - ".github/workflows/api-docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  publish:
+    uses: portpowered/api-docs-website-github-action/.github/workflows/publish.yml@v0.1.0
+    with:
+      title: go-ring API Reference
+      openapi: api/openapi.yaml
+      asyncapi: api/asyncapi.yaml
+      discover: false
+      source-directory: .
+      output: api-docs-out
