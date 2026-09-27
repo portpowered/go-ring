@@ -42,6 +42,22 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code -- go.mod go.sum
+  api-compatibility:
+    runs-on: ubuntu-latest
+    env:
+      GOWORK: 'off'
+      GOPRIVATE: ''
+      GOTOOLCHAIN: local
+      COMPAT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - name: Check public Go API compatibility
+        run: go run ./tools/compatibility -policy report -base "$COMPAT_BASE"
   coverage:
     runs-on: ubuntu-latest
     permissions:
@@ -125,4 +141,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: make test-contracts
+      - name: Install protocol tooling dependencies
+        run: npm ci --prefix tools/protocols --ignore-scripts
+      - name: Audit protocol tooling dependencies
+        run: npm audit --prefix tools/protocols --audit-level=moderate
+      - name: Run fixture and schema contracts
+        run: go test ./tools/protocols ./tools/capture
