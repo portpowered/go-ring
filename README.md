@@ -11,9 +11,8 @@ and persistent signaling sessions.
 
 ## API reference
 
-The go-ring API reference will be published at
-[portpowered.github.io/go-ring](https://portpowered.github.io/go-ring/) after
-the Pages workflow runs. It is generated from the supported Ring HTTP and
+The [go-ring API reference](https://portpowered.github.io/go-ring/) is rendered
+with Fumadocs from the supported Ring HTTP and
 signaling contracts in
 [`api/openapi.yaml`](api/openapi.yaml) and [`api/asyncapi.yaml`](api/asyncapi.yaml).
 The reference documents third-party APIs observed and modeled by this project;
