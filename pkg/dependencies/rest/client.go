@@ -190,7 +190,7 @@ func (c *Client) doJSONRequest(ctx context.Context, method, path string, body in
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read the response body before decoding so the transport can be reused.
 	bodyBytes, err := io.ReadAll(resp.Body)

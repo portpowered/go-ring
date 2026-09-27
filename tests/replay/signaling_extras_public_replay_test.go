@@ -98,7 +98,7 @@ func TestRecordedPublicPushRejection(t *testing.T) {
 		}
 		_, _, _ = c.ReadMessage()
 	})
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	if _, err := conn.SubscribePush(context.Background(), nil); err == nil {
 		t.Fatal("empty push filters accepted")
 	}
@@ -167,7 +167,7 @@ func TestRecordedPublicPlaybackRejectsInvalidAnswer(t *testing.T) {
 		}
 		_, _, _ = c.ReadMessage()
 	})
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if _, err := conn.StartPlayback(ctx, ring.StartPlaybackRequest{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: recordedPlaybackOffer(t)}}); err == nil {
@@ -195,7 +195,7 @@ func TestRecordedPublicPushIdentityAndCancellation(t *testing.T) {
 				}
 				_ = readSignalRequest(t, c, "push_unsubscribe")
 			})
-			defer conn.Close()
+			defer func() { _ = conn.Close() }()
 			ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
 			defer cancel()
 			filter := ring.PushFilter{FilterIdentifier: "sanitized-text", NotificationScope: "event", NotificationType: "shoulder_tap"}
@@ -241,7 +241,7 @@ func TestRecordedPublicPlaybackRemoteCloseAndValidation(t *testing.T) {
 		_ = c.WriteJSON(map[string]any{"method": "close", "dialog_id": request["dialog_id"], "body": capturedSignalFrame(t, "client_to_server", "dialog-2", "close")})
 		_, _, _ = c.ReadMessage()
 	})
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	for _, invalid := range []ring.StartPlaybackRequest{
 		{DeviceID: "invalid"},
 		{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeAnswer, SDP: recordedPlaybackOffer(t)}},
@@ -292,7 +292,7 @@ func TestRecordedPublicPlaybackPingPongLifecycle(t *testing.T) {
 		_ = c.WriteJSON(map[string]any{"method": "close", "dialog_id": request["dialog_id"], "body": capturedSignalFrame(t, "client_to_server", "dialog-2", "close")})
 		_, _, _ = c.ReadMessage()
 	})
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	session, err := conn.StartPlayback(ctx, ring.StartPlaybackRequest{DeviceID: "1000", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: recordedPlaybackOffer(t)}})

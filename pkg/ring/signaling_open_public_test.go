@@ -14,7 +14,7 @@ func TestOpenSignalingRejectsLocalPreconditions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := client.OpenSignaling(ctx, OpenSignalingRequest{Auth: AuthContext{AccessToken: "token"}}); !errors.Is(err, context.Canceled) {
@@ -31,7 +31,7 @@ func TestOpenSignalingRejectsLocalPreconditions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer noToken.Close()
+	defer func() { _ = noToken.Close() }()
 	if _, err := noToken.OpenSignaling(context.Background(), OpenSignalingRequest{}); err == nil {
 		t.Fatal("OpenSignaling succeeded without an access token")
 	}
@@ -40,7 +40,7 @@ func TestOpenSignalingRejectsLocalPreconditions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer unverified.Close()
+	defer func() { _ = unverified.Close() }()
 	if _, err := unverified.OpenSignaling(context.Background(), OpenSignalingRequest{Auth: AuthContext{AccessToken: "token"}}); err == nil || !strings.Contains(err.Error(), "unverified") {
 		t.Fatalf("EU bootstrap error = %v; want unverified endpoint error", err)
 	}
@@ -68,7 +68,7 @@ func TestOpenSignalingRejectsMalformedOrEmptyTicketResponse(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 			if _, err := client.OpenSignaling(context.Background(), OpenSignalingRequest{Auth: AuthContext{AccessToken: "access-token"}}); err == nil {
 				t.Fatal("invalid ticket response was accepted")
 			}
@@ -86,7 +86,7 @@ func TestOpenSignalingHTTPFailureDoesNotExposeResponseBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	_, err = client.OpenSignaling(context.Background(), OpenSignalingRequest{Auth: AuthContext{AccessToken: "token"}})
 	if err == nil {
 		t.Fatal("OpenSignaling accepted HTTP 500")

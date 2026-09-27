@@ -28,7 +28,7 @@ func newPublicTestSession(t *testing.T) (*DeviceSession, *signaling.Session) {
 
 func TestDeviceSessionReceiveAndCancel(t *testing.T) {
 	s, core := newPublicTestSession(t)
-	defer core.Close()
+	defer func() { _ = core.Close() }()
 	canceled, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := s.Receive(canceled); !errors.Is(err, context.Canceled) {
@@ -54,7 +54,7 @@ func TestDeviceSessionReceiveAndCancel(t *testing.T) {
 
 func TestDeviceSessionInputValidation(t *testing.T) {
 	s, core := newPublicTestSession(t)
-	defer core.Close()
+	defer func() { _ = core.Close() }()
 	checks := []struct {
 		name string
 		run  func() error
@@ -158,7 +158,7 @@ func TestStartDeviceSessionValidationStopsBeforeTransport(t *testing.T) {
 }
 func TestDeviceSessionRemoteCloseTerminatesMatchingSession(t *testing.T) {
 	s, core := newPublicTestSession(t)
-	defer core.Close()
+	defer func() { _ = core.Close() }()
 	body := json.RawMessage(`{"doorbot_id":7,"session_id":"signal"}`)
 	s.handle(signaling.Message{Method: "close", DialogID: "dialog", Body: body})
 	if got := s.State(); got != SessionClosed {
@@ -171,7 +171,7 @@ func TestDeviceSessionRemoteCloseTerminatesMatchingSession(t *testing.T) {
 	}
 
 	other, otherCore := newPublicTestSession(t)
-	defer otherCore.Close()
+	defer func() { _ = otherCore.Close() }()
 	other.handle(signaling.Message{Method: "close", DialogID: "dialog", Body: json.RawMessage(`{"doorbot_id":8,"session_id":"signal"}`)})
 	if got := other.State(); got != SessionActive {
 		t.Fatalf("unmatched close changed state to %q", got)

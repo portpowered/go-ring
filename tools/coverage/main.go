@@ -30,7 +30,9 @@ func main() {
 	if spec.minimum < 0 || spec.minimum > 100 {
 		fail(fmt.Errorf("minimum must be between zero and 100"))
 	}
-	os.Setenv("GOWORK", "off")
+	if err := os.Setenv("GOWORK", "off"); err != nil {
+		fail(err)
+	}
 	output, err := exec.Command("go", "list", "./pkg/...", "./internal/...").Output()
 	if err != nil {
 		fail(err)
@@ -56,7 +58,7 @@ func main() {
 	if err = profileFile.Close(); err != nil {
 		fail(err)
 	}
-	defer os.Remove(profilePath)
+	defer func() { _ = os.Remove(profilePath) }()
 	args := []string{"test", "-race", "-coverpkg=" + strings.Join(packages, ","), "-coverprofile=" + profilePath, "-covermode=atomic"}
 	args = append(args, spec.args...)
 	args = append(args, "-timeout", spec.timeout)

@@ -63,11 +63,11 @@ func TestAuthenticate_PKCEWith2FA(t *testing.T) {
 	transport := &pkceMockTransport{}
 	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	ctx := newTestContext()
 	flow, err := client.NewLoginSession(ring.LoginSessionRequest{Username: "testuser", Password: "testpass"})
 	require.NoError(t, err)
-	defer flow.Close()
+	defer func() { _ = flow.Close() }()
 
 	err = flow.Request2FACode(ctx)
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestAuthenticate_PKCEWith2FA(t *testing.T) {
 
 func TestAuthenticate_Success(t *testing.T) {
 	client, mockTransport := newTestClient()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 
@@ -117,7 +117,7 @@ func TestAuthenticate_Success(t *testing.T) {
 
 func TestAuthenticate_WithOTP(t *testing.T) {
 	client, mockTransport := newTestClient()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 
@@ -140,7 +140,7 @@ func TestAuthenticate_WithOTP(t *testing.T) {
 
 func TestAuthenticate_Requires2FA(t *testing.T) {
 	client, mockTransport := newTestClient()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Set up a 412 response for 2FA requirement
 	mockTransport.SetResponseWithBody("POST", "/oauth/token", http.StatusPreconditionFailed, map[string]string{
@@ -162,7 +162,7 @@ func TestAuthenticate_Requires2FA(t *testing.T) {
 
 func TestAuthenticate_InvalidCredentials(t *testing.T) {
 	client, mockTransport := newTestClient()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Set up a 401 response for invalid credentials
 	mockTransport.SetResponseWithBody("POST", "/oauth/token", http.StatusUnauthorized, map[string]string{
@@ -183,7 +183,7 @@ func TestAuthenticate_InvalidCredentials(t *testing.T) {
 
 func TestRequest2FACode(t *testing.T) {
 	client, mockTransport := newTestClient()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Set up a 412 response for 2FA requirement
 	mockTransport.SetResponseWithBody("POST", "/oauth/token", http.StatusPreconditionFailed, map[string]string{
@@ -209,7 +209,7 @@ func TestRequest2FACode(t *testing.T) {
 
 func TestRefreshToken_Success(t *testing.T) {
 	client, mockTransport := newTestClient()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	authResp, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
@@ -236,7 +236,7 @@ func TestRefreshToken_Success(t *testing.T) {
 
 func TestRefreshToken_InvalidToken(t *testing.T) {
 	client, mockTransport := newTestClient()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Set up a 401 response for invalid refresh token
 	mockTransport.SetResponseWithBody("POST", "/oauth/token", http.StatusUnauthorized, map[string]string{
@@ -256,7 +256,7 @@ func TestRefreshToken_InvalidToken(t *testing.T) {
 func TestNewClientWithoutBoundToken(t *testing.T) {
 	client, err := ring.NewClient()
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Client does not own account credentials.
 	assert.NotNil(t, client)
@@ -264,7 +264,7 @@ func TestNewClientWithoutBoundToken(t *testing.T) {
 
 func TestAuthContextHeaders(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	// Verify request-scoped credentials reach the transport.
 	ctx := newTestContext()
 	_, _ = client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "new_token", HardwareID: "test_hardware_id"}})

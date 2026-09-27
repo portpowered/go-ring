@@ -56,8 +56,8 @@ func (s tokenStore) save(tokens storedTokens) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(file.Name())
-	defer file.Close()
+	defer func() { _ = os.Remove(file.Name()) }()
+	defer func() { _ = file.Close() }()
 	if err := file.Chmod(privateFileMode); err != nil {
 		return err
 	}
@@ -108,12 +108,12 @@ func login(ctx context.Context, store tokenStore, in io.Reader, out io.Writer) e
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	session, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password, HardwareID: identity})
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 	otp := os.Getenv("RING_OTP_CODE")
 	response, err := session.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otp})
 	if ringapimodels.IsRequires2FAError(err) && otp == "" {

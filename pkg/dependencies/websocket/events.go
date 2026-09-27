@@ -51,7 +51,7 @@ func OpenEvents(ctx context.Context, wsURL, token, hardwareID string) (*EventCon
 // processMessages processes incoming WebSocket messages
 func (ec *EventConnection) processMessages() {
 	defer ec.wg.Done()
-	defer ec.conn.Close()
+	defer func() { _ = ec.conn.Close() }()
 	defer ec.cancel()
 
 	for {
@@ -138,7 +138,7 @@ func (ec *EventConnection) Close() error {
 
 	ec.cancel()
 	if ec.conn != nil {
-		ec.conn.Close()
+		_ = ec.conn.Close()
 	}
 	ec.wg.Wait()
 

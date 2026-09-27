@@ -55,7 +55,7 @@ func TestRecordedLiveSessionFrameOrdering(t *testing.T) {
 				}
 				_, _, _ = c.ReadMessage()
 			})
-			defer conn.Close()
+			defer func() { _ = conn.Close() }()
 			ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 			defer cancel()
 			session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer}})

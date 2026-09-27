@@ -13,7 +13,7 @@ import (
 
 func TestListDevices_Success(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
@@ -39,7 +39,7 @@ func TestListDevices_Success(t *testing.T) {
 
 func TestListDevices_Empty(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Set up empty devices response
 	mockTransport.SetResponseWithBody("GET", "/device_info/v3/devices", http.StatusOK, map[string]interface{}{
@@ -59,7 +59,7 @@ func TestListDevices_Empty(t *testing.T) {
 
 func TestGetDevice_Found(t *testing.T) {
 	client, _ := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 
@@ -107,7 +107,7 @@ func TestGetDevice_Found(t *testing.T) {
 
 func TestGetDevice_NotFound(t *testing.T) {
 	client, _ := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 
@@ -122,7 +122,7 @@ func TestGetDevice_NotFound(t *testing.T) {
 
 func TestUpdateDeviceHealth_Success(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	deviceID := "987653"
@@ -143,7 +143,7 @@ func TestUpdateDeviceHealth_Success(t *testing.T) {
 
 func TestUpdateDeviceHealth_NotFound(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Set up 404 response
 	mockTransport.SetResponseWithBody("GET", "/clients_api/ring_devices/999999/health", http.StatusNotFound, map[string]string{
@@ -166,7 +166,7 @@ func TestUpdateDeviceHealth_NotFound(t *testing.T) {
 
 func TestGetAllDevices(t *testing.T) {
 	client, _ := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})

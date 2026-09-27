@@ -42,7 +42,7 @@ func TestSignalingSessionIntegrationSmoke(t *testing.T) {
 			serverErrors <- err
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		fail := func(e error) { serverErrors <- e }
 		read := func() (map[string]any, error) {
 			_, b, e := conn.ReadMessage()
@@ -337,7 +337,7 @@ func TestTwoSessionsRouteRepliesByDialog(t *testing.T) {
 			serverErr <- e
 			return
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 		read := func() (map[string]any, error) {
 			_, b, e := c.ReadMessage()
 			var v map[string]any
@@ -515,7 +515,7 @@ func TestOpenContextClosesIdleSignalingSocket(t *testing.T) {
 		if e != nil {
 			return
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 		_, _, _ = c.ReadMessage()
 		remoteClosed <- struct{}{}
 	}))

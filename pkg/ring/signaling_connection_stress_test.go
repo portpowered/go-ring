@@ -22,7 +22,7 @@ func TestSignalingConnectionAdversarialTerminationStress(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer peer.Close()
+		defer func() { _ = peer.Close() }()
 		for {
 			if _, _, err := peer.ReadMessage(); err != nil {
 				return

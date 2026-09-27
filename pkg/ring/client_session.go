@@ -55,7 +55,7 @@ func (c *Client) OpenSignaling(ctx context.Context, req OpenSignalingRequest) (*
 	}
 	var ticket generatedhttp.LegacySignalingTicket
 	b, readErr := io.ReadAll(io.LimitReader(resp.Body, signaling.MaxTicketResponseBytes+1))
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if readErr != nil {
 		return nil, ringapimodels.NewNetworkError("failed to read signaling ticket response", readErr)
 	}
@@ -91,7 +91,7 @@ func (c *Client) OpenSignaling(ctx context.Context, req OpenSignalingRequest) (*
 	if c.closed {
 		c.mu.Unlock()
 		cancel()
-		conn.Close()
+		_ = conn.Close()
 		return nil, ringapimodels.NewClosedError("client is closed")
 	}
 	if c.signalingConnections == nil {

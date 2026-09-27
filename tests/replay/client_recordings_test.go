@@ -15,7 +15,7 @@ import (
 
 func TestGetDeviceHistory_Success(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	deviceID := "987652"
@@ -39,7 +39,7 @@ func TestGetDeviceHistory_Success(t *testing.T) {
 
 func TestGetDeviceHistory_WithKind(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	deviceID := "987652"
@@ -63,7 +63,7 @@ func TestGetDeviceHistory_WithKind(t *testing.T) {
 
 func TestGetDeviceHistory_OlderThan(t *testing.T) {
 	client, transport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	cursor := int64(1720000000)
 	history, err := client.GetDeviceHistory(newTestContext(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652", Limit: 20, Kind: "motion", OlderThan: &cursor})
 	require.NoError(t, err)
@@ -80,7 +80,7 @@ func TestGetDeviceHistory_OlderThan(t *testing.T) {
 
 func TestGetDeviceHistory_NoDeviceID(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 
@@ -100,7 +100,7 @@ func TestGetDeviceHistory_NoDeviceID(t *testing.T) {
 
 func TestGetActiveDings_Success(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	activeDings, err := client.GetActiveDings(ctx, ring.GetActiveDingsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
@@ -118,7 +118,7 @@ func TestGetActiveDings_Success(t *testing.T) {
 
 func TestGetRecording_Success(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	recordingID := int64(987654321)
 	videoData := "fake video data"
@@ -142,7 +142,7 @@ func TestGetRecording_Success(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, stream)
-	defer stream.Body.Close()
+	defer func() { _ = stream.Body.Close() }()
 
 	assert.Equal(t, "video/mp4", stream.ContentType)
 	assert.Equal(t, int64(len(videoData)), stream.ContentLen)
@@ -159,7 +159,7 @@ func TestGetRecording_Success(t *testing.T) {
 
 func TestGetRecording_NotFound(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Set up 404 response
 	mockTransport.SetResponse("GET", "/clients_api/dings/999999/recording", &http.Response{
@@ -185,7 +185,7 @@ func TestGetRecording_NotFound(t *testing.T) {
 
 func TestGetLastRecordingID_Success(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	deviceID := "987652"
@@ -203,7 +203,7 @@ func TestGetLastRecordingID_Success(t *testing.T) {
 
 func TestGetLastRecordingID_NoRecordings(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Set up empty history response - API returns an array directly, not wrapped
 	mockTransport.SetResponseWithBody("GET", "/clients_api/doorbots/987652/history", http.StatusOK, []interface{}{})
@@ -222,7 +222,7 @@ func TestGetLastRecordingID_NoRecordings(t *testing.T) {
 
 func TestGetRecording_CanReadBody(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	recordingID := int64(987654321)
 	videoData := "fake video data"
@@ -243,7 +243,7 @@ func TestGetRecording_CanReadBody(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, stream)
-	defer stream.Body.Close()
+	defer func() { _ = stream.Body.Close() }()
 
 	// Read the body to verify it works
 	bodyBytes, err := io.ReadAll(stream.Body)

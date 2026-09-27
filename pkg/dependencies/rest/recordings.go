@@ -98,7 +98,7 @@ func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringmedi
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, ringerrors.ClassifyHTTPError(resp, "")
 	}
 

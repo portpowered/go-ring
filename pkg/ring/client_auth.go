@@ -13,7 +13,7 @@ func (c *Client) Authenticate(ctx context.Context, req AuthenticateRequest) (*ri
 	if err != nil {
 		return nil, err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 	return session.Authenticate(ctx, CompleteLoginRequest{OTPCode: req.OTPCode})
 }
 
@@ -24,7 +24,7 @@ func (c *Client) Request2FACode(ctx context.Context, req Request2FACodeRequest) 
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 	return session.Request2FACode(ctx)
 }
 

@@ -57,7 +57,11 @@ func setupSession(t *testing.T) (*Session, *fakeClock, chan Message) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { s.Close() })
+	t.Cleanup(func() {
+		if err := s.Close(); err != nil {
+			t.Error(err)
+		}
+	})
 	return s, clock, out
 }
 func nextMessage(t *testing.T, out chan Message) Message {
@@ -215,7 +219,7 @@ func TestExpiryCancelsBlockedWriteAndPendingRPC(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 	done := make(chan error, 1)
 	go func() { _, err := s.Call(context.Background(), "PTZ.Pan.Step", nil); done <- err }()
 	<-entered
@@ -377,7 +381,7 @@ func TestSessionRejectsInvalidStartupWithoutSending(t *testing.T) {
 			config := SessionConfig{DeviceID: 1001, DialogID: "d", SignalID: "s", ControlID: "c", Heartbeat: time.Second, Clock: newClock(), Send: func(context.Context, Message) error { t.Error("invalid session sent a message"); return nil }}
 			change(&config)
 			if s, err := NewSession(context.Background(), config); err == nil {
-				s.Close()
+				_ = s.Close()
 				t.Fatal("invalid startup succeeded")
 			}
 		})
@@ -448,7 +452,7 @@ func TestBlockedRPCPreservesTerminalCause(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 	result := make(chan error, 1)
 	go func() { _, err := s.Call(context.Background(), "PTZ.Pan.Step", nil); result <- err }()
 	select {

@@ -25,12 +25,12 @@ func replayVideoCommand(args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer input.Close()
+	defer func() { _ = input.Close() }()
 	output, err := os.OpenFile(*outputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, privateFileMode)
 	if err != nil {
 		return err
 	}
-	defer output.Close()
+	defer func() { _ = output.Close() }()
 	if err := output.Chmod(privateFileMode); err != nil {
 		_ = output.Close()
 		_ = os.Remove(*outputPath)
@@ -43,6 +43,9 @@ func replayVideoCommand(args []string, out io.Writer) error {
 	}
 	writer := newH264FrameWriter(output)
 	if err := replayRTP(input, writer.WriteRTP); err != nil {
+		return err
+	}
+	if err := writer.Close(); err != nil {
 		return err
 	}
 	_, err = fmt.Fprintf(out, "Saved %s (H264 video from recorded RTP)\n", *outputPath)

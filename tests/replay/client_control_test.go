@@ -69,7 +69,7 @@ func TestLegacyControlValidationBeforeHTTP(t *testing.T) {
 	for _, tc := range checks {
 		t.Run(tc.name, func(t *testing.T) {
 			client, transport := newTestClientWithMockTransport()
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 			err := tc.call(client)
 			require.Error(t, err)
 			require.True(t, ringapimodels.IsBadRequestError(err))

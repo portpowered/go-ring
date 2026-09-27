@@ -24,7 +24,7 @@ func TestSignalingWriteDeadlineInterruptsBlockedSocketWrite(t *testing.T) {
 			close(serverDone)
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		time.Sleep(250 * time.Millisecond) // Deliberately leave the client's large write undrained.
 		_, _, _ = conn.ReadMessage()
 		close(serverDone)

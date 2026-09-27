@@ -27,7 +27,7 @@ func TestTransportStrictOnceAndFreshResponses(t *testing.T) {
 	}
 	resp := call(`{ "ok":true,"n":9007199254740993.0 }`)
 	b, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if string(b) != `{"result":1}` {
 		t.Fatalf("response body: %s", b)
 	}
@@ -120,7 +120,7 @@ func TestWebSocketScript(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 	if e = c.WriteMessage(websocket.TextMessage, []byte(`{"method":"x","id":1234567890123456789.0}`)); e != nil {
 		t.Fatal(e)
 	}

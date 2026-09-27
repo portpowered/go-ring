@@ -23,7 +23,7 @@ func TestStartSessionRejectsInvalidOfferBeforeOpeningSession(t *testing.T) {
 	ws := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, e := up.Upgrade(w, r, nil)
 		if e == nil {
-			defer c.Close()
+			defer func() { _ = c.Close() }()
 			_, _, _ = c.ReadMessage()
 		}
 	}))
@@ -37,7 +37,7 @@ func TestStartSessionRejectsInvalidOfferBeforeOpeningSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	for _, req := range []ring.StartDeviceSessionRequest{
 		{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeAnswer, SDP: offerSDP}},
 		{DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: "not SDP"}},
@@ -76,7 +76,7 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 				if err != nil {
 					return
 				}
-				defer c.Close()
+				defer func() { _ = c.Close() }()
 				defer close(peerDone)
 				_, b, err := c.ReadMessage()
 				if err != nil {
@@ -175,7 +175,7 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer conn.Close()
+			defer func() { _ = conn.Close() }()
 			if mode == "negotiation_cancel" {
 				ctx, cancel := context.WithCancel(context.Background())
 				result := make(chan error, 1)

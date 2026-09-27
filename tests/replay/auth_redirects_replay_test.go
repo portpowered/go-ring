@@ -61,7 +61,7 @@ func TestPortableOAuthRedirectFailureVariants(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 			_, got := client.Authenticate(context.Background(), ring.AuthenticateRequest{HardwareID: "fixture-hardware", Username: "fixture-user", Password: "fixture-password", OTPCode: "123456"})
 			if strings.Contains(tc.Case, "malformed-location") {
 				if !ringapimodels.IsNetworkError(got) {

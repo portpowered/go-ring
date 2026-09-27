@@ -41,7 +41,7 @@ func TestDeviceFamilyCatalogReplay(t *testing.T) {
 			transport := replay.NewTransport(x)
 			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 			require.NoError(t, err)
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 			devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}})
 			require.NoError(t, err)
 			switch tc.want {

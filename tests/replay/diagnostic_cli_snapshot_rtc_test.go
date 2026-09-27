@@ -80,7 +80,7 @@ func main(){ b:=make([]byte,45);if _,err:=io.ReadFull(os.Stdin,b);err!=nil{os.Ex
 			serverErr <- err
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		var first struct {
 			Method string `json:"method"`
 			Dialog string `json:"dialog_id"`
@@ -101,7 +101,7 @@ func main(){ b:=make([]byte,45);if _,err:=io.ReadFull(os.Stdin,b);err!=nil{os.Ex
 			serverErr <- err
 			return
 		}
-		defer peer.Close()
+		defer func() { _ = peer.Close() }()
 		track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8}, "video", "camera")
 		if err != nil {
 			serverErr <- err
@@ -195,7 +195,7 @@ func main(){ b:=make([]byte,45);if _,err:=io.ReadFull(os.Stdin,b);err!=nil{os.Ex
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	image, err := jpeg.DecodeConfig(file)
 	if err != nil || image.Width != 4 || image.Height != 3 {
 		t.Fatalf("snapshot JPEG: %+v, %v", image, err)

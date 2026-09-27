@@ -42,7 +42,7 @@ func openRecordedPeer(t *testing.T, script func(*websocket.Conn)) *ring.Signalin
 		if err != nil {
 			return
 		}
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 		_ = c.SetReadDeadline(time.Now().Add(4 * time.Second))
 		script(c)
 	}))

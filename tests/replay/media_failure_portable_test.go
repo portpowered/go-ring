@@ -53,7 +53,7 @@ func TestPortableRecordingBytes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer stream.Body.Close()
+	defer func() { _ = stream.Body.Close() }()
 	got, err := io.ReadAll(stream.Body)
 	if err != nil || string(got) != media.Recording.BodyText || stream.ContentType != "video/mp4" {
 		t.Fatalf("recording stream = %q, %s, %v", got, stream.ContentType, err)

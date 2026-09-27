@@ -47,7 +47,7 @@ func main() {
 		fmt.Printf("✓ Token refreshed successfully (expires in %d seconds)\n\n", authResp.ExpiresIn)
 		accessToken = authResp.AccessToken
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: accessToken}
 
 	// List all devices

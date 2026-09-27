@@ -24,7 +24,7 @@ func TestListenReturnsContextErrorWhenCancelledWhileWaiting(t *testing.T) {
 			return
 		}
 		close(upgraded)
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		_, _, _ = conn.ReadMessage()
 	}))
 	t.Cleanup(server.Close)
@@ -61,7 +61,7 @@ func TestEventStreamSkipsMalformedJSONAndReportsPeerReadFailure(t *testing.T) {
 			return
 		}
 		close(upgraded)
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		_ = conn.WriteMessage(websocket.TextMessage, []byte("{"))
 		_ = conn.WriteJSON(map[string]any{"kind": "motion", "device_id": 321, "timestamp": "t"})
 		_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "done"))
@@ -74,7 +74,7 @@ func TestEventStreamSkipsMalformedJSONAndReportsPeerReadFailure(t *testing.T) {
 	defer cancel()
 	conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	select {
 	case <-upgraded:
 	case <-ctx.Done():
@@ -89,7 +89,7 @@ func TestEventStreamSkipsMalformedJSONAndReportsPeerReadFailure(t *testing.T) {
 
 func TestDeviceHistoryEscapesKindQueryValue(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	mockTransport.SetResponseWithBody("GET", "/clients_api/doorbots/987652/history", 200, []any{})
 
 	_, err := client.GetDeviceHistory(context.Background(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
@@ -110,7 +110,7 @@ func TestDeviceHistoryEscapesKindQueryValue(t *testing.T) {
 func TestRecordingHistoryPropagatesHTTPAndDecodeErrors(t *testing.T) {
 	t.Run("HTTP status", func(t *testing.T) {
 		client, mockTransport := newTestClientWithMockTransport()
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 		mockTransport.SetResponseWithBody("GET", "/clients_api/doorbots/987652/history", 404, map[string]string{"error": "missing"})
 		_, err := client.GetDeviceHistory(context.Background(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652"})
 		require.True(t, ringapimodels.IsHTTPError(err))
@@ -119,7 +119,7 @@ func TestRecordingHistoryPropagatesHTTPAndDecodeErrors(t *testing.T) {
 
 	t.Run("malformed response", func(t *testing.T) {
 		client, mockTransport := newTestClientWithMockTransport()
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 		mockTransport.SetResponse("GET", "/clients_api/doorbots/987652/history", &http.Response{
 			StatusCode: http.StatusOK,
 			Header:     make(http.Header),
@@ -132,7 +132,7 @@ func TestRecordingHistoryPropagatesHTTPAndDecodeErrors(t *testing.T) {
 
 func TestGetDeviceHistoryMapsDoorbotIdentityAndRecordingFields(t *testing.T) {
 	client, mockTransport := newTestClientWithMockTransport()
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	mockTransport.SetResponseWithBody("GET", "/clients_api/doorbots/987652/history", 200, []any{
 		map[string]any{
 			"id": 42, "kind": "motion", "answered": true, "created_at": "2026-01-01T00:00:00Z",

@@ -131,7 +131,7 @@ func withClient(ctx context.Context, store tokenStore, action func(*ring.Client,
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	if time.Now().After(tokens.ReceivedAt.Add(time.Duration(tokens.ExpiresIn-refreshSkewSeconds) * time.Second)) {
 		if tokens.RefreshToken == "" {
 			return errors.New("token expired; run auth login")
