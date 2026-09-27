@@ -100,70 +100,138 @@ channels:
 operations:
   sendPushSubscribe:
     action: send
+    title: Subscribe to push notifications
+    summary: Request notifications for selected devices and event types.
+    description: Starts a push subscription by sending the requested notification filters. The server responds with a subscription acknowledgment and identifier.
+    tags: [{name: Push notifications}]
     channel:
       $ref: '#/channels/pushSubscribe'
   receivePushEvent:
     action: receive
+    title: Receive a push notification
+    summary: Delivers an event that matches an active push subscription.
+    description: Push events include the subscription identifier, event classification, and event payload. The payload fields depend on the notification type.
+    tags: [{name: Push notifications}]
     channel:
       $ref: '#/channels/pushEvent'
   receivePushSubscriptionAck:
     action: receive
+    title: Confirm a push subscription
+    summary: Returns the result and identifier for a push subscription request.
+    description: The acknowledgment reports the subscription status and provides the identifier used for subsequent heartbeat and unsubscribe messages.
+    tags: [{name: Push notifications}]
     channel:
       $ref: '#/channels/pushSubscriptionAck'
   sendPushHeartbeat:
     action: send
+    title: Keep a push subscription active
+    summary: Sends a heartbeat for an active push subscription.
+    description: A push heartbeat carries the subscription identifier so the service can maintain the subscription. The contract does not specify its required interval.
+    tags: [{name: Push notifications}]
     channel:
       $ref: '#/channels/pushHeartbeat'
   sendPushUnsubscribe:
     action: send
+    title: Unsubscribe from push notifications
+    summary: Requests that an active push subscription be stopped.
+    description: Sends the subscription identifier to end delivery for that subscription.
+    tags: [{name: Push notifications}]
     channel:
       $ref: '#/channels/pushUnsubscribe'
   sendPlaybackOffer:
     action: send
+    title: Start cloud playback
+    summary: Offers a playback stream for a device recording.
+    description: Sends the device identifier, timeline entry point, and local session description to begin negotiating a cloud playback session.
+    tags: [{name: Playback}]
     channel:
       $ref: '#/channels/playbackOffer'
   receivePlaybackAnswer:
     action: receive
+    title: Receive the playback answer
+    summary: Returns the remote session description for cloud playback.
+    description: The answer includes the device and playback session identifiers and the session description used to complete playback negotiation. Optional session information can include a heartbeat interval and region.
+    tags: [{name: Playback}]
     channel:
       $ref: '#/channels/playbackAnswer'
   sendPlaybackClose:
     action: send
+    title: Close a playback session
+    summary: Ends a cloud playback session.
+    description: Sends the device and playback session identifiers with a close reason to terminate the playback exchange.
+    tags: [{name: Playback}]
     channel:
       $ref: '#/channels/playbackClose'
   sendICECandidate:
     action: send
+    title: Send an ICE candidate
+    summary: Shares a connectivity candidate for a signaling session.
+    description: Sends a candidate together with its media-line index and device and session identifiers to exchange connection information during negotiation.
+    tags: [{name: Session negotiation}]
     channel:
       $ref: '#/channels/iCECandidate'
   receiveSessionNotification:
     action: receive
+    title: Receive a session notification
+    summary: Reports whether a device signaling session was accepted.
+    description: The notification identifies the device and session, provides a success indicator, and may include a service message.
+    tags: [{name: Session}]
     channel:
       $ref: '#/channels/sessionNotification'
   sendSessionPing:
     action: send
+    title: Send a session heartbeat
+    summary: Checks that a signaling session remains active.
+    description: Sends a ping associated with the device and session. The service replies with a pong; this contract does not prescribe the ping interval.
+    tags: [{name: Session}]
     channel:
       $ref: '#/channels/sessionPing'
   receiveSessionPong:
     action: receive
+    title: Receive a session heartbeat response
+    summary: Confirms receipt of a signaling session ping.
+    description: The pong identifies the device and session associated with the heartbeat exchange.
+    tags: [{name: Session}]
     channel:
       $ref: '#/channels/sessionPong'
   sendLiveView:
     action: send
+    title: Start a live view
+    summary: Offers a live audio and video session for a device.
+    description: Sends the device identifier, session description, and optional audio and video preferences to begin live-view negotiation.
+    tags: [{name: Live view}]
     channel:
       $ref: '#/channels/liveView'
   receiveSessionCreated:
     action: receive
+    title: Receive the live-view session identifier
+    summary: Returns the signaling session identifier for a device.
+    description: The response identifies the device and the session created for subsequent signaling messages.
+    tags: [{name: Live view}]
     channel:
       $ref: '#/channels/sessionCreated'
   receiveLiveAnswer:
     action: receive
+    title: Receive the live-view answer
+    summary: Returns the remote session description for live view.
+    description: The answer includes the device identifier, control-session identifier, and remote session description. It may include session information such as a heartbeat interval.
+    tags: [{name: Live view}]
     channel:
       $ref: '#/channels/liveAnswer'
   sendLiveICE:
     action: send
+    title: Send a live-view ICE candidate
+    summary: Shares a connectivity candidate for a live-view session.
+    description: Sends the candidate, media identifier, and media-line index with the device identifier to exchange connection information during live-view negotiation.
+    tags: [{name: Live view}]
     channel:
       $ref: '#/channels/liveICE'
   sendPTZCommand:
     action: send
+    title: Control camera pan and tilt
+    summary: Sends a directional pan or tilt command during a device session.
+    description: Sends a JSON-RPC command for a supported pan or tilt movement, including direction and, for continuous movement, normalized speed. The command is associated with the device and session.
+    tags: [{name: Camera controls}]
     channel:
       $ref: '#/channels/pTZCommand'
 components:

@@ -1182,7 +1182,7 @@ type DeviceLegacySettings struct {
 	CvPaidFeatures                       *DeviceLegacySettings_CvPaidFeatures         `json:"cv_paid_features,omitempty"`
 	CvSettings                           *DeviceLegacySettings_CvSettings             `json:"cv_settings,omitempty"`
 
-	// DoorbellVolume Legacy doorbell volume accepted by the Go client.
+	// DoorbellVolume Doorbell volume level.
 	DoorbellVolume          *int  `json:"doorbell_volume,omitempty"`
 	EnableAudioRecording    *bool `json:"enable_audio_recording,omitempty"`
 	EnableIrLed             *bool `json:"enable_ir_led,omitempty"`
@@ -2392,7 +2392,7 @@ type DeviceSettings struct {
 	AdditionalProperties map[string]JsonValue `json:"-"`
 }
 
-// DeviceSettingsPatch Extensible wire patch. Captured variants include motion_settings, video_settings, general_settings, and volume_settings. The public typed Go method currently emits motion_settings only.
+// DeviceSettingsPatch Extensible wire patch. Captured variants include motion_settings, video_settings, general_settings, and volume_settings. Additional settings may be available for other device types.
 type DeviceSettingsPatch struct {
 	GeneralSettings      *SettingsObject           `json:"general_settings,omitempty"`
 	MotionSettings       *MotionSettingsPatch      `json:"motion_settings,omitempty"`
@@ -2498,7 +2498,7 @@ type IntercomUnlockRPCMethod string
 // JsonValue Explicit escape hatch for fields without observed structure or typed error responses.
 type JsonValue = interface{}
 
-// LegacyDeviceHealth Fields consumed by the legacy health adapter; no captured C1 response establishes additional fields.
+// LegacyDeviceHealth Device health fields. Additional fields may be returned.
 type LegacyDeviceHealth struct {
 	BatteryLevel         *int                   `json:"battery_level,omitempty"`
 	BatteryStatus        *string                `json:"battery_status,omitempty"`
@@ -2643,7 +2643,7 @@ type OAuthToken struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// OAuthTokenGrant Form variants currently used by Go: authorization-code PKCE, explicit refresh, and the compatibility password grant fallback.
+// OAuthTokenGrant Supports authorization-code PKCE, refresh, and a compatibility password grant.
 type OAuthTokenGrant struct {
 	union json.RawMessage
 }
@@ -2880,7 +2880,7 @@ type VideoSettings struct {
 
 // VolumeSettings defines model for VolumeSettings.
 type VolumeSettings struct {
-	// DoorbellVolume Legacy doorbell volume accepted by the Go client.
+	// DoorbellVolume Doorbell volume level.
 	DoorbellVolume *int `json:"doorbell_volume,omitempty"`
 
 	// MicVolume Non-negative device-reported microphone volume; upper bound is not established.
@@ -3017,10 +3017,10 @@ type GetLegacyDeviceHistoryParams struct {
 	// Limit Positive maximum number of results; 20 was recorded.
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Kind Go forwards this value without restricting it; known history kinds are ding, motion and on_demand.
+	// Kind History category. Known values include ding, motion, and on_demand.
 	Kind *Kind `form:"kind,omitempty" json:"kind,omitempty"`
 
-	// OlderThan Positive history cursor timestamp documented for this route; not currently sent by Go.
+	// OlderThan Returns history older than this Unix timestamp, when supported.
 	OlderThan *OlderThan `form:"older_than,omitempty" json:"older_than,omitempty"`
 }
 
@@ -28517,241 +28517,395 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// RequestLegacySignalingTicket performs a POST /api/v1/clap/ticket/request/signalsocket (the `RequestLegacySignalingTicket` operationId) request.
+	// RequestLegacySignalingTicket Request a signaling ticket
 	//
-	// Existing Go signaling bootstrap. This POST route is implemented and covered by local tests, but was not found in the C1 HTTP recordings. It is distinct from the captured GET /api/v1/clap/tickets operation.
+	// Requests a signaling ticket used to establish a device connection.
+	//
+	// Corresponds with POST /api/v1/clap/ticket/request/signalsocket (the `RequestLegacySignalingTicket` operationId).
 	RequestLegacySignalingTicket(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetCapturedLocationTickets performs a GET /api/v1/clap/tickets (the `GetCapturedLocationTickets` operationId) request.
+	// GetCapturedLocationTickets Get location signaling tickets
 	//
-	// Captured GET route. Its relationship to the existing POST signaling bootstrap below is not established.
+	// Retrieves signaling tickets and connection metadata for a location.
+	//
+	// Corresponds with GET /api/v1/clap/tickets (the `GetCapturedLocationTickets` operationId).
 	GetCapturedLocationTickets(ctx context.Context, params *GetCapturedLocationTicketsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetChimeVolume performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
+	// SetChimeVolume Set chime volume
 	//
-	// Legacy volume update. The client requires description to reproduce the synthetic replay request shape; no capture proves the server requires that query field for volume changes.
+	// Changes a chime device’s playback volume.
+	//
+	// Corresponds with PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId).
 	SetChimeVolume(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// TestChimeSound performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
+	// TestChimeSound Play a chime sound
 	//
-	// Legacy sound request from synthetic replay.
+	// Plays a selected test sound on a chime device.
+	//
+	// Corresponds with POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId).
 	TestChimeSound(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RegisterPushDeviceWithBody performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request,
-	// with any type of body and a specified content type.
+	// RegisterPushDeviceWithBody Register a push notification device
 	//
-	// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+	// Registers a push notification token so the device can receive Ring alerts.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /clients_api/device (the `RegisterPushDevice` operationId).
 	RegisterPushDeviceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RegisterPushDevice performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request.
+	// RegisterPushDevice Register a push notification device
+	//
+	// Registers a push notification token so the device can receive Ring alerts.
+	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+	// Corresponds with PATCH /clients_api/device (the `RegisterPushDevice` operationId).
 	RegisterPushDevice(ctx context.Context, body RegisterPushDeviceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetActiveDings performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
+	// GetActiveDings List active alerts
 	//
-	// Existing Go active-dings route. No matching C1 capture was identified.
+	// Retrieves currently active Ring alerts.
+	//
+	// Corresponds with GET /clients_api/dings/active (the `GetActiveDings` operationId).
 	GetActiveDings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteRecording performs a DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId) request.
+	// DeleteRecording Delete a recording
+	//
+	// Deletes a recording. A confirmation parameter may be required for a favorited recording.
+	//
+	// Corresponds with DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId).
 	DeleteRecording(ctx context.Context, recordingId RecordingId, params *DeleteRecordingParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// FavoriteRecording performs a PUT /clients_api/dings/{recording_id}/favorite (the `FavoriteRecording` operationId) request.
+	// FavoriteRecording Favorite a recording
+	//
+	// Marks a recording as a favorite.
+	//
+	// Corresponds with PUT /clients_api/dings/{recording_id}/favorite (the `FavoriteRecording` operationId).
 	FavoriteRecording(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// StreamRecording performs a GET /clients_api/dings/{recording_id}/recording (the `StreamRecording` operationId) request.
+	// StreamRecording Stream a recording
 	//
-	// Existing Go method returns the response body as a streaming VideoStream; the caller owns and must close Body. It requests video/mp4 and does not buffer the media. Go's default http.Client follows redirects according to its CheckRedirect policy; a custom client may change that behavior. No sanitized recording response establishes redirect or media-host details.
+	// Returns the recording media as an MP4 stream.
+	//
+	// Corresponds with GET /clients_api/dings/{recording_id}/recording (the `StreamRecording` operationId).
 	StreamRecording(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetLegacyRecordingShareURL performs a GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId) request.
+	// GetLegacyRecordingShareURL Get a recording share URL
 	//
-	// Legacy share/play response, replayed synthetically; no matching C1 response.
+	// Retrieves the playback share link for a recording.
+	//
+	// Corresponds with GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId).
 	GetLegacyRecordingShareURL(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateLegacyDoorbotControls performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
+	// UpdateLegacyDoorbotControls Update doorbell and chime settings
 	//
-	// Legacy doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce the replayed request shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
+	// Changes supported doorbell volume or in-home chime settings.
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId).
 	UpdateLegacyDoorbotControls(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// TurnFloodlightOff performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
+	// TurnFloodlightOff Turn off a floodlight
 	//
-	// Legacy off path; no corresponding captured or synthetic request fixture.
+	// Turns off a device’s floodlight.
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId).
 	TurnFloodlightOff(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// TurnFloodlightOn performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId) request.
+	// TurnFloodlightOn Turn on a floodlight
 	//
-	// Legacy light-on request from synthetic replay.
+	// Turns on a device’s floodlight.
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId).
 	TurnFloodlightOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetLegacyDeviceHistory performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
+	// GetLegacyDeviceHistory List doorbell recordings
 	//
-	// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
+	// Retrieves recordings associated with a doorbell, with optional filters and pagination.
+	//
+	// Corresponds with GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId).
 	GetLegacyDeviceHistory(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SubscribeDeviceMotion performs a POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId) request.
+	// SubscribeDeviceMotion Subscribe to motion alerts
+	//
+	// Subscribes to motion notifications from a doorbell device.
+	//
+	// Corresponds with POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId).
 	SubscribeDeviceMotion(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// TurnSirenOff performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
+	// TurnSirenOff Turn off a siren
+	//
+	// Stops the siren on a doorbell device.
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId).
 	TurnSirenOff(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// TurnSirenOn performs a PUT /clients_api/doorbots/{device_id}/siren_on (the `TurnSirenOn` operationId) request.
+	// TurnSirenOn Turn on a siren
 	//
-	// No duration query or request body is present in the capture.
+	// Activates the siren on a doorbell device.
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id}/siren_on (the `TurnSirenOn` operationId).
 	TurnSirenOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SubscribeDeviceDing performs a POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId) request.
+	// SubscribeDeviceDing Subscribe to device alerts
+	//
+	// Subscribes to alert notifications from a doorbell device.
+	//
+	// Corresponds with POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId).
 	SubscribeDeviceDing(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetLegacyDeviceHealth performs a GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId) request.
+	// GetLegacyDeviceHealth Get device health
 	//
-	// Generic device health route. The captured HTTP set has no matching health response; SDK tests use local fixtures only.
+	// Retrieves health information for a Ring device.
+	//
+	// Corresponds with GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId).
 	GetLegacyDeviceHealth(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RegisterClientSessionWithBody performs a POST /clients_api/session (the `RegisterClientSession` operationId) request,
-	// with any type of body and a specified content type.
+	// RegisterClientSessionWithBody Register a client session
 	//
-	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
+	// Registers a client session that can be used for device inventory and signaling requests.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /clients_api/session (the `RegisterClientSession` operationId).
 	RegisterClientSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RegisterClientSession performs a POST /clients_api/session (the `RegisterClientSession` operationId) request.
+	// RegisterClientSession Register a client session
+	//
+	// Registers a client session that can be used for device inventory and signaling requests.
+	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
+	// Corresponds with POST /clients_api/session (the `RegisterClientSession` operationId).
 	RegisterClientSession(ctx context.Context, body RegisterClientSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetLegacySnapshotImage performs a GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId) request.
+	// GetLegacySnapshotImage Get a snapshot image
 	//
-	// Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+	// Retrieves a device snapshot as JPEG image data.
+	//
+	// Corresponds with GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId).
 	GetLegacySnapshotImage(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RefreshLegacySnapshotTimestampWithBody performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request,
-	// with any type of body and a specified content type.
+	// RefreshLegacySnapshotTimestampWithBody Request a snapshot timestamp
 	//
-	// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+	// Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId).
 	RefreshLegacySnapshotTimestampWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RefreshLegacySnapshotTimestamp performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request.
+	// RefreshLegacySnapshotTimestamp Request a snapshot timestamp
+	//
+	// Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
+	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+	// Corresponds with POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId).
 	RefreshLegacySnapshotTimestamp(ctx context.Context, body RefreshLegacySnapshotTimestampJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SendDeviceCommandWithBody performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request,
-	// with any type of body and a specified content type.
+	// SendDeviceCommandWithBody Send a device command
+	//
+	// Sends a command to a device and returns when Ring accepts it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId).
 	SendDeviceCommandWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SendDeviceCommand performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request.
+	// SendDeviceCommand Send a device command
+	//
+	// Sends a command to a device and returns when Ring accepts it.
+	//
 	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId).
 	SendDeviceCommand(ctx context.Context, deviceId DeviceId, body SendDeviceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UnlockIntercomWithBody performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request,
-	// with any type of body and a specified content type.
+	// UnlockIntercomWithBody Unlock an intercom
 	//
-	// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+	// Sends an unlock command to an intercom device.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId).
 	UnlockIntercomWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UnlockIntercom performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request.
+	// UnlockIntercom Unlock an intercom
+	//
+	// Sends an unlock command to an intercom device.
+	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+	// Corresponds with PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId).
 	UnlockIntercom(ctx context.Context, deviceId DeviceId, body UnlockIntercomJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListDevices performs a GET /device_info/v3/devices (the `ListDevices` operationId) request.
+	// ListDevices List devices
+	//
+	// Retrieves the devices available to the authenticated account.
+	//
+	// Corresponds with GET /device_info/v3/devices (the `ListDevices` operationId).
 	ListDevices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDevice performs a GET /device_info/v3/devices/{device_id} (the `GetDevice` operationId) request.
+	// GetDevice Get a device
+	//
+	// Retrieves details for a specific device.
+	//
+	// Corresponds with GET /device_info/v3/devices/{device_id} (the `GetDevice` operationId).
 	GetDevice(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDeviceSettings performs a GET /devices/v1/devices/{device_id}/settings (the `GetDeviceSettings` operationId) request.
+	// GetDeviceSettings Get device settings
 	//
-	// Captured response is extensible; typed Go API exposes motion_detection_enabled only.
+	// Retrieves the current settings for a device.
+	//
+	// Corresponds with GET /devices/v1/devices/{device_id}/settings (the `GetDeviceSettings` operationId).
 	GetDeviceSettings(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PatchDeviceSettingsWithBody performs a PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId) request,
-	// with any type of body and a specified content type.
+	// PatchDeviceSettingsWithBody Update device settings
 	//
-	// The wire schema accepts all captured settings patches. The typed Go API currently sends only motion_settings.motion_detection_enabled.
+	// Updates one or more supported settings for a device.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId).
 	PatchDeviceSettingsWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PatchDeviceSettings performs a PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId) request.
+	// PatchDeviceSettings Update device settings
+	//
+	// Updates one or more supported settings for a device.
+	//
 	// Takes a body of the `application/json` content type.
 	//
-	// The wire schema accepts all captured settings patches. The typed Go API currently sends only motion_settings.motion_detection_enabled.
+	// Corresponds with PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId).
 	PatchDeviceSettings(ctx context.Context, deviceId DeviceId, body PatchDeviceSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetLiveViewEnabledWithBody performs a PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId) request,
-	// with any type of body and a specified content type.
+	// SetLiveViewEnabledWithBody Set live view availability
+	//
+	// Enables or disables live view for a device.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId).
 	SetLiveViewEnabledWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetLiveViewEnabled performs a PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId) request.
+	// SetLiveViewEnabled Set live view availability
+	//
+	// Enables or disables live view for a device.
+	//
 	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId).
 	SetLiveViewEnabled(ctx context.Context, deviceId DeviceId, body SetLiveViewEnabledJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDeviceTimeline performs a GET /evm/v2/timeline/devices/{device_id} (the `GetDeviceTimeline` operationId) request.
+	// GetDeviceTimeline Get a device timeline
+	//
+	// Retrieves timeline events for a device within an optional time range.
+	//
+	// Corresponds with GET /evm/v2/timeline/devices/{device_id} (the `GetDeviceTimeline` operationId).
 	GetDeviceTimeline(ctx context.Context, deviceId DeviceId, params *GetDeviceTimelineParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetHistoryDevices performs a GET /evm/v3/history/devices (the `GetHistoryDevices` operationId) request.
+	// GetHistoryDevices List account history events
+	//
+	// Retrieves account history events and feed items, with optional source and capability filters.
+	//
+	// Corresponds with GET /evm/v3/history/devices (the `GetHistoryDevices` operationId).
 	GetHistoryDevices(ctx context.Context, params *GetHistoryDevicesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListLocationDevices performs a GET /groups/v1/locations/{location_id}/devices (the `ListLocationDevices` operationId) request.
+	// ListLocationDevices List devices at a location
+	//
+	// Retrieves the devices assigned to a location.
+	//
+	// Corresponds with GET /groups/v1/locations/{location_id}/devices (the `ListLocationDevices` operationId).
 	ListLocationDevices(ctx context.Context, locationId LocationId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListLocationGroups performs a GET /groups/v1/locations/{location_id}/groups (the `ListLocationGroups` operationId) request.
+	// ListLocationGroups List device groups at a location
+	//
+	// Retrieves device groups configured for a location.
+	//
+	// Corresponds with GET /groups/v1/locations/{location_id}/groups (the `ListLocationGroups` operationId).
 	ListLocationGroups(ctx context.Context, locationId LocationId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListLocations performs a GET /location_info/v3/locations (the `ListLocations` operationId) request.
+	// ListLocations List locations
+	//
+	// Retrieves locations available to the authenticated account.
+	//
+	// Corresponds with GET /location_info/v3/locations (the `ListLocations` operationId).
 	ListLocations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetLocation performs a GET /location_info/v4/locations/{location_id} (the `GetLocation` operationId) request.
+	// GetLocation Get a location
+	//
+	// Retrieves details for a specific location, with optional related resources.
+	//
+	// Corresponds with GET /location_info/v4/locations/{location_id} (the `GetLocation` operationId).
 	GetLocation(ctx context.Context, locationId LocationId, params *GetLocationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ExchangeOrRefreshOAuthTokenWithBody performs a POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId) request,
-	// with any type of body and a specified content type.
+	// ExchangeOrRefreshOAuthTokenWithBody Exchange or refresh an OAuth token
 	//
-	// Existing Go authorization-code PKCE exchange and explicit refresh; legacy password grant remains a fallback only when the OAuth authorize endpoint is unavailable. There is no captured OAuth token exchange.
+	// Exchanges an authorization grant for access tokens or refreshes an existing token.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId).
 	ExchangeOrRefreshOAuthTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ExchangeOrRefreshOAuthTokenWithFormdataBody performs a POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId) request.
+	// ExchangeOrRefreshOAuthTokenWithFormdataBody Exchange or refresh an OAuth token
+	//
+	// Exchanges an authorization grant for access tokens or refreshes an existing token.
+	//
 	// Takes a body of the `application/x-www-form-urlencoded` content type.
 	//
-	// Existing Go authorization-code PKCE exchange and explicit refresh; legacy password grant remains a fallback only when the OAuth authorize endpoint is unavailable. There is no captured OAuth token exchange.
+	// Corresponds with POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId).
 	ExchangeOrRefreshOAuthTokenWithFormdataBody(ctx context.Context, body ExchangeOrRefreshOAuthTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// VerifyOAuthTwoFactorCodeWithBody performs a POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId) request,
-	// with any type of body and a specified content type.
+	// VerifyOAuthTwoFactorCodeWithBody Verify an OAuth two-factor code
 	//
-	// Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+	// Submits a two-factor authentication code to complete OAuth sign-in.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId).
 	VerifyOAuthTwoFactorCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// VerifyOAuthTwoFactorCodeWithFormdataBody performs a POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId) request.
+	// VerifyOAuthTwoFactorCodeWithFormdataBody Verify an OAuth two-factor code
+	//
+	// Submits a two-factor authentication code to complete OAuth sign-in.
+	//
 	// Takes a body of the `application/x-www-form-urlencoded` content type.
 	//
-	// Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+	// Corresponds with POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId).
 	VerifyOAuthTwoFactorCodeWithFormdataBody(ctx context.Context, body VerifyOAuthTwoFactorCodeFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BeginOrContinueOAuthAuthorization performs a GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId) request.
+	// BeginOrContinueOAuthAuthorization Start or continue OAuth sign-in
 	//
-	// Existing Go PKCE flow. The first request sends the authorization query parameters; later requests reuse the cookie-backed session and may omit them. Redirect state is checked by the client. This route is not present in the C1 HTTP captures.
+	// Starts an OAuth authorization session and requests an authorization code. Redirects may continue an existing sign-in session.
+	//
+	// Corresponds with GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId).
 	BeginOrContinueOAuthAuthorization(ctx context.Context, params *BeginOrContinueOAuthAuthorizationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SubmitOAuthCredentialsWithBody performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request,
-	// with any type of body and a specified content type.
+	// SubmitOAuthCredentialsWithBody Submit OAuth credentials
 	//
-	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+	// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId).
 	SubmitOAuthCredentialsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SubmitOAuthCredentialsWithFormdataBody performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request.
+	// SubmitOAuthCredentialsWithFormdataBody Submit OAuth credentials
+	//
+	// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
+	//
 	// Takes a body of the `application/x-www-form-urlencoded` content type.
 	//
-	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+	// Corresponds with POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId).
 	SubmitOAuthCredentialsWithFormdataBody(ctx context.Context, body SubmitOAuthCredentialsFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// RequestLegacySignalingTicket performs a POST /api/v1/clap/ticket/request/signalsocket (the `RequestLegacySignalingTicket` operationId) request.
+// RequestLegacySignalingTicket Request a signaling ticket
 //
-// Existing Go signaling bootstrap. This POST route is implemented and covered by local tests, but was not found in the C1 HTTP recordings. It is distinct from the captured GET /api/v1/clap/tickets operation.
+// Requests a signaling ticket used to establish a device connection.
+//
+// Corresponds with POST /api/v1/clap/ticket/request/signalsocket (the `RequestLegacySignalingTicket` operationId).
 func (c *Client) RequestLegacySignalingTicket(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRequestLegacySignalingTicketRequest(c.Server)
 	if err != nil {
@@ -28764,9 +28918,11 @@ func (c *Client) RequestLegacySignalingTicket(ctx context.Context, reqEditors ..
 	return c.Client.Do(req)
 }
 
-// GetCapturedLocationTickets performs a GET /api/v1/clap/tickets (the `GetCapturedLocationTickets` operationId) request.
+// GetCapturedLocationTickets Get location signaling tickets
 //
-// Captured GET route. Its relationship to the existing POST signaling bootstrap below is not established.
+// Retrieves signaling tickets and connection metadata for a location.
+//
+// Corresponds with GET /api/v1/clap/tickets (the `GetCapturedLocationTickets` operationId).
 func (c *Client) GetCapturedLocationTickets(ctx context.Context, params *GetCapturedLocationTicketsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCapturedLocationTicketsRequest(c.Server, params)
 	if err != nil {
@@ -28779,9 +28935,11 @@ func (c *Client) GetCapturedLocationTickets(ctx context.Context, params *GetCapt
 	return c.Client.Do(req)
 }
 
-// SetChimeVolume performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
+// SetChimeVolume Set chime volume
 //
-// Legacy volume update. The client requires description to reproduce the synthetic replay request shape; no capture proves the server requires that query field for volume changes.
+// Changes a chime device’s playback volume.
+//
+// Corresponds with PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId).
 func (c *Client) SetChimeVolume(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetChimeVolumeRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -28794,9 +28952,11 @@ func (c *Client) SetChimeVolume(ctx context.Context, deviceId DeviceId, params *
 	return c.Client.Do(req)
 }
 
-// TestChimeSound performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
+// TestChimeSound Play a chime sound
 //
-// Legacy sound request from synthetic replay.
+// Plays a selected test sound on a chime device.
+//
+// Corresponds with POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId).
 func (c *Client) TestChimeSound(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTestChimeSoundRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -28809,10 +28969,13 @@ func (c *Client) TestChimeSound(ctx context.Context, deviceId DeviceId, params *
 	return c.Client.Do(req)
 }
 
-// RegisterPushDeviceWithBody performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request,
-// with any type of body and a specified content type.
+// RegisterPushDeviceWithBody Register a push notification device
 //
-// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+// Registers a push notification token so the device can receive Ring alerts.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /clients_api/device (the `RegisterPushDevice` operationId).
 func (c *Client) RegisterPushDeviceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRegisterPushDeviceRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -28825,10 +28988,13 @@ func (c *Client) RegisterPushDeviceWithBody(ctx context.Context, contentType str
 	return c.Client.Do(req)
 }
 
-// RegisterPushDevice performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request.
+// RegisterPushDevice Register a push notification device
+//
+// Registers a push notification token so the device can receive Ring alerts.
+//
 // Takes a body of the `application/json` content type.
 //
-// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+// Corresponds with PATCH /clients_api/device (the `RegisterPushDevice` operationId).
 func (c *Client) RegisterPushDevice(ctx context.Context, body RegisterPushDeviceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRegisterPushDeviceRequest(c.Server, body)
 	if err != nil {
@@ -28841,9 +29007,11 @@ func (c *Client) RegisterPushDevice(ctx context.Context, body RegisterPushDevice
 	return c.Client.Do(req)
 }
 
-// GetActiveDings performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
+// GetActiveDings List active alerts
 //
-// Existing Go active-dings route. No matching C1 capture was identified.
+// Retrieves currently active Ring alerts.
+//
+// Corresponds with GET /clients_api/dings/active (the `GetActiveDings` operationId).
 func (c *Client) GetActiveDings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActiveDingsRequest(c.Server)
 	if err != nil {
@@ -28856,7 +29024,11 @@ func (c *Client) GetActiveDings(ctx context.Context, reqEditors ...RequestEditor
 	return c.Client.Do(req)
 }
 
-// DeleteRecording performs a DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId) request.
+// DeleteRecording Delete a recording
+//
+// Deletes a recording. A confirmation parameter may be required for a favorited recording.
+//
+// Corresponds with DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId).
 func (c *Client) DeleteRecording(ctx context.Context, recordingId RecordingId, params *DeleteRecordingParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteRecordingRequest(c.Server, recordingId, params)
 	if err != nil {
@@ -28869,7 +29041,11 @@ func (c *Client) DeleteRecording(ctx context.Context, recordingId RecordingId, p
 	return c.Client.Do(req)
 }
 
-// FavoriteRecording performs a PUT /clients_api/dings/{recording_id}/favorite (the `FavoriteRecording` operationId) request.
+// FavoriteRecording Favorite a recording
+//
+// Marks a recording as a favorite.
+//
+// Corresponds with PUT /clients_api/dings/{recording_id}/favorite (the `FavoriteRecording` operationId).
 func (c *Client) FavoriteRecording(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewFavoriteRecordingRequest(c.Server, recordingId)
 	if err != nil {
@@ -28882,9 +29058,11 @@ func (c *Client) FavoriteRecording(ctx context.Context, recordingId RecordingId,
 	return c.Client.Do(req)
 }
 
-// StreamRecording performs a GET /clients_api/dings/{recording_id}/recording (the `StreamRecording` operationId) request.
+// StreamRecording Stream a recording
 //
-// Existing Go method returns the response body as a streaming VideoStream; the caller owns and must close Body. It requests video/mp4 and does not buffer the media. Go's default http.Client follows redirects according to its CheckRedirect policy; a custom client may change that behavior. No sanitized recording response establishes redirect or media-host details.
+// Returns the recording media as an MP4 stream.
+//
+// Corresponds with GET /clients_api/dings/{recording_id}/recording (the `StreamRecording` operationId).
 func (c *Client) StreamRecording(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStreamRecordingRequest(c.Server, recordingId)
 	if err != nil {
@@ -28897,9 +29075,11 @@ func (c *Client) StreamRecording(ctx context.Context, recordingId RecordingId, r
 	return c.Client.Do(req)
 }
 
-// GetLegacyRecordingShareURL performs a GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId) request.
+// GetLegacyRecordingShareURL Get a recording share URL
 //
-// Legacy share/play response, replayed synthetically; no matching C1 response.
+// Retrieves the playback share link for a recording.
+//
+// Corresponds with GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId).
 func (c *Client) GetLegacyRecordingShareURL(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLegacyRecordingShareURLRequest(c.Server, recordingId)
 	if err != nil {
@@ -28912,9 +29092,11 @@ func (c *Client) GetLegacyRecordingShareURL(ctx context.Context, recordingId Rec
 	return c.Client.Do(req)
 }
 
-// UpdateLegacyDoorbotControls performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
+// UpdateLegacyDoorbotControls Update doorbell and chime settings
 //
-// Legacy doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce the replayed request shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
+// Changes supported doorbell volume or in-home chime settings.
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId).
 func (c *Client) UpdateLegacyDoorbotControls(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateLegacyDoorbotControlsRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -28927,9 +29109,11 @@ func (c *Client) UpdateLegacyDoorbotControls(ctx context.Context, deviceId Devic
 	return c.Client.Do(req)
 }
 
-// TurnFloodlightOff performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
+// TurnFloodlightOff Turn off a floodlight
 //
-// Legacy off path; no corresponding captured or synthetic request fixture.
+// Turns off a device’s floodlight.
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId).
 func (c *Client) TurnFloodlightOff(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnFloodlightOffRequest(c.Server, deviceId)
 	if err != nil {
@@ -28942,9 +29126,11 @@ func (c *Client) TurnFloodlightOff(ctx context.Context, deviceId DeviceId, reqEd
 	return c.Client.Do(req)
 }
 
-// TurnFloodlightOn performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId) request.
+// TurnFloodlightOn Turn on a floodlight
 //
-// Legacy light-on request from synthetic replay.
+// Turns on a device’s floodlight.
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId).
 func (c *Client) TurnFloodlightOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnFloodlightOnRequest(c.Server, deviceId)
 	if err != nil {
@@ -28957,9 +29143,11 @@ func (c *Client) TurnFloodlightOn(ctx context.Context, deviceId DeviceId, reqEdi
 	return c.Client.Do(req)
 }
 
-// GetLegacyDeviceHistory performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
+// GetLegacyDeviceHistory List doorbell recordings
 //
-// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
+// Retrieves recordings associated with a doorbell, with optional filters and pagination.
+//
+// Corresponds with GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId).
 func (c *Client) GetLegacyDeviceHistory(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLegacyDeviceHistoryRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -28972,7 +29160,11 @@ func (c *Client) GetLegacyDeviceHistory(ctx context.Context, deviceId DeviceId, 
 	return c.Client.Do(req)
 }
 
-// SubscribeDeviceMotion performs a POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId) request.
+// SubscribeDeviceMotion Subscribe to motion alerts
+//
+// Subscribes to motion notifications from a doorbell device.
+//
+// Corresponds with POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId).
 func (c *Client) SubscribeDeviceMotion(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubscribeDeviceMotionRequest(c.Server, deviceId)
 	if err != nil {
@@ -28985,7 +29177,11 @@ func (c *Client) SubscribeDeviceMotion(ctx context.Context, deviceId DeviceId, r
 	return c.Client.Do(req)
 }
 
-// TurnSirenOff performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
+// TurnSirenOff Turn off a siren
+//
+// Stops the siren on a doorbell device.
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId).
 func (c *Client) TurnSirenOff(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnSirenOffRequest(c.Server, deviceId)
 	if err != nil {
@@ -28998,9 +29194,11 @@ func (c *Client) TurnSirenOff(ctx context.Context, deviceId DeviceId, reqEditors
 	return c.Client.Do(req)
 }
 
-// TurnSirenOn performs a PUT /clients_api/doorbots/{device_id}/siren_on (the `TurnSirenOn` operationId) request.
+// TurnSirenOn Turn on a siren
 //
-// No duration query or request body is present in the capture.
+// Activates the siren on a doorbell device.
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id}/siren_on (the `TurnSirenOn` operationId).
 func (c *Client) TurnSirenOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnSirenOnRequest(c.Server, deviceId)
 	if err != nil {
@@ -29013,7 +29211,11 @@ func (c *Client) TurnSirenOn(ctx context.Context, deviceId DeviceId, reqEditors 
 	return c.Client.Do(req)
 }
 
-// SubscribeDeviceDing performs a POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId) request.
+// SubscribeDeviceDing Subscribe to device alerts
+//
+// Subscribes to alert notifications from a doorbell device.
+//
+// Corresponds with POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId).
 func (c *Client) SubscribeDeviceDing(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubscribeDeviceDingRequest(c.Server, deviceId)
 	if err != nil {
@@ -29026,9 +29228,11 @@ func (c *Client) SubscribeDeviceDing(ctx context.Context, deviceId DeviceId, req
 	return c.Client.Do(req)
 }
 
-// GetLegacyDeviceHealth performs a GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId) request.
+// GetLegacyDeviceHealth Get device health
 //
-// Generic device health route. The captured HTTP set has no matching health response; SDK tests use local fixtures only.
+// Retrieves health information for a Ring device.
+//
+// Corresponds with GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId).
 func (c *Client) GetLegacyDeviceHealth(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLegacyDeviceHealthRequest(c.Server, deviceId)
 	if err != nil {
@@ -29041,10 +29245,13 @@ func (c *Client) GetLegacyDeviceHealth(ctx context.Context, deviceId DeviceId, r
 	return c.Client.Do(req)
 }
 
-// RegisterClientSessionWithBody performs a POST /clients_api/session (the `RegisterClientSession` operationId) request,
-// with any type of body and a specified content type.
+// RegisterClientSessionWithBody Register a client session
 //
-// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
+// Registers a client session that can be used for device inventory and signaling requests.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /clients_api/session (the `RegisterClientSession` operationId).
 func (c *Client) RegisterClientSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRegisterClientSessionRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -29057,10 +29264,13 @@ func (c *Client) RegisterClientSessionWithBody(ctx context.Context, contentType 
 	return c.Client.Do(req)
 }
 
-// RegisterClientSession performs a POST /clients_api/session (the `RegisterClientSession` operationId) request.
+// RegisterClientSession Register a client session
+//
+// Registers a client session that can be used for device inventory and signaling requests.
+//
 // Takes a body of the `application/json` content type.
 //
-// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
+// Corresponds with POST /clients_api/session (the `RegisterClientSession` operationId).
 func (c *Client) RegisterClientSession(ctx context.Context, body RegisterClientSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRegisterClientSessionRequest(c.Server, body)
 	if err != nil {
@@ -29073,9 +29283,11 @@ func (c *Client) RegisterClientSession(ctx context.Context, body RegisterClientS
 	return c.Client.Do(req)
 }
 
-// GetLegacySnapshotImage performs a GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId) request.
+// GetLegacySnapshotImage Get a snapshot image
 //
-// Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+// Retrieves a device snapshot as JPEG image data.
+//
+// Corresponds with GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId).
 func (c *Client) GetLegacySnapshotImage(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLegacySnapshotImageRequest(c.Server, deviceId)
 	if err != nil {
@@ -29088,10 +29300,13 @@ func (c *Client) GetLegacySnapshotImage(ctx context.Context, deviceId DeviceId, 
 	return c.Client.Do(req)
 }
 
-// RefreshLegacySnapshotTimestampWithBody performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request,
-// with any type of body and a specified content type.
+// RefreshLegacySnapshotTimestampWithBody Request a snapshot timestamp
 //
-// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+// Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId).
 func (c *Client) RefreshLegacySnapshotTimestampWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRefreshLegacySnapshotTimestampRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -29104,10 +29319,13 @@ func (c *Client) RefreshLegacySnapshotTimestampWithBody(ctx context.Context, con
 	return c.Client.Do(req)
 }
 
-// RefreshLegacySnapshotTimestamp performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request.
+// RefreshLegacySnapshotTimestamp Request a snapshot timestamp
+//
+// Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
+//
 // Takes a body of the `application/json` content type.
 //
-// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+// Corresponds with POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId).
 func (c *Client) RefreshLegacySnapshotTimestamp(ctx context.Context, body RefreshLegacySnapshotTimestampJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRefreshLegacySnapshotTimestampRequest(c.Server, body)
 	if err != nil {
@@ -29120,8 +29338,13 @@ func (c *Client) RefreshLegacySnapshotTimestamp(ctx context.Context, body Refres
 	return c.Client.Do(req)
 }
 
-// SendDeviceCommandWithBody performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request,
-// with any type of body and a specified content type.
+// SendDeviceCommandWithBody Send a device command
+//
+// Sends a command to a device and returns when Ring accepts it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId).
 func (c *Client) SendDeviceCommandWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSendDeviceCommandRequestWithBody(c.Server, deviceId, contentType, body)
 	if err != nil {
@@ -29134,8 +29357,13 @@ func (c *Client) SendDeviceCommandWithBody(ctx context.Context, deviceId DeviceI
 	return c.Client.Do(req)
 }
 
-// SendDeviceCommand performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request.
+// SendDeviceCommand Send a device command
+//
+// Sends a command to a device and returns when Ring accepts it.
+//
 // Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId).
 func (c *Client) SendDeviceCommand(ctx context.Context, deviceId DeviceId, body SendDeviceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSendDeviceCommandRequest(c.Server, deviceId, body)
 	if err != nil {
@@ -29148,10 +29376,13 @@ func (c *Client) SendDeviceCommand(ctx context.Context, deviceId DeviceId, body 
 	return c.Client.Do(req)
 }
 
-// UnlockIntercomWithBody performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request,
-// with any type of body and a specified content type.
+// UnlockIntercomWithBody Unlock an intercom
 //
-// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+// Sends an unlock command to an intercom device.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId).
 func (c *Client) UnlockIntercomWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUnlockIntercomRequestWithBody(c.Server, deviceId, contentType, body)
 	if err != nil {
@@ -29164,10 +29395,13 @@ func (c *Client) UnlockIntercomWithBody(ctx context.Context, deviceId DeviceId, 
 	return c.Client.Do(req)
 }
 
-// UnlockIntercom performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request.
+// UnlockIntercom Unlock an intercom
+//
+// Sends an unlock command to an intercom device.
+//
 // Takes a body of the `application/json` content type.
 //
-// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+// Corresponds with PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId).
 func (c *Client) UnlockIntercom(ctx context.Context, deviceId DeviceId, body UnlockIntercomJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUnlockIntercomRequest(c.Server, deviceId, body)
 	if err != nil {
@@ -29180,7 +29414,11 @@ func (c *Client) UnlockIntercom(ctx context.Context, deviceId DeviceId, body Unl
 	return c.Client.Do(req)
 }
 
-// ListDevices performs a GET /device_info/v3/devices (the `ListDevices` operationId) request.
+// ListDevices List devices
+//
+// Retrieves the devices available to the authenticated account.
+//
+// Corresponds with GET /device_info/v3/devices (the `ListDevices` operationId).
 func (c *Client) ListDevices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListDevicesRequest(c.Server)
 	if err != nil {
@@ -29193,7 +29431,11 @@ func (c *Client) ListDevices(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-// GetDevice performs a GET /device_info/v3/devices/{device_id} (the `GetDevice` operationId) request.
+// GetDevice Get a device
+//
+// Retrieves details for a specific device.
+//
+// Corresponds with GET /device_info/v3/devices/{device_id} (the `GetDevice` operationId).
 func (c *Client) GetDevice(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDeviceRequest(c.Server, deviceId)
 	if err != nil {
@@ -29206,9 +29448,11 @@ func (c *Client) GetDevice(ctx context.Context, deviceId DeviceId, reqEditors ..
 	return c.Client.Do(req)
 }
 
-// GetDeviceSettings performs a GET /devices/v1/devices/{device_id}/settings (the `GetDeviceSettings` operationId) request.
+// GetDeviceSettings Get device settings
 //
-// Captured response is extensible; typed Go API exposes motion_detection_enabled only.
+// Retrieves the current settings for a device.
+//
+// Corresponds with GET /devices/v1/devices/{device_id}/settings (the `GetDeviceSettings` operationId).
 func (c *Client) GetDeviceSettings(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDeviceSettingsRequest(c.Server, deviceId)
 	if err != nil {
@@ -29221,10 +29465,13 @@ func (c *Client) GetDeviceSettings(ctx context.Context, deviceId DeviceId, reqEd
 	return c.Client.Do(req)
 }
 
-// PatchDeviceSettingsWithBody performs a PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId) request,
-// with any type of body and a specified content type.
+// PatchDeviceSettingsWithBody Update device settings
 //
-// The wire schema accepts all captured settings patches. The typed Go API currently sends only motion_settings.motion_detection_enabled.
+// Updates one or more supported settings for a device.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId).
 func (c *Client) PatchDeviceSettingsWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPatchDeviceSettingsRequestWithBody(c.Server, deviceId, contentType, body)
 	if err != nil {
@@ -29237,10 +29484,13 @@ func (c *Client) PatchDeviceSettingsWithBody(ctx context.Context, deviceId Devic
 	return c.Client.Do(req)
 }
 
-// PatchDeviceSettings performs a PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId) request.
+// PatchDeviceSettings Update device settings
+//
+// Updates one or more supported settings for a device.
+//
 // Takes a body of the `application/json` content type.
 //
-// The wire schema accepts all captured settings patches. The typed Go API currently sends only motion_settings.motion_detection_enabled.
+// Corresponds with PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId).
 func (c *Client) PatchDeviceSettings(ctx context.Context, deviceId DeviceId, body PatchDeviceSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPatchDeviceSettingsRequest(c.Server, deviceId, body)
 	if err != nil {
@@ -29253,8 +29503,13 @@ func (c *Client) PatchDeviceSettings(ctx context.Context, deviceId DeviceId, bod
 	return c.Client.Do(req)
 }
 
-// SetLiveViewEnabledWithBody performs a PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId) request,
-// with any type of body and a specified content type.
+// SetLiveViewEnabledWithBody Set live view availability
+//
+// Enables or disables live view for a device.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId).
 func (c *Client) SetLiveViewEnabledWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetLiveViewEnabledRequestWithBody(c.Server, deviceId, contentType, body)
 	if err != nil {
@@ -29267,8 +29522,13 @@ func (c *Client) SetLiveViewEnabledWithBody(ctx context.Context, deviceId Device
 	return c.Client.Do(req)
 }
 
-// SetLiveViewEnabled performs a PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId) request.
+// SetLiveViewEnabled Set live view availability
+//
+// Enables or disables live view for a device.
+//
 // Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId).
 func (c *Client) SetLiveViewEnabled(ctx context.Context, deviceId DeviceId, body SetLiveViewEnabledJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetLiveViewEnabledRequest(c.Server, deviceId, body)
 	if err != nil {
@@ -29281,7 +29541,11 @@ func (c *Client) SetLiveViewEnabled(ctx context.Context, deviceId DeviceId, body
 	return c.Client.Do(req)
 }
 
-// GetDeviceTimeline performs a GET /evm/v2/timeline/devices/{device_id} (the `GetDeviceTimeline` operationId) request.
+// GetDeviceTimeline Get a device timeline
+//
+// Retrieves timeline events for a device within an optional time range.
+//
+// Corresponds with GET /evm/v2/timeline/devices/{device_id} (the `GetDeviceTimeline` operationId).
 func (c *Client) GetDeviceTimeline(ctx context.Context, deviceId DeviceId, params *GetDeviceTimelineParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDeviceTimelineRequest(c.Server, deviceId, params)
 	if err != nil {
@@ -29294,7 +29558,11 @@ func (c *Client) GetDeviceTimeline(ctx context.Context, deviceId DeviceId, param
 	return c.Client.Do(req)
 }
 
-// GetHistoryDevices performs a GET /evm/v3/history/devices (the `GetHistoryDevices` operationId) request.
+// GetHistoryDevices List account history events
+//
+// Retrieves account history events and feed items, with optional source and capability filters.
+//
+// Corresponds with GET /evm/v3/history/devices (the `GetHistoryDevices` operationId).
 func (c *Client) GetHistoryDevices(ctx context.Context, params *GetHistoryDevicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHistoryDevicesRequest(c.Server, params)
 	if err != nil {
@@ -29307,7 +29575,11 @@ func (c *Client) GetHistoryDevices(ctx context.Context, params *GetHistoryDevice
 	return c.Client.Do(req)
 }
 
-// ListLocationDevices performs a GET /groups/v1/locations/{location_id}/devices (the `ListLocationDevices` operationId) request.
+// ListLocationDevices List devices at a location
+//
+// Retrieves the devices assigned to a location.
+//
+// Corresponds with GET /groups/v1/locations/{location_id}/devices (the `ListLocationDevices` operationId).
 func (c *Client) ListLocationDevices(ctx context.Context, locationId LocationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListLocationDevicesRequest(c.Server, locationId)
 	if err != nil {
@@ -29320,7 +29592,11 @@ func (c *Client) ListLocationDevices(ctx context.Context, locationId LocationId,
 	return c.Client.Do(req)
 }
 
-// ListLocationGroups performs a GET /groups/v1/locations/{location_id}/groups (the `ListLocationGroups` operationId) request.
+// ListLocationGroups List device groups at a location
+//
+// Retrieves device groups configured for a location.
+//
+// Corresponds with GET /groups/v1/locations/{location_id}/groups (the `ListLocationGroups` operationId).
 func (c *Client) ListLocationGroups(ctx context.Context, locationId LocationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListLocationGroupsRequest(c.Server, locationId)
 	if err != nil {
@@ -29333,7 +29609,11 @@ func (c *Client) ListLocationGroups(ctx context.Context, locationId LocationId, 
 	return c.Client.Do(req)
 }
 
-// ListLocations performs a GET /location_info/v3/locations (the `ListLocations` operationId) request.
+// ListLocations List locations
+//
+// Retrieves locations available to the authenticated account.
+//
+// Corresponds with GET /location_info/v3/locations (the `ListLocations` operationId).
 func (c *Client) ListLocations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListLocationsRequest(c.Server)
 	if err != nil {
@@ -29346,7 +29626,11 @@ func (c *Client) ListLocations(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-// GetLocation performs a GET /location_info/v4/locations/{location_id} (the `GetLocation` operationId) request.
+// GetLocation Get a location
+//
+// Retrieves details for a specific location, with optional related resources.
+//
+// Corresponds with GET /location_info/v4/locations/{location_id} (the `GetLocation` operationId).
 func (c *Client) GetLocation(ctx context.Context, locationId LocationId, params *GetLocationParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLocationRequest(c.Server, locationId, params)
 	if err != nil {
@@ -29359,10 +29643,13 @@ func (c *Client) GetLocation(ctx context.Context, locationId LocationId, params 
 	return c.Client.Do(req)
 }
 
-// ExchangeOrRefreshOAuthTokenWithBody performs a POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId) request,
-// with any type of body and a specified content type.
+// ExchangeOrRefreshOAuthTokenWithBody Exchange or refresh an OAuth token
 //
-// Existing Go authorization-code PKCE exchange and explicit refresh; legacy password grant remains a fallback only when the OAuth authorize endpoint is unavailable. There is no captured OAuth token exchange.
+// Exchanges an authorization grant for access tokens or refreshes an existing token.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId).
 func (c *Client) ExchangeOrRefreshOAuthTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewExchangeOrRefreshOAuthTokenRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -29375,10 +29662,13 @@ func (c *Client) ExchangeOrRefreshOAuthTokenWithBody(ctx context.Context, conten
 	return c.Client.Do(req)
 }
 
-// ExchangeOrRefreshOAuthTokenWithFormdataBody performs a POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId) request.
+// ExchangeOrRefreshOAuthTokenWithFormdataBody Exchange or refresh an OAuth token
+//
+// Exchanges an authorization grant for access tokens or refreshes an existing token.
+//
 // Takes a body of the `application/x-www-form-urlencoded` content type.
 //
-// Existing Go authorization-code PKCE exchange and explicit refresh; legacy password grant remains a fallback only when the OAuth authorize endpoint is unavailable. There is no captured OAuth token exchange.
+// Corresponds with POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId).
 func (c *Client) ExchangeOrRefreshOAuthTokenWithFormdataBody(ctx context.Context, body ExchangeOrRefreshOAuthTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewExchangeOrRefreshOAuthTokenRequestWithFormdataBody(c.Server, body)
 	if err != nil {
@@ -29391,10 +29681,13 @@ func (c *Client) ExchangeOrRefreshOAuthTokenWithFormdataBody(ctx context.Context
 	return c.Client.Do(req)
 }
 
-// VerifyOAuthTwoFactorCodeWithBody performs a POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId) request,
-// with any type of body and a specified content type.
+// VerifyOAuthTwoFactorCodeWithBody Verify an OAuth two-factor code
 //
-// Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+// Submits a two-factor authentication code to complete OAuth sign-in.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId).
 func (c *Client) VerifyOAuthTwoFactorCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewVerifyOAuthTwoFactorCodeRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -29407,10 +29700,13 @@ func (c *Client) VerifyOAuthTwoFactorCodeWithBody(ctx context.Context, contentTy
 	return c.Client.Do(req)
 }
 
-// VerifyOAuthTwoFactorCodeWithFormdataBody performs a POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId) request.
+// VerifyOAuthTwoFactorCodeWithFormdataBody Verify an OAuth two-factor code
+//
+// Submits a two-factor authentication code to complete OAuth sign-in.
+//
 // Takes a body of the `application/x-www-form-urlencoded` content type.
 //
-// Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+// Corresponds with POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId).
 func (c *Client) VerifyOAuthTwoFactorCodeWithFormdataBody(ctx context.Context, body VerifyOAuthTwoFactorCodeFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewVerifyOAuthTwoFactorCodeRequestWithFormdataBody(c.Server, body)
 	if err != nil {
@@ -29423,9 +29719,11 @@ func (c *Client) VerifyOAuthTwoFactorCodeWithFormdataBody(ctx context.Context, b
 	return c.Client.Do(req)
 }
 
-// BeginOrContinueOAuthAuthorization performs a GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId) request.
+// BeginOrContinueOAuthAuthorization Start or continue OAuth sign-in
 //
-// Existing Go PKCE flow. The first request sends the authorization query parameters; later requests reuse the cookie-backed session and may omit them. Redirect state is checked by the client. This route is not present in the C1 HTTP captures.
+// Starts an OAuth authorization session and requests an authorization code. Redirects may continue an existing sign-in session.
+//
+// Corresponds with GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId).
 func (c *Client) BeginOrContinueOAuthAuthorization(ctx context.Context, params *BeginOrContinueOAuthAuthorizationParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBeginOrContinueOAuthAuthorizationRequest(c.Server, params)
 	if err != nil {
@@ -29438,10 +29736,13 @@ func (c *Client) BeginOrContinueOAuthAuthorization(ctx context.Context, params *
 	return c.Client.Do(req)
 }
 
-// SubmitOAuthCredentialsWithBody performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request,
-// with any type of body and a specified content type.
+// SubmitOAuthCredentialsWithBody Submit OAuth credentials
 //
-// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId).
 func (c *Client) SubmitOAuthCredentialsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubmitOAuthCredentialsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -29454,10 +29755,13 @@ func (c *Client) SubmitOAuthCredentialsWithBody(ctx context.Context, contentType
 	return c.Client.Do(req)
 }
 
-// SubmitOAuthCredentialsWithFormdataBody performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request.
+// SubmitOAuthCredentialsWithFormdataBody Submit OAuth credentials
+//
+// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
+//
 // Takes a body of the `application/x-www-form-urlencoded` content type.
 //
-// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+// Corresponds with POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId).
 func (c *Client) SubmitOAuthCredentialsWithFormdataBody(ctx context.Context, body SubmitOAuthCredentialsFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubmitOAuthCredentialsRequestWithFormdataBody(c.Server, body)
 	if err != nil {
@@ -31493,313 +31797,445 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// RequestLegacySignalingTicketWithResponse performs a POST /api/v1/clap/ticket/request/signalsocket (the `RequestLegacySignalingTicket` operationId) request.
+	// RequestLegacySignalingTicketWithResponse Request a signaling ticket
 	//
-	// Existing Go signaling bootstrap. This POST route is implemented and covered by local tests, but was not found in the C1 HTTP recordings. It is distinct from the captured GET /api/v1/clap/tickets operation.
+	// Requests a signaling ticket used to establish a device connection.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/clap/ticket/request/signalsocket (the `RequestLegacySignalingTicket` operationId).
 	RequestLegacySignalingTicketWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RequestLegacySignalingTicketResponse, error)
 
-	// GetCapturedLocationTicketsWithResponse performs a GET /api/v1/clap/tickets (the `GetCapturedLocationTickets` operationId) request.
+	// GetCapturedLocationTicketsWithResponse Get location signaling tickets
 	//
-	// Captured GET route. Its relationship to the existing POST signaling bootstrap below is not established.
+	// Retrieves signaling tickets and connection metadata for a location.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/clap/tickets (the `GetCapturedLocationTickets` operationId).
 	GetCapturedLocationTicketsWithResponse(ctx context.Context, params *GetCapturedLocationTicketsParams, reqEditors ...RequestEditorFn) (*GetCapturedLocationTicketsResponse, error)
 
-	// SetChimeVolumeWithResponse performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
+	// SetChimeVolumeWithResponse Set chime volume
 	//
-	// Legacy volume update. The client requires description to reproduce the synthetic replay request shape; no capture proves the server requires that query field for volume changes.
+	// Changes a chime device’s playback volume.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId).
 	SetChimeVolumeWithResponse(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*SetChimeVolumeResponse, error)
 
-	// TestChimeSoundWithResponse performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
+	// TestChimeSoundWithResponse Play a chime sound
 	//
-	// Legacy sound request from synthetic replay.
+	// Plays a selected test sound on a chime device.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId).
 	TestChimeSoundWithResponse(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*TestChimeSoundResponse, error)
 
-	// RegisterPushDeviceWithBodyWithResponse performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request,
-	// with any type of body and a specified content type.
+	// RegisterPushDeviceWithBodyWithResponse Register a push notification device
 	//
-	// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+	// Registers a push notification token so the device can receive Ring alerts.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /clients_api/device (the `RegisterPushDevice` operationId).
 	RegisterPushDeviceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterPushDeviceResponse, error)
 
-	// RegisterPushDeviceWithResponse performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request.
+	// RegisterPushDeviceWithResponse Register a push notification device
+	//
+	// Registers a push notification token so the device can receive Ring alerts.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+	// Corresponds with PATCH /clients_api/device (the `RegisterPushDevice` operationId).
 	RegisterPushDeviceWithResponse(ctx context.Context, body RegisterPushDeviceJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterPushDeviceResponse, error)
 
-	// GetActiveDingsWithResponse performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
+	// GetActiveDingsWithResponse List active alerts
 	//
-	// Existing Go active-dings route. No matching C1 capture was identified.
+	// Retrieves currently active Ring alerts.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /clients_api/dings/active (the `GetActiveDings` operationId).
 	GetActiveDingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetActiveDingsResponse, error)
 
-	// DeleteRecordingWithResponse performs a DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId) request.
+	// DeleteRecordingWithResponse Delete a recording
+	//
+	// Deletes a recording. A confirmation parameter may be required for a favorited recording.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId).
 	DeleteRecordingWithResponse(ctx context.Context, recordingId RecordingId, params *DeleteRecordingParams, reqEditors ...RequestEditorFn) (*DeleteRecordingResponse, error)
 
-	// FavoriteRecordingWithResponse performs a PUT /clients_api/dings/{recording_id}/favorite (the `FavoriteRecording` operationId) request.
+	// FavoriteRecordingWithResponse Favorite a recording
+	//
+	// Marks a recording as a favorite.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /clients_api/dings/{recording_id}/favorite (the `FavoriteRecording` operationId).
 	FavoriteRecordingWithResponse(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*FavoriteRecordingResponse, error)
 
-	// StreamRecordingWithResponse performs a GET /clients_api/dings/{recording_id}/recording (the `StreamRecording` operationId) request.
+	// StreamRecordingWithResponse Stream a recording
 	//
-	// Existing Go method returns the response body as a streaming VideoStream; the caller owns and must close Body. It requests video/mp4 and does not buffer the media. Go's default http.Client follows redirects according to its CheckRedirect policy; a custom client may change that behavior. No sanitized recording response establishes redirect or media-host details.
+	// Returns the recording media as an MP4 stream.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /clients_api/dings/{recording_id}/recording (the `StreamRecording` operationId).
 	StreamRecordingWithResponse(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*StreamRecordingResponse, error)
 
-	// GetLegacyRecordingShareURLWithResponse performs a GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId) request.
+	// GetLegacyRecordingShareURLWithResponse Get a recording share URL
 	//
-	// Legacy share/play response, replayed synthetically; no matching C1 response.
+	// Retrieves the playback share link for a recording.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId).
 	GetLegacyRecordingShareURLWithResponse(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*GetLegacyRecordingShareURLResponse, error)
 
-	// UpdateLegacyDoorbotControlsWithResponse performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
+	// UpdateLegacyDoorbotControlsWithResponse Update doorbell and chime settings
 	//
-	// Legacy doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce the replayed request shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
+	// Changes supported doorbell volume or in-home chime settings.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId).
 	UpdateLegacyDoorbotControlsWithResponse(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*UpdateLegacyDoorbotControlsResponse, error)
 
-	// TurnFloodlightOffWithResponse performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
+	// TurnFloodlightOffWithResponse Turn off a floodlight
 	//
-	// Legacy off path; no corresponding captured or synthetic request fixture.
+	// Turns off a device’s floodlight.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId).
 	TurnFloodlightOffWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOffResponse, error)
 
-	// TurnFloodlightOnWithResponse performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId) request.
+	// TurnFloodlightOnWithResponse Turn on a floodlight
 	//
-	// Legacy light-on request from synthetic replay.
+	// Turns on a device’s floodlight.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId).
 	TurnFloodlightOnWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOnResponse, error)
 
-	// GetLegacyDeviceHistoryWithResponse performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
+	// GetLegacyDeviceHistoryWithResponse List doorbell recordings
 	//
-	// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
+	// Retrieves recordings associated with a doorbell, with optional filters and pagination.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId).
 	GetLegacyDeviceHistoryWithResponse(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*GetLegacyDeviceHistoryResponse, error)
 
-	// SubscribeDeviceMotionWithResponse performs a POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId) request.
+	// SubscribeDeviceMotionWithResponse Subscribe to motion alerts
+	//
+	// Subscribes to motion notifications from a doorbell device.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId).
 	SubscribeDeviceMotionWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SubscribeDeviceMotionResponse, error)
 
-	// TurnSirenOffWithResponse performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
+	// TurnSirenOffWithResponse Turn off a siren
+	//
+	// Stops the siren on a doorbell device.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId).
 	TurnSirenOffWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnSirenOffResponse, error)
 
-	// TurnSirenOnWithResponse performs a PUT /clients_api/doorbots/{device_id}/siren_on (the `TurnSirenOn` operationId) request.
+	// TurnSirenOnWithResponse Turn on a siren
 	//
-	// No duration query or request body is present in the capture.
+	// Activates the siren on a doorbell device.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /clients_api/doorbots/{device_id}/siren_on (the `TurnSirenOn` operationId).
 	TurnSirenOnWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnSirenOnResponse, error)
 
-	// SubscribeDeviceDingWithResponse performs a POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId) request.
+	// SubscribeDeviceDingWithResponse Subscribe to device alerts
+	//
+	// Subscribes to alert notifications from a doorbell device.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId).
 	SubscribeDeviceDingWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SubscribeDeviceDingResponse, error)
 
-	// GetLegacyDeviceHealthWithResponse performs a GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId) request.
+	// GetLegacyDeviceHealthWithResponse Get device health
 	//
-	// Generic device health route. The captured HTTP set has no matching health response; SDK tests use local fixtures only.
+	// Retrieves health information for a Ring device.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId).
 	GetLegacyDeviceHealthWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetLegacyDeviceHealthResponse, error)
 
-	// RegisterClientSessionWithBodyWithResponse performs a POST /clients_api/session (the `RegisterClientSession` operationId) request,
-	// with any type of body and a specified content type.
+	// RegisterClientSessionWithBodyWithResponse Register a client session
 	//
-	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
+	// Registers a client session that can be used for device inventory and signaling requests.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /clients_api/session (the `RegisterClientSession` operationId).
 	RegisterClientSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterClientSessionResponse, error)
 
-	// RegisterClientSessionWithResponse performs a POST /clients_api/session (the `RegisterClientSession` operationId) request.
+	// RegisterClientSessionWithResponse Register a client session
+	//
+	// Registers a client session that can be used for device inventory and signaling requests.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
+	// Corresponds with POST /clients_api/session (the `RegisterClientSession` operationId).
 	RegisterClientSessionWithResponse(ctx context.Context, body RegisterClientSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterClientSessionResponse, error)
 
-	// GetLegacySnapshotImageWithResponse performs a GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId) request.
+	// GetLegacySnapshotImageWithResponse Get a snapshot image
 	//
-	// Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+	// Retrieves a device snapshot as JPEG image data.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId).
 	GetLegacySnapshotImageWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetLegacySnapshotImageResponse, error)
 
-	// RefreshLegacySnapshotTimestampWithBodyWithResponse performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request,
-	// with any type of body and a specified content type.
+	// RefreshLegacySnapshotTimestampWithBodyWithResponse Request a snapshot timestamp
 	//
-	// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+	// Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId).
 	RefreshLegacySnapshotTimestampWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RefreshLegacySnapshotTimestampResponse, error)
 
-	// RefreshLegacySnapshotTimestampWithResponse performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request.
+	// RefreshLegacySnapshotTimestampWithResponse Request a snapshot timestamp
+	//
+	// Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+	// Corresponds with POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId).
 	RefreshLegacySnapshotTimestampWithResponse(ctx context.Context, body RefreshLegacySnapshotTimestampJSONRequestBody, reqEditors ...RequestEditorFn) (*RefreshLegacySnapshotTimestampResponse, error)
 
-	// SendDeviceCommandWithBodyWithResponse performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request,
-	// with any type of body and a specified content type.
+	// SendDeviceCommandWithBodyWithResponse Send a device command
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Sends a command to a device and returns when Ring accepts it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId).
 	SendDeviceCommandWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendDeviceCommandResponse, error)
 
-	// SendDeviceCommandWithResponse performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request.
+	// SendDeviceCommandWithResponse Send a device command
+	//
+	// Sends a command to a device and returns when Ring accepts it.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId).
 	SendDeviceCommandWithResponse(ctx context.Context, deviceId DeviceId, body SendDeviceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*SendDeviceCommandResponse, error)
 
-	// UnlockIntercomWithBodyWithResponse performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request,
-	// with any type of body and a specified content type.
+	// UnlockIntercomWithBodyWithResponse Unlock an intercom
 	//
-	// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+	// Sends an unlock command to an intercom device.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId).
 	UnlockIntercomWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UnlockIntercomResponse, error)
 
-	// UnlockIntercomWithResponse performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request.
+	// UnlockIntercomWithResponse Unlock an intercom
+	//
+	// Sends an unlock command to an intercom device.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+	// Corresponds with PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId).
 	UnlockIntercomWithResponse(ctx context.Context, deviceId DeviceId, body UnlockIntercomJSONRequestBody, reqEditors ...RequestEditorFn) (*UnlockIntercomResponse, error)
 
-	// ListDevicesWithResponse performs a GET /device_info/v3/devices (the `ListDevices` operationId) request.
+	// ListDevicesWithResponse List devices
+	//
+	// Retrieves the devices available to the authenticated account.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /device_info/v3/devices (the `ListDevices` operationId).
 	ListDevicesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDevicesResponse, error)
 
-	// GetDeviceWithResponse performs a GET /device_info/v3/devices/{device_id} (the `GetDevice` operationId) request.
+	// GetDeviceWithResponse Get a device
+	//
+	// Retrieves details for a specific device.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /device_info/v3/devices/{device_id} (the `GetDevice` operationId).
 	GetDeviceWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDeviceResponse, error)
 
-	// GetDeviceSettingsWithResponse performs a GET /devices/v1/devices/{device_id}/settings (the `GetDeviceSettings` operationId) request.
+	// GetDeviceSettingsWithResponse Get device settings
 	//
-	// Captured response is extensible; typed Go API exposes motion_detection_enabled only.
+	// Retrieves the current settings for a device.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /devices/v1/devices/{device_id}/settings (the `GetDeviceSettings` operationId).
 	GetDeviceSettingsWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDeviceSettingsResponse, error)
 
-	// PatchDeviceSettingsWithBodyWithResponse performs a PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId) request,
-	// with any type of body and a specified content type.
+	// PatchDeviceSettingsWithBodyWithResponse Update device settings
 	//
-	// The wire schema accepts all captured settings patches. The typed Go API currently sends only motion_settings.motion_detection_enabled.
+	// Updates one or more supported settings for a device.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId).
 	PatchDeviceSettingsWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchDeviceSettingsResponse, error)
 
-	// PatchDeviceSettingsWithResponse performs a PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId) request.
+	// PatchDeviceSettingsWithResponse Update device settings
+	//
+	// Updates one or more supported settings for a device.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// The wire schema accepts all captured settings patches. The typed Go API currently sends only motion_settings.motion_detection_enabled.
+	// Corresponds with PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId).
 	PatchDeviceSettingsWithResponse(ctx context.Context, deviceId DeviceId, body PatchDeviceSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchDeviceSettingsResponse, error)
 
-	// SetLiveViewEnabledWithBodyWithResponse performs a PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId) request,
-	// with any type of body and a specified content type.
+	// SetLiveViewEnabledWithBodyWithResponse Set live view availability
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Enables or disables live view for a device.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId).
 	SetLiveViewEnabledWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetLiveViewEnabledResponse, error)
 
-	// SetLiveViewEnabledWithResponse performs a PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId) request.
+	// SetLiveViewEnabledWithResponse Set live view availability
+	//
+	// Enables or disables live view for a device.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId).
 	SetLiveViewEnabledWithResponse(ctx context.Context, deviceId DeviceId, body SetLiveViewEnabledJSONRequestBody, reqEditors ...RequestEditorFn) (*SetLiveViewEnabledResponse, error)
 
-	// GetDeviceTimelineWithResponse performs a GET /evm/v2/timeline/devices/{device_id} (the `GetDeviceTimeline` operationId) request.
+	// GetDeviceTimelineWithResponse Get a device timeline
+	//
+	// Retrieves timeline events for a device within an optional time range.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /evm/v2/timeline/devices/{device_id} (the `GetDeviceTimeline` operationId).
 	GetDeviceTimelineWithResponse(ctx context.Context, deviceId DeviceId, params *GetDeviceTimelineParams, reqEditors ...RequestEditorFn) (*GetDeviceTimelineResponse, error)
 
-	// GetHistoryDevicesWithResponse performs a GET /evm/v3/history/devices (the `GetHistoryDevices` operationId) request.
+	// GetHistoryDevicesWithResponse List account history events
+	//
+	// Retrieves account history events and feed items, with optional source and capability filters.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /evm/v3/history/devices (the `GetHistoryDevices` operationId).
 	GetHistoryDevicesWithResponse(ctx context.Context, params *GetHistoryDevicesParams, reqEditors ...RequestEditorFn) (*GetHistoryDevicesResponse, error)
 
-	// ListLocationDevicesWithResponse performs a GET /groups/v1/locations/{location_id}/devices (the `ListLocationDevices` operationId) request.
+	// ListLocationDevicesWithResponse List devices at a location
+	//
+	// Retrieves the devices assigned to a location.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /groups/v1/locations/{location_id}/devices (the `ListLocationDevices` operationId).
 	ListLocationDevicesWithResponse(ctx context.Context, locationId LocationId, reqEditors ...RequestEditorFn) (*ListLocationDevicesResponse, error)
 
-	// ListLocationGroupsWithResponse performs a GET /groups/v1/locations/{location_id}/groups (the `ListLocationGroups` operationId) request.
+	// ListLocationGroupsWithResponse List device groups at a location
+	//
+	// Retrieves device groups configured for a location.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /groups/v1/locations/{location_id}/groups (the `ListLocationGroups` operationId).
 	ListLocationGroupsWithResponse(ctx context.Context, locationId LocationId, reqEditors ...RequestEditorFn) (*ListLocationGroupsResponse, error)
 
-	// ListLocationsWithResponse performs a GET /location_info/v3/locations (the `ListLocations` operationId) request.
+	// ListLocationsWithResponse List locations
+	//
+	// Retrieves locations available to the authenticated account.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /location_info/v3/locations (the `ListLocations` operationId).
 	ListLocationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocationsResponse, error)
 
-	// GetLocationWithResponse performs a GET /location_info/v4/locations/{location_id} (the `GetLocation` operationId) request.
+	// GetLocationWithResponse Get a location
+	//
+	// Retrieves details for a specific location, with optional related resources.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /location_info/v4/locations/{location_id} (the `GetLocation` operationId).
 	GetLocationWithResponse(ctx context.Context, locationId LocationId, params *GetLocationParams, reqEditors ...RequestEditorFn) (*GetLocationResponse, error)
 
-	// ExchangeOrRefreshOAuthTokenWithBodyWithResponse performs a POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId) request,
-	// with any type of body and a specified content type.
+	// ExchangeOrRefreshOAuthTokenWithBodyWithResponse Exchange or refresh an OAuth token
 	//
-	// Existing Go authorization-code PKCE exchange and explicit refresh; legacy password grant remains a fallback only when the OAuth authorize endpoint is unavailable. There is no captured OAuth token exchange.
+	// Exchanges an authorization grant for access tokens or refreshes an existing token.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId).
 	ExchangeOrRefreshOAuthTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExchangeOrRefreshOAuthTokenResponse, error)
 
-	// ExchangeOrRefreshOAuthTokenWithFormdataBodyWithResponse performs a POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId) request.
+	// ExchangeOrRefreshOAuthTokenWithFormdataBodyWithResponse Exchange or refresh an OAuth token
+	//
+	// Exchanges an authorization grant for access tokens or refreshes an existing token.
+	//
 	// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Existing Go authorization-code PKCE exchange and explicit refresh; legacy password grant remains a fallback only when the OAuth authorize endpoint is unavailable. There is no captured OAuth token exchange.
+	// Corresponds with POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId).
 	ExchangeOrRefreshOAuthTokenWithFormdataBodyWithResponse(ctx context.Context, body ExchangeOrRefreshOAuthTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*ExchangeOrRefreshOAuthTokenResponse, error)
 
-	// VerifyOAuthTwoFactorCodeWithBodyWithResponse performs a POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId) request,
-	// with any type of body and a specified content type.
+	// VerifyOAuthTwoFactorCodeWithBodyWithResponse Verify an OAuth two-factor code
 	//
-	// Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+	// Submits a two-factor authentication code to complete OAuth sign-in.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId).
 	VerifyOAuthTwoFactorCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*VerifyOAuthTwoFactorCodeResponse, error)
 
-	// VerifyOAuthTwoFactorCodeWithFormdataBodyWithResponse performs a POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId) request.
+	// VerifyOAuthTwoFactorCodeWithFormdataBodyWithResponse Verify an OAuth two-factor code
+	//
+	// Submits a two-factor authentication code to complete OAuth sign-in.
+	//
 	// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+	// Corresponds with POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId).
 	VerifyOAuthTwoFactorCodeWithFormdataBodyWithResponse(ctx context.Context, body VerifyOAuthTwoFactorCodeFormdataRequestBody, reqEditors ...RequestEditorFn) (*VerifyOAuthTwoFactorCodeResponse, error)
 
-	// BeginOrContinueOAuthAuthorizationWithResponse performs a GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId) request.
+	// BeginOrContinueOAuthAuthorizationWithResponse Start or continue OAuth sign-in
 	//
-	// Existing Go PKCE flow. The first request sends the authorization query parameters; later requests reuse the cookie-backed session and may omit them. Redirect state is checked by the client. This route is not present in the C1 HTTP captures.
+	// Starts an OAuth authorization session and requests an authorization code. Redirects may continue an existing sign-in session.
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId).
 	BeginOrContinueOAuthAuthorizationWithResponse(ctx context.Context, params *BeginOrContinueOAuthAuthorizationParams, reqEditors ...RequestEditorFn) (*BeginOrContinueOAuthAuthorizationResponse, error)
 
-	// SubmitOAuthCredentialsWithBodyWithResponse performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request,
-	// with any type of body and a specified content type.
+	// SubmitOAuthCredentialsWithBodyWithResponse Submit OAuth credentials
 	//
-	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+	// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId).
 	SubmitOAuthCredentialsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitOAuthCredentialsResponse, error)
 
-	// SubmitOAuthCredentialsWithFormdataBodyWithResponse performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request.
+	// SubmitOAuthCredentialsWithFormdataBodyWithResponse Submit OAuth credentials
+	//
+	// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
+	//
 	// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+	// Corresponds with POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId).
 	SubmitOAuthCredentialsWithFormdataBodyWithResponse(ctx context.Context, body SubmitOAuthCredentialsFormdataRequestBody, reqEditors ...RequestEditorFn) (*SubmitOAuthCredentialsResponse, error)
 }
 
@@ -33514,11 +33950,13 @@ func (r SubmitOAuthCredentialsResponse) ContentType() string {
 	return ""
 }
 
-// RequestLegacySignalingTicketWithResponse performs a POST /api/v1/clap/ticket/request/signalsocket (the `RequestLegacySignalingTicket` operationId) request.
+// RequestLegacySignalingTicketWithResponse Request a signaling ticket
 //
-// Existing Go signaling bootstrap. This POST route is implemented and covered by local tests, but was not found in the C1 HTTP recordings. It is distinct from the captured GET /api/v1/clap/tickets operation.
+// Requests a signaling ticket used to establish a device connection.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/clap/ticket/request/signalsocket (the `RequestLegacySignalingTicket` operationId).
 func (c *ClientWithResponses) RequestLegacySignalingTicketWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RequestLegacySignalingTicketResponse, error) {
 	rsp, err := c.RequestLegacySignalingTicket(ctx, reqEditors...)
 	if err != nil {
@@ -33527,11 +33965,13 @@ func (c *ClientWithResponses) RequestLegacySignalingTicketWithResponse(ctx conte
 	return ParseRequestLegacySignalingTicketResponse(rsp)
 }
 
-// GetCapturedLocationTicketsWithResponse performs a GET /api/v1/clap/tickets (the `GetCapturedLocationTickets` operationId) request.
+// GetCapturedLocationTicketsWithResponse Get location signaling tickets
 //
-// Captured GET route. Its relationship to the existing POST signaling bootstrap below is not established.
+// Retrieves signaling tickets and connection metadata for a location.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/clap/tickets (the `GetCapturedLocationTickets` operationId).
 func (c *ClientWithResponses) GetCapturedLocationTicketsWithResponse(ctx context.Context, params *GetCapturedLocationTicketsParams, reqEditors ...RequestEditorFn) (*GetCapturedLocationTicketsResponse, error) {
 	rsp, err := c.GetCapturedLocationTickets(ctx, params, reqEditors...)
 	if err != nil {
@@ -33540,11 +33980,13 @@ func (c *ClientWithResponses) GetCapturedLocationTicketsWithResponse(ctx context
 	return ParseGetCapturedLocationTicketsResponse(rsp)
 }
 
-// SetChimeVolumeWithResponse performs a PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId) request.
+// SetChimeVolumeWithResponse Set chime volume
 //
-// Legacy volume update. The client requires description to reproduce the synthetic replay request shape; no capture proves the server requires that query field for volume changes.
+// Changes a chime device’s playback volume.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /clients_api/chimes/{device_id} (the `SetChimeVolume` operationId).
 func (c *ClientWithResponses) SetChimeVolumeWithResponse(ctx context.Context, deviceId DeviceId, params *SetChimeVolumeParams, reqEditors ...RequestEditorFn) (*SetChimeVolumeResponse, error) {
 	rsp, err := c.SetChimeVolume(ctx, deviceId, params, reqEditors...)
 	if err != nil {
@@ -33553,11 +33995,13 @@ func (c *ClientWithResponses) SetChimeVolumeWithResponse(ctx context.Context, de
 	return ParseSetChimeVolumeResponse(rsp)
 }
 
-// TestChimeSoundWithResponse performs a POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId) request.
+// TestChimeSoundWithResponse Play a chime sound
 //
-// Legacy sound request from synthetic replay.
+// Plays a selected test sound on a chime device.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /clients_api/chimes/{device_id}/play_sound (the `TestChimeSound` operationId).
 func (c *ClientWithResponses) TestChimeSoundWithResponse(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*TestChimeSoundResponse, error) {
 	rsp, err := c.TestChimeSound(ctx, deviceId, params, reqEditors...)
 	if err != nil {
@@ -33566,12 +34010,13 @@ func (c *ClientWithResponses) TestChimeSoundWithResponse(ctx context.Context, de
 	return ParseTestChimeSoundResponse(rsp)
 }
 
-// RegisterPushDeviceWithBodyWithResponse performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request,
-// with any type of body and a specified content type.
+// RegisterPushDeviceWithBodyWithResponse Register a push notification device
 //
-// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+// Registers a push notification token so the device can receive Ring alerts.
 //
-// Returns a wrapper object for the known response body format(s).
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /clients_api/device (the `RegisterPushDevice` operationId).
 func (c *ClientWithResponses) RegisterPushDeviceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterPushDeviceResponse, error) {
 	rsp, err := c.RegisterPushDeviceWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
@@ -33580,10 +34025,13 @@ func (c *ClientWithResponses) RegisterPushDeviceWithBodyWithResponse(ctx context
 	return ParseRegisterPushDeviceResponse(rsp)
 }
 
-// RegisterPushDeviceWithResponse performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request.
+// RegisterPushDeviceWithResponse Register a push notification device
+//
+// Registers a push notification token so the device can receive Ring alerts.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+// Corresponds with PATCH /clients_api/device (the `RegisterPushDevice` operationId).
 func (c *ClientWithResponses) RegisterPushDeviceWithResponse(ctx context.Context, body RegisterPushDeviceJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterPushDeviceResponse, error) {
 	rsp, err := c.RegisterPushDevice(ctx, body, reqEditors...)
 	if err != nil {
@@ -33592,11 +34040,13 @@ func (c *ClientWithResponses) RegisterPushDeviceWithResponse(ctx context.Context
 	return ParseRegisterPushDeviceResponse(rsp)
 }
 
-// GetActiveDingsWithResponse performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
+// GetActiveDingsWithResponse List active alerts
 //
-// Existing Go active-dings route. No matching C1 capture was identified.
+// Retrieves currently active Ring alerts.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /clients_api/dings/active (the `GetActiveDings` operationId).
 func (c *ClientWithResponses) GetActiveDingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetActiveDingsResponse, error) {
 	rsp, err := c.GetActiveDings(ctx, reqEditors...)
 	if err != nil {
@@ -33605,9 +34055,13 @@ func (c *ClientWithResponses) GetActiveDingsWithResponse(ctx context.Context, re
 	return ParseGetActiveDingsResponse(rsp)
 }
 
-// DeleteRecordingWithResponse performs a DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId) request.
+// DeleteRecordingWithResponse Delete a recording
+//
+// Deletes a recording. A confirmation parameter may be required for a favorited recording.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /clients_api/dings/{recording_id} (the `DeleteRecording` operationId).
 func (c *ClientWithResponses) DeleteRecordingWithResponse(ctx context.Context, recordingId RecordingId, params *DeleteRecordingParams, reqEditors ...RequestEditorFn) (*DeleteRecordingResponse, error) {
 	rsp, err := c.DeleteRecording(ctx, recordingId, params, reqEditors...)
 	if err != nil {
@@ -33616,9 +34070,13 @@ func (c *ClientWithResponses) DeleteRecordingWithResponse(ctx context.Context, r
 	return ParseDeleteRecordingResponse(rsp)
 }
 
-// FavoriteRecordingWithResponse performs a PUT /clients_api/dings/{recording_id}/favorite (the `FavoriteRecording` operationId) request.
+// FavoriteRecordingWithResponse Favorite a recording
+//
+// Marks a recording as a favorite.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /clients_api/dings/{recording_id}/favorite (the `FavoriteRecording` operationId).
 func (c *ClientWithResponses) FavoriteRecordingWithResponse(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*FavoriteRecordingResponse, error) {
 	rsp, err := c.FavoriteRecording(ctx, recordingId, reqEditors...)
 	if err != nil {
@@ -33627,11 +34085,13 @@ func (c *ClientWithResponses) FavoriteRecordingWithResponse(ctx context.Context,
 	return ParseFavoriteRecordingResponse(rsp)
 }
 
-// StreamRecordingWithResponse performs a GET /clients_api/dings/{recording_id}/recording (the `StreamRecording` operationId) request.
+// StreamRecordingWithResponse Stream a recording
 //
-// Existing Go method returns the response body as a streaming VideoStream; the caller owns and must close Body. It requests video/mp4 and does not buffer the media. Go's default http.Client follows redirects according to its CheckRedirect policy; a custom client may change that behavior. No sanitized recording response establishes redirect or media-host details.
+// Returns the recording media as an MP4 stream.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /clients_api/dings/{recording_id}/recording (the `StreamRecording` operationId).
 func (c *ClientWithResponses) StreamRecordingWithResponse(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*StreamRecordingResponse, error) {
 	rsp, err := c.StreamRecording(ctx, recordingId, reqEditors...)
 	if err != nil {
@@ -33640,11 +34100,13 @@ func (c *ClientWithResponses) StreamRecordingWithResponse(ctx context.Context, r
 	return ParseStreamRecordingResponse(rsp)
 }
 
-// GetLegacyRecordingShareURLWithResponse performs a GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId) request.
+// GetLegacyRecordingShareURLWithResponse Get a recording share URL
 //
-// Legacy share/play response, replayed synthetically; no matching C1 response.
+// Retrieves the playback share link for a recording.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /clients_api/dings/{recording_id}/share/play (the `GetLegacyRecordingShareURL` operationId).
 func (c *ClientWithResponses) GetLegacyRecordingShareURLWithResponse(ctx context.Context, recordingId RecordingId, reqEditors ...RequestEditorFn) (*GetLegacyRecordingShareURLResponse, error) {
 	rsp, err := c.GetLegacyRecordingShareURL(ctx, recordingId, reqEditors...)
 	if err != nil {
@@ -33653,11 +34115,13 @@ func (c *ClientWithResponses) GetLegacyRecordingShareURLWithResponse(ctx context
 	return ParseGetLegacyRecordingShareURLResponse(rsp)
 }
 
-// UpdateLegacyDoorbotControlsWithResponse performs a PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId) request.
+// UpdateLegacyDoorbotControlsWithResponse Update doorbell and chime settings
 //
-// Legacy doorbell-volume or one in-home chime setting; query variants come from portable synthetic fixtures, not a C1 field capture. The client requires description to reproduce the replayed request shape; server necessity is unverified. A separate captured doorbot PUT sent a description and an empty settings object.
+// Changes supported doorbell volume or in-home chime settings.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id} (the `UpdateLegacyDoorbotControls` operationId).
 func (c *ClientWithResponses) UpdateLegacyDoorbotControlsWithResponse(ctx context.Context, deviceId DeviceId, params *UpdateLegacyDoorbotControlsParams, reqEditors ...RequestEditorFn) (*UpdateLegacyDoorbotControlsResponse, error) {
 	rsp, err := c.UpdateLegacyDoorbotControls(ctx, deviceId, params, reqEditors...)
 	if err != nil {
@@ -33666,11 +34130,13 @@ func (c *ClientWithResponses) UpdateLegacyDoorbotControlsWithResponse(ctx contex
 	return ParseUpdateLegacyDoorbotControlsResponse(rsp)
 }
 
-// TurnFloodlightOffWithResponse performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId) request.
+// TurnFloodlightOffWithResponse Turn off a floodlight
 //
-// Legacy off path; no corresponding captured or synthetic request fixture.
+// Turns off a device’s floodlight.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id}/floodlight_light_off (the `TurnFloodlightOff` operationId).
 func (c *ClientWithResponses) TurnFloodlightOffWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOffResponse, error) {
 	rsp, err := c.TurnFloodlightOff(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33679,11 +34145,13 @@ func (c *ClientWithResponses) TurnFloodlightOffWithResponse(ctx context.Context,
 	return ParseTurnFloodlightOffResponse(rsp)
 }
 
-// TurnFloodlightOnWithResponse performs a PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId) request.
+// TurnFloodlightOnWithResponse Turn on a floodlight
 //
-// Legacy light-on request from synthetic replay.
+// Turns on a device’s floodlight.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id}/floodlight_light_on (the `TurnFloodlightOn` operationId).
 func (c *ClientWithResponses) TurnFloodlightOnWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnFloodlightOnResponse, error) {
 	rsp, err := c.TurnFloodlightOn(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33692,11 +34160,13 @@ func (c *ClientWithResponses) TurnFloodlightOnWithResponse(ctx context.Context, 
 	return ParseTurnFloodlightOnResponse(rsp)
 }
 
-// GetLegacyDeviceHistoryWithResponse performs a GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId) request.
+// GetLegacyDeviceHistoryWithResponse List doorbell recordings
 //
-// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
+// Retrieves recordings associated with a doorbell, with optional filters and pagination.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /clients_api/doorbots/{device_id}/history (the `GetLegacyDeviceHistory` operationId).
 func (c *ClientWithResponses) GetLegacyDeviceHistoryWithResponse(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*GetLegacyDeviceHistoryResponse, error) {
 	rsp, err := c.GetLegacyDeviceHistory(ctx, deviceId, params, reqEditors...)
 	if err != nil {
@@ -33705,9 +34175,13 @@ func (c *ClientWithResponses) GetLegacyDeviceHistoryWithResponse(ctx context.Con
 	return ParseGetLegacyDeviceHistoryResponse(rsp)
 }
 
-// SubscribeDeviceMotionWithResponse performs a POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId) request.
+// SubscribeDeviceMotionWithResponse Subscribe to motion alerts
+//
+// Subscribes to motion notifications from a doorbell device.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId).
 func (c *ClientWithResponses) SubscribeDeviceMotionWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SubscribeDeviceMotionResponse, error) {
 	rsp, err := c.SubscribeDeviceMotion(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33716,9 +34190,13 @@ func (c *ClientWithResponses) SubscribeDeviceMotionWithResponse(ctx context.Cont
 	return ParseSubscribeDeviceMotionResponse(rsp)
 }
 
-// TurnSirenOffWithResponse performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
+// TurnSirenOffWithResponse Turn off a siren
+//
+// Stops the siren on a doorbell device.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId).
 func (c *ClientWithResponses) TurnSirenOffWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnSirenOffResponse, error) {
 	rsp, err := c.TurnSirenOff(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33727,11 +34205,13 @@ func (c *ClientWithResponses) TurnSirenOffWithResponse(ctx context.Context, devi
 	return ParseTurnSirenOffResponse(rsp)
 }
 
-// TurnSirenOnWithResponse performs a PUT /clients_api/doorbots/{device_id}/siren_on (the `TurnSirenOn` operationId) request.
+// TurnSirenOnWithResponse Turn on a siren
 //
-// No duration query or request body is present in the capture.
+// Activates the siren on a doorbell device.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /clients_api/doorbots/{device_id}/siren_on (the `TurnSirenOn` operationId).
 func (c *ClientWithResponses) TurnSirenOnWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnSirenOnResponse, error) {
 	rsp, err := c.TurnSirenOn(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33740,9 +34220,13 @@ func (c *ClientWithResponses) TurnSirenOnWithResponse(ctx context.Context, devic
 	return ParseTurnSirenOnResponse(rsp)
 }
 
-// SubscribeDeviceDingWithResponse performs a POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId) request.
+// SubscribeDeviceDingWithResponse Subscribe to device alerts
+//
+// Subscribes to alert notifications from a doorbell device.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId).
 func (c *ClientWithResponses) SubscribeDeviceDingWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SubscribeDeviceDingResponse, error) {
 	rsp, err := c.SubscribeDeviceDing(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33751,11 +34235,13 @@ func (c *ClientWithResponses) SubscribeDeviceDingWithResponse(ctx context.Contex
 	return ParseSubscribeDeviceDingResponse(rsp)
 }
 
-// GetLegacyDeviceHealthWithResponse performs a GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId) request.
+// GetLegacyDeviceHealthWithResponse Get device health
 //
-// Generic device health route. The captured HTTP set has no matching health response; SDK tests use local fixtures only.
+// Retrieves health information for a Ring device.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId).
 func (c *ClientWithResponses) GetLegacyDeviceHealthWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetLegacyDeviceHealthResponse, error) {
 	rsp, err := c.GetLegacyDeviceHealth(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33764,12 +34250,13 @@ func (c *ClientWithResponses) GetLegacyDeviceHealthWithResponse(ctx context.Cont
 	return ParseGetLegacyDeviceHealthResponse(rsp)
 }
 
-// RegisterClientSessionWithBodyWithResponse performs a POST /clients_api/session (the `RegisterClientSession` operationId) request,
-// with any type of body and a specified content type.
+// RegisterClientSessionWithBodyWithResponse Register a client session
 //
-// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
+// Registers a client session that can be used for device inventory and signaling requests.
 //
-// Returns a wrapper object for the known response body format(s).
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /clients_api/session (the `RegisterClientSession` operationId).
 func (c *ClientWithResponses) RegisterClientSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterClientSessionResponse, error) {
 	rsp, err := c.RegisterClientSessionWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
@@ -33778,10 +34265,13 @@ func (c *ClientWithResponses) RegisterClientSessionWithBodyWithResponse(ctx cont
 	return ParseRegisterClientSessionResponse(rsp)
 }
 
-// RegisterClientSessionWithResponse performs a POST /clients_api/session (the `RegisterClientSession` operationId) request.
+// RegisterClientSessionWithResponse Register a client session
+//
+// Registers a client session that can be used for device inventory and signaling requests.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Existing Go session-registration body, sent once before inventory or signaling when a hardware ID is configured. The shape below follows the Go implementation; no C1 capture was identified.
+// Corresponds with POST /clients_api/session (the `RegisterClientSession` operationId).
 func (c *ClientWithResponses) RegisterClientSessionWithResponse(ctx context.Context, body RegisterClientSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterClientSessionResponse, error) {
 	rsp, err := c.RegisterClientSession(ctx, body, reqEditors...)
 	if err != nil {
@@ -33790,11 +34280,13 @@ func (c *ClientWithResponses) RegisterClientSessionWithResponse(ctx context.Cont
 	return ParseRegisterClientSessionResponse(rsp)
 }
 
-// GetLegacySnapshotImageWithResponse performs a GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId) request.
+// GetLegacySnapshotImageWithResponse Get a snapshot image
 //
-// Legacy image download after a newer timestamp appears; response shape is synthetic replay evidence.
+// Retrieves a device snapshot as JPEG image data.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /clients_api/snapshots/image/{device_id} (the `GetLegacySnapshotImage` operationId).
 func (c *ClientWithResponses) GetLegacySnapshotImageWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetLegacySnapshotImageResponse, error) {
 	rsp, err := c.GetLegacySnapshotImage(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33803,12 +34295,13 @@ func (c *ClientWithResponses) GetLegacySnapshotImageWithResponse(ctx context.Con
 	return ParseGetLegacySnapshotImageResponse(rsp)
 }
 
-// RefreshLegacySnapshotTimestampWithBodyWithResponse performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request,
-// with any type of body and a specified content type.
+// RefreshLegacySnapshotTimestampWithBodyWithResponse Request a snapshot timestamp
 //
-// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+// Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
 //
-// Returns a wrapper object for the known response body format(s).
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId).
 func (c *ClientWithResponses) RefreshLegacySnapshotTimestampWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RefreshLegacySnapshotTimestampResponse, error) {
 	rsp, err := c.RefreshLegacySnapshotTimestampWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
@@ -33817,10 +34310,13 @@ func (c *ClientWithResponses) RefreshLegacySnapshotTimestampWithBodyWithResponse
 	return ParseRefreshLegacySnapshotTimestampResponse(rsp)
 }
 
-// RefreshLegacySnapshotTimestampWithResponse performs a POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId) request.
+// RefreshLegacySnapshotTimestampWithResponse Request a snapshot timestamp
+//
+// Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Legacy snapshot trigger and poll. The first response may omit timestamps. This contract comes from shared synthetic replay, not the C1 app-snaps request with missing response.
+// Corresponds with POST /clients_api/snapshots/timestamps (the `RefreshLegacySnapshotTimestamp` operationId).
 func (c *ClientWithResponses) RefreshLegacySnapshotTimestampWithResponse(ctx context.Context, body RefreshLegacySnapshotTimestampJSONRequestBody, reqEditors ...RequestEditorFn) (*RefreshLegacySnapshotTimestampResponse, error) {
 	rsp, err := c.RefreshLegacySnapshotTimestamp(ctx, body, reqEditors...)
 	if err != nil {
@@ -33829,10 +34325,13 @@ func (c *ClientWithResponses) RefreshLegacySnapshotTimestampWithResponse(ctx con
 	return ParseRefreshLegacySnapshotTimestampResponse(rsp)
 }
 
-// SendDeviceCommandWithBodyWithResponse performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request,
-// with any type of body and a specified content type.
+// SendDeviceCommandWithBodyWithResponse Send a device command
 //
-// Returns a wrapper object for the known response body format(s).
+// Sends a command to a device and returns when Ring accepts it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId).
 func (c *ClientWithResponses) SendDeviceCommandWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendDeviceCommandResponse, error) {
 	rsp, err := c.SendDeviceCommandWithBody(ctx, deviceId, contentType, body, reqEditors...)
 	if err != nil {
@@ -33841,8 +34340,13 @@ func (c *ClientWithResponses) SendDeviceCommandWithBodyWithResponse(ctx context.
 	return ParseSendDeviceCommandResponse(rsp)
 }
 
-// SendDeviceCommandWithResponse performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request.
+// SendDeviceCommandWithResponse Send a device command
+//
+// Sends a command to a device and returns when Ring accepts it.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId).
 func (c *ClientWithResponses) SendDeviceCommandWithResponse(ctx context.Context, deviceId DeviceId, body SendDeviceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*SendDeviceCommandResponse, error) {
 	rsp, err := c.SendDeviceCommand(ctx, deviceId, body, reqEditors...)
 	if err != nil {
@@ -33851,12 +34355,13 @@ func (c *ClientWithResponses) SendDeviceCommandWithResponse(ctx context.Context,
 	return ParseSendDeviceCommandResponse(rsp)
 }
 
-// UnlockIntercomWithBodyWithResponse performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request,
-// with any type of body and a specified content type.
+// UnlockIntercomWithBodyWithResponse Unlock an intercom
 //
-// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+// Sends an unlock command to an intercom device.
 //
-// Returns a wrapper object for the known response body format(s).
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId).
 func (c *ClientWithResponses) UnlockIntercomWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UnlockIntercomResponse, error) {
 	rsp, err := c.UnlockIntercomWithBody(ctx, deviceId, contentType, body, reqEditors...)
 	if err != nil {
@@ -33865,10 +34370,13 @@ func (c *ClientWithResponses) UnlockIntercomWithBodyWithResponse(ctx context.Con
 	return ParseUnlockIntercomResponse(rsp)
 }
 
-// UnlockIntercomWithResponse performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request.
+// UnlockIntercomWithResponse Unlock an intercom
+//
+// Sends an unlock command to an intercom device.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+// Corresponds with PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId).
 func (c *ClientWithResponses) UnlockIntercomWithResponse(ctx context.Context, deviceId DeviceId, body UnlockIntercomJSONRequestBody, reqEditors ...RequestEditorFn) (*UnlockIntercomResponse, error) {
 	rsp, err := c.UnlockIntercom(ctx, deviceId, body, reqEditors...)
 	if err != nil {
@@ -33877,9 +34385,13 @@ func (c *ClientWithResponses) UnlockIntercomWithResponse(ctx context.Context, de
 	return ParseUnlockIntercomResponse(rsp)
 }
 
-// ListDevicesWithResponse performs a GET /device_info/v3/devices (the `ListDevices` operationId) request.
+// ListDevicesWithResponse List devices
+//
+// Retrieves the devices available to the authenticated account.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /device_info/v3/devices (the `ListDevices` operationId).
 func (c *ClientWithResponses) ListDevicesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDevicesResponse, error) {
 	rsp, err := c.ListDevices(ctx, reqEditors...)
 	if err != nil {
@@ -33888,9 +34400,13 @@ func (c *ClientWithResponses) ListDevicesWithResponse(ctx context.Context, reqEd
 	return ParseListDevicesResponse(rsp)
 }
 
-// GetDeviceWithResponse performs a GET /device_info/v3/devices/{device_id} (the `GetDevice` operationId) request.
+// GetDeviceWithResponse Get a device
+//
+// Retrieves details for a specific device.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /device_info/v3/devices/{device_id} (the `GetDevice` operationId).
 func (c *ClientWithResponses) GetDeviceWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDeviceResponse, error) {
 	rsp, err := c.GetDevice(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33899,11 +34415,13 @@ func (c *ClientWithResponses) GetDeviceWithResponse(ctx context.Context, deviceI
 	return ParseGetDeviceResponse(rsp)
 }
 
-// GetDeviceSettingsWithResponse performs a GET /devices/v1/devices/{device_id}/settings (the `GetDeviceSettings` operationId) request.
+// GetDeviceSettingsWithResponse Get device settings
 //
-// Captured response is extensible; typed Go API exposes motion_detection_enabled only.
+// Retrieves the current settings for a device.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /devices/v1/devices/{device_id}/settings (the `GetDeviceSettings` operationId).
 func (c *ClientWithResponses) GetDeviceSettingsWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*GetDeviceSettingsResponse, error) {
 	rsp, err := c.GetDeviceSettings(ctx, deviceId, reqEditors...)
 	if err != nil {
@@ -33912,12 +34430,13 @@ func (c *ClientWithResponses) GetDeviceSettingsWithResponse(ctx context.Context,
 	return ParseGetDeviceSettingsResponse(rsp)
 }
 
-// PatchDeviceSettingsWithBodyWithResponse performs a PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId) request,
-// with any type of body and a specified content type.
+// PatchDeviceSettingsWithBodyWithResponse Update device settings
 //
-// The wire schema accepts all captured settings patches. The typed Go API currently sends only motion_settings.motion_detection_enabled.
+// Updates one or more supported settings for a device.
 //
-// Returns a wrapper object for the known response body format(s).
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId).
 func (c *ClientWithResponses) PatchDeviceSettingsWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchDeviceSettingsResponse, error) {
 	rsp, err := c.PatchDeviceSettingsWithBody(ctx, deviceId, contentType, body, reqEditors...)
 	if err != nil {
@@ -33926,10 +34445,13 @@ func (c *ClientWithResponses) PatchDeviceSettingsWithBodyWithResponse(ctx contex
 	return ParsePatchDeviceSettingsResponse(rsp)
 }
 
-// PatchDeviceSettingsWithResponse performs a PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId) request.
+// PatchDeviceSettingsWithResponse Update device settings
+//
+// Updates one or more supported settings for a device.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// The wire schema accepts all captured settings patches. The typed Go API currently sends only motion_settings.motion_detection_enabled.
+// Corresponds with PATCH /devices/v1/devices/{device_id}/settings (the `PatchDeviceSettings` operationId).
 func (c *ClientWithResponses) PatchDeviceSettingsWithResponse(ctx context.Context, deviceId DeviceId, body PatchDeviceSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchDeviceSettingsResponse, error) {
 	rsp, err := c.PatchDeviceSettings(ctx, deviceId, body, reqEditors...)
 	if err != nil {
@@ -33938,10 +34460,13 @@ func (c *ClientWithResponses) PatchDeviceSettingsWithResponse(ctx context.Contex
 	return ParsePatchDeviceSettingsResponse(rsp)
 }
 
-// SetLiveViewEnabledWithBodyWithResponse performs a PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId) request,
-// with any type of body and a specified content type.
+// SetLiveViewEnabledWithBodyWithResponse Set live view availability
 //
-// Returns a wrapper object for the known response body format(s).
+// Enables or disables live view for a device.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId).
 func (c *ClientWithResponses) SetLiveViewEnabledWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetLiveViewEnabledResponse, error) {
 	rsp, err := c.SetLiveViewEnabledWithBody(ctx, deviceId, contentType, body, reqEditors...)
 	if err != nil {
@@ -33950,8 +34475,13 @@ func (c *ClientWithResponses) SetLiveViewEnabledWithBodyWithResponse(ctx context
 	return ParseSetLiveViewEnabledResponse(rsp)
 }
 
-// SetLiveViewEnabledWithResponse performs a PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId) request.
+// SetLiveViewEnabledWithResponse Set live view availability
+//
+// Enables or disables live view for a device.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /duos/v1/devices/{device_id}/update (the `SetLiveViewEnabled` operationId).
 func (c *ClientWithResponses) SetLiveViewEnabledWithResponse(ctx context.Context, deviceId DeviceId, body SetLiveViewEnabledJSONRequestBody, reqEditors ...RequestEditorFn) (*SetLiveViewEnabledResponse, error) {
 	rsp, err := c.SetLiveViewEnabled(ctx, deviceId, body, reqEditors...)
 	if err != nil {
@@ -33960,9 +34490,13 @@ func (c *ClientWithResponses) SetLiveViewEnabledWithResponse(ctx context.Context
 	return ParseSetLiveViewEnabledResponse(rsp)
 }
 
-// GetDeviceTimelineWithResponse performs a GET /evm/v2/timeline/devices/{device_id} (the `GetDeviceTimeline` operationId) request.
+// GetDeviceTimelineWithResponse Get a device timeline
+//
+// Retrieves timeline events for a device within an optional time range.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /evm/v2/timeline/devices/{device_id} (the `GetDeviceTimeline` operationId).
 func (c *ClientWithResponses) GetDeviceTimelineWithResponse(ctx context.Context, deviceId DeviceId, params *GetDeviceTimelineParams, reqEditors ...RequestEditorFn) (*GetDeviceTimelineResponse, error) {
 	rsp, err := c.GetDeviceTimeline(ctx, deviceId, params, reqEditors...)
 	if err != nil {
@@ -33971,9 +34505,13 @@ func (c *ClientWithResponses) GetDeviceTimelineWithResponse(ctx context.Context,
 	return ParseGetDeviceTimelineResponse(rsp)
 }
 
-// GetHistoryDevicesWithResponse performs a GET /evm/v3/history/devices (the `GetHistoryDevices` operationId) request.
+// GetHistoryDevicesWithResponse List account history events
+//
+// Retrieves account history events and feed items, with optional source and capability filters.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /evm/v3/history/devices (the `GetHistoryDevices` operationId).
 func (c *ClientWithResponses) GetHistoryDevicesWithResponse(ctx context.Context, params *GetHistoryDevicesParams, reqEditors ...RequestEditorFn) (*GetHistoryDevicesResponse, error) {
 	rsp, err := c.GetHistoryDevices(ctx, params, reqEditors...)
 	if err != nil {
@@ -33982,9 +34520,13 @@ func (c *ClientWithResponses) GetHistoryDevicesWithResponse(ctx context.Context,
 	return ParseGetHistoryDevicesResponse(rsp)
 }
 
-// ListLocationDevicesWithResponse performs a GET /groups/v1/locations/{location_id}/devices (the `ListLocationDevices` operationId) request.
+// ListLocationDevicesWithResponse List devices at a location
+//
+// Retrieves the devices assigned to a location.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /groups/v1/locations/{location_id}/devices (the `ListLocationDevices` operationId).
 func (c *ClientWithResponses) ListLocationDevicesWithResponse(ctx context.Context, locationId LocationId, reqEditors ...RequestEditorFn) (*ListLocationDevicesResponse, error) {
 	rsp, err := c.ListLocationDevices(ctx, locationId, reqEditors...)
 	if err != nil {
@@ -33993,9 +34535,13 @@ func (c *ClientWithResponses) ListLocationDevicesWithResponse(ctx context.Contex
 	return ParseListLocationDevicesResponse(rsp)
 }
 
-// ListLocationGroupsWithResponse performs a GET /groups/v1/locations/{location_id}/groups (the `ListLocationGroups` operationId) request.
+// ListLocationGroupsWithResponse List device groups at a location
+//
+// Retrieves device groups configured for a location.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /groups/v1/locations/{location_id}/groups (the `ListLocationGroups` operationId).
 func (c *ClientWithResponses) ListLocationGroupsWithResponse(ctx context.Context, locationId LocationId, reqEditors ...RequestEditorFn) (*ListLocationGroupsResponse, error) {
 	rsp, err := c.ListLocationGroups(ctx, locationId, reqEditors...)
 	if err != nil {
@@ -34004,9 +34550,13 @@ func (c *ClientWithResponses) ListLocationGroupsWithResponse(ctx context.Context
 	return ParseListLocationGroupsResponse(rsp)
 }
 
-// ListLocationsWithResponse performs a GET /location_info/v3/locations (the `ListLocations` operationId) request.
+// ListLocationsWithResponse List locations
+//
+// Retrieves locations available to the authenticated account.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /location_info/v3/locations (the `ListLocations` operationId).
 func (c *ClientWithResponses) ListLocationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocationsResponse, error) {
 	rsp, err := c.ListLocations(ctx, reqEditors...)
 	if err != nil {
@@ -34015,9 +34565,13 @@ func (c *ClientWithResponses) ListLocationsWithResponse(ctx context.Context, req
 	return ParseListLocationsResponse(rsp)
 }
 
-// GetLocationWithResponse performs a GET /location_info/v4/locations/{location_id} (the `GetLocation` operationId) request.
+// GetLocationWithResponse Get a location
+//
+// Retrieves details for a specific location, with optional related resources.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /location_info/v4/locations/{location_id} (the `GetLocation` operationId).
 func (c *ClientWithResponses) GetLocationWithResponse(ctx context.Context, locationId LocationId, params *GetLocationParams, reqEditors ...RequestEditorFn) (*GetLocationResponse, error) {
 	rsp, err := c.GetLocation(ctx, locationId, params, reqEditors...)
 	if err != nil {
@@ -34026,12 +34580,13 @@ func (c *ClientWithResponses) GetLocationWithResponse(ctx context.Context, locat
 	return ParseGetLocationResponse(rsp)
 }
 
-// ExchangeOrRefreshOAuthTokenWithBodyWithResponse performs a POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId) request,
-// with any type of body and a specified content type.
+// ExchangeOrRefreshOAuthTokenWithBodyWithResponse Exchange or refresh an OAuth token
 //
-// Existing Go authorization-code PKCE exchange and explicit refresh; legacy password grant remains a fallback only when the OAuth authorize endpoint is unavailable. There is no captured OAuth token exchange.
+// Exchanges an authorization grant for access tokens or refreshes an existing token.
 //
-// Returns a wrapper object for the known response body format(s).
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId).
 func (c *ClientWithResponses) ExchangeOrRefreshOAuthTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExchangeOrRefreshOAuthTokenResponse, error) {
 	rsp, err := c.ExchangeOrRefreshOAuthTokenWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
@@ -34040,10 +34595,13 @@ func (c *ClientWithResponses) ExchangeOrRefreshOAuthTokenWithBodyWithResponse(ct
 	return ParseExchangeOrRefreshOAuthTokenResponse(rsp)
 }
 
-// ExchangeOrRefreshOAuthTokenWithFormdataBodyWithResponse performs a POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId) request.
+// ExchangeOrRefreshOAuthTokenWithFormdataBodyWithResponse Exchange or refresh an OAuth token
+//
+// Exchanges an authorization grant for access tokens or refreshes an existing token.
+//
 // Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
 //
-// Existing Go authorization-code PKCE exchange and explicit refresh; legacy password grant remains a fallback only when the OAuth authorize endpoint is unavailable. There is no captured OAuth token exchange.
+// Corresponds with POST /oauth/token (the `ExchangeOrRefreshOAuthToken` operationId).
 func (c *ClientWithResponses) ExchangeOrRefreshOAuthTokenWithFormdataBodyWithResponse(ctx context.Context, body ExchangeOrRefreshOAuthTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*ExchangeOrRefreshOAuthTokenResponse, error) {
 	rsp, err := c.ExchangeOrRefreshOAuthTokenWithFormdataBody(ctx, body, reqEditors...)
 	if err != nil {
@@ -34052,12 +34610,13 @@ func (c *ClientWithResponses) ExchangeOrRefreshOAuthTokenWithFormdataBodyWithRes
 	return ParseExchangeOrRefreshOAuthTokenResponse(rsp)
 }
 
-// VerifyOAuthTwoFactorCodeWithBodyWithResponse performs a POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId) request,
-// with any type of body and a specified content type.
+// VerifyOAuthTwoFactorCodeWithBodyWithResponse Verify an OAuth two-factor code
 //
-// Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+// Submits a two-factor authentication code to complete OAuth sign-in.
 //
-// Returns a wrapper object for the known response body format(s).
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId).
 func (c *ClientWithResponses) VerifyOAuthTwoFactorCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*VerifyOAuthTwoFactorCodeResponse, error) {
 	rsp, err := c.VerifyOAuthTwoFactorCodeWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
@@ -34066,10 +34625,13 @@ func (c *ClientWithResponses) VerifyOAuthTwoFactorCodeWithBodyWithResponse(ctx c
 	return ParseVerifyOAuthTwoFactorCodeResponse(rsp)
 }
 
-// VerifyOAuthTwoFactorCodeWithFormdataBodyWithResponse performs a POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId) request.
+// VerifyOAuthTwoFactorCodeWithFormdataBodyWithResponse Verify an OAuth two-factor code
+//
+// Submits a two-factor authentication code to complete OAuth sign-in.
+//
 // Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
 //
-// Existing Go PKCE verification request; uses the same cookie-backed session. No C1 capture.
+// Corresponds with POST /oauth/v2/2fa/verify (the `VerifyOAuthTwoFactorCode` operationId).
 func (c *ClientWithResponses) VerifyOAuthTwoFactorCodeWithFormdataBodyWithResponse(ctx context.Context, body VerifyOAuthTwoFactorCodeFormdataRequestBody, reqEditors ...RequestEditorFn) (*VerifyOAuthTwoFactorCodeResponse, error) {
 	rsp, err := c.VerifyOAuthTwoFactorCodeWithFormdataBody(ctx, body, reqEditors...)
 	if err != nil {
@@ -34078,11 +34640,13 @@ func (c *ClientWithResponses) VerifyOAuthTwoFactorCodeWithFormdataBodyWithRespon
 	return ParseVerifyOAuthTwoFactorCodeResponse(rsp)
 }
 
-// BeginOrContinueOAuthAuthorizationWithResponse performs a GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId) request.
+// BeginOrContinueOAuthAuthorizationWithResponse Start or continue OAuth sign-in
 //
-// Existing Go PKCE flow. The first request sends the authorization query parameters; later requests reuse the cookie-backed session and may omit them. Redirect state is checked by the client. This route is not present in the C1 HTTP captures.
+// Starts an OAuth authorization session and requests an authorization code. Redirects may continue an existing sign-in session.
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId).
 func (c *ClientWithResponses) BeginOrContinueOAuthAuthorizationWithResponse(ctx context.Context, params *BeginOrContinueOAuthAuthorizationParams, reqEditors ...RequestEditorFn) (*BeginOrContinueOAuthAuthorizationResponse, error) {
 	rsp, err := c.BeginOrContinueOAuthAuthorization(ctx, params, reqEditors...)
 	if err != nil {
@@ -34091,12 +34655,13 @@ func (c *ClientWithResponses) BeginOrContinueOAuthAuthorizationWithResponse(ctx 
 	return ParseBeginOrContinueOAuthAuthorizationResponse(rsp)
 }
 
-// SubmitOAuthCredentialsWithBodyWithResponse performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request,
-// with any type of body and a specified content type.
+// SubmitOAuthCredentialsWithBodyWithResponse Submit OAuth credentials
 //
-// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
 //
-// Returns a wrapper object for the known response body format(s).
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId).
 func (c *ClientWithResponses) SubmitOAuthCredentialsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitOAuthCredentialsResponse, error) {
 	rsp, err := c.SubmitOAuthCredentialsWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
@@ -34105,10 +34670,13 @@ func (c *ClientWithResponses) SubmitOAuthCredentialsWithBodyWithResponse(ctx con
 	return ParseSubmitOAuthCredentialsResponse(rsp)
 }
 
-// SubmitOAuthCredentialsWithFormdataBodyWithResponse performs a POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId) request.
+// SubmitOAuthCredentialsWithFormdataBodyWithResponse Submit OAuth credentials
+//
+// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
+//
 // Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
 //
-// Existing Go PKCE credential submission using the OAuth cookie jar and CSRF token. Credentials are form data, never query parameters. No C1 capture establishes this flow.
+// Corresponds with POST /oauth/v2/signin (the `SubmitOAuthCredentials` operationId).
 func (c *ClientWithResponses) SubmitOAuthCredentialsWithFormdataBodyWithResponse(ctx context.Context, body SubmitOAuthCredentialsFormdataRequestBody, reqEditors ...RequestEditorFn) (*SubmitOAuthCredentialsResponse, error) {
 	rsp, err := c.SubmitOAuthCredentialsWithFormdataBody(ctx, body, reqEditors...)
 	if err != nil {

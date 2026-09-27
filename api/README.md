@@ -46,6 +46,29 @@ families and history kinds.
 The schema contract tests check captured payloads, open-enum behavior, and
 bounded invalid variants.
 
+## HTTP reference evidence limits
+
+The API reference describes what each operation does. Its operation text does
+not indicate how each contract was established. In particular:
+
+- OAuth authorization, credential submission, two-factor verification, and
+  token exchange follow the current PKCE client behavior; no matching C1 HTTP
+  capture establishes those exchanges. Session registration is also derived
+  from client behavior rather than a C1 capture.
+- Chime volume and doorbell control request shapes include synthetic replay
+  cases. Whether the server requires their `description` query fields is
+  unverified. Device health, the legacy doorbell history route and filters,
+  and active dings have no matching C1 HTTP capture.
+- Recording share playback and the legacy snapshot routes use synthetic replay
+  cases. Recording stream redirects and media hosts are unverified. The
+  captured app-snapshots route has a different, incomplete response shape.
+- The captured GET location tickets route is distinct from the POST signaling
+  bootstrap route, which is backed by client behavior and tests. Intercom
+  unlock follows an external Ring client reference. Push registration follows
+  a source-client contract and is absent from the camera capture.
+- The settings patch contract includes fields beyond the public typed motion
+  setting. Do not infer support for every extensible setting from one capture.
+
 `Device.kind` and `Device.family` remain open strings on the wire. The named
 `DeviceFamilyCode` and device-kind enums are a generated catalog of known
 values used to select public device projections. Add new known hardware to
