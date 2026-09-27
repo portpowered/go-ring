@@ -48,7 +48,7 @@ func run() error {
 		return ringapimodels.NewConnectionError("Devices response is nil", nil)
 	}
 
-	totalDevices := len(devices.Doorbells) + len(devices.Chimes) + len(devices.StickUpCams) + len(devices.Other)
+	totalDevices := len(devices.Devices)
 	if totalDevices == 0 {
 		return ringapimodels.NewBadRequestError("No devices found. Cannot download recordings.", nil)
 	}
@@ -56,22 +56,10 @@ func run() error {
 	fmt.Printf("✓ Found %d total device(s)\n", totalDevices)
 	fmt.Println()
 
-	// Step 2: Select a device (prefer doorbell for recordings)
-	var deviceID string
-	var deviceName string
-
-	switch {
-	case len(devices.Doorbells) > 0:
-		deviceID = devices.Doorbells[0].ID
-		deviceName = devices.Doorbells[0].Name
-		fmt.Printf("Step 2: Selected device: %s (ID: %s, Type: Doorbell)\n", deviceName, deviceID)
-	case len(devices.StickUpCams) > 0:
-		deviceID = devices.StickUpCams[0].ID
-		deviceName = devices.StickUpCams[0].Name
-		fmt.Printf("Step 2: Selected device: %s (ID: %s, Type: StickUp Cam)\n", deviceName, deviceID)
-	default:
-		return ringapimodels.NewBadRequestError("No doorbells or stickup cams found. These device types typically have recordings.", nil)
-	}
+	// Step 2: Select a device. Recording availability is checked by history.
+	deviceID := devices.Devices[0].ID
+	deviceName := devices.Devices[0].Name
+	fmt.Printf("Step 2: Selected device: %s (ID: %s)\n", deviceName, deviceID)
 	fmt.Println()
 
 	// Step 3: Get device history (recordings)

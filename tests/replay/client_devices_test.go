@@ -29,12 +29,7 @@ func TestListDevices_Success(t *testing.T) {
 	assert.Contains(t, req.URL, "/device_info/v3/devices")
 	assert.Equal(t, "Bearer test_token", req.Headers.Get("Authorization"))
 
-	// Verify devices were parsed (check if we have any devices)
-	// The fixture should have doorbells (including authorized doorbells merged in), chimes, stickup cams, and other devices
-	assert.NotNil(t, devices.Doorbells)
-	assert.NotNil(t, devices.Chimes)
-	assert.NotNil(t, devices.StickUpCams)
-	assert.NotNil(t, devices.Other)
+	assert.NotEmpty(t, devices.Devices)
 }
 
 func TestListDevices_Empty(t *testing.T) {
@@ -51,10 +46,7 @@ func TestListDevices_Empty(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, devices)
-	assert.Len(t, devices.Doorbells, 0)
-	assert.Len(t, devices.Chimes, 0)
-	assert.Len(t, devices.StickUpCams, 0)
-	assert.Len(t, devices.Other, 0)
+	assert.Empty(t, devices.Devices)
 }
 
 func TestGetDevice_Found(t *testing.T) {
@@ -68,24 +60,14 @@ func TestGetDevice_Found(t *testing.T) {
 	require.NoError(t, err)
 
 	// Get a device (should use the first one from the list)
-	var deviceID string
-	switch {
-	case len(devices.Doorbells) > 0:
-		deviceID = devices.Doorbells[0].ID
-	case len(devices.Chimes) > 0:
-		deviceID = devices.Chimes[0].ID
-	case len(devices.StickUpCams) > 0:
-		deviceID = devices.StickUpCams[0].ID
-	case len(devices.Other) > 0:
-		deviceID = devices.Other[0].ID
-	default:
+	if len(devices.Devices) == 0 {
 		t.Skip("No devices in fixture to test GetDevice")
-		return
 	}
+	deviceID := devices.Devices[0].ID
 	device, err := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: deviceID})
 	require.NoError(t, err)
 	require.NotNil(t, device)
-	assert.Equal(t, deviceID, device.GetID())
+	assert.Equal(t, deviceID, device.ID)
 }
 
 func TestGetDevice_NotFound(t *testing.T) {
@@ -148,7 +130,7 @@ func TestUpdateDeviceHealth_NotFound(t *testing.T) {
 	}
 }
 
-func TestGetAllDevices(t *testing.T) {
+func TestListDevicesContainsGenericDevices(t *testing.T) {
 	client, _ := newTestClientWithMockTransport()
 	defer func() { _ = client.Close() }()
 
@@ -156,8 +138,7 @@ func TestGetAllDevices(t *testing.T) {
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.NoError(t, err)
 
-	allDevices := devices.GetAllDevices()
-	assert.NotNil(t, allDevices)
+	allDevices := devices.Devices
 	// Should have at least some devices from the fixture
 	assert.Greater(t, len(allDevices), 0)
 }

@@ -25,6 +25,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(len(devices.Doorbells))
+	fmt.Println(len(devices.Devices))
 	return nil
 }

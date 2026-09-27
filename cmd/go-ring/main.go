@@ -209,8 +209,8 @@ func listDevices(ctx context.Context, client *ring.Client, auth ring.AuthContext
 	if err != nil {
 		return err
 	}
-	for _, device := range devices.GetAllDevices() {
-		_, _ = fmt.Fprintf(out, "%s\t%s\t%s\n", device.GetID(), device.GetName(), device.GetFamily())
+	for _, device := range devices.Devices {
+		_, _ = fmt.Fprintf(out, "%s\t%s\t%s\n", device.ID, device.Name, device.Family)
 	}
 	return nil
 }

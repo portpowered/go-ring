@@ -60,26 +60,26 @@ func TestRecordedDeviceListAndGetDevice(t *testing.T) {
 		)
 		require.NoError(t, err)
 		ctx := context.Background()
-		var cams []ringapimodels.StickUpCam
+		var cams []ringapimodels.Device
 		if lookup {
 			device, getErr := client.GetDevice(ctx, ring.GetDeviceRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}, DeviceID: fmt.Sprint(id)})
 			require.NoError(t, getErr)
-			cam, ok := device.(*ringapimodels.StickUpCam)
-			require.True(t, ok)
-			cams = []ringapimodels.StickUpCam{*cam}
+			cams = []ringapimodels.Device{*device}
 		} else {
 			devices, listErr := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}})
 			require.NoError(t, listErr)
-			require.Len(t, devices.StickUpCams, 1)
-			cams = devices.StickUpCams
+			require.Len(t, devices.Devices, 1)
+			cams = devices.Devices
 		}
 		require.Len(t, cams, 1)
-		require.Equal(t, fmt.Sprint(id), cams[0].GetID())
-		require.Equal(t, name, cams[0].GetName())
-		require.Equal(t, kind, cams[0].Description)
-		require.Equal(t, ringapimodels.DeviceFamilyStickUpCam, cams[0].GetFamily())
-		require.Equal(t, address, cams[0].GetAddress())
-		require.Equal(t, timezone, cams[0].GetTimezone())
+		require.Equal(t, fmt.Sprint(id), cams[0].ID)
+		require.Equal(t, name, cams[0].Name)
+		require.Equal(t, kind, cams[0].Kind)
+		require.Empty(t, cams[0].Family, "v3 capture does not declare a family")
+		require.Equal(t, address, cams[0].Address)
+		require.Equal(t, timezone, cams[0].Timezone)
+		require.True(t, cams[0].Supports(ringapimodels.DeviceCapabilityPtzPanStep))
+		require.True(t, cams[0].Supports(ringapimodels.DeviceCapabilityLiveView))
 		require.NoError(t, transport.AssertConsumed())
 	}
 }
@@ -105,7 +105,7 @@ func TestRecordedDeviceListAcrossRegionsAndEndpointOverrides(t *testing.T) {
 			require.NoError(t, err)
 			devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}})
 			require.NoError(t, err)
-			require.Len(t, devices.StickUpCams, 1)
+			require.Len(t, devices.Devices, 1)
 			require.NoError(t, transport.AssertConsumed())
 		}
 	}

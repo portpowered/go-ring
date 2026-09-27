@@ -13,25 +13,24 @@ import (
 )
 
 // Each synthetic response uses the captured device-list request/response
-// envelope, while varying the hardware identity through the generated schema.
-func TestDeviceFamilyCatalogReplay(t *testing.T) {
+// envelope and preserves hardware identity without client-side classification.
+func TestDeviceIdentityReplay(t *testing.T) {
 	for _, tc := range []struct {
 		kind   string
 		family *string
-		want   generatedhttp.DeviceFamilyCode
 	}{
-		{kind: "doorbell_oyster", want: generatedhttp.Doorbots},
-		{kind: "lpd_v4", want: generatedhttp.Doorbots},
-		{kind: "df_doorbell_clownfish", want: generatedhttp.Doorbots},
-		{kind: "chime_pro_v2", want: generatedhttp.Chimes},
-		{kind: "hp_cam_v1", want: generatedhttp.StickupCams},
-		{kind: "hp_cam_v2", want: generatedhttp.StickupCams},
-		{kind: "stickup_cam_mini_ptz_v1", want: generatedhttp.StickupCams},
-		{kind: "cocoa_camera", want: generatedhttp.StickupCams},
-		{kind: "intercom_handset_video", want: generatedhttp.Other},
-		{kind: "beams_ct200_transformer", want: generatedhttp.Other},
-		{kind: "future_model", want: generatedhttp.Other},
-		{kind: "future_model_with_family", family: familyPointer(generatedhttp.StickupCams), want: generatedhttp.StickupCams},
+		{kind: "doorbell_oyster"},
+		{kind: "lpd_v4"},
+		{kind: "df_doorbell_clownfish"},
+		{kind: "chime_pro_v2"},
+		{kind: "hp_cam_v1"},
+		{kind: "hp_cam_v2"},
+		{kind: "stickup_cam_mini_ptz_v1"},
+		{kind: "cocoa_camera"},
+		{kind: "intercom_handset_video"},
+		{kind: "beams_ct200_transformer"},
+		{kind: "future_model"},
+		{kind: "future_model_with_family", family: familyPointer(generatedhttp.StickupCams)},
 	} {
 		t.Run(tc.kind, func(t *testing.T) {
 			x := deviceListExchange(t, "https://api.ring.com")
@@ -44,16 +43,12 @@ func TestDeviceFamilyCatalogReplay(t *testing.T) {
 			defer func() { _ = client.Close() }()
 			devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "recorded-test-token"}})
 			require.NoError(t, err)
-			switch tc.want {
-			case generatedhttp.Doorbots:
-				require.Len(t, devices.Doorbells, 1)
-			case generatedhttp.Chimes:
-				require.Len(t, devices.Chimes, 1)
-			case generatedhttp.StickupCams:
-				require.Len(t, devices.StickUpCams, 1)
-			default:
-				require.Len(t, devices.Other, 1)
-				require.Equal(t, tc.kind, devices.Other[0].Kind)
+			require.Len(t, devices.Devices, 1)
+			require.Equal(t, tc.kind, devices.Devices[0].Kind)
+			if tc.family == nil {
+				require.Empty(t, devices.Devices[0].Family)
+			} else {
+				require.Equal(t, *tc.family, devices.Devices[0].Family)
 			}
 			require.NoError(t, transport.AssertConsumed())
 		})

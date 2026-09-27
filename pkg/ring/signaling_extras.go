@@ -264,9 +264,12 @@ func (s *PlaybackSession) terminate(err error) {
 	})
 }
 func (s *PlaybackSession) keepalive(ctx context.Context, interval time.Duration) {
+	s.keepaliveFor(ctx, interval, signaling.MaxSessionAge)
+}
+func (s *PlaybackSession) keepaliveFor(ctx context.Context, interval, lifetime time.Duration) {
 	ping := time.NewTicker(interval)
 	defer ping.Stop()
-	expiry := time.NewTimer(signaling.MaxSessionAge)
+	expiry := time.NewTimer(lifetime)
 	defer expiry.Stop()
 	for {
 		select {

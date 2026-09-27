@@ -67,20 +67,29 @@ type AuthResponse struct {
 	TokenType string `json:"token_type"`
 }
 
-// Chime defines model for Chime.
-type Chime struct {
-	Address string `json:"address"`
+// Device One account device. An absent capability means support was not confirmed by inventory; it does not prove the operation is unsupported.
+type Device struct {
+	Address      string             `json:"address"`
+	Capabilities []DeviceCapability `json:"capabilities"`
 
-	// Family Known family is chimes; unknown families remain valid.
-	Family             string        `json:"family"`
-	Health             *DeviceHealth `json:"health,omitempty"`
-	ID                 string        `json:"id"`
-	Name               string        `json:"name"`
-	Timezone           string        `json:"timezone"`
-	Volume             int           `json:"volume"`
-	WifiName           string        `json:"wifi_name"`
-	WifiSignalStrength int           `json:"wifi_signal_strength"`
+	// Family Open server family; absent on some v3 responses
+	Family string        `json:"family"`
+	Health *DeviceHealth `json:"health,omitempty"`
+	ID     string        `json:"id"`
+
+	// Kind Open hardware kind from the server
+	Kind                   string  `json:"kind"`
+	LightBrightness        *int    `json:"light_brightness,omitempty"`
+	MotionDetectionEnabled *bool   `json:"motion_detection_enabled,omitempty"`
+	Name                   string  `json:"name"`
+	Timezone               string  `json:"timezone"`
+	Volume                 *int    `json:"volume,omitempty"`
+	WifiName               *string `json:"wifi_name,omitempty"`
+	WifiSignalStrength     *int    `json:"wifi_signal_strength,omitempty"`
 }
+
+// DeviceCapability A supported operation confirmed by an explicit inventory field. Unknown server capabilities remain representable.
+type DeviceCapability = string
 
 // DeviceHealth defines model for DeviceHealth.
 type DeviceHealth struct {
@@ -93,28 +102,7 @@ type DeviceHealth struct {
 
 // DevicesResponse defines model for DevicesResponse.
 type DevicesResponse struct {
-	Chimes      []Chime      `json:"chimes"`
-	Doorbells   []Doorbell   `json:"doorbots"`
-	Other       []Other      `json:"other"`
-	StickUpCams []StickUpCam `json:"stickup_cams"`
-}
-
-// Doorbell defines model for Doorbell.
-type Doorbell struct {
-	Address string `json:"address"`
-
-	// Family Known family is doorbots; unknown families remain valid.
-	Family                 string        `json:"family"`
-	HasLight               bool          `json:"has_light"`
-	Health                 *DeviceHealth `json:"health,omitempty"`
-	ID                     string        `json:"id"`
-	LightBrightness        *int          `json:"light_brightness,omitempty"`
-	MotionDetectionEnabled bool          `json:"motion_detection_enabled"`
-	Name                   string        `json:"name"`
-	Timezone               string        `json:"timezone"`
-	Volume                 int           `json:"volume"`
-	WifiName               string        `json:"wifi_name"`
-	WifiSignalStrength     int           `json:"wifi_signal_strength"`
+	Devices []Device `json:"devices"`
 }
 
 // Event defines model for Event.
@@ -140,21 +128,6 @@ type InHomeChimeSettings struct {
 // LightState Legacy floodlight action.
 type LightState string
 
-// Other defines model for Other.
-type Other struct {
-	Address string `json:"address"`
-
-	// Family Known families include other; unknown families remain valid.
-	Family string        `json:"family"`
-	Health *DeviceHealth `json:"health,omitempty"`
-	ID     string        `json:"id"`
-
-	// Kind Known legacy kinds include intercom_handset_audio; unfamiliar hardware kinds remain valid.
-	Kind     string `json:"kind"`
-	Name     string `json:"name"`
-	Timezone string `json:"timezone"`
-}
-
 // Recording defines model for Recording.
 type Recording struct {
 	Answered  bool   `json:"answered"`
@@ -173,25 +146,6 @@ type RecordingHistoryResponse struct {
 
 // SoundKind Accepted legacy chime test sounds.
 type SoundKind string
-
-// StickUpCam defines model for StickUpCam.
-type StickUpCam struct {
-	Address     string `json:"address"`
-	Description string `json:"description"`
-
-	// Family Known family is stickup_cams; unknown families remain valid.
-	Family                 string        `json:"family"`
-	HasLight               bool          `json:"has_light"`
-	Health                 *DeviceHealth `json:"health,omitempty"`
-	ID                     string        `json:"id"`
-	LightBrightness        *int          `json:"light_brightness,omitempty"`
-	MotionDetectionEnabled bool          `json:"motion_detection_enabled"`
-	Name                   string        `json:"name"`
-	Timezone               string        `json:"timezone"`
-	Volume                 int           `json:"volume"`
-	WifiName               string        `json:"wifi_name"`
-	WifiSignalStrength     int           `json:"wifi_signal_strength"`
-}
 
 // VolumeKind Legacy volume control target; selects the chime or doorbell endpoint.
 type VolumeKind string

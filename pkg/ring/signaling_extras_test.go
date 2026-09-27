@@ -438,3 +438,32 @@ func TestSessionKeepalivesStopWithOwnerCancellation(t *testing.T) {
 		})
 	}
 }
+
+func TestPlaybackLifetimeExpiresAndSendsClose(t *testing.T) {
+	connection, writes := replayConnection(t)
+	session := &PlaybackSession{
+		connection: connection, dialog: "lifetime", riid: "request", id: "session",
+		deviceID: 1000, done: make(chan struct{}),
+	}
+	finished := make(chan struct{})
+	go func() {
+		session.keepaliveFor(context.Background(), time.Hour, time.Millisecond)
+		close(finished)
+	}()
+	select {
+	case <-finished:
+	case <-time.After(time.Second):
+		t.Fatal("playback lifetime did not expire")
+	}
+	select {
+	case message := <-writes:
+		if message.Method != protocol.MethodClose {
+			t.Fatalf("expired playback sent %s, want close", message.Method)
+		}
+	default:
+		t.Fatal("expired playback did not send close")
+	}
+	if !errors.Is(session.terminal, signaling.ErrClosed) {
+		t.Fatalf("terminal error = %v, want closed", session.terminal)
+	}
+}

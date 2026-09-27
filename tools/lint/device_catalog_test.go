@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-// Classification tokens belong in OpenAPI, which generates the Go enums.
+// RPC names belong in internal/protocol, not in the public device projection.
 // goconst catches repeated literals; this check catches even one-off tokens.
-func TestDeviceClassifierUsesOnlyGeneratedTokens(t *testing.T) {
+func TestDeviceCapabilitiesUseProtocolTokens(t *testing.T) {
 	path := filepath.Join("..", "..", "pkg", "ring", "client_devices.go")
 	file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
 	if err != nil {
@@ -19,7 +19,7 @@ func TestDeviceClassifierUsesOnlyGeneratedTokens(t *testing.T) {
 	}
 	for _, declaration := range file.Decls {
 		function, ok := declaration.(*ast.FuncDecl)
-		if !ok || function.Name.Name != "classifyDevice" {
+		if !ok || function.Name.Name != "deviceCapabilities" {
 			continue
 		}
 		ast.Inspect(function.Body, func(node ast.Node) bool {
@@ -31,11 +31,11 @@ func TestDeviceClassifierUsesOnlyGeneratedTokens(t *testing.T) {
 			if err != nil {
 				t.Errorf("invalid string literal: %v", err)
 			} else if value != "" {
-				t.Errorf("device classifier has hardcoded token %q; add it to api/openapi.yaml", value)
+				t.Errorf("device capability mapping has hardcoded token %q; add it to internal/protocol", value)
 			}
 			return true
 		})
 		return
 	}
-	t.Fatal("device classifier function not found")
+	t.Fatal("device capability mapping function not found")
 }

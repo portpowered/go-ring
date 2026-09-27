@@ -67,7 +67,7 @@ All three Go reports use the same maintained-code denominator: handwritten
 statements in `pkg` and `internal`. Generated HTTP/signaling code, generated
 public models, testkit, examples, tests, and tools are excluded. The combined
 run targets only replay and co-located unit tests, so examples or tool tests
-cannot inflate it. Use the [migration test mapping](../plans/porting-progress.md)
+cannot inflate it. Use the [replay formats](replay-format.md)
 to compare behavior case by case, then use replay coverage to find
 unexercised Go paths.
 
