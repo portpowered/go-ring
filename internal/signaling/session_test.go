@@ -32,6 +32,12 @@ type syntheticSocketFailureError struct{}
 
 func (syntheticSocketFailureError) Error() string { return "synthetic socket failure" }
 
+func TestTerminalErrorNamesAreStable(t *testing.T) {
+	if got := ErrClosed.Error(); got != "session closed" {
+		t.Fatalf("closed error text = %q", got)
+	}
+}
+
 func newClock() *fakeClock          { return &fakeClock{now: time.Unix(1700000000, 0)} }
 func (c *fakeClock) Now() time.Time { c.mu.Lock(); defer c.mu.Unlock(); return c.now }
 func (c *fakeClock) After(d time.Duration) <-chan time.Time {

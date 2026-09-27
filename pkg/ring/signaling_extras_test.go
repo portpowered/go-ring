@@ -411,3 +411,30 @@ func TestPushBackpressureIsolatesDialog(t *testing.T) {
 		t.Fatal("other dialog stopped receiving after push backpressure")
 	}
 }
+
+func TestSessionKeepalivesStopWithOwnerCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	connection := &SignalingConnection{done: make(chan struct{})}
+	for _, test := range []struct {
+		name string
+		run  func()
+	}{
+		{"push", func() {
+			(&PushSubscription{connection: connection, done: make(chan struct{})}).heartbeatAt(ctx, time.Hour)
+		}},
+		{"playback", func() {
+			(&PlaybackSession{connection: connection, done: make(chan struct{})}).keepalive(ctx, time.Hour)
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			completed := make(chan struct{})
+			go func() { test.run(); close(completed) }()
+			select {
+			case <-completed:
+			case <-time.After(time.Second):
+				t.Fatal("keepalive ignored owner cancellation")
+			}
+		})
+	}
+}

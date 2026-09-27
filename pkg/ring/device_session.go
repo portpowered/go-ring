@@ -101,11 +101,7 @@ func (c *SignalingConnection) StartDeviceSession(ctx context.Context, req StartD
 	c.mu.Unlock()
 	cleanup := func() { c.mu.Lock(); delete(c.pending, dialog); c.mu.Unlock() }
 	body := generatedsignaling.LiveViewBody{DoorbotId: int(id), StreamOptions: &generatedsignaling.LiveStreamOptions{AudioEnabled: req.AudioEnabled, VideoEnabled: req.VideoEnabled}, Sdp: req.Offer.SDP, ReservedType: protocol.SDPTypeOffer}
-	raw, err := json.Marshal(body)
-	if err != nil {
-		cleanup()
-		return nil, ringapimodels.NewInternalServerError("failed to encode live-view offer", err)
-	}
+	raw := mustJSON(body)
 	if err = c.send(negotiationCtx, signaling.Message{Method: protocol.MethodLiveView, DialogID: dialog, Body: raw}); err != nil {
 		cleanup()
 		return nil, sessionError("failed to send live-view offer", err)
