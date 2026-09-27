@@ -9,15 +9,6 @@
 A Go client for Ring authentication, device discovery and controls, recordings,
 and persistent signaling sessions.
 
-## API reference
-
-The [go-ring API reference](https://portpowered.github.io/go-ring/) is rendered
-with Fumadocs from the supported Ring HTTP and
-signaling contracts in
-[`api/openapi.yaml`](api/openapi.yaml) and [`api/asyncapi.yaml`](api/asyncapi.yaml).
-The reference documents third-party APIs observed and modeled by this project;
-it does not describe a public API offered by go-ring itself. The GitHub Pages
-workflow rebuilds it when either contract changes.
 
 This is a bit unique compared to other ring-doorbell libraries since: 
 1. It supports PTZ over signaling WebSockets and newer API versions.
@@ -219,11 +210,12 @@ For `TiltContinuous`, stop with `ring.TiltAxis`. See the
 | Receive push events | [session_push_events](examples/session_push_events/session_push_events.go) | `go run ./examples/session_push_events` | `RING_DEVICE_ID` |
 | Download recordings | [download-recordings](examples/download-recordings/main.go) | `go run ./examples/download-recordings` | See example source |
 
-## CLI quick start
+## API reference
 
-Build the diagnostic CLI from its separate Go module. It uses the public
-library, saves login tokens locally, and needs FFmpeg for snapshots and the
-default live preview.
+The Ring actual APIs are visualized at [go-ring API reference](https://portpowered.github.io/go-ring/).
+
+## CLI quick start
+We have a small diagnostic CLI you can test
 
 ```sh
 git clone https://github.com/portpowered/go-ring.git
@@ -236,64 +228,7 @@ go build -o go-ring .
 ./go-ring view <device-id> --continuous
 ./go-ring events watch <device-id> --duration 60s
 ```
-
-Use the arrow keys to pan or tilt during `view`, Space to stop continuous
-movement, and `q` to leave. On Windows, run `go build -o go-ring.exe .` and
-`./go-ring.exe ...`. To investigate decoder warnings, add
-`--record-rtp camera.rtp` to `view`, then use
-`./go-ring replay-video camera.rtp --output camera.h264` for offline playback.
-The recording contains camera footage. `events watch` registers an account-scoped
-FCM receiver, subscribes to camera motion, and stores its credentials privately
-for reconnection. Registration and connection do not guarantee that a motion
-notification will occur during the watch window. See the [CLI guide](cmd/go-ring/README.md)
-for health, reboot, chime sound, and capture details.
-
-For a compact device status, pass the same authentication context and device ID:
-
-```go
-status, err := client.GetDeviceStatus(ctx, ring.GetDeviceDetailRequest{Auth: auth, DeviceID: deviceID})
-if err != nil { return err }
-fmt.Printf("offline: %t\n", status.IsOffline)
-if status.BatteryPercent != nil {
-    fmt.Printf("battery: %.0f%%\n", *status.BatteryPercent)
-}
-```
-
-An intercom can be unlocked by ID. A successful call means Ring accepted the
-command; it does not establish that the door physically opened.
-
-```go
-err := client.UnlockIntercom(ctx, ring.DeviceIDRequest{Auth: auth, DeviceID: intercomID})
-if err != nil { return err }
-```
-
-To receive ding or motion events, keep one FCM connection open for the account.
-Persist each credentials event securely and pass it back on reconnect. The
-`Client` does not retain credentials or account authorization.
-
-```go
-push, err := client.ConnectPush(ctx, ring.ConnectPushRequest{
-    Auth: auth, DeviceIDs: []string{deviceID}, Ding: true, Motion: true,
-    Credentials: savedFCMCredentials,
-})
-if err != nil { return err }
-defer push.Close()
-for event := range push.Events() {
-    switch event.Kind {
-    case ring.PushCredentials:
-        if err := saveSecurely(event.Credentials); err != nil { return err }
-    case ring.PushMessage:
-        fmt.Printf("device=%s action=%s\n", event.DeviceID, event.Action)
-    case ring.PushRetry:
-        return event.Err
-    }
-}
-```
-
-The FCM transport was live-tested through registration and connection with a
-camera. Ding, motion, and intercom unlock delivery remain source-contract tests
-until those events can be triggered and observed on real devices.
-
+See the [CLI guide](cmd/go-ring/README.md) for more details. 
 ## Supported operations
 
 `Client` handles authentication and HTTP requests. `SignalingConnection` owns
