@@ -25,7 +25,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: token}
 	if err := client.RebootDevice(context.Background(), ring.DeviceIDRequest{Auth: auth, DeviceID: deviceID}); err != nil {
 		return err

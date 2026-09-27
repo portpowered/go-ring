@@ -68,7 +68,7 @@ func TestAccountRequestScopeReplay(t *testing.T) {
 	defer server.Close()
 	client, err := ring.NewClient(ring.WithHTTPClient(server.Client()), ring.WithEndpoints(ring.Endpoints{APIBaseURL: server.URL}))
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	var group sync.WaitGroup
 	for _, account := range accounts {
 		group.Add(1)
@@ -112,7 +112,7 @@ func TestLoginSessionsDoNotAuthorizeSharedClient(t *testing.T) {
 	defer server.Close()
 	client, err := ring.NewClient(ring.WithHTTPClient(server.Client()), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: server.URL}))
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	var group sync.WaitGroup
 	for _, account := range accounts {
 		group.Add(1)
@@ -166,7 +166,7 @@ func TestSignalingConnectionsBindRequestAccount(t *testing.T) {
 			}
 			conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
 			if err == nil {
-				defer conn.Close()
+				defer func() { _ = conn.Close() }()
 				for {
 					if _, _, err = conn.ReadMessage(); err != nil {
 						return
@@ -184,7 +184,7 @@ func TestSignalingConnectionsBindRequestAccount(t *testing.T) {
 		ring.WithSignalingWebSocketURL("ws"+strings.TrimPrefix(server.URL, "http")+"/ws?ticket={token}"),
 	)
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	for _, account := range accounts {
 		conn, openErr := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
 		require.NoError(t, openErr)
@@ -206,13 +206,13 @@ func TestEventConnectionsUseRequestAccount(t *testing.T) {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		_ = conn.WriteJSON(map[string]any{"kind": "ding", "device_id": 123})
 	}))
 	defer server.Close()
 	client, err := ring.NewClient(ring.WithEventWebSocketURL("ws" + strings.TrimPrefix(server.URL, "http")))
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	for _, account := range accounts {
 		conn, connectErr := client.ConnectEvents(context.Background(), ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
 		require.NoError(t, connectErr)
@@ -235,7 +235,7 @@ func TestGeneratedTicketRequestUsesAccountScope(t *testing.T) {
 	defer server.Close()
 	client, err := ring.NewClient(ring.WithHTTPClient(server.Client()), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: server.URL}))
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	ticket, err := client.GetCapturedTickets(context.Background(), ring.GetCapturedTicketsRequest{Auth: ring.AuthContext{AccessToken: account.AccessToken, HardwareID: account.HardwareID}})
 	require.NoError(t, err)
 	require.Equal(t, "synthetic-ticket", ticket.Ticket)
@@ -304,7 +304,7 @@ func TestConcurrentPKCELoginSessionsKeepChallengesSeparate(t *testing.T) {
 	defer server.Close()
 	client, err := ring.NewClient(ring.WithHTTPClient(server.Client()), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: server.URL}))
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	var group sync.WaitGroup
 	for _, account := range accounts {
 		group.Add(1)
@@ -315,7 +315,7 @@ func TestConcurrentPKCELoginSessionsKeepChallengesSeparate(t *testing.T) {
 				t.Error(flowErr)
 				return
 			}
-			defer flow.Close()
+			defer func() { _ = flow.Close() }()
 			if err := flow.Request2FACode(context.Background()); err != nil {
 				t.Error(err)
 				return

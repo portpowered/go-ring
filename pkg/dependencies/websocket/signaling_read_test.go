@@ -30,7 +30,7 @@ func TestReadSignalingPreservesDecoderAndCloseCauses(t *testing.T) {
 				if err != nil {
 					return
 				}
-				defer peer.Close()
+				defer func() { _ = peer.Close() }()
 				_ = peer.WriteMessage(tc.frameType, tc.payload)
 			}))
 			defer server.Close()
@@ -38,7 +38,7 @@ func TestReadSignalingPreservesDecoderAndCloseCauses(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer conn.Close()
+			defer func() { _ = conn.Close() }()
 			err = ReadSignaling(conn, func(signaling.Message) { t.Fatal("unexpected valid message") })
 			if !ringerrors.IsConnectionError(err) {
 				t.Fatalf("read error is not typed: %v", err)

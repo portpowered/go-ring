@@ -61,7 +61,7 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 			serverErr <- err
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		if r.URL.Query().Get("token") != "view-ticket" {
 			serverErr <- fmt.Errorf("missing ticket")
 			return
@@ -86,7 +86,7 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 			serverErr <- err
 			return
 		}
-		defer peer.Close()
+		defer func() { _ = peer.Close() }()
 		track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8}, "video", "camera")
 		if err != nil {
 			serverErr <- err

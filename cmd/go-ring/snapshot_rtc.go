@@ -29,7 +29,7 @@ func captureRTCSnapshot(parent context.Context, client *ring.Client, auth ring.A
 	if err != nil {
 		return nil, err
 	}
-	defer pc.Close()
+	defer func() { _ = pc.Close() }()
 	frames := make(chan frameResult, 1)
 	pc.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
 		image, err := captureTrackFrame(ctx, track)
@@ -45,8 +45,8 @@ func captureRTCSnapshot(parent context.Context, client *ring.Client, auth ring.A
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
-	defer session.Close()
+	defer func() { _ = conn.Close() }()
+	defer func() { _ = session.Close() }()
 	events := make(chan error, 1)
 	go receiveICE(ctx, session, pc, events)
 	select {
@@ -85,7 +85,7 @@ func captureTrackFrame(ctx context.Context, track *webrtc.TrackRemote) ([]byte, 
 		return nil, err
 	}
 	go func() {
-		defer writer.Close()
+		defer func() { _ = writer.Close() }()
 		for {
 			packet, _, readErr := track.ReadRTP()
 			if readErr != nil || writer.WriteRTP(packet) != nil {

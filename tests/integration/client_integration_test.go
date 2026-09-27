@@ -36,7 +36,7 @@ func TestAuthentication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Try to authenticate
 	authResp, err := client.Authenticate(ctx, ring.AuthenticateRequest{
@@ -85,7 +85,7 @@ func TestTokenRefresh(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	authResp, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
 		RefreshToken: refreshToken,
@@ -115,7 +115,7 @@ func TestDeviceEnumeration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
 	if err != nil {
@@ -159,7 +159,7 @@ func TestGetDevice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// First, list devices to get an ID
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
@@ -209,7 +209,7 @@ func TestRecordingDownload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// List devices
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
@@ -274,7 +274,7 @@ func TestDeviceControl(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// List devices
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
@@ -338,7 +338,7 @@ func TestEventRegistration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Connect to events
 	conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: accessToken}})
@@ -347,7 +347,7 @@ func TestEventRegistration(t *testing.T) {
 		t.Logf("Note: Event connection failed (this may be expected): %v", err)
 		t.Skip("Skipping test: Event connection not available")
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	t.Log("Successfully connected to event stream")
 

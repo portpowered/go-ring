@@ -63,7 +63,7 @@ func TestPortableOAuthCSRFPages(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 			_, err = client.Authenticate(context.Background(), ring.AuthenticateRequest{HardwareID: "fixture-hardware", Username: "fixture-user", Password: "fixture-password"})
 			if !ringapimodels.IsAuthenticationError(err) || transport.signin != (tc.Expected != "") {
 				t.Fatalf("CSRF page behavior: signin=%t error=%v", transport.signin, err)
@@ -135,7 +135,7 @@ func TestPortableOAuthFailureStages(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 			var got error
 			if tc.Stage == "refresh" {
 				_, got = client.RefreshToken(context.Background(), ring.RefreshTokenRequest{HardwareID: "fixture-hardware", RefreshToken: "fixture-refresh"})

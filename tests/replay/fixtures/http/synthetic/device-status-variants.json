@@ -1,0 +1,8 @@
+[
+  {"name":"unknown","device":{},"offline":false,"battery":null,"connection":null},
+  {"name":"offline-text-battery","device":{"alerts":{"connection":"offline"},"battery_life":"52"},"offline":true,"battery":52,"connection":"offline"},
+  {"name":"health-connected","device":{"health":{"connected":true,"battery_level":74}},"offline":false,"battery":74,"connection":"online"},
+  {"name":"battery-not-present","device":{"battery_life":65,"health":{"battery_present":false}},"offline":false,"battery":null,"connection":null},
+  {"name":"wired-backup-battery","device":{"settings":{"power_mode":"wired"},"health":{"battery_present":true,"battery_percentage":81}},"offline":false,"battery":81,"connection":null},
+  {"name":"out-of-range-hardware-value","device":{"battery_life":4081},"offline":false,"battery":null,"connection":null}
+]

@@ -54,7 +54,7 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration) *WebSocketServer 
 		w.mu.Lock()
 		w.active = c
 		w.mu.Unlock()
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 		defer func() { w.mu.Lock(); w.active = nil; w.mu.Unlock() }()
 		for i, s := range steps {
 			_ = c.SetReadDeadline(time.Now().Add(timeout))

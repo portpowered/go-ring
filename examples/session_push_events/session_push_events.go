@@ -31,13 +31,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: token}
 	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	subscription, err := conn.SubscribePush(ctx, []ring.PushFilter{{
 		FilterIdentifier:  "device-events",
 		Filters:           ring.PushFilters{DoorbotIDs: []int64{deviceID}},
@@ -47,7 +47,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer subscription.Close()
+	defer func() { _ = subscription.Close() }()
 
 	fmt.Println("Listening for device push events; Ctrl+C closes the subscription.")
 	for {

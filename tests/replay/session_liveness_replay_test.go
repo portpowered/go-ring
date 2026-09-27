@@ -106,7 +106,7 @@ func TestRecordedPTZReplyMutationAndCancellation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer session.Close()
+			defer func() { _ = session.Close() }()
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			result := make(chan error, 1)

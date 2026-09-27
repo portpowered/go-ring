@@ -53,7 +53,7 @@ func TestRecordedSignalingResponseVariants(t *testing.T) {
 				_ = c.WriteJSON(map[string]any{"method": response, "dialog_id": request["dialog_id"], "body": payload})
 				_, _, _ = c.ReadMessage()
 			})
-			defer conn.Close()
+			defer func() { _ = conn.Close() }()
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			if tc.Flow == "push" {

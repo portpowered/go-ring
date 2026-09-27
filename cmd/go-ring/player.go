@@ -59,7 +59,7 @@ func playTrack(ctx context.Context, track *webrtc.TrackRemote, recordPath string
 		if err != nil {
 			return err
 		}
-		defer recording.Close()
+		defer func() { _ = recording.Close() }()
 	}
 	if _, err := exec.LookPath(ffplayCommand); err != nil {
 		return errors.New("ffplay is required for preview; install FFmpeg or use --player none")

@@ -181,7 +181,11 @@ func TestRecordedPTZConversations(t *testing.T) {
 							t.Fatal(err)
 						}
 						sessions[m.DialogID] = s
-						t.Cleanup(func() { s.Close() })
+						t.Cleanup(func() {
+							if err := s.Close(); err != nil {
+								t.Error(err)
+							}
+						})
 					}
 					params := map[string]any{}
 					for k, v := range body.Command.Params {
@@ -309,7 +313,7 @@ func TestRecordedPTZCommandsIndividually(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer s.Close()
+				defer func() { _ = s.Close() }()
 				params := map[string]any{}
 				for k, v := range body.Command.Params {
 					if k != "sessionId" && k != "timestamp" && k != "version" {
@@ -403,7 +407,7 @@ func TestRecordedHeartbeatPairsIndividually(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer s.Close()
+				defer func() { _ = s.Close() }()
 				clock.advance(10 * time.Second)
 				actual := recordedNextMessage(t, out)
 				if actual.Method != "ping" || actual.DialogID != ping.DialogID || !replay.SemanticEqual(actual.Body, ping.Body) {
@@ -451,7 +455,7 @@ func TestRecordedRemoteICEIndividually(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer s.Close()
+				defer func() { _ = s.Close() }()
 				if err := s.Handle(m); err != nil {
 					t.Fatal(err)
 				}

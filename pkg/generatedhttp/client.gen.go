@@ -139,13 +139,13 @@ func (e ClientSessionRegistrationDeviceMetadataApiVersion) Valid() bool {
 
 // Defines values for ClientSessionRegistrationDeviceOs.
 const (
-	Android ClientSessionRegistrationDeviceOs = "android"
+	ClientSessionRegistrationDeviceOsAndroid ClientSessionRegistrationDeviceOs = "android"
 )
 
 // Valid indicates whether the value is a known member of the ClientSessionRegistrationDeviceOs enum.
 func (e ClientSessionRegistrationDeviceOs) Valid() bool {
 	switch e {
-	case Android:
+	case ClientSessionRegistrationDeviceOsAndroid:
 		return true
 	default:
 		return false
@@ -257,6 +257,81 @@ func (e DoorbellDeviceKind) Valid() bool {
 	}
 }
 
+// Defines values for IntercomUnlockCommandCommandName.
+const (
+	DeviceRpc IntercomUnlockCommandCommandName = "device_rpc"
+)
+
+// Valid indicates whether the value is a known member of the IntercomUnlockCommandCommandName enum.
+func (e IntercomUnlockCommandCommandName) Valid() bool {
+	switch e {
+	case DeviceRpc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntercomUnlockParamsDoorId.
+const (
+	IntercomUnlockParamsDoorIdN0 IntercomUnlockParamsDoorId = 0
+)
+
+// Valid indicates whether the value is a known member of the IntercomUnlockParamsDoorId enum.
+func (e IntercomUnlockParamsDoorId) Valid() bool {
+	switch e {
+	case IntercomUnlockParamsDoorIdN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntercomUnlockParamsUserId.
+const (
+	IntercomUnlockParamsUserIdN0 IntercomUnlockParamsUserId = 0
+)
+
+// Valid indicates whether the value is a known member of the IntercomUnlockParamsUserId enum.
+func (e IntercomUnlockParamsUserId) Valid() bool {
+	switch e {
+	case IntercomUnlockParamsUserIdN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntercomUnlockRPCJsonrpc.
+const (
+	N20 IntercomUnlockRPCJsonrpc = "2.0"
+)
+
+// Valid indicates whether the value is a known member of the IntercomUnlockRPCJsonrpc enum.
+func (e IntercomUnlockRPCJsonrpc) Valid() bool {
+	switch e {
+	case N20:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IntercomUnlockRPCMethod.
+const (
+	UnlockDoor IntercomUnlockRPCMethod = "unlock_door"
+)
+
+// Valid indicates whether the value is a known member of the IntercomUnlockRPCMethod enum.
+func (e IntercomUnlockRPCMethod) Valid() bool {
+	switch e {
+	case UnlockDoor:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LegacyPasswordGrantGrantType.
 const (
 	Password LegacyPasswordGrantGrantType = "password"
@@ -287,6 +362,51 @@ func (e OtherDeviceKind) Valid() bool {
 	case IntercomHandsetAudio:
 		return true
 	case IntercomHandsetVideo:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PushDeviceMetadataPnDictVersion.
+const (
+	N200 PushDeviceMetadataPnDictVersion = "2.0.0"
+)
+
+// Valid indicates whether the value is a known member of the PushDeviceMetadataPnDictVersion enum.
+func (e PushDeviceMetadataPnDictVersion) Valid() bool {
+	switch e {
+	case N200:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PushDeviceMetadataPnService.
+const (
+	Fcm PushDeviceMetadataPnService = "fcm"
+)
+
+// Valid indicates whether the value is a known member of the PushDeviceMetadataPnService enum.
+func (e PushDeviceMetadataPnService) Valid() bool {
+	switch e {
+	case Fcm:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PushDeviceRegistrationDeviceOs.
+const (
+	PushDeviceRegistrationDeviceOsAndroid PushDeviceRegistrationDeviceOs = "android"
+)
+
+// Valid indicates whether the value is a known member of the PushDeviceRegistrationDeviceOs enum.
+func (e PushDeviceRegistrationDeviceOs) Valid() bool {
+	switch e {
+	case PushDeviceRegistrationDeviceOsAndroid:
 		return true
 	default:
 		return false
@@ -343,16 +463,16 @@ func (e TestChimeSoundParamsKind) Valid() bool {
 
 // Defines values for UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnable.
 const (
-	N0 UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnable = 0
-	N1 UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnable = 1
+	UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnableN0 UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnable = 0
+	UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnableN1 UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnable = 1
 )
 
 // Valid indicates whether the value is a known member of the UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnable enum.
 func (e UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnable) Valid() bool {
 	switch e {
-	case N0:
+	case UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnableN0:
 		return true
-	case N1:
+	case UpdateLegacyDoorbotControlsParamsDoorbotSettingsChimeSettingsEnableN1:
 		return true
 	default:
 		return false
@@ -456,31 +576,70 @@ type ClientSessionRegistration_Device struct {
 
 // Device Captured inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
 type Device struct {
-	Address       *string    `json:"address,omitempty"`
-	CreatedAt     *time.Time `json:"created_at,omitempty"`
-	DeactivatedAt *time.Time `json:"deactivated_at,omitempty"`
-	Description   string     `json:"description"`
-	DeviceId      *string    `json:"device_id,omitempty"`
+	// ActiveScheduleUuid Only null was observed in the captured device response; future values are unverified.
+	ActiveScheduleUuid any            `json:"active_schedule_uuid,omitempty"`
+	Address            *string        `json:"address,omitempty"`
+	Alerts             *Device_Alerts `json:"alerts,omitempty"`
+
+	// BatteryLife Ring has returned a percentage, numeric text, and out-of-range hardware values (for example 4081 in a baseline fixture); callers must validate before treating it as a percentage.
+	BatteryLife *Device_BatteryLife `json:"battery_life,omitempty"`
+
+	// BatteryLife2 Optional second battery, with the same wire variants as battery_life.
+	BatteryLife2         *Device_BatteryLife2    `json:"battery_life_2,omitempty"`
+	CameraLocationIndoor *bool                   `json:"camera_location_indoor,omitempty"`
+	CreatedAt            *time.Time              `json:"created_at,omitempty"`
+	DeactivatedAt        *time.Time              `json:"deactivated_at,omitempty"`
+	Description          string                  `json:"description"`
+	DeviceId             *string                 `json:"device_id,omitempty"`
+	DeviceResourceId     *string                 `json:"device_resource_id,omitempty"`
+	EncryptionGroup      *Device_EncryptionGroup `json:"encryption_group,omitempty"`
+
+	// ExtPowerState Only null was observed in the captured device response; future values are unverified.
+	ExtPowerState      any   `json:"ext_power_state,omitempty"`
+	ExternalConnection *bool `json:"external_connection,omitempty"`
+	FacingWindow       *bool `json:"facing_window,omitempty"`
 
 	// Family Baseline families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown families remain valid.
-	Family   *string         `json:"family,omitempty"`
-	Features *DeviceFeatures `json:"features,omitempty"`
-	HasLight *bool           `json:"has_light,omitempty"`
-	Health   *DeviceHealth   `json:"health,omitempty"`
-	Id       int64           `json:"id"`
+	Family            *string         `json:"family,omitempty"`
+	Features          *DeviceFeatures `json:"features,omitempty"`
+	FirmwareVersion   *string         `json:"firmware_version,omitempty"`
+	HasLight          *bool           `json:"has_light,omitempty"`
+	Health            *DeviceHealth   `json:"health,omitempty"`
+	Id                int64           `json:"id"`
+	IsSidewalkGateway *bool           `json:"is_sidewalk_gateway,omitempty"`
 
 	// Kind Observed v3 kind is stickup_cam_mini_ptz_v1; baseline fixtures also include doorbells, chimes and intercoms. Unknown kinds remain valid.
-	Kind                   string  `json:"kind"`
-	LightBrightness        *int    `json:"light_brightness,omitempty"`
-	LocationId             *string `json:"location_id,omitempty"`
-	MotionDetectionEnabled *bool   `json:"motion_detection_enabled,omitempty"`
+	Kind                   string               `json:"kind"`
+	Latitude               *float32             `json:"latitude,omitempty"`
+	LightBrightness        *int                 `json:"light_brightness,omitempty"`
+	LocationId             *string              `json:"location_id,omitempty"`
+	Longitude              *float32             `json:"longitude,omitempty"`
+	MotionDetectionEnabled *bool                `json:"motion_detection_enabled,omitempty"`
+	MotionSnooze           *Device_MotionSnooze `json:"motion_snooze,omitempty"`
 
 	// Name Legacy inventory display name; v3 capture uses description.
-	Name         *string               `json:"name,omitempty"`
-	OperationSet *string               `json:"operation_set,omitempty"`
-	Owned        *bool                 `json:"owned,omitempty"`
-	Owner        *DeviceOwner          `json:"owner,omitempty"`
-	Settings     *DeviceLegacySettings `json:"settings,omitempty"`
+	Name         *string      `json:"name,omitempty"`
+	OperationSet *string      `json:"operation_set,omitempty"`
+	Owned        *bool        `json:"owned,omitempty"`
+	Owner        *DeviceOwner `json:"owner,omitempty"`
+
+	// RingId Only null was observed in the captured device response; future values are unverified.
+	RingId any `json:"ring_id,omitempty"`
+
+	// RingNetId Null in the v3 camera capture; text in a legacy device response.
+	RingNetId *string               `json:"ring_net_id,omitempty"`
+	SchemaId  *string               `json:"schema_id,omitempty"`
+	Settings  *DeviceLegacySettings `json:"settings,omitempty"`
+
+	// SharedAt Only null was observed in the captured device response; future values are unverified.
+	SharedAt    any                 `json:"shared_at,omitempty"`
+	SirenStatus *Device_SirenStatus `json:"siren_status,omitempty"`
+
+	// SnoozeSettings Only null was observed in the captured device response; future values are unverified.
+	SnoozeSettings    any   `json:"snooze_settings,omitempty"`
+	Stolen            *bool `json:"stolen,omitempty"`
+	Subscribed        *bool `json:"subscribed,omitempty"`
+	SubscribedMotions *bool `json:"subscribed_motions,omitempty"`
 
 	// TimeZone Alternate legacy timezone spelling.
 	TimeZone             *string                `json:"time_zone,omitempty"`
@@ -488,6 +647,63 @@ type Device struct {
 	Volume               *int                   `json:"volume,omitempty"`
 	WifiName             *string                `json:"wifi_name,omitempty"`
 	WifiSignalStrength   *int                   `json:"wifi_signal_strength,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// Device_Alerts defines model for Device.Alerts.
+type Device_Alerts struct {
+	// Connection Online in the captured camera response; offline in a baseline family fixture. Other states remain valid.
+	Connection           *string                `json:"connection,omitempty"`
+	OtaStatus            *string                `json:"ota_status,omitempty"`
+	PrivacyCoverEnabled  *bool                  `json:"privacy_cover_enabled,omitempty"`
+	SidewalkConnection   *bool                  `json:"sidewalk_connection,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceBatteryLife0 defines model for Device.BatteryLife.0.
+type DeviceBatteryLife0 = int
+
+// DeviceBatteryLife1 defines model for Device.BatteryLife.1.
+type DeviceBatteryLife1 = string
+
+// Device_BatteryLife Ring has returned a percentage, numeric text, and out-of-range hardware values (for example 4081 in a baseline fixture); callers must validate before treating it as a percentage.
+type Device_BatteryLife struct {
+	union json.RawMessage
+}
+
+// DeviceBatteryLife20 defines model for Device.BatteryLife2.0.
+type DeviceBatteryLife20 = int
+
+// DeviceBatteryLife21 defines model for Device.BatteryLife2.1.
+type DeviceBatteryLife21 = string
+
+// Device_BatteryLife2 Optional second battery, with the same wire variants as battery_life.
+type Device_BatteryLife2 struct {
+	union json.RawMessage
+}
+
+// Device_EncryptionGroup defines model for Device.EncryptionGroup.
+type Device_EncryptionGroup struct {
+	// AccountGroupRevisionId Only null was observed in the captured device response; future values are unverified.
+	AccountGroupRevisionId any `json:"account_group_revision_id,omitempty"`
+
+	// Id Only null was observed in the captured device response; future values are unverified.
+	Id                   any                    `json:"id,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// Device_MotionSnooze defines model for Device.MotionSnooze.
+type Device_MotionSnooze struct {
+	Scheduled            *bool                  `json:"scheduled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// Device_SirenStatus defines model for Device.SirenStatus.
+type Device_SirenStatus struct {
+	Duration             *string                `json:"duration,omitempty"`
+	EndsAt               *string                `json:"ends_at,omitempty"`
+	SecondsRemaining     *int                   `json:"seconds_remaining,omitempty"`
+	StartedAt            *string                `json:"started_at,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -512,39 +728,1626 @@ type DeviceFamilyCode string
 
 // DeviceFeatures defines model for DeviceFeatures.
 type DeviceFeatures struct {
-	AutoTrack            *FeatureAvailability   `json:"auto_track,omitempty"`
-	AutoZoomTrack        *FeatureAvailability   `json:"auto_zoom_track,omitempty"`
-	MotionsEnabled       *bool                  `json:"motions_enabled,omitempty"`
-	VideoRendering       *VideoRenderingFeature `json:"video_rendering,omitempty"`
+	AiAutomatedWarnings    *DeviceFeatures_AiAutomatedWarnings    `json:"ai_automated_warnings,omitempty"`
+	AiLabsDailyClip        *DeviceFeatures_AiLabsDailyClip        `json:"ai_labs_daily_clip,omitempty"`
+	AiLabsMemorableMoments *DeviceFeatures_AiLabsMemorableMoments `json:"ai_labs_memorable_moments,omitempty"`
+
+	// AlexaPlusGreetings Only null was observed in the captured device response; future values are unverified.
+	AlexaPlusGreetings      any   `json:"alexa_plus_greetings,omitempty"`
+	AnimalDetectionEligible *bool `json:"animal_detection_eligible,omitempty"`
+
+	// AutoShutoffDevice Only null was observed in the captured device response; future values are unverified.
+	AutoShutoffDevice any                  `json:"auto_shutoff_device,omitempty"`
+	AutoTrack         *FeatureAvailability `json:"auto_track,omitempty"`
+	AutoZoomTrack     *FeatureAvailability `json:"auto_zoom_track,omitempty"`
+
+	// AutomatedSiren Only null was observed in the captured device response; future values are unverified.
+	AutomatedSiren                    any                                               `json:"automated_siren,omitempty"`
+	CfesEligible                      *bool                                             `json:"cfes_eligible,omitempty"`
+	ChimeSettings                     *DeviceFeatures_ChimeSettings                     `json:"chime_settings,omitempty"`
+	DynamicNetworkSwitchingEligible   *bool                                             `json:"dynamic_network_switching_eligible,omitempty"`
+	LiveViewAudioPrivacyControls      *DeviceFeatures_LiveViewAudioPrivacyControls      `json:"live_view_audio_privacy_controls,omitempty"`
+	MotionMessageEnabled              *bool                                             `json:"motion_message_enabled,omitempty"`
+	MotionStopEdgeEligible            *bool                                             `json:"motion_stop_edge_eligible,omitempty"`
+	MotionZoneRecommendation          *bool                                             `json:"motion_zone_recommendation,omitempty"`
+	MotionsEnabled                    *bool                                             `json:"motions_enabled,omitempty"`
+	NetworkBackup                     *DeviceFeatures_NetworkBackup                     `json:"network_backup,omitempty"`
+	NetworkBackupHost                 *DeviceFeatures_NetworkBackupHost                 `json:"network_backup_host,omitempty"`
+	OriginalVideoQualityDownloadOffer *DeviceFeatures_OriginalVideoQualityDownloadOffer `json:"original_video_quality_download_offer,omitempty"`
+
+	// PackageWarning Only null was observed in the captured device response; future values are unverified.
+	PackageWarning        any                                  `json:"package_warning,omitempty"`
+	PersonIdentification  *DeviceFeatures_PersonIdentification `json:"person_identification,omitempty"`
+	PropertyView          *DeviceFeatures_PropertyView         `json:"property_view,omitempty"`
+	PtzSetupComplete      *bool                                `json:"ptz_setup_complete,omitempty"`
+	Recording24x7Eligible *bool                                `json:"recording_24x7_eligible,omitempty"`
+
+	// RemoteAccessControl Only null was observed in the captured device response; future values are unverified.
+	RemoteAccessControl            any                                   `json:"remote_access_control,omitempty"`
+	RetinalTuning                  *DeviceFeatures_RetinalTuning         `json:"retinal_tuning,omitempty"`
+	RichNotificationsEligible      *bool                                 `json:"rich_notifications_eligible,omitempty"`
+	SheilaCameraEligible           *bool                                 `json:"sheila_camera_eligible,omitempty"`
+	SheilaCameraProcessingEligible *bool                                 `json:"sheila_camera_processing_eligible,omitempty"`
+	Show24x7Lite                   *bool                                 `json:"show_24x7_lite,omitempty"`
+	ShowOfflineMotionEvents        *bool                                 `json:"show_offline_motion_events,omitempty"`
+	ShowRecordings                 *bool                                 `json:"show_recordings,omitempty"`
+	ShowVodSettings                *bool                                 `json:"show_vod_settings,omitempty"`
+	SingleAlert                    *DeviceFeatures_SingleAlert           `json:"single_alert,omitempty"`
+	SmartVideoDescription          *DeviceFeatures_SmartVideoDescription `json:"smart_video_description,omitempty"`
+	SmartVideoSearch               *DeviceFeatures_SmartVideoSearch      `json:"smart_video_search,omitempty"`
+
+	// Tracklight Only null was observed in the captured device response; future values are unverified.
+	Tracklight any `json:"tracklight,omitempty"`
+
+	// TransformerScore Only null was observed in the captured device response; future values are unverified.
+	TransformerScore         any                            `json:"transformer_score,omitempty"`
+	UnusualAlert             *DeviceFeatures_UnusualAlert   `json:"unusual_alert,omitempty"`
+	VehicleDetectionEligible *bool                          `json:"vehicle_detection_eligible,omitempty"`
+	VideoDonation            *DeviceFeatures_VideoDonation  `json:"video_donation,omitempty"`
+	VideoRecording           *DeviceFeatures_VideoRecording `json:"video_recording,omitempty"`
+	VideoRendering           *VideoRenderingFeature         `json:"video_rendering,omitempty"`
+	AdditionalProperties     map[string]interface{}         `json:"-"`
+}
+
+// DeviceFeatures_AiAutomatedWarnings_Eligibility defines model for DeviceFeatures.AiAutomatedWarnings.Eligibility.
+type DeviceFeatures_AiAutomatedWarnings_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]interface{}         `json:"ineligibility_reasons,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_AiAutomatedWarnings_Enablement defines model for DeviceFeatures.AiAutomatedWarnings.Enablement.
+type DeviceFeatures_AiAutomatedWarnings_Enablement struct {
+	Allowed              *bool                  `json:"allowed,omitempty"`
+	DisallowReasons      *[]string              `json:"disallow_reasons,omitempty"`
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_AiAutomatedWarnings defines model for DeviceFeatures.AiAutomatedWarnings.
+type DeviceFeatures_AiAutomatedWarnings struct {
+	Eligibility          *DeviceFeatures_AiAutomatedWarnings_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_AiAutomatedWarnings_Enablement  `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// DeviceFeatures_AiLabsDailyClip_Eligibility defines model for DeviceFeatures.AiLabsDailyClip.Eligibility.
+type DeviceFeatures_AiLabsDailyClip_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]string              `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_AiLabsDailyClip_Enablement defines model for DeviceFeatures.AiLabsDailyClip.Enablement.
+type DeviceFeatures_AiLabsDailyClip_Enablement struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_AiLabsDailyClip defines model for DeviceFeatures.AiLabsDailyClip.
+type DeviceFeatures_AiLabsDailyClip struct {
+	AllowsNoLocation     *bool                                       `json:"allows_no_location,omitempty"`
+	Eligibility          *DeviceFeatures_AiLabsDailyClip_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_AiLabsDailyClip_Enablement  `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                      `json:"-"`
+}
+
+// DeviceFeatures_AiLabsMemorableMoments_Eligibility defines model for DeviceFeatures.AiLabsMemorableMoments.Eligibility.
+type DeviceFeatures_AiLabsMemorableMoments_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]string              `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_AiLabsMemorableMoments_Enablement defines model for DeviceFeatures.AiLabsMemorableMoments.Enablement.
+type DeviceFeatures_AiLabsMemorableMoments_Enablement struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_AiLabsMemorableMoments defines model for DeviceFeatures.AiLabsMemorableMoments.
+type DeviceFeatures_AiLabsMemorableMoments struct {
+	AllowsNoLocation     *bool                                              `json:"allows_no_location,omitempty"`
+	Eligibility          *DeviceFeatures_AiLabsMemorableMoments_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_AiLabsMemorableMoments_Enablement  `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                             `json:"-"`
+}
+
+// DeviceFeatures_ChimeSettings defines model for DeviceFeatures.ChimeSettings.
+type DeviceFeatures_ChimeSettings struct {
+	IsEligible           *bool                  `json:"is_eligible,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility defines model for DeviceFeatures.LiveViewAudioPrivacyControls.Eligibility.
+type DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]string              `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_LiveViewAudioPrivacyControls defines model for DeviceFeatures.LiveViewAudioPrivacyControls.
+type DeviceFeatures_LiveViewAudioPrivacyControls struct {
+	Eligibility          *DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility `json:"eligibility,omitempty"`
+	AdditionalProperties map[string]interface{}                                   `json:"-"`
+}
+
+// DeviceFeatures_NetworkBackup_Eligibility defines model for DeviceFeatures.NetworkBackup.Eligibility.
+type DeviceFeatures_NetworkBackup_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]string              `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_NetworkBackup_Enablement defines model for DeviceFeatures.NetworkBackup.Enablement.
+type DeviceFeatures_NetworkBackup_Enablement struct {
+	Allowed              *bool                  `json:"allowed,omitempty"`
+	DisallowReasons      *[]string              `json:"disallow_reasons,omitempty"`
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_NetworkBackup defines model for DeviceFeatures.NetworkBackup.
+type DeviceFeatures_NetworkBackup struct {
+	Eligibility          *DeviceFeatures_NetworkBackup_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_NetworkBackup_Enablement  `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                    `json:"-"`
+}
+
+// DeviceFeatures_NetworkBackupHost_Eligibility defines model for DeviceFeatures.NetworkBackupHost.Eligibility.
+type DeviceFeatures_NetworkBackupHost_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]string              `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_NetworkBackupHost defines model for DeviceFeatures.NetworkBackupHost.
+type DeviceFeatures_NetworkBackupHost struct {
+	Eligibility          *DeviceFeatures_NetworkBackupHost_Eligibility `json:"eligibility,omitempty"`
+	AdditionalProperties map[string]interface{}                        `json:"-"`
+}
+
+// DeviceFeatures_OriginalVideoQualityDownloadOffer defines model for DeviceFeatures.OriginalVideoQualityDownloadOffer.
+type DeviceFeatures_OriginalVideoQualityDownloadOffer struct {
+	IsEnabled            *bool                  `json:"is_enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_PersonIdentification_Eligibility defines model for DeviceFeatures.PersonIdentification.Eligibility.
+type DeviceFeatures_PersonIdentification_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]interface{}         `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_PersonIdentification_Enablement defines model for DeviceFeatures.PersonIdentification.Enablement.
+type DeviceFeatures_PersonIdentification_Enablement struct {
+	Allowed              *bool                  `json:"allowed,omitempty"`
+	DisallowReasons      *[]string              `json:"disallow_reasons,omitempty"`
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_PersonIdentification defines model for DeviceFeatures.PersonIdentification.
+type DeviceFeatures_PersonIdentification struct {
+	Eligibility          *DeviceFeatures_PersonIdentification_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_PersonIdentification_Enablement  `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                           `json:"-"`
+}
+
+// DeviceFeatures_PropertyView_Enablement defines model for DeviceFeatures.PropertyView.Enablement.
+type DeviceFeatures_PropertyView_Enablement struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_PropertyView defines model for DeviceFeatures.PropertyView.
+type DeviceFeatures_PropertyView struct {
+	Enablement           *DeviceFeatures_PropertyView_Enablement `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                  `json:"-"`
+}
+
+// DeviceFeatures_RetinalTuning_Eligibility defines model for DeviceFeatures.RetinalTuning.Eligibility.
+type DeviceFeatures_RetinalTuning_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]interface{}         `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_RetinalTuning_Enablement defines model for DeviceFeatures.RetinalTuning.Enablement.
+type DeviceFeatures_RetinalTuning_Enablement struct {
+	Allowed              *bool                  `json:"allowed,omitempty"`
+	DisallowReasons      *[]interface{}         `json:"disallow_reasons,omitempty"`
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_RetinalTuning defines model for DeviceFeatures.RetinalTuning.
+type DeviceFeatures_RetinalTuning struct {
+	Eligibility           *DeviceFeatures_RetinalTuning_Eligibility `json:"eligibility,omitempty"`
+	Enablement            *DeviceFeatures_RetinalTuning_Enablement  `json:"enablement,omitempty"`
+	RtMaxDigitalZoomLevel *float32                                  `json:"rt_max_digital_zoom_level,omitempty"`
+	AdditionalProperties  map[string]interface{}                    `json:"-"`
+}
+
+// DeviceFeatures_SingleAlert_Eligibility defines model for DeviceFeatures.SingleAlert.Eligibility.
+type DeviceFeatures_SingleAlert_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]interface{}         `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_SingleAlert_Enablement defines model for DeviceFeatures.SingleAlert.Enablement.
+type DeviceFeatures_SingleAlert_Enablement struct {
+	Allowed              *bool                  `json:"allowed,omitempty"`
+	DisallowReasons      *[]string              `json:"disallow_reasons,omitempty"`
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_SingleAlert defines model for DeviceFeatures.SingleAlert.
+type DeviceFeatures_SingleAlert struct {
+	Eligibility          *DeviceFeatures_SingleAlert_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_SingleAlert_Enablement  `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                  `json:"-"`
+}
+
+// DeviceFeatures_SmartVideoDescription_Eligibility defines model for DeviceFeatures.SmartVideoDescription.Eligibility.
+type DeviceFeatures_SmartVideoDescription_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]interface{}         `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_SmartVideoDescription_Enablement defines model for DeviceFeatures.SmartVideoDescription.Enablement.
+type DeviceFeatures_SmartVideoDescription_Enablement struct {
+	Allowed              *bool                  `json:"allowed,omitempty"`
+	DisallowReasons      *[]string              `json:"disallow_reasons,omitempty"`
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_SmartVideoDescription defines model for DeviceFeatures.SmartVideoDescription.
+type DeviceFeatures_SmartVideoDescription struct {
+	Eligibility          *DeviceFeatures_SmartVideoDescription_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_SmartVideoDescription_Enablement  `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                            `json:"-"`
+}
+
+// DeviceFeatures_SmartVideoSearch_Eligibility defines model for DeviceFeatures.SmartVideoSearch.Eligibility.
+type DeviceFeatures_SmartVideoSearch_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]interface{}         `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_SmartVideoSearch_Enablement defines model for DeviceFeatures.SmartVideoSearch.Enablement.
+type DeviceFeatures_SmartVideoSearch_Enablement struct {
+	Allowed              *bool                  `json:"allowed,omitempty"`
+	DisallowReasons      *[]string              `json:"disallow_reasons,omitempty"`
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_SmartVideoSearch defines model for DeviceFeatures.SmartVideoSearch.
+type DeviceFeatures_SmartVideoSearch struct {
+	Eligibility          *DeviceFeatures_SmartVideoSearch_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_SmartVideoSearch_Enablement  `json:"enablement,omitempty"`
+	AdditionalProperties map[string]interface{}                       `json:"-"`
+}
+
+// DeviceFeatures_UnusualAlert_Eligibility defines model for DeviceFeatures.UnusualAlert.Eligibility.
+type DeviceFeatures_UnusualAlert_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]interface{}         `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_UnusualAlert_Enablement defines model for DeviceFeatures.UnusualAlert.Enablement.
+type DeviceFeatures_UnusualAlert_Enablement struct {
+	Allowed              *bool                  `json:"allowed,omitempty"`
+	DisallowReasons      *[]string              `json:"disallow_reasons,omitempty"`
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_UnusualAlert_Learning defines model for DeviceFeatures.UnusualAlert.Learning.
+type DeviceFeatures_UnusualAlert_Learning struct {
+	State                *string                `json:"state,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_UnusualAlert defines model for DeviceFeatures.UnusualAlert.
+type DeviceFeatures_UnusualAlert struct {
+	Eligibility          *DeviceFeatures_UnusualAlert_Eligibility `json:"eligibility,omitempty"`
+	Enablement           *DeviceFeatures_UnusualAlert_Enablement  `json:"enablement,omitempty"`
+	Learning             *DeviceFeatures_UnusualAlert_Learning    `json:"learning,omitempty"`
+	AdditionalProperties map[string]interface{}                   `json:"-"`
+}
+
+// DeviceFeatures_VideoDonation_Eligibility defines model for DeviceFeatures.VideoDonation.Eligibility.
+type DeviceFeatures_VideoDonation_Eligibility struct {
+	Eligible             *bool                  `json:"eligible,omitempty"`
+	IneligibilityReasons *[]interface{}         `json:"ineligibility_reasons,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_VideoDonation defines model for DeviceFeatures.VideoDonation.
+type DeviceFeatures_VideoDonation struct {
+	Eligibility          *DeviceFeatures_VideoDonation_Eligibility `json:"eligibility,omitempty"`
+	AdditionalProperties map[string]interface{}                    `json:"-"`
+}
+
+// DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous defines model for DeviceFeatures.VideoRecording.RecordingModeAvailability.Continuous.
+type DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous struct {
+	Available            *bool                  `json:"available,omitempty"`
+	Supported            *bool                  `json:"supported,omitempty"`
+	UnavailabilityReason *string                `json:"unavailability_reason,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceFeatures_VideoRecording_RecordingModeAvailability defines model for DeviceFeatures.VideoRecording.RecordingModeAvailability.
+type DeviceFeatures_VideoRecording_RecordingModeAvailability struct {
+	Continuous           *DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous `json:"continuous,omitempty"`
+	AdditionalProperties map[string]interface{}                                              `json:"-"`
+}
+
+// DeviceFeatures_VideoRecording defines model for DeviceFeatures.VideoRecording.
+type DeviceFeatures_VideoRecording struct {
+	RecordingEnabled          *bool                                                    `json:"recording_enabled,omitempty"`
+	RecordingMode             *string                                                  `json:"recording_mode,omitempty"`
+	RecordingModeAvailability *DeviceFeatures_VideoRecording_RecordingModeAvailability `json:"recording_mode_availability,omitempty"`
+	RecordingState            *string                                                  `json:"recording_state,omitempty"`
+	AdditionalProperties      map[string]interface{}                                   `json:"-"`
 }
 
 // DeviceHealth defines model for DeviceHealth.
 type DeviceHealth struct {
-	BatteryLevel *int `json:"battery_level,omitempty"`
+	AcPower           *int  `json:"ac_power,omitempty"`
+	Bandwidth         *int  `json:"bandwidth,omitempty"`
+	BandwidthLastTime *int  `json:"bandwidth_last_time,omitempty"`
+	BatteryError      *bool `json:"battery_error,omitempty"`
+	BatteryLevel      *int  `json:"battery_level,omitempty"`
+
+	// BatteryPercentage Seen in other Ring device families; absent from the captured wired camera.
+	BatteryPercentage *float32 `json:"battery_percentage,omitempty"`
 
 	// BatteryPercentageCategory The capture reports unknown; other battery categories remain valid.
 	BatteryPercentageCategory *string `json:"battery_percentage_category,omitempty"`
-	BatteryStatus             *string `json:"battery_status,omitempty"`
-	Connected                 *bool   `json:"connected,omitempty"`
-	FirmwareVersion           *string `json:"firmware_version,omitempty"`
-	LastUpdate                *string `json:"last_update,omitempty"`
+
+	// BatteryPresent Seen in other Ring device families; absent from the captured wired camera.
+	BatteryPresent           *bool    `json:"battery_present,omitempty"`
+	BatteryStatus            *string  `json:"battery_status,omitempty"`
+	BatteryVoltageCategory   *string  `json:"battery_voltage_category,omitempty"`
+	Channel                  *string  `json:"channel,omitempty"`
+	Connected                *bool    `json:"connected,omitempty"`
+	CurrentBandwidth         *int     `json:"current_bandwidth,omitempty"`
+	CurrentBandwidthCategory *string  `json:"current_bandwidth_category,omitempty"`
+	CurrentBandwidthMb       *float32 `json:"current_bandwidth_mb,omitempty"`
+	DeviceType               *string  `json:"device_type,omitempty"`
+	EgressTxRate             *string  `json:"egress_tx_rate,omitempty"`
+	EgressTxRateCategory     *string  `json:"egress_tx_rate_category,omitempty"`
+	EncryptionGroupError     *int     `json:"encryption_group_error,omitempty"`
+	ExternalConnection       *bool    `json:"external_connection,omitempty"`
+	FastPingHop1Score        *string  `json:"fast_ping_hop1_score,omitempty"`
+	FirmwareAvgBitrate       *string  `json:"firmware_avg_bitrate,omitempty"`
+	FirmwareVersion          *string  `json:"firmware_version,omitempty"`
+	FirmwareVersionStatus    *string  `json:"firmware_version_status,omitempty"`
+	FloodlightOn             *bool    `json:"floodlight_on,omitempty"`
+	HatchOpen                *bool    `json:"hatch_open,omitempty"`
+	LastUpdate               *string  `json:"last_update,omitempty"`
+	LastUpdateTime           *int     `json:"last_update_time,omitempty"`
+	NetworkConnectionValue   *string  `json:"network_connection_value,omitempty"`
+	NightModeOn              *bool    `json:"night_mode_on,omitempty"`
+	OtaStatus                *string  `json:"ota_status,omitempty"`
+	PacketLoss               *float32 `json:"packet_loss,omitempty"`
+	PacketLossCategory       *string  `json:"packet_loss_category,omitempty"`
+	PrefRunMode              *string  `json:"pref_run_mode,omitempty"`
+	PrivacyCoverEnabled      *bool    `json:"privacy_cover_enabled,omitempty"`
 
 	// PtzConnected Observed non-null PTZ connection label is emperor; other hardware labels remain valid.
-	PtzConnected         *string                `json:"ptz_connected,omitempty"`
-	Rssi                 *float32               `json:"rssi,omitempty"`
-	SignalStrength       *int                   `json:"signal_strength,omitempty"`
-	SupportedRpcCommands *[]string              `json:"supported_rpc_commands,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
+	PtzConnected                    *string                `json:"ptz_connected,omitempty"`
+	RssConnected                    *bool                  `json:"rss_connected,omitempty"`
+	Rssi                            *float32               `json:"rssi,omitempty"`
+	RssiCategory                    *string                `json:"rssi_category,omitempty"`
+	RunMode                         *string                `json:"run_mode,omitempty"`
+	SecondBatteryPercentageCategory *string                `json:"second_battery_percentage_category,omitempty"`
+	SecondBatteryVoltageCategory    *string                `json:"second_battery_voltage_category,omitempty"`
+	SidewalkConnection              *bool                  `json:"sidewalk_connection,omitempty"`
+	SignalStrength                  *int                   `json:"signal_strength,omitempty"`
+	SirenOn                         *bool                  `json:"siren_on,omitempty"`
+	StatusTime                      *int64                 `json:"status_time,omitempty"`
+	SupportedRpcCommands            *[]string              `json:"supported_rpc_commands,omitempty"`
+	TxRate                          *int                   `json:"tx_rate,omitempty"`
+	VideoPacketsTotal               *string                `json:"video_packets_total,omitempty"`
+	VodEnabled                      *bool                  `json:"vod_enabled,omitempty"`
+	WhiteLedOn                      *bool                  `json:"white_led_on,omitempty"`
+	WifiIsRingNetwork               *bool                  `json:"wifi_is_ring_network,omitempty"`
+	WifiName                        *string                `json:"wifi_name,omitempty"`
+	AdditionalProperties            map[string]interface{} `json:"-"`
 }
 
 // DeviceLegacySettings defines model for DeviceLegacySettings.
 type DeviceLegacySettings struct {
+	// ActiveStreamingEventLedEnabled Only null was observed in the captured device response; future values are unverified.
+	ActiveStreamingEventLedEnabled       any                                          `json:"active_streaming_event_led_enabled,omitempty"`
+	AdvancedMotionDetectionEnabled       *bool                                        `json:"advanced_motion_detection_enabled,omitempty"`
+	AdvancedMotionDetectionHumanOnlyMode *bool                                        `json:"advanced_motion_detection_human_only_mode,omitempty"`
+	AdvancedMotionDetectionTypes         *[]string                                    `json:"advanced_motion_detection_types,omitempty"`
+	AdvancedMotionZones                  *DeviceLegacySettings_AdvancedMotionZones    `json:"advanced_motion_zones,omitempty"`
+	AdvancedMotionZonesEnabled           *bool                                        `json:"advanced_motion_zones_enabled,omitempty"`
+	AdvancedMotionZonesType              *string                                      `json:"advanced_motion_zones_type,omitempty"`
+	AdvancedPirMotionZones               *DeviceLegacySettings_AdvancedPirMotionZones `json:"advanced_pir_motion_zones,omitempty"`
+	AudioSettings                        *DeviceLegacySettings_AudioSettings          `json:"audio_settings,omitempty"`
+	CvPaidFeatures                       *DeviceLegacySettings_CvPaidFeatures         `json:"cv_paid_features,omitempty"`
+	CvSettings                           *DeviceLegacySettings_CvSettings             `json:"cv_settings,omitempty"`
+
 	// DoorbellVolume Legacy doorbell volume accepted by the Go client.
-	DoorbellVolume         *int                   `json:"doorbell_volume,omitempty"`
-	LiveViewDisabled       *bool                  `json:"live_view_disabled,omitempty"`
-	MotionDetectionEnabled *bool                  `json:"motion_detection_enabled,omitempty"`
+	DoorbellVolume          *int  `json:"doorbell_volume,omitempty"`
+	EnableAudioRecording    *bool `json:"enable_audio_recording,omitempty"`
+	EnableIrLed             *bool `json:"enable_ir_led,omitempty"`
+	EnableRichNotifications *bool `json:"enable_rich_notifications,omitempty"`
+
+	// EnableVod Integer in the v3 camera capture; boolean in legacy family responses.
+	EnableVod                 *DeviceLegacySettings_EnableVod           `json:"enable_vod,omitempty"`
+	ExposureControl           *int                                      `json:"exposure_control,omitempty"`
+	ExtendedLiveView          *int                                      `json:"extended_live_view,omitempty"`
+	FlickElimRecommendedMode  *int                                      `json:"flick_elim_recommended_mode,omitempty"`
+	HybridMotionZones         *DeviceLegacySettings_HybridMotionZones   `json:"hybrid_motion_zones,omitempty"`
+	IgnoreZones               *DeviceLegacySettings_IgnoreZones         `json:"ignore_zones,omitempty"`
+	LightSnoozeSettings       *DeviceLegacySettings_LightSnoozeSettings `json:"light_snooze_settings,omitempty"`
+	Lite24x7                  *DeviceLegacySettings_Lite24x7            `json:"lite_24x7,omitempty"`
+	Lite24x7FootageTtl        *int                                      `json:"lite_24x7_footage_ttl,omitempty"`
+	LiveViewDisabled          *bool                                     `json:"live_view_disabled,omitempty"`
+	LiveViewPresetProfile     *string                                   `json:"live_view_preset_profile,omitempty"`
+	LiveViewPresets           *[]string                                 `json:"live_view_presets,omitempty"`
+	LoiteringThreshold        *int                                      `json:"loitering_threshold,omitempty"`
+	MotionAnnouncement        *bool                                     `json:"motion_announcement,omitempty"`
+	MotionDetectionEnabled    *bool                                     `json:"motion_detection_enabled,omitempty"`
+	MotionSettings            *DeviceLegacySettings_MotionSettings      `json:"motion_settings,omitempty"`
+	MotionSnoozePresetProfile *string                                   `json:"motion_snooze_preset_profile,omitempty"`
+	MotionSnoozePresets       *[]string                                 `json:"motion_snooze_presets,omitempty"`
+
+	// MotionZones Empty array in the v3 capture; structured zone map in legacy families.
+	MotionZones                *DeviceLegacySettings_MotionZones                `json:"motion_zones,omitempty"`
+	NetworkSettings            *DeviceLegacySettings_NetworkSettings            `json:"network_settings,omitempty"`
+	OfflineMotionEventSettings *DeviceLegacySettings_OfflineMotionEventSettings `json:"offline_motion_event_settings,omitempty"`
+	OtherPaidFeatures          *DeviceLegacySettings_OtherPaidFeatures          `json:"other_paid_features,omitempty"`
+	PeopleDetectionEligible    *bool                                            `json:"people_detection_eligible,omitempty"`
+	PirSensitivity1            *int                                             `json:"pir_sensitivity_1,omitempty"`
+
+	// PowerMode Wired in the captured camera response; other power modes remain valid.
+	PowerMode                        *string                              `json:"power_mode,omitempty"`
+	PtzSettings                      *DeviceLegacySettings_PtzSettings    `json:"ptz_settings,omitempty"`
+	RichNotificationsBillingEligible *bool                                `json:"rich_notifications_billing_eligible,omitempty"`
+	RichNotificationsFaceCropEnabled *bool                                `json:"rich_notifications_face_crop_enabled,omitempty"`
+	RichNotificationsSceneSource     *string                              `json:"rich_notifications_scene_source,omitempty"`
+	ServerSettings                   *DeviceLegacySettings_ServerSettings `json:"server_settings,omitempty"`
+	SheilaSettings                   *DeviceLegacySettings_SheilaSettings `json:"sheila_settings,omitempty"`
+
+	// StarkEnabled Only null was observed in the captured device response; future values are unverified.
+	StarkEnabled  any   `json:"stark_enabled,omitempty"`
+	StarkEnrolled *bool `json:"stark_enrolled,omitempty"`
+
+	// TermsOfServiceAccepted Only null was observed in the captured device response; future values are unverified.
+	TermsOfServiceAccepted    any                                 `json:"terms_of_service_accepted,omitempty"`
+	UserSpecifiedRecordingTtl *int                                `json:"user_specified_recording_ttl,omitempty"`
+	VideoSettings             *DeviceLegacySettings_VideoSettings `json:"video_settings,omitempty"`
+	VodStatus                 *string                             `json:"vod_status,omitempty"`
+	VodSuspended              *int                                `json:"vod_suspended,omitempty"`
+	VoiceVolume               *int                                `json:"voice_volume,omitempty"`
+	ZoneSettings              *DeviceLegacySettings_ZoneSettings  `json:"zone_settings,omitempty"`
+	AdditionalProperties      map[string]interface{}              `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.Vertex1.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.Vertex2.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2 struct {
+	X                    *float32               `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.Vertex3.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.Vertex4.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *float32               `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.Vertex5.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.Vertex6.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6 struct {
+	X                    *float32               `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.Vertex7.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.Vertex8.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *float32               `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone1 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone1.
+type DeviceLegacySettings_AdvancedMotionZones_Zone1 struct {
+	Name                 *string                                                 `json:"name,omitempty"`
+	State                *int                                                    `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2 `json:"vertex2,omitempty"`
+	Vertex3              *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3 `json:"vertex3,omitempty"`
+	Vertex4              *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4 `json:"vertex4,omitempty"`
+	Vertex5              *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5 `json:"vertex5,omitempty"`
+	Vertex6              *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6 `json:"vertex6,omitempty"`
+	Vertex7              *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7 `json:"vertex7,omitempty"`
+	Vertex8              *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8 `json:"vertex8,omitempty"`
+	AdditionalProperties map[string]interface{}                                  `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.Vertex1.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.Vertex2.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.Vertex3.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.Vertex4.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.Vertex5.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.Vertex6.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.Vertex7.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.Vertex8.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone2 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone2.
+type DeviceLegacySettings_AdvancedMotionZones_Zone2 struct {
+	Name                 *string                                                 `json:"name,omitempty"`
+	State                *int                                                    `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2 `json:"vertex2,omitempty"`
+	Vertex3              *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3 `json:"vertex3,omitempty"`
+	Vertex4              *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4 `json:"vertex4,omitempty"`
+	Vertex5              *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5 `json:"vertex5,omitempty"`
+	Vertex6              *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6 `json:"vertex6,omitempty"`
+	Vertex7              *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7 `json:"vertex7,omitempty"`
+	Vertex8              *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8 `json:"vertex8,omitempty"`
+	AdditionalProperties map[string]interface{}                                  `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.Vertex1.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.Vertex2.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.Vertex3.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.Vertex4.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.Vertex5.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.Vertex6.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.Vertex7.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.Vertex8.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones_Zone3 defines model for DeviceLegacySettings.AdvancedMotionZones.Zone3.
+type DeviceLegacySettings_AdvancedMotionZones_Zone3 struct {
+	Name                 *string                                                 `json:"name,omitempty"`
+	State                *int                                                    `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2 `json:"vertex2,omitempty"`
+	Vertex3              *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3 `json:"vertex3,omitempty"`
+	Vertex4              *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4 `json:"vertex4,omitempty"`
+	Vertex5              *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5 `json:"vertex5,omitempty"`
+	Vertex6              *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6 `json:"vertex6,omitempty"`
+	Vertex7              *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7 `json:"vertex7,omitempty"`
+	Vertex8              *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8 `json:"vertex8,omitempty"`
+	AdditionalProperties map[string]interface{}                                  `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedMotionZones defines model for DeviceLegacySettings.AdvancedMotionZones.
+type DeviceLegacySettings_AdvancedMotionZones struct {
+	Zone1                *DeviceLegacySettings_AdvancedMotionZones_Zone1 `json:"zone1,omitempty"`
+	Zone2                *DeviceLegacySettings_AdvancedMotionZones_Zone2 `json:"zone2,omitempty"`
+	Zone3                *DeviceLegacySettings_AdvancedMotionZones_Zone3 `json:"zone3,omitempty"`
+	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// DeviceLegacySettings_AdvancedPirMotionZones defines model for DeviceLegacySettings.AdvancedPirMotionZones.
+type DeviceLegacySettings_AdvancedPirMotionZones struct {
+	Zone1Sensitivity     *int                   `json:"zone1_sensitivity,omitempty"`
+	Zone2Sensitivity     *int                   `json:"zone2_sensitivity,omitempty"`
+	Zone3Sensitivity     *int                   `json:"zone3_sensitivity,omitempty"`
+	Zone4Sensitivity     *int                   `json:"zone4_sensitivity,omitempty"`
+	Zone5Sensitivity     *int                   `json:"zone5_sensitivity,omitempty"`
+	Zone6Sensitivity     *int                   `json:"zone6_sensitivity,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_AudioSettings defines model for DeviceLegacySettings.AudioSettings.
+type DeviceLegacySettings_AudioSettings struct {
+	EnableLiveViewAudioOverride *bool                  `json:"enable_live_view_audio_override,omitempty"`
+	AdditionalProperties        map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvPaidFeatures defines model for DeviceLegacySettings.CvPaidFeatures.
+type DeviceLegacySettings_CvPaidFeatures struct {
+	Animal               *bool                  `json:"animal,omitempty"`
+	BabyCry              *bool                  `json:"baby_cry,omitempty"`
+	CarAlarm             *bool                  `json:"car_alarm,omitempty"`
+	Co2SmokeAlarm        *bool                  `json:"co2_smoke_alarm,omitempty"`
+	CvTriggers           *bool                  `json:"cv_triggers,omitempty"`
+	DogBark              *bool                  `json:"dog_bark,omitempty"`
+	GeneralSound         *bool                  `json:"general_sound,omitempty"`
+	GlassBreak           *bool                  `json:"glass_break,omitempty"`
+	Human                *bool                  `json:"human,omitempty"`
+	Loitering            *bool                  `json:"loitering,omitempty"`
+	Motion               *bool                  `json:"motion,omitempty"`
+	OtherMotion          *bool                  `json:"other_motion,omitempty"`
+	PackageDelivery      *bool                  `json:"package_delivery,omitempty"`
+	PackagePickup        *bool                  `json:"package_pickup,omitempty"`
+	Vehicle              *bool                  `json:"vehicle,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_Animal defines model for DeviceLegacySettings.CvSettings.DetectionTypes.Animal.
+type DeviceLegacySettings_CvSettings_DetectionTypes_Animal struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry defines model for DeviceLegacySettings.CvSettings.DetectionTypes.BabyCry.
+type DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm defines model for DeviceLegacySettings.CvSettings.DetectionTypes.CarAlarm.
+type DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm defines model for DeviceLegacySettings.CvSettings.DetectionTypes.Co2SmokeAlarm.
+type DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_DogBark defines model for DeviceLegacySettings.CvSettings.DetectionTypes.DogBark.
+type DeviceLegacySettings_CvSettings_DetectionTypes_DogBark struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound defines model for DeviceLegacySettings.CvSettings.DetectionTypes.GeneralSound.
+type DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak defines model for DeviceLegacySettings.CvSettings.DetectionTypes.GlassBreak.
+type DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_Human defines model for DeviceLegacySettings.CvSettings.DetectionTypes.Human.
+type DeviceLegacySettings_CvSettings_DetectionTypes_Human struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_Loitering defines model for DeviceLegacySettings.CvSettings.DetectionTypes.Loitering.
+type DeviceLegacySettings_CvSettings_DetectionTypes_Loitering struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_Motion defines model for DeviceLegacySettings.CvSettings.DetectionTypes.Motion.
+type DeviceLegacySettings_CvSettings_DetectionTypes_Motion struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop defines model for DeviceLegacySettings.CvSettings.DetectionTypes.MotionStop.
+type DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle defines model for DeviceLegacySettings.CvSettings.DetectionTypes.MovingVehicle.
+type DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion defines model for DeviceLegacySettings.CvSettings.DetectionTypes.OtherMotion.
+type DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery defines model for DeviceLegacySettings.CvSettings.DetectionTypes.PackageDelivery.
+type DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup defines model for DeviceLegacySettings.CvSettings.DetectionTypes.PackagePickup.
+type DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion defines model for DeviceLegacySettings.CvSettings.DetectionTypes.UnverifiedMotion.
+type DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle defines model for DeviceLegacySettings.CvSettings.DetectionTypes.Vehicle.
+type DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	Notification         *bool                  `json:"notification,omitempty"`
+	Record               *bool                  `json:"record,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_DetectionTypes defines model for DeviceLegacySettings.CvSettings.DetectionTypes.
+type DeviceLegacySettings_CvSettings_DetectionTypes struct {
+	Animal               *DeviceLegacySettings_CvSettings_DetectionTypes_Animal           `json:"animal,omitempty"`
+	BabyCry              *DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry          `json:"baby_cry,omitempty"`
+	CarAlarm             *DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm         `json:"car_alarm,omitempty"`
+	Co2SmokeAlarm        *DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm    `json:"co2_smoke_alarm,omitempty"`
+	DogBark              *DeviceLegacySettings_CvSettings_DetectionTypes_DogBark          `json:"dog_bark,omitempty"`
+	GeneralSound         *DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound     `json:"general_sound,omitempty"`
+	GlassBreak           *DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak       `json:"glass_break,omitempty"`
+	Human                *DeviceLegacySettings_CvSettings_DetectionTypes_Human            `json:"human,omitempty"`
+	Loitering            *DeviceLegacySettings_CvSettings_DetectionTypes_Loitering        `json:"loitering,omitempty"`
+	Motion               *DeviceLegacySettings_CvSettings_DetectionTypes_Motion           `json:"motion,omitempty"`
+	MotionStop           *DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop       `json:"motion_stop,omitempty"`
+	MovingVehicle        *DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle    `json:"moving_vehicle,omitempty"`
+	OtherMotion          *DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion      `json:"other_motion,omitempty"`
+	PackageDelivery      *DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery  `json:"package_delivery,omitempty"`
+	PackagePickup        *DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup    `json:"package_pickup,omitempty"`
+	UnverifiedMotion     *DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion `json:"unverified_motion,omitempty"`
+	Vehicle              *DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle          `json:"vehicle,omitempty"`
+	AdditionalProperties map[string]interface{}                                           `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch defines model for DeviceLegacySettings.CvSettings.SearchTypes.NaturalLanguageSearch.
+type DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	Mode                 *string                `json:"mode,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_SearchTypes defines model for DeviceLegacySettings.CvSettings.SearchTypes.
+type DeviceLegacySettings_CvSettings_SearchTypes struct {
+	NaturalLanguageSearch *DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch `json:"natural_language_search,omitempty"`
+	AdditionalProperties  map[string]interface{}                                             `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings_Threshold defines model for DeviceLegacySettings.CvSettings.Threshold.
+type DeviceLegacySettings_CvSettings_Threshold struct {
+	BabyCry              *float32               `json:"baby_cry,omitempty"`
+	CarAlarm             *float32               `json:"car_alarm,omitempty"`
+	Co2SmokeAlarm        *float32               `json:"co2_smoke_alarm,omitempty"`
+	DogBark              *float32               `json:"dog_bark,omitempty"`
+	GeneralSound         *float32               `json:"general_sound,omitempty"`
+	GlassBreak           *float32               `json:"glass_break,omitempty"`
+	Loitering            *float32               `json:"loitering,omitempty"`
+	PackageDelivery      *float32               `json:"package_delivery,omitempty"`
+	UnverifiedMotion     *float32               `json:"unverified_motion,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_CvSettings defines model for DeviceLegacySettings.CvSettings.
+type DeviceLegacySettings_CvSettings struct {
+	DetectionTypes       *DeviceLegacySettings_CvSettings_DetectionTypes `json:"detection_types,omitempty"`
+	SearchTypes          *DeviceLegacySettings_CvSettings_SearchTypes    `json:"search_types,omitempty"`
+	Threshold            *DeviceLegacySettings_CvSettings_Threshold      `json:"threshold,omitempty"`
+	Triggers             *[]interface{}                                  `json:"triggers,omitempty"`
+	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// DeviceLegacySettingsEnableVod0 defines model for DeviceLegacySettings.EnableVod.0.
+type DeviceLegacySettingsEnableVod0 = int
+
+// DeviceLegacySettingsEnableVod1 defines model for DeviceLegacySettings.EnableVod.1.
+type DeviceLegacySettingsEnableVod1 = bool
+
+// DeviceLegacySettings_EnableVod Integer in the v3 camera capture; boolean in legacy family responses.
+type DeviceLegacySettings_EnableVod struct {
+	union json.RawMessage
+}
+
+// DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence defines model for DeviceLegacySettings.HybridMotionZones.AdvancedObjectSettings.HumanDetectionConfidence.
+type DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence struct {
+	Day                  *float32               `json:"day,omitempty"`
+	Night                *float32               `json:"night,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap defines model for DeviceLegacySettings.HybridMotionZones.AdvancedObjectSettings.MotionZoneOverlap.
+type DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap struct {
+	Day                  *float32               `json:"day,omitempty"`
+	Night                *float32               `json:"night,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum defines model for DeviceLegacySettings.HybridMotionZones.AdvancedObjectSettings.ObjectSizeMaximum.
+type DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum struct {
+	Day                  *float32               `json:"day,omitempty"`
+	Night                *float32               `json:"night,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum defines model for DeviceLegacySettings.HybridMotionZones.AdvancedObjectSettings.ObjectSizeMinimum.
+type DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum struct {
+	Day                  *float32               `json:"day,omitempty"`
+	Night                *float32               `json:"night,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap defines model for DeviceLegacySettings.HybridMotionZones.AdvancedObjectSettings.ObjectTimeOverlap.
+type DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap struct {
+	Day                  *float32               `json:"day,omitempty"`
+	Night                *float32               `json:"night,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings defines model for DeviceLegacySettings.HybridMotionZones.AdvancedObjectSettings.
+type DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings struct {
+	HumanDetectionConfidence *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence `json:"human_detection_confidence,omitempty"`
+	MotionZoneOverlap        *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap        `json:"motion_zone_overlap,omitempty"`
+	ObjectSizeMaximum        *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum        `json:"object_size_maximum,omitempty"`
+	ObjectSizeMinimum        *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum        `json:"object_size_minimum,omitempty"`
+	ObjectTimeOverlap        *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap        `json:"object_time_overlap,omitempty"`
+	AdditionalProperties     map[string]interface{}                                                                  `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones defines model for DeviceLegacySettings.HybridMotionZones.AdvancedPirMotionZones.
+type DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones struct {
+	Zone1Sensitivity     *int                   `json:"zone1_sensitivity,omitempty"`
+	Zone2Sensitivity     *int                   `json:"zone2_sensitivity,omitempty"`
+	Zone3Sensitivity     *int                   `json:"zone3_sensitivity,omitempty"`
+	Zone4Sensitivity     *int                   `json:"zone4_sensitivity,omitempty"`
+	Zone5Sensitivity     *int                   `json:"zone5_sensitivity,omitempty"`
+	Zone6Sensitivity     *int                   `json:"zone6_sensitivity,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.Vertex1.
+type DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.Vertex2.
+type DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2 struct {
+	X                    *float32               `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.Vertex3.
+type DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.Vertex4.
+type DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *float32               `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.Vertex5.
+type DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.Vertex6.
+type DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6 struct {
+	X                    *float32               `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.Vertex7.
+type DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.Vertex8.
+type DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *float32               `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone1 defines model for DeviceLegacySettings.HybridMotionZones.Zone1.
+type DeviceLegacySettings_HybridMotionZones_Zone1 struct {
+	Name                 *string                                               `json:"name,omitempty"`
+	State                *int                                                  `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2 `json:"vertex2,omitempty"`
+	Vertex3              *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3 `json:"vertex3,omitempty"`
+	Vertex4              *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4 `json:"vertex4,omitempty"`
+	Vertex5              *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5 `json:"vertex5,omitempty"`
+	Vertex6              *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6 `json:"vertex6,omitempty"`
+	Vertex7              *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7 `json:"vertex7,omitempty"`
+	Vertex8              *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8 `json:"vertex8,omitempty"`
+	AdditionalProperties map[string]interface{}                                `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.Vertex1.
+type DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.Vertex2.
+type DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.Vertex3.
+type DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.Vertex4.
+type DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.Vertex5.
+type DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.Vertex6.
+type DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.Vertex7.
+type DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.Vertex8.
+type DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone2 defines model for DeviceLegacySettings.HybridMotionZones.Zone2.
+type DeviceLegacySettings_HybridMotionZones_Zone2 struct {
+	Name                 *string                                               `json:"name,omitempty"`
+	State                *int                                                  `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2 `json:"vertex2,omitempty"`
+	Vertex3              *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3 `json:"vertex3,omitempty"`
+	Vertex4              *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4 `json:"vertex4,omitempty"`
+	Vertex5              *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5 `json:"vertex5,omitempty"`
+	Vertex6              *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6 `json:"vertex6,omitempty"`
+	Vertex7              *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7 `json:"vertex7,omitempty"`
+	Vertex8              *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8 `json:"vertex8,omitempty"`
+	AdditionalProperties map[string]interface{}                                `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.Vertex1.
+type DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.Vertex2.
+type DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.Vertex3.
+type DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.Vertex4.
+type DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.Vertex5.
+type DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.Vertex6.
+type DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.Vertex7.
+type DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.Vertex8.
+type DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones_Zone3 defines model for DeviceLegacySettings.HybridMotionZones.Zone3.
+type DeviceLegacySettings_HybridMotionZones_Zone3 struct {
+	Name                 *string                                               `json:"name,omitempty"`
+	State                *int                                                  `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2 `json:"vertex2,omitempty"`
+	Vertex3              *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3 `json:"vertex3,omitempty"`
+	Vertex4              *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4 `json:"vertex4,omitempty"`
+	Vertex5              *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5 `json:"vertex5,omitempty"`
+	Vertex6              *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6 `json:"vertex6,omitempty"`
+	Vertex7              *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7 `json:"vertex7,omitempty"`
+	Vertex8              *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8 `json:"vertex8,omitempty"`
+	AdditionalProperties map[string]interface{}                                `json:"-"`
+}
+
+// DeviceLegacySettings_HybridMotionZones defines model for DeviceLegacySettings.HybridMotionZones.
+type DeviceLegacySettings_HybridMotionZones struct {
+	ActiveMotionFilter         *int                                                           `json:"active_motion_filter,omitempty"`
+	AdvancedMotionZonesEnabled *bool                                                          `json:"advanced_motion_zones_enabled,omitempty"`
+	AdvancedMotionZonesType    *string                                                        `json:"advanced_motion_zones_type,omitempty"`
+	AdvancedObjectSettings     *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings `json:"advanced_object_settings,omitempty"`
+	AdvancedPirMotionZones     *DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones `json:"advanced_pir_motion_zones,omitempty"`
+	EnableAudio                *bool                                                          `json:"enable_audio,omitempty"`
+
+	// EnableIr Only null was observed in the captured device response; future values are unverified.
+	EnableIr                   any                                           `json:"enable_ir,omitempty"`
+	EnablePirValidation        *bool                                         `json:"enable_pir_validation,omitempty"`
+	EnableRlmd                 *bool                                         `json:"enable_rlmd,omitempty"`
+	MotionSnoozePrivacyTimeout *int                                          `json:"motion_snooze_privacy_timeout,omitempty"`
+	Sensitivity                *int                                          `json:"sensitivity,omitempty"`
+	Zone1                      *DeviceLegacySettings_HybridMotionZones_Zone1 `json:"zone1,omitempty"`
+	Zone2                      *DeviceLegacySettings_HybridMotionZones_Zone2 `json:"zone2,omitempty"`
+	Zone3                      *DeviceLegacySettings_HybridMotionZones_Zone3 `json:"zone3,omitempty"`
+	AdditionalProperties       map[string]interface{}                        `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone1_Vertex1 defines model for DeviceLegacySettings.IgnoreZones.Zone1.Vertex1.
+type DeviceLegacySettings_IgnoreZones_Zone1_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone1_Vertex2 defines model for DeviceLegacySettings.IgnoreZones.Zone1.Vertex2.
+type DeviceLegacySettings_IgnoreZones_Zone1_Vertex2 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone1 defines model for DeviceLegacySettings.IgnoreZones.Zone1.
+type DeviceLegacySettings_IgnoreZones_Zone1 struct {
+	Name                 *string                                         `json:"name,omitempty"`
+	State                *int                                            `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_IgnoreZones_Zone1_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_IgnoreZones_Zone1_Vertex2 `json:"vertex2,omitempty"`
+	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone2_Vertex1 defines model for DeviceLegacySettings.IgnoreZones.Zone2.Vertex1.
+type DeviceLegacySettings_IgnoreZones_Zone2_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone2_Vertex2 defines model for DeviceLegacySettings.IgnoreZones.Zone2.Vertex2.
+type DeviceLegacySettings_IgnoreZones_Zone2_Vertex2 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone2 defines model for DeviceLegacySettings.IgnoreZones.Zone2.
+type DeviceLegacySettings_IgnoreZones_Zone2 struct {
+	Name                 *string                                         `json:"name,omitempty"`
+	State                *int                                            `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_IgnoreZones_Zone2_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_IgnoreZones_Zone2_Vertex2 `json:"vertex2,omitempty"`
+	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone3_Vertex1 defines model for DeviceLegacySettings.IgnoreZones.Zone3.Vertex1.
+type DeviceLegacySettings_IgnoreZones_Zone3_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone3_Vertex2 defines model for DeviceLegacySettings.IgnoreZones.Zone3.Vertex2.
+type DeviceLegacySettings_IgnoreZones_Zone3_Vertex2 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone3 defines model for DeviceLegacySettings.IgnoreZones.Zone3.
+type DeviceLegacySettings_IgnoreZones_Zone3 struct {
+	Name                 *string                                         `json:"name,omitempty"`
+	State                *int                                            `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_IgnoreZones_Zone3_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_IgnoreZones_Zone3_Vertex2 `json:"vertex2,omitempty"`
+	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone4_Vertex1 defines model for DeviceLegacySettings.IgnoreZones.Zone4.Vertex1.
+type DeviceLegacySettings_IgnoreZones_Zone4_Vertex1 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone4_Vertex2 defines model for DeviceLegacySettings.IgnoreZones.Zone4.Vertex2.
+type DeviceLegacySettings_IgnoreZones_Zone4_Vertex2 struct {
+	X                    *int                   `json:"x,omitempty"`
+	Y                    *int                   `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones_Zone4 defines model for DeviceLegacySettings.IgnoreZones.Zone4.
+type DeviceLegacySettings_IgnoreZones_Zone4 struct {
+	Name                 *string                                         `json:"name,omitempty"`
+	State                *int                                            `json:"state,omitempty"`
+	Vertex1              *DeviceLegacySettings_IgnoreZones_Zone4_Vertex1 `json:"vertex1,omitempty"`
+	Vertex2              *DeviceLegacySettings_IgnoreZones_Zone4_Vertex2 `json:"vertex2,omitempty"`
+	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// DeviceLegacySettings_IgnoreZones defines model for DeviceLegacySettings.IgnoreZones.
+type DeviceLegacySettings_IgnoreZones struct {
+	Zone1                *DeviceLegacySettings_IgnoreZones_Zone1 `json:"zone1,omitempty"`
+	Zone2                *DeviceLegacySettings_IgnoreZones_Zone2 `json:"zone2,omitempty"`
+	Zone3                *DeviceLegacySettings_IgnoreZones_Zone3 `json:"zone3,omitempty"`
+	Zone4                *DeviceLegacySettings_IgnoreZones_Zone4 `json:"zone4,omitempty"`
+	AdditionalProperties map[string]interface{}                  `json:"-"`
+}
+
+// DeviceLegacySettings_LightSnoozeSettings defines model for DeviceLegacySettings.LightSnoozeSettings.
+type DeviceLegacySettings_LightSnoozeSettings struct {
+	// AlwaysOn Only null was observed in the captured device response; future values are unverified.
+	AlwaysOn             any                    `json:"always_on,omitempty"`
+	Duration             *int                   `json:"duration,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_Lite24x7 defines model for DeviceLegacySettings.Lite24x7.
+type DeviceLegacySettings_Lite24x7 struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	FrequencySecs        *int                   `json:"frequency_secs,omitempty"`
+	ResolutionP          *int                   `json:"resolution_p,omitempty"`
+	Subscribed           *bool                  `json:"subscribed,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_MotionSettings defines model for DeviceLegacySettings.MotionSettings.
+type DeviceLegacySettings_MotionSettings struct {
+	MotionSnoozePresetProfile *string                `json:"motion_snooze_preset_profile,omitempty"`
+	AdditionalProperties      map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettingsMotionZones0 defines model for DeviceLegacySettings.MotionZones.0.
+type DeviceLegacySettingsMotionZones0 = []interface{}
+
+// DeviceLegacySettingsMotionZones1 defines model for DeviceLegacySettings.MotionZones.1.
+type DeviceLegacySettingsMotionZones1 map[string]interface{}
+
+// DeviceLegacySettings_MotionZones Empty array in the v3 capture; structured zone map in legacy families.
+type DeviceLegacySettings_MotionZones struct {
+	union json.RawMessage
+}
+
+// DeviceLegacySettings_NetworkSettings_NetworkDiagnosis defines model for DeviceLegacySettings.NetworkSettings.NetworkDiagnosis.
+type DeviceLegacySettings_NetworkSettings_NetworkDiagnosis struct {
+	// ChannelAnalysis Only null was observed in the captured device response; future values are unverified.
+	ChannelAnalysis any `json:"channel_analysis,omitempty"`
+
+	// LanPerformance Only null was observed in the captured device response; future values are unverified.
+	LanPerformance any `json:"lan_performance,omitempty"`
+
+	// PeriodicDiagnosis Only null was observed in the captured device response; future values are unverified.
+	PeriodicDiagnosis any `json:"periodic_diagnosis,omitempty"`
+
+	// TcpHost Only null was observed in the captured device response; future values are unverified.
+	TcpHost any `json:"tcp_host,omitempty"`
+
+	// TcpIperf Only null was observed in the captured device response; future values are unverified.
+	TcpIperf any `json:"tcp_iperf,omitempty"`
+
+	// TcpPort Only null was observed in the captured device response; future values are unverified.
+	TcpPort any `json:"tcp_port,omitempty"`
+
+	// UdpBandwidth Only null was observed in the captured device response; future values are unverified.
+	UdpBandwidth any `json:"udp_bandwidth,omitempty"`
+
+	// UdpHost Only null was observed in the captured device response; future values are unverified.
+	UdpHost any `json:"udp_host,omitempty"`
+
+	// UdpIperf Only null was observed in the captured device response; future values are unverified.
+	UdpIperf any `json:"udp_iperf,omitempty"`
+
+	// UdpPort Only null was observed in the captured device response; future values are unverified.
+	UdpPort              any                    `json:"udp_port,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_NetworkSettings defines model for DeviceLegacySettings.NetworkSettings.
+type DeviceLegacySettings_NetworkSettings struct {
+	// DataRestrictionEnabled Only null was observed in the captured device response; future values are unverified.
+	DataRestrictionEnabled any `json:"data_restriction_enabled,omitempty"`
+
+	// MacAddressBle Only null was observed in the captured device response; future values are unverified.
+	MacAddressBle any `json:"mac_address_ble,omitempty"`
+
+	// MacAddressWifi24 Only null was observed in the captured device response; future values are unverified.
+	MacAddressWifi24 any `json:"mac_address_wifi_24,omitempty"`
+
+	// MacAddressWifi5 Only null was observed in the captured device response; future values are unverified.
+	MacAddressWifi5 any `json:"mac_address_wifi_5,omitempty"`
+
+	// MaxDynamicListenInterval Only null was observed in the captured device response; future values are unverified.
+	MaxDynamicListenInterval any                                                    `json:"max_dynamic_listen_interval,omitempty"`
+	MultiNetPref             *int                                                   `json:"multi_net_pref,omitempty"`
+	NetworkDiagnosis         *DeviceLegacySettings_NetworkSettings_NetworkDiagnosis `json:"network_diagnosis,omitempty"`
+	AdditionalProperties     map[string]interface{}                                 `json:"-"`
+}
+
+// DeviceLegacySettings_OfflineMotionEventSettings defines model for DeviceLegacySettings.OfflineMotionEventSettings.
+type DeviceLegacySettings_OfflineMotionEventSettings struct {
+	Enabled              *bool                  `json:"enabled,omitempty"`
+	FrequencyAfterSecs   *int                   `json:"frequency_after_secs,omitempty"`
+	MaxUploadKb          *int                   `json:"max_upload_kb,omitempty"`
+	PeriodAfterSecs      *int                   `json:"period_after_secs,omitempty"`
+	ResolutionP          *int                   `json:"resolution_p,omitempty"`
+	Subscribed           *bool                  `json:"subscribed,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_OtherPaidFeatures defines model for DeviceLegacySettings.OtherPaidFeatures.
+type DeviceLegacySettings_OtherPaidFeatures struct {
+	AlarmTriggeredRecording *bool                  `json:"alarm_triggered_recording,omitempty"`
+	AlexaConcierge          *bool                  `json:"alexa_concierge,omitempty"`
+	ClosedCaption           *bool                  `json:"closed_caption,omitempty"`
+	CriticalAlerts          *bool                  `json:"critical_alerts,omitempty"`
+	DailyDigest             *bool                  `json:"daily_digest,omitempty"`
+	DingCall                *bool                  `json:"ding_call,omitempty"`
+	ExtendedLiveView        *bool                  `json:"extended_live_view,omitempty"`
+	LiveSpeak               *bool                  `json:"live_speak,omitempty"`
+	MulticamLiveView        *bool                  `json:"multicam_live_view,omitempty"`
+	NaturalLanguageSearch   *bool                  `json:"natural_language_search,omitempty"`
+	PackageProtection       *bool                  `json:"package_protection,omitempty"`
+	Recording24x7           *bool                  `json:"recording_24x7,omitempty"`
+	SheilaCv                *bool                  `json:"sheila_cv,omitempty"`
+	SheilaRecording         *bool                  `json:"sheila_recording,omitempty"`
+	SnapshotCapturePlus     *bool                  `json:"snapshot_capture_plus,omitempty"`
+	SystemLevelPip          *bool                  `json:"system_level_pip,omitempty"`
+	AdditionalProperties    map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_PtzSettings_AutoScan defines model for DeviceLegacySettings.PtzSettings.AutoScan.
+type DeviceLegacySettings_PtzSettings_AutoScan struct {
+	PauseMs              *int                   `json:"pause_ms,omitempty"`
+	StepSize             *float32               `json:"step_size,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_PtzSettings_PanSettings_Movement defines model for DeviceLegacySettings.PtzSettings.PanSettings.Movement.
+type DeviceLegacySettings_PtzSettings_PanSettings_Movement struct {
+	MaxAcceleration      *float32               `json:"max_acceleration,omitempty"`
+	MaxSpeed             *float32               `json:"max_speed,omitempty"`
+	StepSize             *float32               `json:"step_size,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_PtzSettings_PanSettings_Positions defines model for DeviceLegacySettings.PtzSettings.PanSettings.Positions.
+type DeviceLegacySettings_PtzSettings_PanSettings_Positions struct {
+	Default              *float32               `json:"default,omitempty"`
+	Max                  *float32               `json:"max,omitempty"`
+	Min                  *float32               `json:"min,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_PtzSettings_PanSettings defines model for DeviceLegacySettings.PtzSettings.PanSettings.
+type DeviceLegacySettings_PtzSettings_PanSettings struct {
+	Movement             *DeviceLegacySettings_PtzSettings_PanSettings_Movement  `json:"movement,omitempty"`
+	Positions            *DeviceLegacySettings_PtzSettings_PanSettings_Positions `json:"positions,omitempty"`
+	AdditionalProperties map[string]interface{}                                  `json:"-"`
+}
+
+// DeviceLegacySettings_PtzSettings_TiltSettings_Movement defines model for DeviceLegacySettings.PtzSettings.TiltSettings.Movement.
+type DeviceLegacySettings_PtzSettings_TiltSettings_Movement struct {
+	MaxAcceleration      *float32               `json:"max_acceleration,omitempty"`
+	MaxSpeed             *float32               `json:"max_speed,omitempty"`
+	StepSize             *float32               `json:"step_size,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_PtzSettings_TiltSettings_Positions defines model for DeviceLegacySettings.PtzSettings.TiltSettings.Positions.
+type DeviceLegacySettings_PtzSettings_TiltSettings_Positions struct {
+	Default              *float32               `json:"default,omitempty"`
+	Max                  *float32               `json:"max,omitempty"`
+	Min                  *float32               `json:"min,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_PtzSettings_TiltSettings defines model for DeviceLegacySettings.PtzSettings.TiltSettings.
+type DeviceLegacySettings_PtzSettings_TiltSettings struct {
+	Movement             *DeviceLegacySettings_PtzSettings_TiltSettings_Movement  `json:"movement,omitempty"`
+	Positions            *DeviceLegacySettings_PtzSettings_TiltSettings_Positions `json:"positions,omitempty"`
+	AdditionalProperties map[string]interface{}                                   `json:"-"`
+}
+
+// DeviceLegacySettings_PtzSettings defines model for DeviceLegacySettings.PtzSettings.
+type DeviceLegacySettings_PtzSettings struct {
+	AutoScan             *DeviceLegacySettings_PtzSettings_AutoScan     `json:"auto_scan,omitempty"`
+	Mode                 *string                                        `json:"mode,omitempty"`
+	PanSettings          *DeviceLegacySettings_PtzSettings_PanSettings  `json:"pan_settings,omitempty"`
+	TiltSettings         *DeviceLegacySettings_PtzSettings_TiltSettings `json:"tilt_settings,omitempty"`
+	AdditionalProperties map[string]interface{}                         `json:"-"`
+}
+
+// DeviceLegacySettings_ServerSettings defines model for DeviceLegacySettings.ServerSettings.
+type DeviceLegacySettings_ServerSettings struct {
+	RingMediaServerEnabled *bool                  `json:"ring_media_server_enabled,omitempty"`
+	RingMediaServerHost    *string                `json:"ring_media_server_host,omitempty"`
 	AdditionalProperties   map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_SheilaSettings defines model for DeviceLegacySettings.SheilaSettings.
+type DeviceLegacySettings_SheilaSettings struct {
+	CvProcessingEnabled  *bool                  `json:"cv_processing_enabled,omitempty"`
+	LocalStorageEnabled  *bool                  `json:"local_storage_enabled,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_VideoSettings defines model for DeviceLegacySettings.VideoSettings.
+type DeviceLegacySettings_VideoSettings struct {
+	// EncryptionEligibilityMode Only null was observed in the captured device response; future values are unverified.
+	EncryptionEligibilityMode any                    `json:"encryption_eligibility_mode,omitempty"`
+	EncryptionEnabled         *bool                  `json:"encryption_enabled,omitempty"`
+	EncryptionMethod          *int                   `json:"encryption_method,omitempty"`
+	HevcEnabled               *bool                  `json:"hevc_enabled,omitempty"`
+	Recording24x7Mode         *int                   `json:"recording_24x7_mode,omitempty"`
+	AdditionalProperties      map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_ZoneSettings_Motion_Properties defines model for DeviceLegacySettings.ZoneSettings.Motion.Properties.
+type DeviceLegacySettings_ZoneSettings_Motion_Properties struct {
+	DetectionTypes       *[]string              `json:"detection_types,omitempty"`
+	ZoneTypes            *[]interface{}         `json:"zone_types,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_ZoneSettings_Motion_Vertices defines model for DeviceLegacySettings.ZoneSettings.Motion.Vertices.
+type DeviceLegacySettings_ZoneSettings_Motion_Vertices struct {
+	X                    *float32               `json:"x,omitempty"`
+	Y                    *float32               `json:"y,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// DeviceLegacySettings_ZoneSettings_Motion defines model for DeviceLegacySettings.ZoneSettings.Motion.
+type DeviceLegacySettings_ZoneSettings_Motion struct {
+	Id                   *string                                              `json:"id,omitempty"`
+	Name                 *string                                              `json:"name,omitempty"`
+	Properties           *DeviceLegacySettings_ZoneSettings_Motion_Properties `json:"properties,omitempty"`
+	State                *string                                              `json:"state,omitempty"`
+	Vertices             *[]DeviceLegacySettings_ZoneSettings_Motion_Vertices `json:"vertices,omitempty"`
+	AdditionalProperties map[string]interface{}                               `json:"-"`
+}
+
+// DeviceLegacySettings_ZoneSettings defines model for DeviceLegacySettings.ZoneSettings.
+type DeviceLegacySettings_ZoneSettings struct {
+	Monitoring           *[]interface{}                              `json:"monitoring,omitempty"`
+	Motion               *[]DeviceLegacySettings_ZoneSettings_Motion `json:"motion,omitempty"`
+	AdditionalProperties map[string]interface{}                      `json:"-"`
 }
 
 // DeviceList defines model for DeviceList.
@@ -657,6 +2460,40 @@ type HistoryFeedItem struct {
 	Type                 *string                `json:"type,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// IntercomUnlockCommand defines model for IntercomUnlockCommand.
+type IntercomUnlockCommand struct {
+	CommandName IntercomUnlockCommandCommandName `json:"command_name"`
+	Request     IntercomUnlockRPC                `json:"request"`
+}
+
+// IntercomUnlockCommandCommandName defines model for IntercomUnlockCommand.CommandName.
+type IntercomUnlockCommandCommandName string
+
+// IntercomUnlockParams defines model for IntercomUnlockParams.
+type IntercomUnlockParams struct {
+	DoorId IntercomUnlockParamsDoorId `json:"door_id"`
+	UserId IntercomUnlockParamsUserId `json:"user_id"`
+}
+
+// IntercomUnlockParamsDoorId defines model for IntercomUnlockParams.DoorId.
+type IntercomUnlockParamsDoorId int
+
+// IntercomUnlockParamsUserId defines model for IntercomUnlockParams.UserId.
+type IntercomUnlockParamsUserId int
+
+// IntercomUnlockRPC defines model for IntercomUnlockRPC.
+type IntercomUnlockRPC struct {
+	Jsonrpc IntercomUnlockRPCJsonrpc `json:"jsonrpc"`
+	Method  IntercomUnlockRPCMethod  `json:"method"`
+	Params  IntercomUnlockParams     `json:"params"`
+}
+
+// IntercomUnlockRPCJsonrpc defines model for IntercomUnlockRPC.Jsonrpc.
+type IntercomUnlockRPCJsonrpc string
+
+// IntercomUnlockRPCMethod defines model for IntercomUnlockRPC.Method.
+type IntercomUnlockRPCMethod string
 
 // JsonValue Explicit escape hatch for fields without observed structure or typed error responses.
 type JsonValue = interface{}
@@ -862,6 +2699,35 @@ type PTZSettings struct {
 	TiltSettings         *PTZAxisSettings       `json:"tilt_settings,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// PushDeviceMetadata defines model for PushDeviceMetadata.
+type PushDeviceMetadata struct {
+	ApiVersion    *int                            `json:"api_version,omitempty"`
+	DeviceModel   *string                         `json:"device_model,omitempty"`
+	PnDictVersion PushDeviceMetadataPnDictVersion `json:"pn_dict_version"`
+	PnService     PushDeviceMetadataPnService     `json:"pn_service"`
+}
+
+// PushDeviceMetadataPnDictVersion defines model for PushDeviceMetadata.PnDictVersion.
+type PushDeviceMetadataPnDictVersion string
+
+// PushDeviceMetadataPnService defines model for PushDeviceMetadata.PnService.
+type PushDeviceMetadataPnService string
+
+// PushDeviceRegistration defines model for PushDeviceRegistration.
+type PushDeviceRegistration struct {
+	Device PushDeviceRegistrationDevice `json:"device"`
+}
+
+// PushDeviceRegistrationDevice defines model for PushDeviceRegistrationDevice.
+type PushDeviceRegistrationDevice struct {
+	Metadata              PushDeviceMetadata             `json:"metadata"`
+	Os                    PushDeviceRegistrationDeviceOs `json:"os"`
+	PushNotificationToken string                         `json:"push_notification_token"`
+}
+
+// PushDeviceRegistrationDeviceOs defines model for PushDeviceRegistrationDevice.Os.
+type PushDeviceRegistrationDeviceOs string
 
 // Recording defines model for Recording.
 type Recording struct {
@@ -1222,6 +3088,9 @@ type BeginOrContinueOAuthAuthorizationParamsResponseType string
 // BeginOrContinueOAuthAuthorizationParamsCodeChallengeMethod defines parameters for BeginOrContinueOAuthAuthorization.
 type BeginOrContinueOAuthAuthorizationParamsCodeChallengeMethod string
 
+// RegisterPushDeviceJSONRequestBody defines body for RegisterPushDevice for application/json ContentType.
+type RegisterPushDeviceJSONRequestBody = PushDeviceRegistration
+
 // RegisterClientSessionJSONRequestBody defines body for RegisterClientSession for application/json ContentType.
 type RegisterClientSessionJSONRequestBody = ClientSessionRegistration
 
@@ -1230,6 +3099,9 @@ type RefreshLegacySnapshotTimestampJSONRequestBody = SnapshotTimestampRequest
 
 // SendDeviceCommandJSONRequestBody defines body for SendDeviceCommand for application/json ContentType.
 type SendDeviceCommandJSONRequestBody = DeviceCommand
+
+// UnlockIntercomJSONRequestBody defines body for UnlockIntercom for application/json ContentType.
+type UnlockIntercomJSONRequestBody = IntercomUnlockCommand
 
 // PatchDeviceSettingsJSONRequestBody defines body for PatchDeviceSettings for application/json ContentType.
 type PatchDeviceSettingsJSONRequestBody = DeviceSettingsPatch
@@ -1715,12 +3587,52 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["active_schedule_uuid"]; found {
+		err = json.Unmarshal(raw, &a.ActiveScheduleUuid)
+		if err != nil {
+			return fmt.Errorf("error reading 'active_schedule_uuid': %w", err)
+		}
+		delete(object, "active_schedule_uuid")
+	}
+
 	if raw, found := object["address"]; found {
 		err = json.Unmarshal(raw, &a.Address)
 		if err != nil {
 			return fmt.Errorf("error reading 'address': %w", err)
 		}
 		delete(object, "address")
+	}
+
+	if raw, found := object["alerts"]; found {
+		err = json.Unmarshal(raw, &a.Alerts)
+		if err != nil {
+			return fmt.Errorf("error reading 'alerts': %w", err)
+		}
+		delete(object, "alerts")
+	}
+
+	if raw, found := object["battery_life"]; found {
+		err = json.Unmarshal(raw, &a.BatteryLife)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_life': %w", err)
+		}
+		delete(object, "battery_life")
+	}
+
+	if raw, found := object["battery_life_2"]; found {
+		err = json.Unmarshal(raw, &a.BatteryLife2)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_life_2': %w", err)
+		}
+		delete(object, "battery_life_2")
+	}
+
+	if raw, found := object["camera_location_indoor"]; found {
+		err = json.Unmarshal(raw, &a.CameraLocationIndoor)
+		if err != nil {
+			return fmt.Errorf("error reading 'camera_location_indoor': %w", err)
+		}
+		delete(object, "camera_location_indoor")
 	}
 
 	if raw, found := object["created_at"]; found {
@@ -1755,6 +3667,46 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		delete(object, "device_id")
 	}
 
+	if raw, found := object["device_resource_id"]; found {
+		err = json.Unmarshal(raw, &a.DeviceResourceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'device_resource_id': %w", err)
+		}
+		delete(object, "device_resource_id")
+	}
+
+	if raw, found := object["encryption_group"]; found {
+		err = json.Unmarshal(raw, &a.EncryptionGroup)
+		if err != nil {
+			return fmt.Errorf("error reading 'encryption_group': %w", err)
+		}
+		delete(object, "encryption_group")
+	}
+
+	if raw, found := object["ext_power_state"]; found {
+		err = json.Unmarshal(raw, &a.ExtPowerState)
+		if err != nil {
+			return fmt.Errorf("error reading 'ext_power_state': %w", err)
+		}
+		delete(object, "ext_power_state")
+	}
+
+	if raw, found := object["external_connection"]; found {
+		err = json.Unmarshal(raw, &a.ExternalConnection)
+		if err != nil {
+			return fmt.Errorf("error reading 'external_connection': %w", err)
+		}
+		delete(object, "external_connection")
+	}
+
+	if raw, found := object["facing_window"]; found {
+		err = json.Unmarshal(raw, &a.FacingWindow)
+		if err != nil {
+			return fmt.Errorf("error reading 'facing_window': %w", err)
+		}
+		delete(object, "facing_window")
+	}
+
 	if raw, found := object["family"]; found {
 		err = json.Unmarshal(raw, &a.Family)
 		if err != nil {
@@ -1769,6 +3721,14 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'features': %w", err)
 		}
 		delete(object, "features")
+	}
+
+	if raw, found := object["firmware_version"]; found {
+		err = json.Unmarshal(raw, &a.FirmwareVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'firmware_version': %w", err)
+		}
+		delete(object, "firmware_version")
 	}
 
 	if raw, found := object["has_light"]; found {
@@ -1795,12 +3755,28 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		delete(object, "id")
 	}
 
+	if raw, found := object["is_sidewalk_gateway"]; found {
+		err = json.Unmarshal(raw, &a.IsSidewalkGateway)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_sidewalk_gateway': %w", err)
+		}
+		delete(object, "is_sidewalk_gateway")
+	}
+
 	if raw, found := object["kind"]; found {
 		err = json.Unmarshal(raw, &a.Kind)
 		if err != nil {
 			return fmt.Errorf("error reading 'kind': %w", err)
 		}
 		delete(object, "kind")
+	}
+
+	if raw, found := object["latitude"]; found {
+		err = json.Unmarshal(raw, &a.Latitude)
+		if err != nil {
+			return fmt.Errorf("error reading 'latitude': %w", err)
+		}
+		delete(object, "latitude")
 	}
 
 	if raw, found := object["light_brightness"]; found {
@@ -1819,12 +3795,28 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		delete(object, "location_id")
 	}
 
+	if raw, found := object["longitude"]; found {
+		err = json.Unmarshal(raw, &a.Longitude)
+		if err != nil {
+			return fmt.Errorf("error reading 'longitude': %w", err)
+		}
+		delete(object, "longitude")
+	}
+
 	if raw, found := object["motion_detection_enabled"]; found {
 		err = json.Unmarshal(raw, &a.MotionDetectionEnabled)
 		if err != nil {
 			return fmt.Errorf("error reading 'motion_detection_enabled': %w", err)
 		}
 		delete(object, "motion_detection_enabled")
+	}
+
+	if raw, found := object["motion_snooze"]; found {
+		err = json.Unmarshal(raw, &a.MotionSnooze)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_snooze': %w", err)
+		}
+		delete(object, "motion_snooze")
 	}
 
 	if raw, found := object["name"]; found {
@@ -1859,12 +3851,84 @@ func (a *Device) UnmarshalJSON(b []byte) error {
 		delete(object, "owner")
 	}
 
+	if raw, found := object["ring_id"]; found {
+		err = json.Unmarshal(raw, &a.RingId)
+		if err != nil {
+			return fmt.Errorf("error reading 'ring_id': %w", err)
+		}
+		delete(object, "ring_id")
+	}
+
+	if raw, found := object["ring_net_id"]; found {
+		err = json.Unmarshal(raw, &a.RingNetId)
+		if err != nil {
+			return fmt.Errorf("error reading 'ring_net_id': %w", err)
+		}
+		delete(object, "ring_net_id")
+	}
+
+	if raw, found := object["schema_id"]; found {
+		err = json.Unmarshal(raw, &a.SchemaId)
+		if err != nil {
+			return fmt.Errorf("error reading 'schema_id': %w", err)
+		}
+		delete(object, "schema_id")
+	}
+
 	if raw, found := object["settings"]; found {
 		err = json.Unmarshal(raw, &a.Settings)
 		if err != nil {
 			return fmt.Errorf("error reading 'settings': %w", err)
 		}
 		delete(object, "settings")
+	}
+
+	if raw, found := object["shared_at"]; found {
+		err = json.Unmarshal(raw, &a.SharedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'shared_at': %w", err)
+		}
+		delete(object, "shared_at")
+	}
+
+	if raw, found := object["siren_status"]; found {
+		err = json.Unmarshal(raw, &a.SirenStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'siren_status': %w", err)
+		}
+		delete(object, "siren_status")
+	}
+
+	if raw, found := object["snooze_settings"]; found {
+		err = json.Unmarshal(raw, &a.SnoozeSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'snooze_settings': %w", err)
+		}
+		delete(object, "snooze_settings")
+	}
+
+	if raw, found := object["stolen"]; found {
+		err = json.Unmarshal(raw, &a.Stolen)
+		if err != nil {
+			return fmt.Errorf("error reading 'stolen': %w", err)
+		}
+		delete(object, "stolen")
+	}
+
+	if raw, found := object["subscribed"]; found {
+		err = json.Unmarshal(raw, &a.Subscribed)
+		if err != nil {
+			return fmt.Errorf("error reading 'subscribed': %w", err)
+		}
+		delete(object, "subscribed")
+	}
+
+	if raw, found := object["subscribed_motions"]; found {
+		err = json.Unmarshal(raw, &a.SubscribedMotions)
+		if err != nil {
+			return fmt.Errorf("error reading 'subscribed_motions': %w", err)
+		}
+		delete(object, "subscribed_motions")
 	}
 
 	if raw, found := object["time_zone"]; found {
@@ -1926,10 +3990,43 @@ func (a Device) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	object["active_schedule_uuid"], err = json.Marshal(a.ActiveScheduleUuid)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'active_schedule_uuid': %w", err)
+	}
+
 	if a.Address != nil {
 		object["address"], err = json.Marshal(a.Address)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'address': %w", err)
+		}
+	}
+
+	if a.Alerts != nil {
+		object["alerts"], err = json.Marshal(a.Alerts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'alerts': %w", err)
+		}
+	}
+
+	if a.BatteryLife != nil {
+		object["battery_life"], err = json.Marshal(a.BatteryLife)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_life': %w", err)
+		}
+	}
+
+	if a.BatteryLife2 != nil {
+		object["battery_life_2"], err = json.Marshal(a.BatteryLife2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_life_2': %w", err)
+		}
+	}
+
+	if a.CameraLocationIndoor != nil {
+		object["camera_location_indoor"], err = json.Marshal(a.CameraLocationIndoor)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'camera_location_indoor': %w", err)
 		}
 	}
 
@@ -1959,6 +4056,39 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.DeviceResourceId != nil {
+		object["device_resource_id"], err = json.Marshal(a.DeviceResourceId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'device_resource_id': %w", err)
+		}
+	}
+
+	if a.EncryptionGroup != nil {
+		object["encryption_group"], err = json.Marshal(a.EncryptionGroup)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'encryption_group': %w", err)
+		}
+	}
+
+	object["ext_power_state"], err = json.Marshal(a.ExtPowerState)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ext_power_state': %w", err)
+	}
+
+	if a.ExternalConnection != nil {
+		object["external_connection"], err = json.Marshal(a.ExternalConnection)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'external_connection': %w", err)
+		}
+	}
+
+	if a.FacingWindow != nil {
+		object["facing_window"], err = json.Marshal(a.FacingWindow)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'facing_window': %w", err)
+		}
+	}
+
 	if a.Family != nil {
 		object["family"], err = json.Marshal(a.Family)
 		if err != nil {
@@ -1970,6 +4100,13 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		object["features"], err = json.Marshal(a.Features)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'features': %w", err)
+		}
+	}
+
+	if a.FirmwareVersion != nil {
+		object["firmware_version"], err = json.Marshal(a.FirmwareVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'firmware_version': %w", err)
 		}
 	}
 
@@ -1992,9 +4129,23 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'id': %w", err)
 	}
 
+	if a.IsSidewalkGateway != nil {
+		object["is_sidewalk_gateway"], err = json.Marshal(a.IsSidewalkGateway)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'is_sidewalk_gateway': %w", err)
+		}
+	}
+
 	object["kind"], err = json.Marshal(a.Kind)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'kind': %w", err)
+	}
+
+	if a.Latitude != nil {
+		object["latitude"], err = json.Marshal(a.Latitude)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'latitude': %w", err)
+		}
 	}
 
 	if a.LightBrightness != nil {
@@ -2011,10 +4162,24 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.Longitude != nil {
+		object["longitude"], err = json.Marshal(a.Longitude)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'longitude': %w", err)
+		}
+	}
+
 	if a.MotionDetectionEnabled != nil {
 		object["motion_detection_enabled"], err = json.Marshal(a.MotionDetectionEnabled)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'motion_detection_enabled': %w", err)
+		}
+	}
+
+	if a.MotionSnooze != nil {
+		object["motion_snooze"], err = json.Marshal(a.MotionSnooze)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_snooze': %w", err)
 		}
 	}
 
@@ -2046,10 +4211,67 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	object["ring_id"], err = json.Marshal(a.RingId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ring_id': %w", err)
+	}
+
+	if a.RingNetId != nil {
+		object["ring_net_id"], err = json.Marshal(a.RingNetId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ring_net_id': %w", err)
+		}
+	}
+
+	if a.SchemaId != nil {
+		object["schema_id"], err = json.Marshal(a.SchemaId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'schema_id': %w", err)
+		}
+	}
+
 	if a.Settings != nil {
 		object["settings"], err = json.Marshal(a.Settings)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'settings': %w", err)
+		}
+	}
+
+	object["shared_at"], err = json.Marshal(a.SharedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'shared_at': %w", err)
+	}
+
+	if a.SirenStatus != nil {
+		object["siren_status"], err = json.Marshal(a.SirenStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'siren_status': %w", err)
+		}
+	}
+
+	object["snooze_settings"], err = json.Marshal(a.SnoozeSettings)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'snooze_settings': %w", err)
+	}
+
+	if a.Stolen != nil {
+		object["stolen"], err = json.Marshal(a.Stolen)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stolen': %w", err)
+		}
+	}
+
+	if a.Subscribed != nil {
+		object["subscribed"], err = json.Marshal(a.Subscribed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'subscribed': %w", err)
+		}
+	}
+
+	if a.SubscribedMotions != nil {
+		object["subscribed_motions"], err = json.Marshal(a.SubscribedMotions)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'subscribed_motions': %w", err)
 		}
 	}
 
@@ -2085,6 +4307,379 @@ func (a Device) MarshalJSON() ([]byte, error) {
 		object["wifi_signal_strength"], err = json.Marshal(a.WifiSignalStrength)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'wifi_signal_strength': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Device_Alerts. Returns the specified
+// element and whether it was found
+func (a Device_Alerts) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Device_Alerts
+func (a *Device_Alerts) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Device_Alerts to handle AdditionalProperties
+func (a *Device_Alerts) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["connection"]; found {
+		err = json.Unmarshal(raw, &a.Connection)
+		if err != nil {
+			return fmt.Errorf("error reading 'connection': %w", err)
+		}
+		delete(object, "connection")
+	}
+
+	if raw, found := object["ota_status"]; found {
+		err = json.Unmarshal(raw, &a.OtaStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'ota_status': %w", err)
+		}
+		delete(object, "ota_status")
+	}
+
+	if raw, found := object["privacy_cover_enabled"]; found {
+		err = json.Unmarshal(raw, &a.PrivacyCoverEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'privacy_cover_enabled': %w", err)
+		}
+		delete(object, "privacy_cover_enabled")
+	}
+
+	if raw, found := object["sidewalk_connection"]; found {
+		err = json.Unmarshal(raw, &a.SidewalkConnection)
+		if err != nil {
+			return fmt.Errorf("error reading 'sidewalk_connection': %w", err)
+		}
+		delete(object, "sidewalk_connection")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Device_Alerts to handle AdditionalProperties
+func (a Device_Alerts) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Connection != nil {
+		object["connection"], err = json.Marshal(a.Connection)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'connection': %w", err)
+		}
+	}
+
+	if a.OtaStatus != nil {
+		object["ota_status"], err = json.Marshal(a.OtaStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ota_status': %w", err)
+		}
+	}
+
+	if a.PrivacyCoverEnabled != nil {
+		object["privacy_cover_enabled"], err = json.Marshal(a.PrivacyCoverEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'privacy_cover_enabled': %w", err)
+		}
+	}
+
+	if a.SidewalkConnection != nil {
+		object["sidewalk_connection"], err = json.Marshal(a.SidewalkConnection)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sidewalk_connection': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Device_EncryptionGroup. Returns the specified
+// element and whether it was found
+func (a Device_EncryptionGroup) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Device_EncryptionGroup
+func (a *Device_EncryptionGroup) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Device_EncryptionGroup to handle AdditionalProperties
+func (a *Device_EncryptionGroup) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["account_group_revision_id"]; found {
+		err = json.Unmarshal(raw, &a.AccountGroupRevisionId)
+		if err != nil {
+			return fmt.Errorf("error reading 'account_group_revision_id': %w", err)
+		}
+		delete(object, "account_group_revision_id")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Device_EncryptionGroup to handle AdditionalProperties
+func (a Device_EncryptionGroup) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["account_group_revision_id"], err = json.Marshal(a.AccountGroupRevisionId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'account_group_revision_id': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Device_MotionSnooze. Returns the specified
+// element and whether it was found
+func (a Device_MotionSnooze) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Device_MotionSnooze
+func (a *Device_MotionSnooze) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Device_MotionSnooze to handle AdditionalProperties
+func (a *Device_MotionSnooze) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["scheduled"]; found {
+		err = json.Unmarshal(raw, &a.Scheduled)
+		if err != nil {
+			return fmt.Errorf("error reading 'scheduled': %w", err)
+		}
+		delete(object, "scheduled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Device_MotionSnooze to handle AdditionalProperties
+func (a Device_MotionSnooze) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Scheduled != nil {
+		object["scheduled"], err = json.Marshal(a.Scheduled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'scheduled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for Device_SirenStatus. Returns the specified
+// element and whether it was found
+func (a Device_SirenStatus) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Device_SirenStatus
+func (a *Device_SirenStatus) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Device_SirenStatus to handle AdditionalProperties
+func (a *Device_SirenStatus) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["duration"]; found {
+		err = json.Unmarshal(raw, &a.Duration)
+		if err != nil {
+			return fmt.Errorf("error reading 'duration': %w", err)
+		}
+		delete(object, "duration")
+	}
+
+	if raw, found := object["ends_at"]; found {
+		err = json.Unmarshal(raw, &a.EndsAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'ends_at': %w", err)
+		}
+		delete(object, "ends_at")
+	}
+
+	if raw, found := object["seconds_remaining"]; found {
+		err = json.Unmarshal(raw, &a.SecondsRemaining)
+		if err != nil {
+			return fmt.Errorf("error reading 'seconds_remaining': %w", err)
+		}
+		delete(object, "seconds_remaining")
+	}
+
+	if raw, found := object["started_at"]; found {
+		err = json.Unmarshal(raw, &a.StartedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'started_at': %w", err)
+		}
+		delete(object, "started_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Device_SirenStatus to handle AdditionalProperties
+func (a Device_SirenStatus) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Duration != nil {
+		object["duration"], err = json.Marshal(a.Duration)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'duration': %w", err)
+		}
+	}
+
+	if a.EndsAt != nil {
+		object["ends_at"], err = json.Marshal(a.EndsAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ends_at': %w", err)
+		}
+	}
+
+	if a.SecondsRemaining != nil {
+		object["seconds_remaining"], err = json.Marshal(a.SecondsRemaining)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'seconds_remaining': %w", err)
+		}
+	}
+
+	if a.StartedAt != nil {
+		object["started_at"], err = json.Marshal(a.StartedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'started_at': %w", err)
 		}
 	}
 
@@ -2203,6 +4798,54 @@ func (a *DeviceFeatures) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["ai_automated_warnings"]; found {
+		err = json.Unmarshal(raw, &a.AiAutomatedWarnings)
+		if err != nil {
+			return fmt.Errorf("error reading 'ai_automated_warnings': %w", err)
+		}
+		delete(object, "ai_automated_warnings")
+	}
+
+	if raw, found := object["ai_labs_daily_clip"]; found {
+		err = json.Unmarshal(raw, &a.AiLabsDailyClip)
+		if err != nil {
+			return fmt.Errorf("error reading 'ai_labs_daily_clip': %w", err)
+		}
+		delete(object, "ai_labs_daily_clip")
+	}
+
+	if raw, found := object["ai_labs_memorable_moments"]; found {
+		err = json.Unmarshal(raw, &a.AiLabsMemorableMoments)
+		if err != nil {
+			return fmt.Errorf("error reading 'ai_labs_memorable_moments': %w", err)
+		}
+		delete(object, "ai_labs_memorable_moments")
+	}
+
+	if raw, found := object["alexa_plus_greetings"]; found {
+		err = json.Unmarshal(raw, &a.AlexaPlusGreetings)
+		if err != nil {
+			return fmt.Errorf("error reading 'alexa_plus_greetings': %w", err)
+		}
+		delete(object, "alexa_plus_greetings")
+	}
+
+	if raw, found := object["animal_detection_eligible"]; found {
+		err = json.Unmarshal(raw, &a.AnimalDetectionEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'animal_detection_eligible': %w", err)
+		}
+		delete(object, "animal_detection_eligible")
+	}
+
+	if raw, found := object["auto_shutoff_device"]; found {
+		err = json.Unmarshal(raw, &a.AutoShutoffDevice)
+		if err != nil {
+			return fmt.Errorf("error reading 'auto_shutoff_device': %w", err)
+		}
+		delete(object, "auto_shutoff_device")
+	}
+
 	if raw, found := object["auto_track"]; found {
 		err = json.Unmarshal(raw, &a.AutoTrack)
 		if err != nil {
@@ -2219,12 +4862,284 @@ func (a *DeviceFeatures) UnmarshalJSON(b []byte) error {
 		delete(object, "auto_zoom_track")
 	}
 
+	if raw, found := object["automated_siren"]; found {
+		err = json.Unmarshal(raw, &a.AutomatedSiren)
+		if err != nil {
+			return fmt.Errorf("error reading 'automated_siren': %w", err)
+		}
+		delete(object, "automated_siren")
+	}
+
+	if raw, found := object["cfes_eligible"]; found {
+		err = json.Unmarshal(raw, &a.CfesEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'cfes_eligible': %w", err)
+		}
+		delete(object, "cfes_eligible")
+	}
+
+	if raw, found := object["chime_settings"]; found {
+		err = json.Unmarshal(raw, &a.ChimeSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'chime_settings': %w", err)
+		}
+		delete(object, "chime_settings")
+	}
+
+	if raw, found := object["dynamic_network_switching_eligible"]; found {
+		err = json.Unmarshal(raw, &a.DynamicNetworkSwitchingEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'dynamic_network_switching_eligible': %w", err)
+		}
+		delete(object, "dynamic_network_switching_eligible")
+	}
+
+	if raw, found := object["live_view_audio_privacy_controls"]; found {
+		err = json.Unmarshal(raw, &a.LiveViewAudioPrivacyControls)
+		if err != nil {
+			return fmt.Errorf("error reading 'live_view_audio_privacy_controls': %w", err)
+		}
+		delete(object, "live_view_audio_privacy_controls")
+	}
+
+	if raw, found := object["motion_message_enabled"]; found {
+		err = json.Unmarshal(raw, &a.MotionMessageEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_message_enabled': %w", err)
+		}
+		delete(object, "motion_message_enabled")
+	}
+
+	if raw, found := object["motion_stop_edge_eligible"]; found {
+		err = json.Unmarshal(raw, &a.MotionStopEdgeEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_stop_edge_eligible': %w", err)
+		}
+		delete(object, "motion_stop_edge_eligible")
+	}
+
+	if raw, found := object["motion_zone_recommendation"]; found {
+		err = json.Unmarshal(raw, &a.MotionZoneRecommendation)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_zone_recommendation': %w", err)
+		}
+		delete(object, "motion_zone_recommendation")
+	}
+
 	if raw, found := object["motions_enabled"]; found {
 		err = json.Unmarshal(raw, &a.MotionsEnabled)
 		if err != nil {
 			return fmt.Errorf("error reading 'motions_enabled': %w", err)
 		}
 		delete(object, "motions_enabled")
+	}
+
+	if raw, found := object["network_backup"]; found {
+		err = json.Unmarshal(raw, &a.NetworkBackup)
+		if err != nil {
+			return fmt.Errorf("error reading 'network_backup': %w", err)
+		}
+		delete(object, "network_backup")
+	}
+
+	if raw, found := object["network_backup_host"]; found {
+		err = json.Unmarshal(raw, &a.NetworkBackupHost)
+		if err != nil {
+			return fmt.Errorf("error reading 'network_backup_host': %w", err)
+		}
+		delete(object, "network_backup_host")
+	}
+
+	if raw, found := object["original_video_quality_download_offer"]; found {
+		err = json.Unmarshal(raw, &a.OriginalVideoQualityDownloadOffer)
+		if err != nil {
+			return fmt.Errorf("error reading 'original_video_quality_download_offer': %w", err)
+		}
+		delete(object, "original_video_quality_download_offer")
+	}
+
+	if raw, found := object["package_warning"]; found {
+		err = json.Unmarshal(raw, &a.PackageWarning)
+		if err != nil {
+			return fmt.Errorf("error reading 'package_warning': %w", err)
+		}
+		delete(object, "package_warning")
+	}
+
+	if raw, found := object["person_identification"]; found {
+		err = json.Unmarshal(raw, &a.PersonIdentification)
+		if err != nil {
+			return fmt.Errorf("error reading 'person_identification': %w", err)
+		}
+		delete(object, "person_identification")
+	}
+
+	if raw, found := object["property_view"]; found {
+		err = json.Unmarshal(raw, &a.PropertyView)
+		if err != nil {
+			return fmt.Errorf("error reading 'property_view': %w", err)
+		}
+		delete(object, "property_view")
+	}
+
+	if raw, found := object["ptz_setup_complete"]; found {
+		err = json.Unmarshal(raw, &a.PtzSetupComplete)
+		if err != nil {
+			return fmt.Errorf("error reading 'ptz_setup_complete': %w", err)
+		}
+		delete(object, "ptz_setup_complete")
+	}
+
+	if raw, found := object["recording_24x7_eligible"]; found {
+		err = json.Unmarshal(raw, &a.Recording24x7Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'recording_24x7_eligible': %w", err)
+		}
+		delete(object, "recording_24x7_eligible")
+	}
+
+	if raw, found := object["remote_access_control"]; found {
+		err = json.Unmarshal(raw, &a.RemoteAccessControl)
+		if err != nil {
+			return fmt.Errorf("error reading 'remote_access_control': %w", err)
+		}
+		delete(object, "remote_access_control")
+	}
+
+	if raw, found := object["retinal_tuning"]; found {
+		err = json.Unmarshal(raw, &a.RetinalTuning)
+		if err != nil {
+			return fmt.Errorf("error reading 'retinal_tuning': %w", err)
+		}
+		delete(object, "retinal_tuning")
+	}
+
+	if raw, found := object["rich_notifications_eligible"]; found {
+		err = json.Unmarshal(raw, &a.RichNotificationsEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'rich_notifications_eligible': %w", err)
+		}
+		delete(object, "rich_notifications_eligible")
+	}
+
+	if raw, found := object["sheila_camera_eligible"]; found {
+		err = json.Unmarshal(raw, &a.SheilaCameraEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'sheila_camera_eligible': %w", err)
+		}
+		delete(object, "sheila_camera_eligible")
+	}
+
+	if raw, found := object["sheila_camera_processing_eligible"]; found {
+		err = json.Unmarshal(raw, &a.SheilaCameraProcessingEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'sheila_camera_processing_eligible': %w", err)
+		}
+		delete(object, "sheila_camera_processing_eligible")
+	}
+
+	if raw, found := object["show_24x7_lite"]; found {
+		err = json.Unmarshal(raw, &a.Show24x7Lite)
+		if err != nil {
+			return fmt.Errorf("error reading 'show_24x7_lite': %w", err)
+		}
+		delete(object, "show_24x7_lite")
+	}
+
+	if raw, found := object["show_offline_motion_events"]; found {
+		err = json.Unmarshal(raw, &a.ShowOfflineMotionEvents)
+		if err != nil {
+			return fmt.Errorf("error reading 'show_offline_motion_events': %w", err)
+		}
+		delete(object, "show_offline_motion_events")
+	}
+
+	if raw, found := object["show_recordings"]; found {
+		err = json.Unmarshal(raw, &a.ShowRecordings)
+		if err != nil {
+			return fmt.Errorf("error reading 'show_recordings': %w", err)
+		}
+		delete(object, "show_recordings")
+	}
+
+	if raw, found := object["show_vod_settings"]; found {
+		err = json.Unmarshal(raw, &a.ShowVodSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'show_vod_settings': %w", err)
+		}
+		delete(object, "show_vod_settings")
+	}
+
+	if raw, found := object["single_alert"]; found {
+		err = json.Unmarshal(raw, &a.SingleAlert)
+		if err != nil {
+			return fmt.Errorf("error reading 'single_alert': %w", err)
+		}
+		delete(object, "single_alert")
+	}
+
+	if raw, found := object["smart_video_description"]; found {
+		err = json.Unmarshal(raw, &a.SmartVideoDescription)
+		if err != nil {
+			return fmt.Errorf("error reading 'smart_video_description': %w", err)
+		}
+		delete(object, "smart_video_description")
+	}
+
+	if raw, found := object["smart_video_search"]; found {
+		err = json.Unmarshal(raw, &a.SmartVideoSearch)
+		if err != nil {
+			return fmt.Errorf("error reading 'smart_video_search': %w", err)
+		}
+		delete(object, "smart_video_search")
+	}
+
+	if raw, found := object["tracklight"]; found {
+		err = json.Unmarshal(raw, &a.Tracklight)
+		if err != nil {
+			return fmt.Errorf("error reading 'tracklight': %w", err)
+		}
+		delete(object, "tracklight")
+	}
+
+	if raw, found := object["transformer_score"]; found {
+		err = json.Unmarshal(raw, &a.TransformerScore)
+		if err != nil {
+			return fmt.Errorf("error reading 'transformer_score': %w", err)
+		}
+		delete(object, "transformer_score")
+	}
+
+	if raw, found := object["unusual_alert"]; found {
+		err = json.Unmarshal(raw, &a.UnusualAlert)
+		if err != nil {
+			return fmt.Errorf("error reading 'unusual_alert': %w", err)
+		}
+		delete(object, "unusual_alert")
+	}
+
+	if raw, found := object["vehicle_detection_eligible"]; found {
+		err = json.Unmarshal(raw, &a.VehicleDetectionEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'vehicle_detection_eligible': %w", err)
+		}
+		delete(object, "vehicle_detection_eligible")
+	}
+
+	if raw, found := object["video_donation"]; found {
+		err = json.Unmarshal(raw, &a.VideoDonation)
+		if err != nil {
+			return fmt.Errorf("error reading 'video_donation': %w", err)
+		}
+		delete(object, "video_donation")
+	}
+
+	if raw, found := object["video_recording"]; found {
+		err = json.Unmarshal(raw, &a.VideoRecording)
+		if err != nil {
+			return fmt.Errorf("error reading 'video_recording': %w", err)
+		}
+		delete(object, "video_recording")
 	}
 
 	if raw, found := object["video_rendering"]; found {
@@ -2254,6 +5169,44 @@ func (a DeviceFeatures) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	if a.AiAutomatedWarnings != nil {
+		object["ai_automated_warnings"], err = json.Marshal(a.AiAutomatedWarnings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ai_automated_warnings': %w", err)
+		}
+	}
+
+	if a.AiLabsDailyClip != nil {
+		object["ai_labs_daily_clip"], err = json.Marshal(a.AiLabsDailyClip)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ai_labs_daily_clip': %w", err)
+		}
+	}
+
+	if a.AiLabsMemorableMoments != nil {
+		object["ai_labs_memorable_moments"], err = json.Marshal(a.AiLabsMemorableMoments)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ai_labs_memorable_moments': %w", err)
+		}
+	}
+
+	object["alexa_plus_greetings"], err = json.Marshal(a.AlexaPlusGreetings)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'alexa_plus_greetings': %w", err)
+	}
+
+	if a.AnimalDetectionEligible != nil {
+		object["animal_detection_eligible"], err = json.Marshal(a.AnimalDetectionEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'animal_detection_eligible': %w", err)
+		}
+	}
+
+	object["auto_shutoff_device"], err = json.Marshal(a.AutoShutoffDevice)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'auto_shutoff_device': %w", err)
+	}
+
 	if a.AutoTrack != nil {
 		object["auto_track"], err = json.Marshal(a.AutoTrack)
 		if err != nil {
@@ -2268,6 +5221,60 @@ func (a DeviceFeatures) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	object["automated_siren"], err = json.Marshal(a.AutomatedSiren)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'automated_siren': %w", err)
+	}
+
+	if a.CfesEligible != nil {
+		object["cfes_eligible"], err = json.Marshal(a.CfesEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cfes_eligible': %w", err)
+		}
+	}
+
+	if a.ChimeSettings != nil {
+		object["chime_settings"], err = json.Marshal(a.ChimeSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'chime_settings': %w", err)
+		}
+	}
+
+	if a.DynamicNetworkSwitchingEligible != nil {
+		object["dynamic_network_switching_eligible"], err = json.Marshal(a.DynamicNetworkSwitchingEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dynamic_network_switching_eligible': %w", err)
+		}
+	}
+
+	if a.LiveViewAudioPrivacyControls != nil {
+		object["live_view_audio_privacy_controls"], err = json.Marshal(a.LiveViewAudioPrivacyControls)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'live_view_audio_privacy_controls': %w", err)
+		}
+	}
+
+	if a.MotionMessageEnabled != nil {
+		object["motion_message_enabled"], err = json.Marshal(a.MotionMessageEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_message_enabled': %w", err)
+		}
+	}
+
+	if a.MotionStopEdgeEligible != nil {
+		object["motion_stop_edge_eligible"], err = json.Marshal(a.MotionStopEdgeEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_stop_edge_eligible': %w", err)
+		}
+	}
+
+	if a.MotionZoneRecommendation != nil {
+		object["motion_zone_recommendation"], err = json.Marshal(a.MotionZoneRecommendation)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_zone_recommendation': %w", err)
+		}
+	}
+
 	if a.MotionsEnabled != nil {
 		object["motions_enabled"], err = json.Marshal(a.MotionsEnabled)
 		if err != nil {
@@ -2275,10 +5282,3896 @@ func (a DeviceFeatures) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.NetworkBackup != nil {
+		object["network_backup"], err = json.Marshal(a.NetworkBackup)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'network_backup': %w", err)
+		}
+	}
+
+	if a.NetworkBackupHost != nil {
+		object["network_backup_host"], err = json.Marshal(a.NetworkBackupHost)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'network_backup_host': %w", err)
+		}
+	}
+
+	if a.OriginalVideoQualityDownloadOffer != nil {
+		object["original_video_quality_download_offer"], err = json.Marshal(a.OriginalVideoQualityDownloadOffer)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'original_video_quality_download_offer': %w", err)
+		}
+	}
+
+	object["package_warning"], err = json.Marshal(a.PackageWarning)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'package_warning': %w", err)
+	}
+
+	if a.PersonIdentification != nil {
+		object["person_identification"], err = json.Marshal(a.PersonIdentification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'person_identification': %w", err)
+		}
+	}
+
+	if a.PropertyView != nil {
+		object["property_view"], err = json.Marshal(a.PropertyView)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'property_view': %w", err)
+		}
+	}
+
+	if a.PtzSetupComplete != nil {
+		object["ptz_setup_complete"], err = json.Marshal(a.PtzSetupComplete)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ptz_setup_complete': %w", err)
+		}
+	}
+
+	if a.Recording24x7Eligible != nil {
+		object["recording_24x7_eligible"], err = json.Marshal(a.Recording24x7Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recording_24x7_eligible': %w", err)
+		}
+	}
+
+	object["remote_access_control"], err = json.Marshal(a.RemoteAccessControl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'remote_access_control': %w", err)
+	}
+
+	if a.RetinalTuning != nil {
+		object["retinal_tuning"], err = json.Marshal(a.RetinalTuning)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'retinal_tuning': %w", err)
+		}
+	}
+
+	if a.RichNotificationsEligible != nil {
+		object["rich_notifications_eligible"], err = json.Marshal(a.RichNotificationsEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rich_notifications_eligible': %w", err)
+		}
+	}
+
+	if a.SheilaCameraEligible != nil {
+		object["sheila_camera_eligible"], err = json.Marshal(a.SheilaCameraEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sheila_camera_eligible': %w", err)
+		}
+	}
+
+	if a.SheilaCameraProcessingEligible != nil {
+		object["sheila_camera_processing_eligible"], err = json.Marshal(a.SheilaCameraProcessingEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sheila_camera_processing_eligible': %w", err)
+		}
+	}
+
+	if a.Show24x7Lite != nil {
+		object["show_24x7_lite"], err = json.Marshal(a.Show24x7Lite)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'show_24x7_lite': %w", err)
+		}
+	}
+
+	if a.ShowOfflineMotionEvents != nil {
+		object["show_offline_motion_events"], err = json.Marshal(a.ShowOfflineMotionEvents)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'show_offline_motion_events': %w", err)
+		}
+	}
+
+	if a.ShowRecordings != nil {
+		object["show_recordings"], err = json.Marshal(a.ShowRecordings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'show_recordings': %w", err)
+		}
+	}
+
+	if a.ShowVodSettings != nil {
+		object["show_vod_settings"], err = json.Marshal(a.ShowVodSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'show_vod_settings': %w", err)
+		}
+	}
+
+	if a.SingleAlert != nil {
+		object["single_alert"], err = json.Marshal(a.SingleAlert)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'single_alert': %w", err)
+		}
+	}
+
+	if a.SmartVideoDescription != nil {
+		object["smart_video_description"], err = json.Marshal(a.SmartVideoDescription)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'smart_video_description': %w", err)
+		}
+	}
+
+	if a.SmartVideoSearch != nil {
+		object["smart_video_search"], err = json.Marshal(a.SmartVideoSearch)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'smart_video_search': %w", err)
+		}
+	}
+
+	object["tracklight"], err = json.Marshal(a.Tracklight)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'tracklight': %w", err)
+	}
+
+	object["transformer_score"], err = json.Marshal(a.TransformerScore)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'transformer_score': %w", err)
+	}
+
+	if a.UnusualAlert != nil {
+		object["unusual_alert"], err = json.Marshal(a.UnusualAlert)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unusual_alert': %w", err)
+		}
+	}
+
+	if a.VehicleDetectionEligible != nil {
+		object["vehicle_detection_eligible"], err = json.Marshal(a.VehicleDetectionEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vehicle_detection_eligible': %w", err)
+		}
+	}
+
+	if a.VideoDonation != nil {
+		object["video_donation"], err = json.Marshal(a.VideoDonation)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'video_donation': %w", err)
+		}
+	}
+
+	if a.VideoRecording != nil {
+		object["video_recording"], err = json.Marshal(a.VideoRecording)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'video_recording': %w", err)
+		}
+	}
+
 	if a.VideoRendering != nil {
 		object["video_rendering"], err = json.Marshal(a.VideoRendering)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'video_rendering': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiAutomatedWarnings_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiAutomatedWarnings_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiAutomatedWarnings_Eligibility
+func (a *DeviceFeatures_AiAutomatedWarnings_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiAutomatedWarnings_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_AiAutomatedWarnings_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiAutomatedWarnings_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_AiAutomatedWarnings_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiAutomatedWarnings_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiAutomatedWarnings_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiAutomatedWarnings_Enablement
+func (a *DeviceFeatures_AiAutomatedWarnings_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiAutomatedWarnings_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_AiAutomatedWarnings_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allowed"]; found {
+		err = json.Unmarshal(raw, &a.Allowed)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed': %w", err)
+		}
+		delete(object, "allowed")
+	}
+
+	if raw, found := object["disallow_reasons"]; found {
+		err = json.Unmarshal(raw, &a.DisallowReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'disallow_reasons': %w", err)
+		}
+		delete(object, "disallow_reasons")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiAutomatedWarnings_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_AiAutomatedWarnings_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Allowed != nil {
+		object["allowed"], err = json.Marshal(a.Allowed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed': %w", err)
+		}
+	}
+
+	if a.DisallowReasons != nil {
+		object["disallow_reasons"], err = json.Marshal(a.DisallowReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disallow_reasons': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiAutomatedWarnings. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiAutomatedWarnings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiAutomatedWarnings
+func (a *DeviceFeatures_AiAutomatedWarnings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiAutomatedWarnings to handle AdditionalProperties
+func (a *DeviceFeatures_AiAutomatedWarnings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiAutomatedWarnings to handle AdditionalProperties
+func (a DeviceFeatures_AiAutomatedWarnings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiLabsDailyClip_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiLabsDailyClip_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiLabsDailyClip_Eligibility
+func (a *DeviceFeatures_AiLabsDailyClip_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsDailyClip_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_AiLabsDailyClip_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsDailyClip_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_AiLabsDailyClip_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiLabsDailyClip_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiLabsDailyClip_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiLabsDailyClip_Enablement
+func (a *DeviceFeatures_AiLabsDailyClip_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsDailyClip_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_AiLabsDailyClip_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsDailyClip_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_AiLabsDailyClip_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiLabsDailyClip. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiLabsDailyClip) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiLabsDailyClip
+func (a *DeviceFeatures_AiLabsDailyClip) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsDailyClip to handle AdditionalProperties
+func (a *DeviceFeatures_AiLabsDailyClip) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allows_no_location"]; found {
+		err = json.Unmarshal(raw, &a.AllowsNoLocation)
+		if err != nil {
+			return fmt.Errorf("error reading 'allows_no_location': %w", err)
+		}
+		delete(object, "allows_no_location")
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsDailyClip to handle AdditionalProperties
+func (a DeviceFeatures_AiLabsDailyClip) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AllowsNoLocation != nil {
+		object["allows_no_location"], err = json.Marshal(a.AllowsNoLocation)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allows_no_location': %w", err)
+		}
+	}
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiLabsMemorableMoments_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiLabsMemorableMoments_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiLabsMemorableMoments_Eligibility
+func (a *DeviceFeatures_AiLabsMemorableMoments_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsMemorableMoments_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_AiLabsMemorableMoments_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsMemorableMoments_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_AiLabsMemorableMoments_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiLabsMemorableMoments_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiLabsMemorableMoments_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiLabsMemorableMoments_Enablement
+func (a *DeviceFeatures_AiLabsMemorableMoments_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsMemorableMoments_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_AiLabsMemorableMoments_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsMemorableMoments_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_AiLabsMemorableMoments_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_AiLabsMemorableMoments. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_AiLabsMemorableMoments) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_AiLabsMemorableMoments
+func (a *DeviceFeatures_AiLabsMemorableMoments) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsMemorableMoments to handle AdditionalProperties
+func (a *DeviceFeatures_AiLabsMemorableMoments) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allows_no_location"]; found {
+		err = json.Unmarshal(raw, &a.AllowsNoLocation)
+		if err != nil {
+			return fmt.Errorf("error reading 'allows_no_location': %w", err)
+		}
+		delete(object, "allows_no_location")
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_AiLabsMemorableMoments to handle AdditionalProperties
+func (a DeviceFeatures_AiLabsMemorableMoments) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AllowsNoLocation != nil {
+		object["allows_no_location"], err = json.Marshal(a.AllowsNoLocation)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allows_no_location': %w", err)
+		}
+	}
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_ChimeSettings. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_ChimeSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_ChimeSettings
+func (a *DeviceFeatures_ChimeSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_ChimeSettings to handle AdditionalProperties
+func (a *DeviceFeatures_ChimeSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["is_eligible"]; found {
+		err = json.Unmarshal(raw, &a.IsEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_eligible': %w", err)
+		}
+		delete(object, "is_eligible")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_ChimeSettings to handle AdditionalProperties
+func (a DeviceFeatures_ChimeSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.IsEligible != nil {
+		object["is_eligible"], err = json.Marshal(a.IsEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'is_eligible': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility
+func (a *DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_LiveViewAudioPrivacyControls_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_LiveViewAudioPrivacyControls. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_LiveViewAudioPrivacyControls) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_LiveViewAudioPrivacyControls
+func (a *DeviceFeatures_LiveViewAudioPrivacyControls) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_LiveViewAudioPrivacyControls to handle AdditionalProperties
+func (a *DeviceFeatures_LiveViewAudioPrivacyControls) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_LiveViewAudioPrivacyControls to handle AdditionalProperties
+func (a DeviceFeatures_LiveViewAudioPrivacyControls) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_NetworkBackup_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_NetworkBackup_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_NetworkBackup_Eligibility
+func (a *DeviceFeatures_NetworkBackup_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackup_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_NetworkBackup_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackup_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_NetworkBackup_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_NetworkBackup_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_NetworkBackup_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_NetworkBackup_Enablement
+func (a *DeviceFeatures_NetworkBackup_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackup_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_NetworkBackup_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allowed"]; found {
+		err = json.Unmarshal(raw, &a.Allowed)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed': %w", err)
+		}
+		delete(object, "allowed")
+	}
+
+	if raw, found := object["disallow_reasons"]; found {
+		err = json.Unmarshal(raw, &a.DisallowReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'disallow_reasons': %w", err)
+		}
+		delete(object, "disallow_reasons")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackup_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_NetworkBackup_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Allowed != nil {
+		object["allowed"], err = json.Marshal(a.Allowed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed': %w", err)
+		}
+	}
+
+	if a.DisallowReasons != nil {
+		object["disallow_reasons"], err = json.Marshal(a.DisallowReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disallow_reasons': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_NetworkBackup. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_NetworkBackup) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_NetworkBackup
+func (a *DeviceFeatures_NetworkBackup) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackup to handle AdditionalProperties
+func (a *DeviceFeatures_NetworkBackup) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackup to handle AdditionalProperties
+func (a DeviceFeatures_NetworkBackup) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_NetworkBackupHost_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_NetworkBackupHost_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_NetworkBackupHost_Eligibility
+func (a *DeviceFeatures_NetworkBackupHost_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackupHost_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_NetworkBackupHost_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackupHost_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_NetworkBackupHost_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_NetworkBackupHost. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_NetworkBackupHost) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_NetworkBackupHost
+func (a *DeviceFeatures_NetworkBackupHost) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackupHost to handle AdditionalProperties
+func (a *DeviceFeatures_NetworkBackupHost) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_NetworkBackupHost to handle AdditionalProperties
+func (a DeviceFeatures_NetworkBackupHost) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_OriginalVideoQualityDownloadOffer. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_OriginalVideoQualityDownloadOffer) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_OriginalVideoQualityDownloadOffer
+func (a *DeviceFeatures_OriginalVideoQualityDownloadOffer) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_OriginalVideoQualityDownloadOffer to handle AdditionalProperties
+func (a *DeviceFeatures_OriginalVideoQualityDownloadOffer) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["is_enabled"]; found {
+		err = json.Unmarshal(raw, &a.IsEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_enabled': %w", err)
+		}
+		delete(object, "is_enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_OriginalVideoQualityDownloadOffer to handle AdditionalProperties
+func (a DeviceFeatures_OriginalVideoQualityDownloadOffer) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.IsEnabled != nil {
+		object["is_enabled"], err = json.Marshal(a.IsEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'is_enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_PersonIdentification_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_PersonIdentification_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_PersonIdentification_Eligibility
+func (a *DeviceFeatures_PersonIdentification_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_PersonIdentification_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_PersonIdentification_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_PersonIdentification_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_PersonIdentification_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_PersonIdentification_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_PersonIdentification_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_PersonIdentification_Enablement
+func (a *DeviceFeatures_PersonIdentification_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_PersonIdentification_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_PersonIdentification_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allowed"]; found {
+		err = json.Unmarshal(raw, &a.Allowed)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed': %w", err)
+		}
+		delete(object, "allowed")
+	}
+
+	if raw, found := object["disallow_reasons"]; found {
+		err = json.Unmarshal(raw, &a.DisallowReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'disallow_reasons': %w", err)
+		}
+		delete(object, "disallow_reasons")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_PersonIdentification_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_PersonIdentification_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Allowed != nil {
+		object["allowed"], err = json.Marshal(a.Allowed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed': %w", err)
+		}
+	}
+
+	if a.DisallowReasons != nil {
+		object["disallow_reasons"], err = json.Marshal(a.DisallowReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disallow_reasons': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_PersonIdentification. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_PersonIdentification) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_PersonIdentification
+func (a *DeviceFeatures_PersonIdentification) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_PersonIdentification to handle AdditionalProperties
+func (a *DeviceFeatures_PersonIdentification) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_PersonIdentification to handle AdditionalProperties
+func (a DeviceFeatures_PersonIdentification) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_PropertyView_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_PropertyView_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_PropertyView_Enablement
+func (a *DeviceFeatures_PropertyView_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_PropertyView_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_PropertyView_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_PropertyView_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_PropertyView_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_PropertyView. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_PropertyView) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_PropertyView
+func (a *DeviceFeatures_PropertyView) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_PropertyView to handle AdditionalProperties
+func (a *DeviceFeatures_PropertyView) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_PropertyView to handle AdditionalProperties
+func (a DeviceFeatures_PropertyView) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_RetinalTuning_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_RetinalTuning_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_RetinalTuning_Eligibility
+func (a *DeviceFeatures_RetinalTuning_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_RetinalTuning_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_RetinalTuning_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_RetinalTuning_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_RetinalTuning_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_RetinalTuning_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_RetinalTuning_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_RetinalTuning_Enablement
+func (a *DeviceFeatures_RetinalTuning_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_RetinalTuning_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_RetinalTuning_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allowed"]; found {
+		err = json.Unmarshal(raw, &a.Allowed)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed': %w", err)
+		}
+		delete(object, "allowed")
+	}
+
+	if raw, found := object["disallow_reasons"]; found {
+		err = json.Unmarshal(raw, &a.DisallowReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'disallow_reasons': %w", err)
+		}
+		delete(object, "disallow_reasons")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_RetinalTuning_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_RetinalTuning_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Allowed != nil {
+		object["allowed"], err = json.Marshal(a.Allowed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed': %w", err)
+		}
+	}
+
+	if a.DisallowReasons != nil {
+		object["disallow_reasons"], err = json.Marshal(a.DisallowReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disallow_reasons': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_RetinalTuning. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_RetinalTuning) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_RetinalTuning
+func (a *DeviceFeatures_RetinalTuning) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_RetinalTuning to handle AdditionalProperties
+func (a *DeviceFeatures_RetinalTuning) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if raw, found := object["rt_max_digital_zoom_level"]; found {
+		err = json.Unmarshal(raw, &a.RtMaxDigitalZoomLevel)
+		if err != nil {
+			return fmt.Errorf("error reading 'rt_max_digital_zoom_level': %w", err)
+		}
+		delete(object, "rt_max_digital_zoom_level")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_RetinalTuning to handle AdditionalProperties
+func (a DeviceFeatures_RetinalTuning) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	if a.RtMaxDigitalZoomLevel != nil {
+		object["rt_max_digital_zoom_level"], err = json.Marshal(a.RtMaxDigitalZoomLevel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rt_max_digital_zoom_level': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SingleAlert_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SingleAlert_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SingleAlert_Eligibility
+func (a *DeviceFeatures_SingleAlert_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SingleAlert_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_SingleAlert_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SingleAlert_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_SingleAlert_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SingleAlert_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SingleAlert_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SingleAlert_Enablement
+func (a *DeviceFeatures_SingleAlert_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SingleAlert_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_SingleAlert_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allowed"]; found {
+		err = json.Unmarshal(raw, &a.Allowed)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed': %w", err)
+		}
+		delete(object, "allowed")
+	}
+
+	if raw, found := object["disallow_reasons"]; found {
+		err = json.Unmarshal(raw, &a.DisallowReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'disallow_reasons': %w", err)
+		}
+		delete(object, "disallow_reasons")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SingleAlert_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_SingleAlert_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Allowed != nil {
+		object["allowed"], err = json.Marshal(a.Allowed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed': %w", err)
+		}
+	}
+
+	if a.DisallowReasons != nil {
+		object["disallow_reasons"], err = json.Marshal(a.DisallowReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disallow_reasons': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SingleAlert. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SingleAlert) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SingleAlert
+func (a *DeviceFeatures_SingleAlert) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SingleAlert to handle AdditionalProperties
+func (a *DeviceFeatures_SingleAlert) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SingleAlert to handle AdditionalProperties
+func (a DeviceFeatures_SingleAlert) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SmartVideoDescription_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SmartVideoDescription_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SmartVideoDescription_Eligibility
+func (a *DeviceFeatures_SmartVideoDescription_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoDescription_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_SmartVideoDescription_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoDescription_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_SmartVideoDescription_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SmartVideoDescription_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SmartVideoDescription_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SmartVideoDescription_Enablement
+func (a *DeviceFeatures_SmartVideoDescription_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoDescription_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_SmartVideoDescription_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allowed"]; found {
+		err = json.Unmarshal(raw, &a.Allowed)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed': %w", err)
+		}
+		delete(object, "allowed")
+	}
+
+	if raw, found := object["disallow_reasons"]; found {
+		err = json.Unmarshal(raw, &a.DisallowReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'disallow_reasons': %w", err)
+		}
+		delete(object, "disallow_reasons")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoDescription_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_SmartVideoDescription_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Allowed != nil {
+		object["allowed"], err = json.Marshal(a.Allowed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed': %w", err)
+		}
+	}
+
+	if a.DisallowReasons != nil {
+		object["disallow_reasons"], err = json.Marshal(a.DisallowReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disallow_reasons': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SmartVideoDescription. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SmartVideoDescription) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SmartVideoDescription
+func (a *DeviceFeatures_SmartVideoDescription) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoDescription to handle AdditionalProperties
+func (a *DeviceFeatures_SmartVideoDescription) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoDescription to handle AdditionalProperties
+func (a DeviceFeatures_SmartVideoDescription) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SmartVideoSearch_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SmartVideoSearch_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SmartVideoSearch_Eligibility
+func (a *DeviceFeatures_SmartVideoSearch_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoSearch_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_SmartVideoSearch_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoSearch_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_SmartVideoSearch_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SmartVideoSearch_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SmartVideoSearch_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SmartVideoSearch_Enablement
+func (a *DeviceFeatures_SmartVideoSearch_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoSearch_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_SmartVideoSearch_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allowed"]; found {
+		err = json.Unmarshal(raw, &a.Allowed)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed': %w", err)
+		}
+		delete(object, "allowed")
+	}
+
+	if raw, found := object["disallow_reasons"]; found {
+		err = json.Unmarshal(raw, &a.DisallowReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'disallow_reasons': %w", err)
+		}
+		delete(object, "disallow_reasons")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoSearch_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_SmartVideoSearch_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Allowed != nil {
+		object["allowed"], err = json.Marshal(a.Allowed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed': %w", err)
+		}
+	}
+
+	if a.DisallowReasons != nil {
+		object["disallow_reasons"], err = json.Marshal(a.DisallowReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disallow_reasons': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_SmartVideoSearch. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_SmartVideoSearch) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_SmartVideoSearch
+func (a *DeviceFeatures_SmartVideoSearch) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoSearch to handle AdditionalProperties
+func (a *DeviceFeatures_SmartVideoSearch) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_SmartVideoSearch to handle AdditionalProperties
+func (a DeviceFeatures_SmartVideoSearch) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_UnusualAlert_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_UnusualAlert_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_UnusualAlert_Eligibility
+func (a *DeviceFeatures_UnusualAlert_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_UnusualAlert_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_UnusualAlert_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_UnusualAlert_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_UnusualAlert_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_UnusualAlert_Enablement. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_UnusualAlert_Enablement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_UnusualAlert_Enablement
+func (a *DeviceFeatures_UnusualAlert_Enablement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_UnusualAlert_Enablement to handle AdditionalProperties
+func (a *DeviceFeatures_UnusualAlert_Enablement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["allowed"]; found {
+		err = json.Unmarshal(raw, &a.Allowed)
+		if err != nil {
+			return fmt.Errorf("error reading 'allowed': %w", err)
+		}
+		delete(object, "allowed")
+	}
+
+	if raw, found := object["disallow_reasons"]; found {
+		err = json.Unmarshal(raw, &a.DisallowReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'disallow_reasons': %w", err)
+		}
+		delete(object, "disallow_reasons")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_UnusualAlert_Enablement to handle AdditionalProperties
+func (a DeviceFeatures_UnusualAlert_Enablement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Allowed != nil {
+		object["allowed"], err = json.Marshal(a.Allowed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'allowed': %w", err)
+		}
+	}
+
+	if a.DisallowReasons != nil {
+		object["disallow_reasons"], err = json.Marshal(a.DisallowReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disallow_reasons': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_UnusualAlert_Learning. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_UnusualAlert_Learning) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_UnusualAlert_Learning
+func (a *DeviceFeatures_UnusualAlert_Learning) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_UnusualAlert_Learning to handle AdditionalProperties
+func (a *DeviceFeatures_UnusualAlert_Learning) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_UnusualAlert_Learning to handle AdditionalProperties
+func (a DeviceFeatures_UnusualAlert_Learning) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_UnusualAlert. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_UnusualAlert) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_UnusualAlert
+func (a *DeviceFeatures_UnusualAlert) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_UnusualAlert to handle AdditionalProperties
+func (a *DeviceFeatures_UnusualAlert) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if raw, found := object["enablement"]; found {
+		err = json.Unmarshal(raw, &a.Enablement)
+		if err != nil {
+			return fmt.Errorf("error reading 'enablement': %w", err)
+		}
+		delete(object, "enablement")
+	}
+
+	if raw, found := object["learning"]; found {
+		err = json.Unmarshal(raw, &a.Learning)
+		if err != nil {
+			return fmt.Errorf("error reading 'learning': %w", err)
+		}
+		delete(object, "learning")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_UnusualAlert to handle AdditionalProperties
+func (a DeviceFeatures_UnusualAlert) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	if a.Enablement != nil {
+		object["enablement"], err = json.Marshal(a.Enablement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enablement': %w", err)
+		}
+	}
+
+	if a.Learning != nil {
+		object["learning"], err = json.Marshal(a.Learning)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'learning': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_VideoDonation_Eligibility. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_VideoDonation_Eligibility) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_VideoDonation_Eligibility
+func (a *DeviceFeatures_VideoDonation_Eligibility) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_VideoDonation_Eligibility to handle AdditionalProperties
+func (a *DeviceFeatures_VideoDonation_Eligibility) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligible"]; found {
+		err = json.Unmarshal(raw, &a.Eligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligible': %w", err)
+		}
+		delete(object, "eligible")
+	}
+
+	if raw, found := object["ineligibility_reasons"]; found {
+		err = json.Unmarshal(raw, &a.IneligibilityReasons)
+		if err != nil {
+			return fmt.Errorf("error reading 'ineligibility_reasons': %w", err)
+		}
+		delete(object, "ineligibility_reasons")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_VideoDonation_Eligibility to handle AdditionalProperties
+func (a DeviceFeatures_VideoDonation_Eligibility) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligible != nil {
+		object["eligible"], err = json.Marshal(a.Eligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligible': %w", err)
+		}
+	}
+
+	if a.IneligibilityReasons != nil {
+		object["ineligibility_reasons"], err = json.Marshal(a.IneligibilityReasons)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ineligibility_reasons': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_VideoDonation. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_VideoDonation) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_VideoDonation
+func (a *DeviceFeatures_VideoDonation) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_VideoDonation to handle AdditionalProperties
+func (a *DeviceFeatures_VideoDonation) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eligibility"]; found {
+		err = json.Unmarshal(raw, &a.Eligibility)
+		if err != nil {
+			return fmt.Errorf("error reading 'eligibility': %w", err)
+		}
+		delete(object, "eligibility")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_VideoDonation to handle AdditionalProperties
+func (a DeviceFeatures_VideoDonation) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Eligibility != nil {
+		object["eligibility"], err = json.Marshal(a.Eligibility)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eligibility': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous
+func (a *DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous to handle AdditionalProperties
+func (a *DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["available"]; found {
+		err = json.Unmarshal(raw, &a.Available)
+		if err != nil {
+			return fmt.Errorf("error reading 'available': %w", err)
+		}
+		delete(object, "available")
+	}
+
+	if raw, found := object["supported"]; found {
+		err = json.Unmarshal(raw, &a.Supported)
+		if err != nil {
+			return fmt.Errorf("error reading 'supported': %w", err)
+		}
+		delete(object, "supported")
+	}
+
+	if raw, found := object["unavailability_reason"]; found {
+		err = json.Unmarshal(raw, &a.UnavailabilityReason)
+		if err != nil {
+			return fmt.Errorf("error reading 'unavailability_reason': %w", err)
+		}
+		delete(object, "unavailability_reason")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous to handle AdditionalProperties
+func (a DeviceFeatures_VideoRecording_RecordingModeAvailability_Continuous) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Available != nil {
+		object["available"], err = json.Marshal(a.Available)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'available': %w", err)
+		}
+	}
+
+	if a.Supported != nil {
+		object["supported"], err = json.Marshal(a.Supported)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'supported': %w", err)
+		}
+	}
+
+	if a.UnavailabilityReason != nil {
+		object["unavailability_reason"], err = json.Marshal(a.UnavailabilityReason)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unavailability_reason': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_VideoRecording_RecordingModeAvailability. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_VideoRecording_RecordingModeAvailability) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_VideoRecording_RecordingModeAvailability
+func (a *DeviceFeatures_VideoRecording_RecordingModeAvailability) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_VideoRecording_RecordingModeAvailability to handle AdditionalProperties
+func (a *DeviceFeatures_VideoRecording_RecordingModeAvailability) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["continuous"]; found {
+		err = json.Unmarshal(raw, &a.Continuous)
+		if err != nil {
+			return fmt.Errorf("error reading 'continuous': %w", err)
+		}
+		delete(object, "continuous")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_VideoRecording_RecordingModeAvailability to handle AdditionalProperties
+func (a DeviceFeatures_VideoRecording_RecordingModeAvailability) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Continuous != nil {
+		object["continuous"], err = json.Marshal(a.Continuous)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'continuous': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceFeatures_VideoRecording. Returns the specified
+// element and whether it was found
+func (a DeviceFeatures_VideoRecording) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceFeatures_VideoRecording
+func (a *DeviceFeatures_VideoRecording) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceFeatures_VideoRecording to handle AdditionalProperties
+func (a *DeviceFeatures_VideoRecording) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["recording_enabled"]; found {
+		err = json.Unmarshal(raw, &a.RecordingEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'recording_enabled': %w", err)
+		}
+		delete(object, "recording_enabled")
+	}
+
+	if raw, found := object["recording_mode"]; found {
+		err = json.Unmarshal(raw, &a.RecordingMode)
+		if err != nil {
+			return fmt.Errorf("error reading 'recording_mode': %w", err)
+		}
+		delete(object, "recording_mode")
+	}
+
+	if raw, found := object["recording_mode_availability"]; found {
+		err = json.Unmarshal(raw, &a.RecordingModeAvailability)
+		if err != nil {
+			return fmt.Errorf("error reading 'recording_mode_availability': %w", err)
+		}
+		delete(object, "recording_mode_availability")
+	}
+
+	if raw, found := object["recording_state"]; found {
+		err = json.Unmarshal(raw, &a.RecordingState)
+		if err != nil {
+			return fmt.Errorf("error reading 'recording_state': %w", err)
+		}
+		delete(object, "recording_state")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceFeatures_VideoRecording to handle AdditionalProperties
+func (a DeviceFeatures_VideoRecording) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.RecordingEnabled != nil {
+		object["recording_enabled"], err = json.Marshal(a.RecordingEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recording_enabled': %w", err)
+		}
+	}
+
+	if a.RecordingMode != nil {
+		object["recording_mode"], err = json.Marshal(a.RecordingMode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recording_mode': %w", err)
+		}
+	}
+
+	if a.RecordingModeAvailability != nil {
+		object["recording_mode_availability"], err = json.Marshal(a.RecordingModeAvailability)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recording_mode_availability': %w", err)
+		}
+	}
+
+	if a.RecordingState != nil {
+		object["recording_state"], err = json.Marshal(a.RecordingState)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recording_state': %w", err)
 		}
 	}
 
@@ -2316,12 +9209,52 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["ac_power"]; found {
+		err = json.Unmarshal(raw, &a.AcPower)
+		if err != nil {
+			return fmt.Errorf("error reading 'ac_power': %w", err)
+		}
+		delete(object, "ac_power")
+	}
+
+	if raw, found := object["bandwidth"]; found {
+		err = json.Unmarshal(raw, &a.Bandwidth)
+		if err != nil {
+			return fmt.Errorf("error reading 'bandwidth': %w", err)
+		}
+		delete(object, "bandwidth")
+	}
+
+	if raw, found := object["bandwidth_last_time"]; found {
+		err = json.Unmarshal(raw, &a.BandwidthLastTime)
+		if err != nil {
+			return fmt.Errorf("error reading 'bandwidth_last_time': %w", err)
+		}
+		delete(object, "bandwidth_last_time")
+	}
+
+	if raw, found := object["battery_error"]; found {
+		err = json.Unmarshal(raw, &a.BatteryError)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_error': %w", err)
+		}
+		delete(object, "battery_error")
+	}
+
 	if raw, found := object["battery_level"]; found {
 		err = json.Unmarshal(raw, &a.BatteryLevel)
 		if err != nil {
 			return fmt.Errorf("error reading 'battery_level': %w", err)
 		}
 		delete(object, "battery_level")
+	}
+
+	if raw, found := object["battery_percentage"]; found {
+		err = json.Unmarshal(raw, &a.BatteryPercentage)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_percentage': %w", err)
+		}
+		delete(object, "battery_percentage")
 	}
 
 	if raw, found := object["battery_percentage_category"]; found {
@@ -2332,12 +9265,36 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 		delete(object, "battery_percentage_category")
 	}
 
+	if raw, found := object["battery_present"]; found {
+		err = json.Unmarshal(raw, &a.BatteryPresent)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_present': %w", err)
+		}
+		delete(object, "battery_present")
+	}
+
 	if raw, found := object["battery_status"]; found {
 		err = json.Unmarshal(raw, &a.BatteryStatus)
 		if err != nil {
 			return fmt.Errorf("error reading 'battery_status': %w", err)
 		}
 		delete(object, "battery_status")
+	}
+
+	if raw, found := object["battery_voltage_category"]; found {
+		err = json.Unmarshal(raw, &a.BatteryVoltageCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'battery_voltage_category': %w", err)
+		}
+		delete(object, "battery_voltage_category")
+	}
+
+	if raw, found := object["channel"]; found {
+		err = json.Unmarshal(raw, &a.Channel)
+		if err != nil {
+			return fmt.Errorf("error reading 'channel': %w", err)
+		}
+		delete(object, "channel")
 	}
 
 	if raw, found := object["connected"]; found {
@@ -2348,12 +9305,116 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 		delete(object, "connected")
 	}
 
+	if raw, found := object["current_bandwidth"]; found {
+		err = json.Unmarshal(raw, &a.CurrentBandwidth)
+		if err != nil {
+			return fmt.Errorf("error reading 'current_bandwidth': %w", err)
+		}
+		delete(object, "current_bandwidth")
+	}
+
+	if raw, found := object["current_bandwidth_category"]; found {
+		err = json.Unmarshal(raw, &a.CurrentBandwidthCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'current_bandwidth_category': %w", err)
+		}
+		delete(object, "current_bandwidth_category")
+	}
+
+	if raw, found := object["current_bandwidth_mb"]; found {
+		err = json.Unmarshal(raw, &a.CurrentBandwidthMb)
+		if err != nil {
+			return fmt.Errorf("error reading 'current_bandwidth_mb': %w", err)
+		}
+		delete(object, "current_bandwidth_mb")
+	}
+
+	if raw, found := object["device_type"]; found {
+		err = json.Unmarshal(raw, &a.DeviceType)
+		if err != nil {
+			return fmt.Errorf("error reading 'device_type': %w", err)
+		}
+		delete(object, "device_type")
+	}
+
+	if raw, found := object["egress_tx_rate"]; found {
+		err = json.Unmarshal(raw, &a.EgressTxRate)
+		if err != nil {
+			return fmt.Errorf("error reading 'egress_tx_rate': %w", err)
+		}
+		delete(object, "egress_tx_rate")
+	}
+
+	if raw, found := object["egress_tx_rate_category"]; found {
+		err = json.Unmarshal(raw, &a.EgressTxRateCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'egress_tx_rate_category': %w", err)
+		}
+		delete(object, "egress_tx_rate_category")
+	}
+
+	if raw, found := object["encryption_group_error"]; found {
+		err = json.Unmarshal(raw, &a.EncryptionGroupError)
+		if err != nil {
+			return fmt.Errorf("error reading 'encryption_group_error': %w", err)
+		}
+		delete(object, "encryption_group_error")
+	}
+
+	if raw, found := object["external_connection"]; found {
+		err = json.Unmarshal(raw, &a.ExternalConnection)
+		if err != nil {
+			return fmt.Errorf("error reading 'external_connection': %w", err)
+		}
+		delete(object, "external_connection")
+	}
+
+	if raw, found := object["fast_ping_hop1_score"]; found {
+		err = json.Unmarshal(raw, &a.FastPingHop1Score)
+		if err != nil {
+			return fmt.Errorf("error reading 'fast_ping_hop1_score': %w", err)
+		}
+		delete(object, "fast_ping_hop1_score")
+	}
+
+	if raw, found := object["firmware_avg_bitrate"]; found {
+		err = json.Unmarshal(raw, &a.FirmwareAvgBitrate)
+		if err != nil {
+			return fmt.Errorf("error reading 'firmware_avg_bitrate': %w", err)
+		}
+		delete(object, "firmware_avg_bitrate")
+	}
+
 	if raw, found := object["firmware_version"]; found {
 		err = json.Unmarshal(raw, &a.FirmwareVersion)
 		if err != nil {
 			return fmt.Errorf("error reading 'firmware_version': %w", err)
 		}
 		delete(object, "firmware_version")
+	}
+
+	if raw, found := object["firmware_version_status"]; found {
+		err = json.Unmarshal(raw, &a.FirmwareVersionStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'firmware_version_status': %w", err)
+		}
+		delete(object, "firmware_version_status")
+	}
+
+	if raw, found := object["floodlight_on"]; found {
+		err = json.Unmarshal(raw, &a.FloodlightOn)
+		if err != nil {
+			return fmt.Errorf("error reading 'floodlight_on': %w", err)
+		}
+		delete(object, "floodlight_on")
+	}
+
+	if raw, found := object["hatch_open"]; found {
+		err = json.Unmarshal(raw, &a.HatchOpen)
+		if err != nil {
+			return fmt.Errorf("error reading 'hatch_open': %w", err)
+		}
+		delete(object, "hatch_open")
 	}
 
 	if raw, found := object["last_update"]; found {
@@ -2364,12 +9425,84 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 		delete(object, "last_update")
 	}
 
+	if raw, found := object["last_update_time"]; found {
+		err = json.Unmarshal(raw, &a.LastUpdateTime)
+		if err != nil {
+			return fmt.Errorf("error reading 'last_update_time': %w", err)
+		}
+		delete(object, "last_update_time")
+	}
+
+	if raw, found := object["network_connection_value"]; found {
+		err = json.Unmarshal(raw, &a.NetworkConnectionValue)
+		if err != nil {
+			return fmt.Errorf("error reading 'network_connection_value': %w", err)
+		}
+		delete(object, "network_connection_value")
+	}
+
+	if raw, found := object["night_mode_on"]; found {
+		err = json.Unmarshal(raw, &a.NightModeOn)
+		if err != nil {
+			return fmt.Errorf("error reading 'night_mode_on': %w", err)
+		}
+		delete(object, "night_mode_on")
+	}
+
+	if raw, found := object["ota_status"]; found {
+		err = json.Unmarshal(raw, &a.OtaStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'ota_status': %w", err)
+		}
+		delete(object, "ota_status")
+	}
+
+	if raw, found := object["packet_loss"]; found {
+		err = json.Unmarshal(raw, &a.PacketLoss)
+		if err != nil {
+			return fmt.Errorf("error reading 'packet_loss': %w", err)
+		}
+		delete(object, "packet_loss")
+	}
+
+	if raw, found := object["packet_loss_category"]; found {
+		err = json.Unmarshal(raw, &a.PacketLossCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'packet_loss_category': %w", err)
+		}
+		delete(object, "packet_loss_category")
+	}
+
+	if raw, found := object["pref_run_mode"]; found {
+		err = json.Unmarshal(raw, &a.PrefRunMode)
+		if err != nil {
+			return fmt.Errorf("error reading 'pref_run_mode': %w", err)
+		}
+		delete(object, "pref_run_mode")
+	}
+
+	if raw, found := object["privacy_cover_enabled"]; found {
+		err = json.Unmarshal(raw, &a.PrivacyCoverEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'privacy_cover_enabled': %w", err)
+		}
+		delete(object, "privacy_cover_enabled")
+	}
+
 	if raw, found := object["ptz_connected"]; found {
 		err = json.Unmarshal(raw, &a.PtzConnected)
 		if err != nil {
 			return fmt.Errorf("error reading 'ptz_connected': %w", err)
 		}
 		delete(object, "ptz_connected")
+	}
+
+	if raw, found := object["rss_connected"]; found {
+		err = json.Unmarshal(raw, &a.RssConnected)
+		if err != nil {
+			return fmt.Errorf("error reading 'rss_connected': %w", err)
+		}
+		delete(object, "rss_connected")
 	}
 
 	if raw, found := object["rssi"]; found {
@@ -2380,6 +9513,46 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 		delete(object, "rssi")
 	}
 
+	if raw, found := object["rssi_category"]; found {
+		err = json.Unmarshal(raw, &a.RssiCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'rssi_category': %w", err)
+		}
+		delete(object, "rssi_category")
+	}
+
+	if raw, found := object["run_mode"]; found {
+		err = json.Unmarshal(raw, &a.RunMode)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_mode': %w", err)
+		}
+		delete(object, "run_mode")
+	}
+
+	if raw, found := object["second_battery_percentage_category"]; found {
+		err = json.Unmarshal(raw, &a.SecondBatteryPercentageCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'second_battery_percentage_category': %w", err)
+		}
+		delete(object, "second_battery_percentage_category")
+	}
+
+	if raw, found := object["second_battery_voltage_category"]; found {
+		err = json.Unmarshal(raw, &a.SecondBatteryVoltageCategory)
+		if err != nil {
+			return fmt.Errorf("error reading 'second_battery_voltage_category': %w", err)
+		}
+		delete(object, "second_battery_voltage_category")
+	}
+
+	if raw, found := object["sidewalk_connection"]; found {
+		err = json.Unmarshal(raw, &a.SidewalkConnection)
+		if err != nil {
+			return fmt.Errorf("error reading 'sidewalk_connection': %w", err)
+		}
+		delete(object, "sidewalk_connection")
+	}
+
 	if raw, found := object["signal_strength"]; found {
 		err = json.Unmarshal(raw, &a.SignalStrength)
 		if err != nil {
@@ -2388,12 +9561,76 @@ func (a *DeviceHealth) UnmarshalJSON(b []byte) error {
 		delete(object, "signal_strength")
 	}
 
+	if raw, found := object["siren_on"]; found {
+		err = json.Unmarshal(raw, &a.SirenOn)
+		if err != nil {
+			return fmt.Errorf("error reading 'siren_on': %w", err)
+		}
+		delete(object, "siren_on")
+	}
+
+	if raw, found := object["status_time"]; found {
+		err = json.Unmarshal(raw, &a.StatusTime)
+		if err != nil {
+			return fmt.Errorf("error reading 'status_time': %w", err)
+		}
+		delete(object, "status_time")
+	}
+
 	if raw, found := object["supported_rpc_commands"]; found {
 		err = json.Unmarshal(raw, &a.SupportedRpcCommands)
 		if err != nil {
 			return fmt.Errorf("error reading 'supported_rpc_commands': %w", err)
 		}
 		delete(object, "supported_rpc_commands")
+	}
+
+	if raw, found := object["tx_rate"]; found {
+		err = json.Unmarshal(raw, &a.TxRate)
+		if err != nil {
+			return fmt.Errorf("error reading 'tx_rate': %w", err)
+		}
+		delete(object, "tx_rate")
+	}
+
+	if raw, found := object["video_packets_total"]; found {
+		err = json.Unmarshal(raw, &a.VideoPacketsTotal)
+		if err != nil {
+			return fmt.Errorf("error reading 'video_packets_total': %w", err)
+		}
+		delete(object, "video_packets_total")
+	}
+
+	if raw, found := object["vod_enabled"]; found {
+		err = json.Unmarshal(raw, &a.VodEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'vod_enabled': %w", err)
+		}
+		delete(object, "vod_enabled")
+	}
+
+	if raw, found := object["white_led_on"]; found {
+		err = json.Unmarshal(raw, &a.WhiteLedOn)
+		if err != nil {
+			return fmt.Errorf("error reading 'white_led_on': %w", err)
+		}
+		delete(object, "white_led_on")
+	}
+
+	if raw, found := object["wifi_is_ring_network"]; found {
+		err = json.Unmarshal(raw, &a.WifiIsRingNetwork)
+		if err != nil {
+			return fmt.Errorf("error reading 'wifi_is_ring_network': %w", err)
+		}
+		delete(object, "wifi_is_ring_network")
+	}
+
+	if raw, found := object["wifi_name"]; found {
+		err = json.Unmarshal(raw, &a.WifiName)
+		if err != nil {
+			return fmt.Errorf("error reading 'wifi_name': %w", err)
+		}
+		delete(object, "wifi_name")
 	}
 
 	if len(object) != 0 {
@@ -2415,10 +9652,45 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	if a.AcPower != nil {
+		object["ac_power"], err = json.Marshal(a.AcPower)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ac_power': %w", err)
+		}
+	}
+
+	if a.Bandwidth != nil {
+		object["bandwidth"], err = json.Marshal(a.Bandwidth)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'bandwidth': %w", err)
+		}
+	}
+
+	if a.BandwidthLastTime != nil {
+		object["bandwidth_last_time"], err = json.Marshal(a.BandwidthLastTime)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'bandwidth_last_time': %w", err)
+		}
+	}
+
+	if a.BatteryError != nil {
+		object["battery_error"], err = json.Marshal(a.BatteryError)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_error': %w", err)
+		}
+	}
+
 	if a.BatteryLevel != nil {
 		object["battery_level"], err = json.Marshal(a.BatteryLevel)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'battery_level': %w", err)
+		}
+	}
+
+	if a.BatteryPercentage != nil {
+		object["battery_percentage"], err = json.Marshal(a.BatteryPercentage)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_percentage': %w", err)
 		}
 	}
 
@@ -2429,10 +9701,31 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.BatteryPresent != nil {
+		object["battery_present"], err = json.Marshal(a.BatteryPresent)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_present': %w", err)
+		}
+	}
+
 	if a.BatteryStatus != nil {
 		object["battery_status"], err = json.Marshal(a.BatteryStatus)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'battery_status': %w", err)
+		}
+	}
+
+	if a.BatteryVoltageCategory != nil {
+		object["battery_voltage_category"], err = json.Marshal(a.BatteryVoltageCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'battery_voltage_category': %w", err)
+		}
+	}
+
+	if a.Channel != nil {
+		object["channel"], err = json.Marshal(a.Channel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'channel': %w", err)
 		}
 	}
 
@@ -2443,10 +9736,101 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.CurrentBandwidth != nil {
+		object["current_bandwidth"], err = json.Marshal(a.CurrentBandwidth)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'current_bandwidth': %w", err)
+		}
+	}
+
+	if a.CurrentBandwidthCategory != nil {
+		object["current_bandwidth_category"], err = json.Marshal(a.CurrentBandwidthCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'current_bandwidth_category': %w", err)
+		}
+	}
+
+	if a.CurrentBandwidthMb != nil {
+		object["current_bandwidth_mb"], err = json.Marshal(a.CurrentBandwidthMb)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'current_bandwidth_mb': %w", err)
+		}
+	}
+
+	if a.DeviceType != nil {
+		object["device_type"], err = json.Marshal(a.DeviceType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'device_type': %w", err)
+		}
+	}
+
+	if a.EgressTxRate != nil {
+		object["egress_tx_rate"], err = json.Marshal(a.EgressTxRate)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'egress_tx_rate': %w", err)
+		}
+	}
+
+	if a.EgressTxRateCategory != nil {
+		object["egress_tx_rate_category"], err = json.Marshal(a.EgressTxRateCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'egress_tx_rate_category': %w", err)
+		}
+	}
+
+	if a.EncryptionGroupError != nil {
+		object["encryption_group_error"], err = json.Marshal(a.EncryptionGroupError)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'encryption_group_error': %w", err)
+		}
+	}
+
+	if a.ExternalConnection != nil {
+		object["external_connection"], err = json.Marshal(a.ExternalConnection)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'external_connection': %w", err)
+		}
+	}
+
+	if a.FastPingHop1Score != nil {
+		object["fast_ping_hop1_score"], err = json.Marshal(a.FastPingHop1Score)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'fast_ping_hop1_score': %w", err)
+		}
+	}
+
+	if a.FirmwareAvgBitrate != nil {
+		object["firmware_avg_bitrate"], err = json.Marshal(a.FirmwareAvgBitrate)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'firmware_avg_bitrate': %w", err)
+		}
+	}
+
 	if a.FirmwareVersion != nil {
 		object["firmware_version"], err = json.Marshal(a.FirmwareVersion)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'firmware_version': %w", err)
+		}
+	}
+
+	if a.FirmwareVersionStatus != nil {
+		object["firmware_version_status"], err = json.Marshal(a.FirmwareVersionStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'firmware_version_status': %w", err)
+		}
+	}
+
+	if a.FloodlightOn != nil {
+		object["floodlight_on"], err = json.Marshal(a.FloodlightOn)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'floodlight_on': %w", err)
+		}
+	}
+
+	if a.HatchOpen != nil {
+		object["hatch_open"], err = json.Marshal(a.HatchOpen)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'hatch_open': %w", err)
 		}
 	}
 
@@ -2457,10 +9841,73 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.LastUpdateTime != nil {
+		object["last_update_time"], err = json.Marshal(a.LastUpdateTime)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'last_update_time': %w", err)
+		}
+	}
+
+	if a.NetworkConnectionValue != nil {
+		object["network_connection_value"], err = json.Marshal(a.NetworkConnectionValue)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'network_connection_value': %w", err)
+		}
+	}
+
+	if a.NightModeOn != nil {
+		object["night_mode_on"], err = json.Marshal(a.NightModeOn)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'night_mode_on': %w", err)
+		}
+	}
+
+	if a.OtaStatus != nil {
+		object["ota_status"], err = json.Marshal(a.OtaStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ota_status': %w", err)
+		}
+	}
+
+	if a.PacketLoss != nil {
+		object["packet_loss"], err = json.Marshal(a.PacketLoss)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'packet_loss': %w", err)
+		}
+	}
+
+	if a.PacketLossCategory != nil {
+		object["packet_loss_category"], err = json.Marshal(a.PacketLossCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'packet_loss_category': %w", err)
+		}
+	}
+
+	if a.PrefRunMode != nil {
+		object["pref_run_mode"], err = json.Marshal(a.PrefRunMode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pref_run_mode': %w", err)
+		}
+	}
+
+	if a.PrivacyCoverEnabled != nil {
+		object["privacy_cover_enabled"], err = json.Marshal(a.PrivacyCoverEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'privacy_cover_enabled': %w", err)
+		}
+	}
+
 	if a.PtzConnected != nil {
 		object["ptz_connected"], err = json.Marshal(a.PtzConnected)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'ptz_connected': %w", err)
+		}
+	}
+
+	if a.RssConnected != nil {
+		object["rss_connected"], err = json.Marshal(a.RssConnected)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rss_connected': %w", err)
 		}
 	}
 
@@ -2471,6 +9918,41 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.RssiCategory != nil {
+		object["rssi_category"], err = json.Marshal(a.RssiCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rssi_category': %w", err)
+		}
+	}
+
+	if a.RunMode != nil {
+		object["run_mode"], err = json.Marshal(a.RunMode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'run_mode': %w", err)
+		}
+	}
+
+	if a.SecondBatteryPercentageCategory != nil {
+		object["second_battery_percentage_category"], err = json.Marshal(a.SecondBatteryPercentageCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'second_battery_percentage_category': %w", err)
+		}
+	}
+
+	if a.SecondBatteryVoltageCategory != nil {
+		object["second_battery_voltage_category"], err = json.Marshal(a.SecondBatteryVoltageCategory)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'second_battery_voltage_category': %w", err)
+		}
+	}
+
+	if a.SidewalkConnection != nil {
+		object["sidewalk_connection"], err = json.Marshal(a.SidewalkConnection)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sidewalk_connection': %w", err)
+		}
+	}
+
 	if a.SignalStrength != nil {
 		object["signal_strength"], err = json.Marshal(a.SignalStrength)
 		if err != nil {
@@ -2478,10 +9960,66 @@ func (a DeviceHealth) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.SirenOn != nil {
+		object["siren_on"], err = json.Marshal(a.SirenOn)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'siren_on': %w", err)
+		}
+	}
+
+	if a.StatusTime != nil {
+		object["status_time"], err = json.Marshal(a.StatusTime)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'status_time': %w", err)
+		}
+	}
+
 	if a.SupportedRpcCommands != nil {
 		object["supported_rpc_commands"], err = json.Marshal(a.SupportedRpcCommands)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'supported_rpc_commands': %w", err)
+		}
+	}
+
+	if a.TxRate != nil {
+		object["tx_rate"], err = json.Marshal(a.TxRate)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tx_rate': %w", err)
+		}
+	}
+
+	if a.VideoPacketsTotal != nil {
+		object["video_packets_total"], err = json.Marshal(a.VideoPacketsTotal)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'video_packets_total': %w", err)
+		}
+	}
+
+	if a.VodEnabled != nil {
+		object["vod_enabled"], err = json.Marshal(a.VodEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vod_enabled': %w", err)
+		}
+	}
+
+	if a.WhiteLedOn != nil {
+		object["white_led_on"], err = json.Marshal(a.WhiteLedOn)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'white_led_on': %w", err)
+		}
+	}
+
+	if a.WifiIsRingNetwork != nil {
+		object["wifi_is_ring_network"], err = json.Marshal(a.WifiIsRingNetwork)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wifi_is_ring_network': %w", err)
+		}
+	}
+
+	if a.WifiName != nil {
+		object["wifi_name"], err = json.Marshal(a.WifiName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'wifi_name': %w", err)
 		}
 	}
 
@@ -2519,12 +10057,196 @@ func (a *DeviceLegacySettings) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["active_streaming_event_led_enabled"]; found {
+		err = json.Unmarshal(raw, &a.ActiveStreamingEventLedEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'active_streaming_event_led_enabled': %w", err)
+		}
+		delete(object, "active_streaming_event_led_enabled")
+	}
+
+	if raw, found := object["advanced_motion_detection_enabled"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedMotionDetectionEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_motion_detection_enabled': %w", err)
+		}
+		delete(object, "advanced_motion_detection_enabled")
+	}
+
+	if raw, found := object["advanced_motion_detection_human_only_mode"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedMotionDetectionHumanOnlyMode)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_motion_detection_human_only_mode': %w", err)
+		}
+		delete(object, "advanced_motion_detection_human_only_mode")
+	}
+
+	if raw, found := object["advanced_motion_detection_types"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedMotionDetectionTypes)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_motion_detection_types': %w", err)
+		}
+		delete(object, "advanced_motion_detection_types")
+	}
+
+	if raw, found := object["advanced_motion_zones"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedMotionZones)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_motion_zones': %w", err)
+		}
+		delete(object, "advanced_motion_zones")
+	}
+
+	if raw, found := object["advanced_motion_zones_enabled"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedMotionZonesEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_motion_zones_enabled': %w", err)
+		}
+		delete(object, "advanced_motion_zones_enabled")
+	}
+
+	if raw, found := object["advanced_motion_zones_type"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedMotionZonesType)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_motion_zones_type': %w", err)
+		}
+		delete(object, "advanced_motion_zones_type")
+	}
+
+	if raw, found := object["advanced_pir_motion_zones"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedPirMotionZones)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_pir_motion_zones': %w", err)
+		}
+		delete(object, "advanced_pir_motion_zones")
+	}
+
+	if raw, found := object["audio_settings"]; found {
+		err = json.Unmarshal(raw, &a.AudioSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'audio_settings': %w", err)
+		}
+		delete(object, "audio_settings")
+	}
+
+	if raw, found := object["cv_paid_features"]; found {
+		err = json.Unmarshal(raw, &a.CvPaidFeatures)
+		if err != nil {
+			return fmt.Errorf("error reading 'cv_paid_features': %w", err)
+		}
+		delete(object, "cv_paid_features")
+	}
+
+	if raw, found := object["cv_settings"]; found {
+		err = json.Unmarshal(raw, &a.CvSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'cv_settings': %w", err)
+		}
+		delete(object, "cv_settings")
+	}
+
 	if raw, found := object["doorbell_volume"]; found {
 		err = json.Unmarshal(raw, &a.DoorbellVolume)
 		if err != nil {
 			return fmt.Errorf("error reading 'doorbell_volume': %w", err)
 		}
 		delete(object, "doorbell_volume")
+	}
+
+	if raw, found := object["enable_audio_recording"]; found {
+		err = json.Unmarshal(raw, &a.EnableAudioRecording)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_audio_recording': %w", err)
+		}
+		delete(object, "enable_audio_recording")
+	}
+
+	if raw, found := object["enable_ir_led"]; found {
+		err = json.Unmarshal(raw, &a.EnableIrLed)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_ir_led': %w", err)
+		}
+		delete(object, "enable_ir_led")
+	}
+
+	if raw, found := object["enable_rich_notifications"]; found {
+		err = json.Unmarshal(raw, &a.EnableRichNotifications)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_rich_notifications': %w", err)
+		}
+		delete(object, "enable_rich_notifications")
+	}
+
+	if raw, found := object["enable_vod"]; found {
+		err = json.Unmarshal(raw, &a.EnableVod)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_vod': %w", err)
+		}
+		delete(object, "enable_vod")
+	}
+
+	if raw, found := object["exposure_control"]; found {
+		err = json.Unmarshal(raw, &a.ExposureControl)
+		if err != nil {
+			return fmt.Errorf("error reading 'exposure_control': %w", err)
+		}
+		delete(object, "exposure_control")
+	}
+
+	if raw, found := object["extended_live_view"]; found {
+		err = json.Unmarshal(raw, &a.ExtendedLiveView)
+		if err != nil {
+			return fmt.Errorf("error reading 'extended_live_view': %w", err)
+		}
+		delete(object, "extended_live_view")
+	}
+
+	if raw, found := object["flick_elim_recommended_mode"]; found {
+		err = json.Unmarshal(raw, &a.FlickElimRecommendedMode)
+		if err != nil {
+			return fmt.Errorf("error reading 'flick_elim_recommended_mode': %w", err)
+		}
+		delete(object, "flick_elim_recommended_mode")
+	}
+
+	if raw, found := object["hybrid_motion_zones"]; found {
+		err = json.Unmarshal(raw, &a.HybridMotionZones)
+		if err != nil {
+			return fmt.Errorf("error reading 'hybrid_motion_zones': %w", err)
+		}
+		delete(object, "hybrid_motion_zones")
+	}
+
+	if raw, found := object["ignore_zones"]; found {
+		err = json.Unmarshal(raw, &a.IgnoreZones)
+		if err != nil {
+			return fmt.Errorf("error reading 'ignore_zones': %w", err)
+		}
+		delete(object, "ignore_zones")
+	}
+
+	if raw, found := object["light_snooze_settings"]; found {
+		err = json.Unmarshal(raw, &a.LightSnoozeSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'light_snooze_settings': %w", err)
+		}
+		delete(object, "light_snooze_settings")
+	}
+
+	if raw, found := object["lite_24x7"]; found {
+		err = json.Unmarshal(raw, &a.Lite24x7)
+		if err != nil {
+			return fmt.Errorf("error reading 'lite_24x7': %w", err)
+		}
+		delete(object, "lite_24x7")
+	}
+
+	if raw, found := object["lite_24x7_footage_ttl"]; found {
+		err = json.Unmarshal(raw, &a.Lite24x7FootageTtl)
+		if err != nil {
+			return fmt.Errorf("error reading 'lite_24x7_footage_ttl': %w", err)
+		}
+		delete(object, "lite_24x7_footage_ttl")
 	}
 
 	if raw, found := object["live_view_disabled"]; found {
@@ -2535,12 +10257,244 @@ func (a *DeviceLegacySettings) UnmarshalJSON(b []byte) error {
 		delete(object, "live_view_disabled")
 	}
 
+	if raw, found := object["live_view_preset_profile"]; found {
+		err = json.Unmarshal(raw, &a.LiveViewPresetProfile)
+		if err != nil {
+			return fmt.Errorf("error reading 'live_view_preset_profile': %w", err)
+		}
+		delete(object, "live_view_preset_profile")
+	}
+
+	if raw, found := object["live_view_presets"]; found {
+		err = json.Unmarshal(raw, &a.LiveViewPresets)
+		if err != nil {
+			return fmt.Errorf("error reading 'live_view_presets': %w", err)
+		}
+		delete(object, "live_view_presets")
+	}
+
+	if raw, found := object["loitering_threshold"]; found {
+		err = json.Unmarshal(raw, &a.LoiteringThreshold)
+		if err != nil {
+			return fmt.Errorf("error reading 'loitering_threshold': %w", err)
+		}
+		delete(object, "loitering_threshold")
+	}
+
+	if raw, found := object["motion_announcement"]; found {
+		err = json.Unmarshal(raw, &a.MotionAnnouncement)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_announcement': %w", err)
+		}
+		delete(object, "motion_announcement")
+	}
+
 	if raw, found := object["motion_detection_enabled"]; found {
 		err = json.Unmarshal(raw, &a.MotionDetectionEnabled)
 		if err != nil {
 			return fmt.Errorf("error reading 'motion_detection_enabled': %w", err)
 		}
 		delete(object, "motion_detection_enabled")
+	}
+
+	if raw, found := object["motion_settings"]; found {
+		err = json.Unmarshal(raw, &a.MotionSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_settings': %w", err)
+		}
+		delete(object, "motion_settings")
+	}
+
+	if raw, found := object["motion_snooze_preset_profile"]; found {
+		err = json.Unmarshal(raw, &a.MotionSnoozePresetProfile)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_snooze_preset_profile': %w", err)
+		}
+		delete(object, "motion_snooze_preset_profile")
+	}
+
+	if raw, found := object["motion_snooze_presets"]; found {
+		err = json.Unmarshal(raw, &a.MotionSnoozePresets)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_snooze_presets': %w", err)
+		}
+		delete(object, "motion_snooze_presets")
+	}
+
+	if raw, found := object["motion_zones"]; found {
+		err = json.Unmarshal(raw, &a.MotionZones)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_zones': %w", err)
+		}
+		delete(object, "motion_zones")
+	}
+
+	if raw, found := object["network_settings"]; found {
+		err = json.Unmarshal(raw, &a.NetworkSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'network_settings': %w", err)
+		}
+		delete(object, "network_settings")
+	}
+
+	if raw, found := object["offline_motion_event_settings"]; found {
+		err = json.Unmarshal(raw, &a.OfflineMotionEventSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'offline_motion_event_settings': %w", err)
+		}
+		delete(object, "offline_motion_event_settings")
+	}
+
+	if raw, found := object["other_paid_features"]; found {
+		err = json.Unmarshal(raw, &a.OtherPaidFeatures)
+		if err != nil {
+			return fmt.Errorf("error reading 'other_paid_features': %w", err)
+		}
+		delete(object, "other_paid_features")
+	}
+
+	if raw, found := object["people_detection_eligible"]; found {
+		err = json.Unmarshal(raw, &a.PeopleDetectionEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'people_detection_eligible': %w", err)
+		}
+		delete(object, "people_detection_eligible")
+	}
+
+	if raw, found := object["pir_sensitivity_1"]; found {
+		err = json.Unmarshal(raw, &a.PirSensitivity1)
+		if err != nil {
+			return fmt.Errorf("error reading 'pir_sensitivity_1': %w", err)
+		}
+		delete(object, "pir_sensitivity_1")
+	}
+
+	if raw, found := object["power_mode"]; found {
+		err = json.Unmarshal(raw, &a.PowerMode)
+		if err != nil {
+			return fmt.Errorf("error reading 'power_mode': %w", err)
+		}
+		delete(object, "power_mode")
+	}
+
+	if raw, found := object["ptz_settings"]; found {
+		err = json.Unmarshal(raw, &a.PtzSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'ptz_settings': %w", err)
+		}
+		delete(object, "ptz_settings")
+	}
+
+	if raw, found := object["rich_notifications_billing_eligible"]; found {
+		err = json.Unmarshal(raw, &a.RichNotificationsBillingEligible)
+		if err != nil {
+			return fmt.Errorf("error reading 'rich_notifications_billing_eligible': %w", err)
+		}
+		delete(object, "rich_notifications_billing_eligible")
+	}
+
+	if raw, found := object["rich_notifications_face_crop_enabled"]; found {
+		err = json.Unmarshal(raw, &a.RichNotificationsFaceCropEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'rich_notifications_face_crop_enabled': %w", err)
+		}
+		delete(object, "rich_notifications_face_crop_enabled")
+	}
+
+	if raw, found := object["rich_notifications_scene_source"]; found {
+		err = json.Unmarshal(raw, &a.RichNotificationsSceneSource)
+		if err != nil {
+			return fmt.Errorf("error reading 'rich_notifications_scene_source': %w", err)
+		}
+		delete(object, "rich_notifications_scene_source")
+	}
+
+	if raw, found := object["server_settings"]; found {
+		err = json.Unmarshal(raw, &a.ServerSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'server_settings': %w", err)
+		}
+		delete(object, "server_settings")
+	}
+
+	if raw, found := object["sheila_settings"]; found {
+		err = json.Unmarshal(raw, &a.SheilaSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'sheila_settings': %w", err)
+		}
+		delete(object, "sheila_settings")
+	}
+
+	if raw, found := object["stark_enabled"]; found {
+		err = json.Unmarshal(raw, &a.StarkEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'stark_enabled': %w", err)
+		}
+		delete(object, "stark_enabled")
+	}
+
+	if raw, found := object["stark_enrolled"]; found {
+		err = json.Unmarshal(raw, &a.StarkEnrolled)
+		if err != nil {
+			return fmt.Errorf("error reading 'stark_enrolled': %w", err)
+		}
+		delete(object, "stark_enrolled")
+	}
+
+	if raw, found := object["terms_of_service_accepted"]; found {
+		err = json.Unmarshal(raw, &a.TermsOfServiceAccepted)
+		if err != nil {
+			return fmt.Errorf("error reading 'terms_of_service_accepted': %w", err)
+		}
+		delete(object, "terms_of_service_accepted")
+	}
+
+	if raw, found := object["user_specified_recording_ttl"]; found {
+		err = json.Unmarshal(raw, &a.UserSpecifiedRecordingTtl)
+		if err != nil {
+			return fmt.Errorf("error reading 'user_specified_recording_ttl': %w", err)
+		}
+		delete(object, "user_specified_recording_ttl")
+	}
+
+	if raw, found := object["video_settings"]; found {
+		err = json.Unmarshal(raw, &a.VideoSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'video_settings': %w", err)
+		}
+		delete(object, "video_settings")
+	}
+
+	if raw, found := object["vod_status"]; found {
+		err = json.Unmarshal(raw, &a.VodStatus)
+		if err != nil {
+			return fmt.Errorf("error reading 'vod_status': %w", err)
+		}
+		delete(object, "vod_status")
+	}
+
+	if raw, found := object["vod_suspended"]; found {
+		err = json.Unmarshal(raw, &a.VodSuspended)
+		if err != nil {
+			return fmt.Errorf("error reading 'vod_suspended': %w", err)
+		}
+		delete(object, "vod_suspended")
+	}
+
+	if raw, found := object["voice_volume"]; found {
+		err = json.Unmarshal(raw, &a.VoiceVolume)
+		if err != nil {
+			return fmt.Errorf("error reading 'voice_volume': %w", err)
+		}
+		delete(object, "voice_volume")
+	}
+
+	if raw, found := object["zone_settings"]; found {
+		err = json.Unmarshal(raw, &a.ZoneSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone_settings': %w", err)
+		}
+		delete(object, "zone_settings")
 	}
 
 	if len(object) != 0 {
@@ -2562,10 +10516,169 @@ func (a DeviceLegacySettings) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	object["active_streaming_event_led_enabled"], err = json.Marshal(a.ActiveStreamingEventLedEnabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'active_streaming_event_led_enabled': %w", err)
+	}
+
+	if a.AdvancedMotionDetectionEnabled != nil {
+		object["advanced_motion_detection_enabled"], err = json.Marshal(a.AdvancedMotionDetectionEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_motion_detection_enabled': %w", err)
+		}
+	}
+
+	if a.AdvancedMotionDetectionHumanOnlyMode != nil {
+		object["advanced_motion_detection_human_only_mode"], err = json.Marshal(a.AdvancedMotionDetectionHumanOnlyMode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_motion_detection_human_only_mode': %w", err)
+		}
+	}
+
+	if a.AdvancedMotionDetectionTypes != nil {
+		object["advanced_motion_detection_types"], err = json.Marshal(a.AdvancedMotionDetectionTypes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_motion_detection_types': %w", err)
+		}
+	}
+
+	if a.AdvancedMotionZones != nil {
+		object["advanced_motion_zones"], err = json.Marshal(a.AdvancedMotionZones)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_motion_zones': %w", err)
+		}
+	}
+
+	if a.AdvancedMotionZonesEnabled != nil {
+		object["advanced_motion_zones_enabled"], err = json.Marshal(a.AdvancedMotionZonesEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_motion_zones_enabled': %w", err)
+		}
+	}
+
+	if a.AdvancedMotionZonesType != nil {
+		object["advanced_motion_zones_type"], err = json.Marshal(a.AdvancedMotionZonesType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_motion_zones_type': %w", err)
+		}
+	}
+
+	if a.AdvancedPirMotionZones != nil {
+		object["advanced_pir_motion_zones"], err = json.Marshal(a.AdvancedPirMotionZones)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_pir_motion_zones': %w", err)
+		}
+	}
+
+	if a.AudioSettings != nil {
+		object["audio_settings"], err = json.Marshal(a.AudioSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'audio_settings': %w", err)
+		}
+	}
+
+	if a.CvPaidFeatures != nil {
+		object["cv_paid_features"], err = json.Marshal(a.CvPaidFeatures)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cv_paid_features': %w", err)
+		}
+	}
+
+	if a.CvSettings != nil {
+		object["cv_settings"], err = json.Marshal(a.CvSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cv_settings': %w", err)
+		}
+	}
+
 	if a.DoorbellVolume != nil {
 		object["doorbell_volume"], err = json.Marshal(a.DoorbellVolume)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'doorbell_volume': %w", err)
+		}
+	}
+
+	if a.EnableAudioRecording != nil {
+		object["enable_audio_recording"], err = json.Marshal(a.EnableAudioRecording)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_audio_recording': %w", err)
+		}
+	}
+
+	if a.EnableIrLed != nil {
+		object["enable_ir_led"], err = json.Marshal(a.EnableIrLed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_ir_led': %w", err)
+		}
+	}
+
+	if a.EnableRichNotifications != nil {
+		object["enable_rich_notifications"], err = json.Marshal(a.EnableRichNotifications)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_rich_notifications': %w", err)
+		}
+	}
+
+	if a.EnableVod != nil {
+		object["enable_vod"], err = json.Marshal(a.EnableVod)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_vod': %w", err)
+		}
+	}
+
+	if a.ExposureControl != nil {
+		object["exposure_control"], err = json.Marshal(a.ExposureControl)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'exposure_control': %w", err)
+		}
+	}
+
+	if a.ExtendedLiveView != nil {
+		object["extended_live_view"], err = json.Marshal(a.ExtendedLiveView)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'extended_live_view': %w", err)
+		}
+	}
+
+	if a.FlickElimRecommendedMode != nil {
+		object["flick_elim_recommended_mode"], err = json.Marshal(a.FlickElimRecommendedMode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'flick_elim_recommended_mode': %w", err)
+		}
+	}
+
+	if a.HybridMotionZones != nil {
+		object["hybrid_motion_zones"], err = json.Marshal(a.HybridMotionZones)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'hybrid_motion_zones': %w", err)
+		}
+	}
+
+	if a.IgnoreZones != nil {
+		object["ignore_zones"], err = json.Marshal(a.IgnoreZones)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ignore_zones': %w", err)
+		}
+	}
+
+	if a.LightSnoozeSettings != nil {
+		object["light_snooze_settings"], err = json.Marshal(a.LightSnoozeSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'light_snooze_settings': %w", err)
+		}
+	}
+
+	if a.Lite24x7 != nil {
+		object["lite_24x7"], err = json.Marshal(a.Lite24x7)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'lite_24x7': %w", err)
+		}
+	}
+
+	if a.Lite24x7FootageTtl != nil {
+		object["lite_24x7_footage_ttl"], err = json.Marshal(a.Lite24x7FootageTtl)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'lite_24x7_footage_ttl': %w", err)
 		}
 	}
 
@@ -2576,10 +10689,13307 @@ func (a DeviceLegacySettings) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.LiveViewPresetProfile != nil {
+		object["live_view_preset_profile"], err = json.Marshal(a.LiveViewPresetProfile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'live_view_preset_profile': %w", err)
+		}
+	}
+
+	if a.LiveViewPresets != nil {
+		object["live_view_presets"], err = json.Marshal(a.LiveViewPresets)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'live_view_presets': %w", err)
+		}
+	}
+
+	if a.LoiteringThreshold != nil {
+		object["loitering_threshold"], err = json.Marshal(a.LoiteringThreshold)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'loitering_threshold': %w", err)
+		}
+	}
+
+	if a.MotionAnnouncement != nil {
+		object["motion_announcement"], err = json.Marshal(a.MotionAnnouncement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_announcement': %w", err)
+		}
+	}
+
 	if a.MotionDetectionEnabled != nil {
 		object["motion_detection_enabled"], err = json.Marshal(a.MotionDetectionEnabled)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'motion_detection_enabled': %w", err)
+		}
+	}
+
+	if a.MotionSettings != nil {
+		object["motion_settings"], err = json.Marshal(a.MotionSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_settings': %w", err)
+		}
+	}
+
+	if a.MotionSnoozePresetProfile != nil {
+		object["motion_snooze_preset_profile"], err = json.Marshal(a.MotionSnoozePresetProfile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_snooze_preset_profile': %w", err)
+		}
+	}
+
+	if a.MotionSnoozePresets != nil {
+		object["motion_snooze_presets"], err = json.Marshal(a.MotionSnoozePresets)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_snooze_presets': %w", err)
+		}
+	}
+
+	if a.MotionZones != nil {
+		object["motion_zones"], err = json.Marshal(a.MotionZones)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_zones': %w", err)
+		}
+	}
+
+	if a.NetworkSettings != nil {
+		object["network_settings"], err = json.Marshal(a.NetworkSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'network_settings': %w", err)
+		}
+	}
+
+	if a.OfflineMotionEventSettings != nil {
+		object["offline_motion_event_settings"], err = json.Marshal(a.OfflineMotionEventSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'offline_motion_event_settings': %w", err)
+		}
+	}
+
+	if a.OtherPaidFeatures != nil {
+		object["other_paid_features"], err = json.Marshal(a.OtherPaidFeatures)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'other_paid_features': %w", err)
+		}
+	}
+
+	if a.PeopleDetectionEligible != nil {
+		object["people_detection_eligible"], err = json.Marshal(a.PeopleDetectionEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'people_detection_eligible': %w", err)
+		}
+	}
+
+	if a.PirSensitivity1 != nil {
+		object["pir_sensitivity_1"], err = json.Marshal(a.PirSensitivity1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pir_sensitivity_1': %w", err)
+		}
+	}
+
+	if a.PowerMode != nil {
+		object["power_mode"], err = json.Marshal(a.PowerMode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'power_mode': %w", err)
+		}
+	}
+
+	if a.PtzSettings != nil {
+		object["ptz_settings"], err = json.Marshal(a.PtzSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ptz_settings': %w", err)
+		}
+	}
+
+	if a.RichNotificationsBillingEligible != nil {
+		object["rich_notifications_billing_eligible"], err = json.Marshal(a.RichNotificationsBillingEligible)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rich_notifications_billing_eligible': %w", err)
+		}
+	}
+
+	if a.RichNotificationsFaceCropEnabled != nil {
+		object["rich_notifications_face_crop_enabled"], err = json.Marshal(a.RichNotificationsFaceCropEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rich_notifications_face_crop_enabled': %w", err)
+		}
+	}
+
+	if a.RichNotificationsSceneSource != nil {
+		object["rich_notifications_scene_source"], err = json.Marshal(a.RichNotificationsSceneSource)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'rich_notifications_scene_source': %w", err)
+		}
+	}
+
+	if a.ServerSettings != nil {
+		object["server_settings"], err = json.Marshal(a.ServerSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'server_settings': %w", err)
+		}
+	}
+
+	if a.SheilaSettings != nil {
+		object["sheila_settings"], err = json.Marshal(a.SheilaSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sheila_settings': %w", err)
+		}
+	}
+
+	object["stark_enabled"], err = json.Marshal(a.StarkEnabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'stark_enabled': %w", err)
+	}
+
+	if a.StarkEnrolled != nil {
+		object["stark_enrolled"], err = json.Marshal(a.StarkEnrolled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'stark_enrolled': %w", err)
+		}
+	}
+
+	object["terms_of_service_accepted"], err = json.Marshal(a.TermsOfServiceAccepted)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'terms_of_service_accepted': %w", err)
+	}
+
+	if a.UserSpecifiedRecordingTtl != nil {
+		object["user_specified_recording_ttl"], err = json.Marshal(a.UserSpecifiedRecordingTtl)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'user_specified_recording_ttl': %w", err)
+		}
+	}
+
+	if a.VideoSettings != nil {
+		object["video_settings"], err = json.Marshal(a.VideoSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'video_settings': %w", err)
+		}
+	}
+
+	if a.VodStatus != nil {
+		object["vod_status"], err = json.Marshal(a.VodStatus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vod_status': %w", err)
+		}
+	}
+
+	if a.VodSuspended != nil {
+		object["vod_suspended"], err = json.Marshal(a.VodSuspended)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vod_suspended': %w", err)
+		}
+	}
+
+	if a.VoiceVolume != nil {
+		object["voice_volume"], err = json.Marshal(a.VoiceVolume)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'voice_volume': %w", err)
+		}
+	}
+
+	if a.ZoneSettings != nil {
+		object["zone_settings"], err = json.Marshal(a.ZoneSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone_settings': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex4) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex5) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex6) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex7) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1_Vertex8) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone1
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if raw, found := object["vertex3"]; found {
+		err = json.Unmarshal(raw, &a.Vertex3)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex3': %w", err)
+		}
+		delete(object, "vertex3")
+	}
+
+	if raw, found := object["vertex4"]; found {
+		err = json.Unmarshal(raw, &a.Vertex4)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex4': %w", err)
+		}
+		delete(object, "vertex4")
+	}
+
+	if raw, found := object["vertex5"]; found {
+		err = json.Unmarshal(raw, &a.Vertex5)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex5': %w", err)
+		}
+		delete(object, "vertex5")
+	}
+
+	if raw, found := object["vertex6"]; found {
+		err = json.Unmarshal(raw, &a.Vertex6)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex6': %w", err)
+		}
+		delete(object, "vertex6")
+	}
+
+	if raw, found := object["vertex7"]; found {
+		err = json.Unmarshal(raw, &a.Vertex7)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex7': %w", err)
+		}
+		delete(object, "vertex7")
+	}
+
+	if raw, found := object["vertex8"]; found {
+		err = json.Unmarshal(raw, &a.Vertex8)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex8': %w", err)
+		}
+		delete(object, "vertex8")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone1 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	if a.Vertex3 != nil {
+		object["vertex3"], err = json.Marshal(a.Vertex3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex3': %w", err)
+		}
+	}
+
+	if a.Vertex4 != nil {
+		object["vertex4"], err = json.Marshal(a.Vertex4)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex4': %w", err)
+		}
+	}
+
+	if a.Vertex5 != nil {
+		object["vertex5"], err = json.Marshal(a.Vertex5)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex5': %w", err)
+		}
+	}
+
+	if a.Vertex6 != nil {
+		object["vertex6"], err = json.Marshal(a.Vertex6)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex6': %w", err)
+		}
+	}
+
+	if a.Vertex7 != nil {
+		object["vertex7"], err = json.Marshal(a.Vertex7)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex7': %w", err)
+		}
+	}
+
+	if a.Vertex8 != nil {
+		object["vertex8"], err = json.Marshal(a.Vertex8)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex8': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex4) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex5) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex6) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex7) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2_Vertex8) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone2
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if raw, found := object["vertex3"]; found {
+		err = json.Unmarshal(raw, &a.Vertex3)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex3': %w", err)
+		}
+		delete(object, "vertex3")
+	}
+
+	if raw, found := object["vertex4"]; found {
+		err = json.Unmarshal(raw, &a.Vertex4)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex4': %w", err)
+		}
+		delete(object, "vertex4")
+	}
+
+	if raw, found := object["vertex5"]; found {
+		err = json.Unmarshal(raw, &a.Vertex5)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex5': %w", err)
+		}
+		delete(object, "vertex5")
+	}
+
+	if raw, found := object["vertex6"]; found {
+		err = json.Unmarshal(raw, &a.Vertex6)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex6': %w", err)
+		}
+		delete(object, "vertex6")
+	}
+
+	if raw, found := object["vertex7"]; found {
+		err = json.Unmarshal(raw, &a.Vertex7)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex7': %w", err)
+		}
+		delete(object, "vertex7")
+	}
+
+	if raw, found := object["vertex8"]; found {
+		err = json.Unmarshal(raw, &a.Vertex8)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex8': %w", err)
+		}
+		delete(object, "vertex8")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone2 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	if a.Vertex3 != nil {
+		object["vertex3"], err = json.Marshal(a.Vertex3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex3': %w", err)
+		}
+	}
+
+	if a.Vertex4 != nil {
+		object["vertex4"], err = json.Marshal(a.Vertex4)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex4': %w", err)
+		}
+	}
+
+	if a.Vertex5 != nil {
+		object["vertex5"], err = json.Marshal(a.Vertex5)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex5': %w", err)
+		}
+	}
+
+	if a.Vertex6 != nil {
+		object["vertex6"], err = json.Marshal(a.Vertex6)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex6': %w", err)
+		}
+	}
+
+	if a.Vertex7 != nil {
+		object["vertex7"], err = json.Marshal(a.Vertex7)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex7': %w", err)
+		}
+	}
+
+	if a.Vertex8 != nil {
+		object["vertex8"], err = json.Marshal(a.Vertex8)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex8': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex4) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex5) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex6) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex7) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3_Vertex8) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones_Zone3
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones_Zone3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if raw, found := object["vertex3"]; found {
+		err = json.Unmarshal(raw, &a.Vertex3)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex3': %w", err)
+		}
+		delete(object, "vertex3")
+	}
+
+	if raw, found := object["vertex4"]; found {
+		err = json.Unmarshal(raw, &a.Vertex4)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex4': %w", err)
+		}
+		delete(object, "vertex4")
+	}
+
+	if raw, found := object["vertex5"]; found {
+		err = json.Unmarshal(raw, &a.Vertex5)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex5': %w", err)
+		}
+		delete(object, "vertex5")
+	}
+
+	if raw, found := object["vertex6"]; found {
+		err = json.Unmarshal(raw, &a.Vertex6)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex6': %w", err)
+		}
+		delete(object, "vertex6")
+	}
+
+	if raw, found := object["vertex7"]; found {
+		err = json.Unmarshal(raw, &a.Vertex7)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex7': %w", err)
+		}
+		delete(object, "vertex7")
+	}
+
+	if raw, found := object["vertex8"]; found {
+		err = json.Unmarshal(raw, &a.Vertex8)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex8': %w", err)
+		}
+		delete(object, "vertex8")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones_Zone3 to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones_Zone3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	if a.Vertex3 != nil {
+		object["vertex3"], err = json.Marshal(a.Vertex3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex3': %w", err)
+		}
+	}
+
+	if a.Vertex4 != nil {
+		object["vertex4"], err = json.Marshal(a.Vertex4)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex4': %w", err)
+		}
+	}
+
+	if a.Vertex5 != nil {
+		object["vertex5"], err = json.Marshal(a.Vertex5)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex5': %w", err)
+		}
+	}
+
+	if a.Vertex6 != nil {
+		object["vertex6"], err = json.Marshal(a.Vertex6)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex6': %w", err)
+		}
+	}
+
+	if a.Vertex7 != nil {
+		object["vertex7"], err = json.Marshal(a.Vertex7)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex7': %w", err)
+		}
+	}
+
+	if a.Vertex8 != nil {
+		object["vertex8"], err = json.Marshal(a.Vertex8)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex8': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedMotionZones. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedMotionZones) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedMotionZones
+func (a *DeviceLegacySettings_AdvancedMotionZones) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedMotionZones) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["zone1"]; found {
+		err = json.Unmarshal(raw, &a.Zone1)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone1': %w", err)
+		}
+		delete(object, "zone1")
+	}
+
+	if raw, found := object["zone2"]; found {
+		err = json.Unmarshal(raw, &a.Zone2)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone2': %w", err)
+		}
+		delete(object, "zone2")
+	}
+
+	if raw, found := object["zone3"]; found {
+		err = json.Unmarshal(raw, &a.Zone3)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone3': %w", err)
+		}
+		delete(object, "zone3")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedMotionZones to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedMotionZones) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Zone1 != nil {
+		object["zone1"], err = json.Marshal(a.Zone1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone1': %w", err)
+		}
+	}
+
+	if a.Zone2 != nil {
+		object["zone2"], err = json.Marshal(a.Zone2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone2': %w", err)
+		}
+	}
+
+	if a.Zone3 != nil {
+		object["zone3"], err = json.Marshal(a.Zone3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone3': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AdvancedPirMotionZones. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AdvancedPirMotionZones) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AdvancedPirMotionZones
+func (a *DeviceLegacySettings_AdvancedPirMotionZones) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedPirMotionZones to handle AdditionalProperties
+func (a *DeviceLegacySettings_AdvancedPirMotionZones) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["zone1_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone1Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone1_sensitivity': %w", err)
+		}
+		delete(object, "zone1_sensitivity")
+	}
+
+	if raw, found := object["zone2_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone2Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone2_sensitivity': %w", err)
+		}
+		delete(object, "zone2_sensitivity")
+	}
+
+	if raw, found := object["zone3_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone3Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone3_sensitivity': %w", err)
+		}
+		delete(object, "zone3_sensitivity")
+	}
+
+	if raw, found := object["zone4_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone4Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone4_sensitivity': %w", err)
+		}
+		delete(object, "zone4_sensitivity")
+	}
+
+	if raw, found := object["zone5_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone5Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone5_sensitivity': %w", err)
+		}
+		delete(object, "zone5_sensitivity")
+	}
+
+	if raw, found := object["zone6_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone6Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone6_sensitivity': %w", err)
+		}
+		delete(object, "zone6_sensitivity")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AdvancedPirMotionZones to handle AdditionalProperties
+func (a DeviceLegacySettings_AdvancedPirMotionZones) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Zone1Sensitivity != nil {
+		object["zone1_sensitivity"], err = json.Marshal(a.Zone1Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone1_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone2Sensitivity != nil {
+		object["zone2_sensitivity"], err = json.Marshal(a.Zone2Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone2_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone3Sensitivity != nil {
+		object["zone3_sensitivity"], err = json.Marshal(a.Zone3Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone3_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone4Sensitivity != nil {
+		object["zone4_sensitivity"], err = json.Marshal(a.Zone4Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone4_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone5Sensitivity != nil {
+		object["zone5_sensitivity"], err = json.Marshal(a.Zone5Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone5_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone6Sensitivity != nil {
+		object["zone6_sensitivity"], err = json.Marshal(a.Zone6Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone6_sensitivity': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_AudioSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_AudioSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_AudioSettings
+func (a *DeviceLegacySettings_AudioSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_AudioSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_AudioSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enable_live_view_audio_override"]; found {
+		err = json.Unmarshal(raw, &a.EnableLiveViewAudioOverride)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_live_view_audio_override': %w", err)
+		}
+		delete(object, "enable_live_view_audio_override")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_AudioSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_AudioSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.EnableLiveViewAudioOverride != nil {
+		object["enable_live_view_audio_override"], err = json.Marshal(a.EnableLiveViewAudioOverride)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_live_view_audio_override': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvPaidFeatures. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvPaidFeatures) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvPaidFeatures
+func (a *DeviceLegacySettings_CvPaidFeatures) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvPaidFeatures to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvPaidFeatures) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["animal"]; found {
+		err = json.Unmarshal(raw, &a.Animal)
+		if err != nil {
+			return fmt.Errorf("error reading 'animal': %w", err)
+		}
+		delete(object, "animal")
+	}
+
+	if raw, found := object["baby_cry"]; found {
+		err = json.Unmarshal(raw, &a.BabyCry)
+		if err != nil {
+			return fmt.Errorf("error reading 'baby_cry': %w", err)
+		}
+		delete(object, "baby_cry")
+	}
+
+	if raw, found := object["car_alarm"]; found {
+		err = json.Unmarshal(raw, &a.CarAlarm)
+		if err != nil {
+			return fmt.Errorf("error reading 'car_alarm': %w", err)
+		}
+		delete(object, "car_alarm")
+	}
+
+	if raw, found := object["co2_smoke_alarm"]; found {
+		err = json.Unmarshal(raw, &a.Co2SmokeAlarm)
+		if err != nil {
+			return fmt.Errorf("error reading 'co2_smoke_alarm': %w", err)
+		}
+		delete(object, "co2_smoke_alarm")
+	}
+
+	if raw, found := object["cv_triggers"]; found {
+		err = json.Unmarshal(raw, &a.CvTriggers)
+		if err != nil {
+			return fmt.Errorf("error reading 'cv_triggers': %w", err)
+		}
+		delete(object, "cv_triggers")
+	}
+
+	if raw, found := object["dog_bark"]; found {
+		err = json.Unmarshal(raw, &a.DogBark)
+		if err != nil {
+			return fmt.Errorf("error reading 'dog_bark': %w", err)
+		}
+		delete(object, "dog_bark")
+	}
+
+	if raw, found := object["general_sound"]; found {
+		err = json.Unmarshal(raw, &a.GeneralSound)
+		if err != nil {
+			return fmt.Errorf("error reading 'general_sound': %w", err)
+		}
+		delete(object, "general_sound")
+	}
+
+	if raw, found := object["glass_break"]; found {
+		err = json.Unmarshal(raw, &a.GlassBreak)
+		if err != nil {
+			return fmt.Errorf("error reading 'glass_break': %w", err)
+		}
+		delete(object, "glass_break")
+	}
+
+	if raw, found := object["human"]; found {
+		err = json.Unmarshal(raw, &a.Human)
+		if err != nil {
+			return fmt.Errorf("error reading 'human': %w", err)
+		}
+		delete(object, "human")
+	}
+
+	if raw, found := object["loitering"]; found {
+		err = json.Unmarshal(raw, &a.Loitering)
+		if err != nil {
+			return fmt.Errorf("error reading 'loitering': %w", err)
+		}
+		delete(object, "loitering")
+	}
+
+	if raw, found := object["motion"]; found {
+		err = json.Unmarshal(raw, &a.Motion)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion': %w", err)
+		}
+		delete(object, "motion")
+	}
+
+	if raw, found := object["other_motion"]; found {
+		err = json.Unmarshal(raw, &a.OtherMotion)
+		if err != nil {
+			return fmt.Errorf("error reading 'other_motion': %w", err)
+		}
+		delete(object, "other_motion")
+	}
+
+	if raw, found := object["package_delivery"]; found {
+		err = json.Unmarshal(raw, &a.PackageDelivery)
+		if err != nil {
+			return fmt.Errorf("error reading 'package_delivery': %w", err)
+		}
+		delete(object, "package_delivery")
+	}
+
+	if raw, found := object["package_pickup"]; found {
+		err = json.Unmarshal(raw, &a.PackagePickup)
+		if err != nil {
+			return fmt.Errorf("error reading 'package_pickup': %w", err)
+		}
+		delete(object, "package_pickup")
+	}
+
+	if raw, found := object["vehicle"]; found {
+		err = json.Unmarshal(raw, &a.Vehicle)
+		if err != nil {
+			return fmt.Errorf("error reading 'vehicle': %w", err)
+		}
+		delete(object, "vehicle")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvPaidFeatures to handle AdditionalProperties
+func (a DeviceLegacySettings_CvPaidFeatures) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Animal != nil {
+		object["animal"], err = json.Marshal(a.Animal)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'animal': %w", err)
+		}
+	}
+
+	if a.BabyCry != nil {
+		object["baby_cry"], err = json.Marshal(a.BabyCry)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'baby_cry': %w", err)
+		}
+	}
+
+	if a.CarAlarm != nil {
+		object["car_alarm"], err = json.Marshal(a.CarAlarm)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'car_alarm': %w", err)
+		}
+	}
+
+	if a.Co2SmokeAlarm != nil {
+		object["co2_smoke_alarm"], err = json.Marshal(a.Co2SmokeAlarm)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'co2_smoke_alarm': %w", err)
+		}
+	}
+
+	if a.CvTriggers != nil {
+		object["cv_triggers"], err = json.Marshal(a.CvTriggers)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cv_triggers': %w", err)
+		}
+	}
+
+	if a.DogBark != nil {
+		object["dog_bark"], err = json.Marshal(a.DogBark)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dog_bark': %w", err)
+		}
+	}
+
+	if a.GeneralSound != nil {
+		object["general_sound"], err = json.Marshal(a.GeneralSound)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'general_sound': %w", err)
+		}
+	}
+
+	if a.GlassBreak != nil {
+		object["glass_break"], err = json.Marshal(a.GlassBreak)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'glass_break': %w", err)
+		}
+	}
+
+	if a.Human != nil {
+		object["human"], err = json.Marshal(a.Human)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'human': %w", err)
+		}
+	}
+
+	if a.Loitering != nil {
+		object["loitering"], err = json.Marshal(a.Loitering)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'loitering': %w", err)
+		}
+	}
+
+	if a.Motion != nil {
+		object["motion"], err = json.Marshal(a.Motion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion': %w", err)
+		}
+	}
+
+	if a.OtherMotion != nil {
+		object["other_motion"], err = json.Marshal(a.OtherMotion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'other_motion': %w", err)
+		}
+	}
+
+	if a.PackageDelivery != nil {
+		object["package_delivery"], err = json.Marshal(a.PackageDelivery)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'package_delivery': %w", err)
+		}
+	}
+
+	if a.PackagePickup != nil {
+		object["package_pickup"], err = json.Marshal(a.PackagePickup)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'package_pickup': %w", err)
+		}
+	}
+
+	if a.Vehicle != nil {
+		object["vehicle"], err = json.Marshal(a.Vehicle)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vehicle': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Animal. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Animal) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Animal
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Animal) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Animal to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Animal) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Animal to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Animal) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_BabyCry) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_CarAlarm) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Co2SmokeAlarm) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_DogBark. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_DogBark) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_DogBark
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_DogBark) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_DogBark to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_DogBark) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_DogBark to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_DogBark) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_GeneralSound) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_GlassBreak) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Human. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Human) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Human
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Human) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Human to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Human) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Human to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Human) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Loitering. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Loitering) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Loitering
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Loitering) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Loitering to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Loitering) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Loitering to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Loitering) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Motion. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Motion) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Motion
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Motion) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Motion to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Motion) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Motion to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Motion) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_MotionStop) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_MovingVehicle) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_OtherMotion) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_PackageDelivery) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_PackagePickup) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_UnverifiedMotion) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["notification"]; found {
+		err = json.Unmarshal(raw, &a.Notification)
+		if err != nil {
+			return fmt.Errorf("error reading 'notification': %w", err)
+		}
+		delete(object, "notification")
+	}
+
+	if raw, found := object["record"]; found {
+		err = json.Unmarshal(raw, &a.Record)
+		if err != nil {
+			return fmt.Errorf("error reading 'record': %w", err)
+		}
+		delete(object, "record")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes_Vehicle) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.Notification != nil {
+		object["notification"], err = json.Marshal(a.Notification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'notification': %w", err)
+		}
+	}
+
+	if a.Record != nil {
+		object["record"], err = json.Marshal(a.Record)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'record': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_DetectionTypes) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_DetectionTypes
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_DetectionTypes) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["animal"]; found {
+		err = json.Unmarshal(raw, &a.Animal)
+		if err != nil {
+			return fmt.Errorf("error reading 'animal': %w", err)
+		}
+		delete(object, "animal")
+	}
+
+	if raw, found := object["baby_cry"]; found {
+		err = json.Unmarshal(raw, &a.BabyCry)
+		if err != nil {
+			return fmt.Errorf("error reading 'baby_cry': %w", err)
+		}
+		delete(object, "baby_cry")
+	}
+
+	if raw, found := object["car_alarm"]; found {
+		err = json.Unmarshal(raw, &a.CarAlarm)
+		if err != nil {
+			return fmt.Errorf("error reading 'car_alarm': %w", err)
+		}
+		delete(object, "car_alarm")
+	}
+
+	if raw, found := object["co2_smoke_alarm"]; found {
+		err = json.Unmarshal(raw, &a.Co2SmokeAlarm)
+		if err != nil {
+			return fmt.Errorf("error reading 'co2_smoke_alarm': %w", err)
+		}
+		delete(object, "co2_smoke_alarm")
+	}
+
+	if raw, found := object["dog_bark"]; found {
+		err = json.Unmarshal(raw, &a.DogBark)
+		if err != nil {
+			return fmt.Errorf("error reading 'dog_bark': %w", err)
+		}
+		delete(object, "dog_bark")
+	}
+
+	if raw, found := object["general_sound"]; found {
+		err = json.Unmarshal(raw, &a.GeneralSound)
+		if err != nil {
+			return fmt.Errorf("error reading 'general_sound': %w", err)
+		}
+		delete(object, "general_sound")
+	}
+
+	if raw, found := object["glass_break"]; found {
+		err = json.Unmarshal(raw, &a.GlassBreak)
+		if err != nil {
+			return fmt.Errorf("error reading 'glass_break': %w", err)
+		}
+		delete(object, "glass_break")
+	}
+
+	if raw, found := object["human"]; found {
+		err = json.Unmarshal(raw, &a.Human)
+		if err != nil {
+			return fmt.Errorf("error reading 'human': %w", err)
+		}
+		delete(object, "human")
+	}
+
+	if raw, found := object["loitering"]; found {
+		err = json.Unmarshal(raw, &a.Loitering)
+		if err != nil {
+			return fmt.Errorf("error reading 'loitering': %w", err)
+		}
+		delete(object, "loitering")
+	}
+
+	if raw, found := object["motion"]; found {
+		err = json.Unmarshal(raw, &a.Motion)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion': %w", err)
+		}
+		delete(object, "motion")
+	}
+
+	if raw, found := object["motion_stop"]; found {
+		err = json.Unmarshal(raw, &a.MotionStop)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_stop': %w", err)
+		}
+		delete(object, "motion_stop")
+	}
+
+	if raw, found := object["moving_vehicle"]; found {
+		err = json.Unmarshal(raw, &a.MovingVehicle)
+		if err != nil {
+			return fmt.Errorf("error reading 'moving_vehicle': %w", err)
+		}
+		delete(object, "moving_vehicle")
+	}
+
+	if raw, found := object["other_motion"]; found {
+		err = json.Unmarshal(raw, &a.OtherMotion)
+		if err != nil {
+			return fmt.Errorf("error reading 'other_motion': %w", err)
+		}
+		delete(object, "other_motion")
+	}
+
+	if raw, found := object["package_delivery"]; found {
+		err = json.Unmarshal(raw, &a.PackageDelivery)
+		if err != nil {
+			return fmt.Errorf("error reading 'package_delivery': %w", err)
+		}
+		delete(object, "package_delivery")
+	}
+
+	if raw, found := object["package_pickup"]; found {
+		err = json.Unmarshal(raw, &a.PackagePickup)
+		if err != nil {
+			return fmt.Errorf("error reading 'package_pickup': %w", err)
+		}
+		delete(object, "package_pickup")
+	}
+
+	if raw, found := object["unverified_motion"]; found {
+		err = json.Unmarshal(raw, &a.UnverifiedMotion)
+		if err != nil {
+			return fmt.Errorf("error reading 'unverified_motion': %w", err)
+		}
+		delete(object, "unverified_motion")
+	}
+
+	if raw, found := object["vehicle"]; found {
+		err = json.Unmarshal(raw, &a.Vehicle)
+		if err != nil {
+			return fmt.Errorf("error reading 'vehicle': %w", err)
+		}
+		delete(object, "vehicle")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_DetectionTypes to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_DetectionTypes) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Animal != nil {
+		object["animal"], err = json.Marshal(a.Animal)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'animal': %w", err)
+		}
+	}
+
+	if a.BabyCry != nil {
+		object["baby_cry"], err = json.Marshal(a.BabyCry)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'baby_cry': %w", err)
+		}
+	}
+
+	if a.CarAlarm != nil {
+		object["car_alarm"], err = json.Marshal(a.CarAlarm)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'car_alarm': %w", err)
+		}
+	}
+
+	if a.Co2SmokeAlarm != nil {
+		object["co2_smoke_alarm"], err = json.Marshal(a.Co2SmokeAlarm)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'co2_smoke_alarm': %w", err)
+		}
+	}
+
+	if a.DogBark != nil {
+		object["dog_bark"], err = json.Marshal(a.DogBark)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dog_bark': %w", err)
+		}
+	}
+
+	if a.GeneralSound != nil {
+		object["general_sound"], err = json.Marshal(a.GeneralSound)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'general_sound': %w", err)
+		}
+	}
+
+	if a.GlassBreak != nil {
+		object["glass_break"], err = json.Marshal(a.GlassBreak)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'glass_break': %w", err)
+		}
+	}
+
+	if a.Human != nil {
+		object["human"], err = json.Marshal(a.Human)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'human': %w", err)
+		}
+	}
+
+	if a.Loitering != nil {
+		object["loitering"], err = json.Marshal(a.Loitering)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'loitering': %w", err)
+		}
+	}
+
+	if a.Motion != nil {
+		object["motion"], err = json.Marshal(a.Motion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion': %w", err)
+		}
+	}
+
+	if a.MotionStop != nil {
+		object["motion_stop"], err = json.Marshal(a.MotionStop)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_stop': %w", err)
+		}
+	}
+
+	if a.MovingVehicle != nil {
+		object["moving_vehicle"], err = json.Marshal(a.MovingVehicle)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'moving_vehicle': %w", err)
+		}
+	}
+
+	if a.OtherMotion != nil {
+		object["other_motion"], err = json.Marshal(a.OtherMotion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'other_motion': %w", err)
+		}
+	}
+
+	if a.PackageDelivery != nil {
+		object["package_delivery"], err = json.Marshal(a.PackageDelivery)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'package_delivery': %w", err)
+		}
+	}
+
+	if a.PackagePickup != nil {
+		object["package_pickup"], err = json.Marshal(a.PackagePickup)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'package_pickup': %w", err)
+		}
+	}
+
+	if a.UnverifiedMotion != nil {
+		object["unverified_motion"], err = json.Marshal(a.UnverifiedMotion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unverified_motion': %w", err)
+		}
+	}
+
+	if a.Vehicle != nil {
+		object["vehicle"], err = json.Marshal(a.Vehicle)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vehicle': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch
+func (a *DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_SearchTypes_NaturalLanguageSearch) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_SearchTypes. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_SearchTypes) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_SearchTypes
+func (a *DeviceLegacySettings_CvSettings_SearchTypes) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_SearchTypes to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_SearchTypes) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["natural_language_search"]; found {
+		err = json.Unmarshal(raw, &a.NaturalLanguageSearch)
+		if err != nil {
+			return fmt.Errorf("error reading 'natural_language_search': %w", err)
+		}
+		delete(object, "natural_language_search")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_SearchTypes to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_SearchTypes) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.NaturalLanguageSearch != nil {
+		object["natural_language_search"], err = json.Marshal(a.NaturalLanguageSearch)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'natural_language_search': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings_Threshold. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings_Threshold) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings_Threshold
+func (a *DeviceLegacySettings_CvSettings_Threshold) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_Threshold to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings_Threshold) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["baby_cry"]; found {
+		err = json.Unmarshal(raw, &a.BabyCry)
+		if err != nil {
+			return fmt.Errorf("error reading 'baby_cry': %w", err)
+		}
+		delete(object, "baby_cry")
+	}
+
+	if raw, found := object["car_alarm"]; found {
+		err = json.Unmarshal(raw, &a.CarAlarm)
+		if err != nil {
+			return fmt.Errorf("error reading 'car_alarm': %w", err)
+		}
+		delete(object, "car_alarm")
+	}
+
+	if raw, found := object["co2_smoke_alarm"]; found {
+		err = json.Unmarshal(raw, &a.Co2SmokeAlarm)
+		if err != nil {
+			return fmt.Errorf("error reading 'co2_smoke_alarm': %w", err)
+		}
+		delete(object, "co2_smoke_alarm")
+	}
+
+	if raw, found := object["dog_bark"]; found {
+		err = json.Unmarshal(raw, &a.DogBark)
+		if err != nil {
+			return fmt.Errorf("error reading 'dog_bark': %w", err)
+		}
+		delete(object, "dog_bark")
+	}
+
+	if raw, found := object["general_sound"]; found {
+		err = json.Unmarshal(raw, &a.GeneralSound)
+		if err != nil {
+			return fmt.Errorf("error reading 'general_sound': %w", err)
+		}
+		delete(object, "general_sound")
+	}
+
+	if raw, found := object["glass_break"]; found {
+		err = json.Unmarshal(raw, &a.GlassBreak)
+		if err != nil {
+			return fmt.Errorf("error reading 'glass_break': %w", err)
+		}
+		delete(object, "glass_break")
+	}
+
+	if raw, found := object["loitering"]; found {
+		err = json.Unmarshal(raw, &a.Loitering)
+		if err != nil {
+			return fmt.Errorf("error reading 'loitering': %w", err)
+		}
+		delete(object, "loitering")
+	}
+
+	if raw, found := object["package_delivery"]; found {
+		err = json.Unmarshal(raw, &a.PackageDelivery)
+		if err != nil {
+			return fmt.Errorf("error reading 'package_delivery': %w", err)
+		}
+		delete(object, "package_delivery")
+	}
+
+	if raw, found := object["unverified_motion"]; found {
+		err = json.Unmarshal(raw, &a.UnverifiedMotion)
+		if err != nil {
+			return fmt.Errorf("error reading 'unverified_motion': %w", err)
+		}
+		delete(object, "unverified_motion")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings_Threshold to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings_Threshold) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.BabyCry != nil {
+		object["baby_cry"], err = json.Marshal(a.BabyCry)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'baby_cry': %w", err)
+		}
+	}
+
+	if a.CarAlarm != nil {
+		object["car_alarm"], err = json.Marshal(a.CarAlarm)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'car_alarm': %w", err)
+		}
+	}
+
+	if a.Co2SmokeAlarm != nil {
+		object["co2_smoke_alarm"], err = json.Marshal(a.Co2SmokeAlarm)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'co2_smoke_alarm': %w", err)
+		}
+	}
+
+	if a.DogBark != nil {
+		object["dog_bark"], err = json.Marshal(a.DogBark)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'dog_bark': %w", err)
+		}
+	}
+
+	if a.GeneralSound != nil {
+		object["general_sound"], err = json.Marshal(a.GeneralSound)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'general_sound': %w", err)
+		}
+	}
+
+	if a.GlassBreak != nil {
+		object["glass_break"], err = json.Marshal(a.GlassBreak)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'glass_break': %w", err)
+		}
+	}
+
+	if a.Loitering != nil {
+		object["loitering"], err = json.Marshal(a.Loitering)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'loitering': %w", err)
+		}
+	}
+
+	if a.PackageDelivery != nil {
+		object["package_delivery"], err = json.Marshal(a.PackageDelivery)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'package_delivery': %w", err)
+		}
+	}
+
+	if a.UnverifiedMotion != nil {
+		object["unverified_motion"], err = json.Marshal(a.UnverifiedMotion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unverified_motion': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_CvSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_CvSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_CvSettings
+func (a *DeviceLegacySettings_CvSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_CvSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["detection_types"]; found {
+		err = json.Unmarshal(raw, &a.DetectionTypes)
+		if err != nil {
+			return fmt.Errorf("error reading 'detection_types': %w", err)
+		}
+		delete(object, "detection_types")
+	}
+
+	if raw, found := object["search_types"]; found {
+		err = json.Unmarshal(raw, &a.SearchTypes)
+		if err != nil {
+			return fmt.Errorf("error reading 'search_types': %w", err)
+		}
+		delete(object, "search_types")
+	}
+
+	if raw, found := object["threshold"]; found {
+		err = json.Unmarshal(raw, &a.Threshold)
+		if err != nil {
+			return fmt.Errorf("error reading 'threshold': %w", err)
+		}
+		delete(object, "threshold")
+	}
+
+	if raw, found := object["triggers"]; found {
+		err = json.Unmarshal(raw, &a.Triggers)
+		if err != nil {
+			return fmt.Errorf("error reading 'triggers': %w", err)
+		}
+		delete(object, "triggers")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_CvSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_CvSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.DetectionTypes != nil {
+		object["detection_types"], err = json.Marshal(a.DetectionTypes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'detection_types': %w", err)
+		}
+	}
+
+	if a.SearchTypes != nil {
+		object["search_types"], err = json.Marshal(a.SearchTypes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'search_types': %w", err)
+		}
+	}
+
+	if a.Threshold != nil {
+		object["threshold"], err = json.Marshal(a.Threshold)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'threshold': %w", err)
+		}
+	}
+
+	if a.Triggers != nil {
+		object["triggers"], err = json.Marshal(a.Triggers)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'triggers': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["day"]; found {
+		err = json.Unmarshal(raw, &a.Day)
+		if err != nil {
+			return fmt.Errorf("error reading 'day': %w", err)
+		}
+		delete(object, "day")
+	}
+
+	if raw, found := object["night"]; found {
+		err = json.Unmarshal(raw, &a.Night)
+		if err != nil {
+			return fmt.Errorf("error reading 'night': %w", err)
+		}
+		delete(object, "night")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_HumanDetectionConfidence) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Day != nil {
+		object["day"], err = json.Marshal(a.Day)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'day': %w", err)
+		}
+	}
+
+	if a.Night != nil {
+		object["night"], err = json.Marshal(a.Night)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'night': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["day"]; found {
+		err = json.Unmarshal(raw, &a.Day)
+		if err != nil {
+			return fmt.Errorf("error reading 'day': %w", err)
+		}
+		delete(object, "day")
+	}
+
+	if raw, found := object["night"]; found {
+		err = json.Unmarshal(raw, &a.Night)
+		if err != nil {
+			return fmt.Errorf("error reading 'night': %w", err)
+		}
+		delete(object, "night")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_MotionZoneOverlap) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Day != nil {
+		object["day"], err = json.Marshal(a.Day)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'day': %w", err)
+		}
+	}
+
+	if a.Night != nil {
+		object["night"], err = json.Marshal(a.Night)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'night': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["day"]; found {
+		err = json.Unmarshal(raw, &a.Day)
+		if err != nil {
+			return fmt.Errorf("error reading 'day': %w", err)
+		}
+		delete(object, "day")
+	}
+
+	if raw, found := object["night"]; found {
+		err = json.Unmarshal(raw, &a.Night)
+		if err != nil {
+			return fmt.Errorf("error reading 'night': %w", err)
+		}
+		delete(object, "night")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMaximum) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Day != nil {
+		object["day"], err = json.Marshal(a.Day)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'day': %w", err)
+		}
+	}
+
+	if a.Night != nil {
+		object["night"], err = json.Marshal(a.Night)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'night': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["day"]; found {
+		err = json.Unmarshal(raw, &a.Day)
+		if err != nil {
+			return fmt.Errorf("error reading 'day': %w", err)
+		}
+		delete(object, "day")
+	}
+
+	if raw, found := object["night"]; found {
+		err = json.Unmarshal(raw, &a.Night)
+		if err != nil {
+			return fmt.Errorf("error reading 'night': %w", err)
+		}
+		delete(object, "night")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectSizeMinimum) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Day != nil {
+		object["day"], err = json.Marshal(a.Day)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'day': %w", err)
+		}
+	}
+
+	if a.Night != nil {
+		object["night"], err = json.Marshal(a.Night)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'night': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["day"]; found {
+		err = json.Unmarshal(raw, &a.Day)
+		if err != nil {
+			return fmt.Errorf("error reading 'day': %w", err)
+		}
+		delete(object, "day")
+	}
+
+	if raw, found := object["night"]; found {
+		err = json.Unmarshal(raw, &a.Night)
+		if err != nil {
+			return fmt.Errorf("error reading 'night': %w", err)
+		}
+		delete(object, "night")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings_ObjectTimeOverlap) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Day != nil {
+		object["day"], err = json.Marshal(a.Day)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'day': %w", err)
+		}
+	}
+
+	if a.Night != nil {
+		object["night"], err = json.Marshal(a.Night)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'night': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["human_detection_confidence"]; found {
+		err = json.Unmarshal(raw, &a.HumanDetectionConfidence)
+		if err != nil {
+			return fmt.Errorf("error reading 'human_detection_confidence': %w", err)
+		}
+		delete(object, "human_detection_confidence")
+	}
+
+	if raw, found := object["motion_zone_overlap"]; found {
+		err = json.Unmarshal(raw, &a.MotionZoneOverlap)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_zone_overlap': %w", err)
+		}
+		delete(object, "motion_zone_overlap")
+	}
+
+	if raw, found := object["object_size_maximum"]; found {
+		err = json.Unmarshal(raw, &a.ObjectSizeMaximum)
+		if err != nil {
+			return fmt.Errorf("error reading 'object_size_maximum': %w", err)
+		}
+		delete(object, "object_size_maximum")
+	}
+
+	if raw, found := object["object_size_minimum"]; found {
+		err = json.Unmarshal(raw, &a.ObjectSizeMinimum)
+		if err != nil {
+			return fmt.Errorf("error reading 'object_size_minimum': %w", err)
+		}
+		delete(object, "object_size_minimum")
+	}
+
+	if raw, found := object["object_time_overlap"]; found {
+		err = json.Unmarshal(raw, &a.ObjectTimeOverlap)
+		if err != nil {
+			return fmt.Errorf("error reading 'object_time_overlap': %w", err)
+		}
+		delete(object, "object_time_overlap")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedObjectSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.HumanDetectionConfidence != nil {
+		object["human_detection_confidence"], err = json.Marshal(a.HumanDetectionConfidence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'human_detection_confidence': %w", err)
+		}
+	}
+
+	if a.MotionZoneOverlap != nil {
+		object["motion_zone_overlap"], err = json.Marshal(a.MotionZoneOverlap)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_zone_overlap': %w", err)
+		}
+	}
+
+	if a.ObjectSizeMaximum != nil {
+		object["object_size_maximum"], err = json.Marshal(a.ObjectSizeMaximum)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'object_size_maximum': %w", err)
+		}
+	}
+
+	if a.ObjectSizeMinimum != nil {
+		object["object_size_minimum"], err = json.Marshal(a.ObjectSizeMinimum)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'object_size_minimum': %w", err)
+		}
+	}
+
+	if a.ObjectTimeOverlap != nil {
+		object["object_time_overlap"], err = json.Marshal(a.ObjectTimeOverlap)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'object_time_overlap': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["zone1_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone1Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone1_sensitivity': %w", err)
+		}
+		delete(object, "zone1_sensitivity")
+	}
+
+	if raw, found := object["zone2_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone2Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone2_sensitivity': %w", err)
+		}
+		delete(object, "zone2_sensitivity")
+	}
+
+	if raw, found := object["zone3_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone3Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone3_sensitivity': %w", err)
+		}
+		delete(object, "zone3_sensitivity")
+	}
+
+	if raw, found := object["zone4_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone4Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone4_sensitivity': %w", err)
+		}
+		delete(object, "zone4_sensitivity")
+	}
+
+	if raw, found := object["zone5_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone5Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone5_sensitivity': %w", err)
+		}
+		delete(object, "zone5_sensitivity")
+	}
+
+	if raw, found := object["zone6_sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Zone6Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone6_sensitivity': %w", err)
+		}
+		delete(object, "zone6_sensitivity")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Zone1Sensitivity != nil {
+		object["zone1_sensitivity"], err = json.Marshal(a.Zone1Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone1_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone2Sensitivity != nil {
+		object["zone2_sensitivity"], err = json.Marshal(a.Zone2Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone2_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone3Sensitivity != nil {
+		object["zone3_sensitivity"], err = json.Marshal(a.Zone3Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone3_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone4Sensitivity != nil {
+		object["zone4_sensitivity"], err = json.Marshal(a.Zone4Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone4_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone5Sensitivity != nil {
+		object["zone5_sensitivity"], err = json.Marshal(a.Zone5Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone5_sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone6Sensitivity != nil {
+		object["zone6_sensitivity"], err = json.Marshal(a.Zone6Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone6_sensitivity': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex4) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex5) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex6) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex7) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1_Vertex8) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone1
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if raw, found := object["vertex3"]; found {
+		err = json.Unmarshal(raw, &a.Vertex3)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex3': %w", err)
+		}
+		delete(object, "vertex3")
+	}
+
+	if raw, found := object["vertex4"]; found {
+		err = json.Unmarshal(raw, &a.Vertex4)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex4': %w", err)
+		}
+		delete(object, "vertex4")
+	}
+
+	if raw, found := object["vertex5"]; found {
+		err = json.Unmarshal(raw, &a.Vertex5)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex5': %w", err)
+		}
+		delete(object, "vertex5")
+	}
+
+	if raw, found := object["vertex6"]; found {
+		err = json.Unmarshal(raw, &a.Vertex6)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex6': %w", err)
+		}
+		delete(object, "vertex6")
+	}
+
+	if raw, found := object["vertex7"]; found {
+		err = json.Unmarshal(raw, &a.Vertex7)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex7': %w", err)
+		}
+		delete(object, "vertex7")
+	}
+
+	if raw, found := object["vertex8"]; found {
+		err = json.Unmarshal(raw, &a.Vertex8)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex8': %w", err)
+		}
+		delete(object, "vertex8")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone1 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	if a.Vertex3 != nil {
+		object["vertex3"], err = json.Marshal(a.Vertex3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex3': %w", err)
+		}
+	}
+
+	if a.Vertex4 != nil {
+		object["vertex4"], err = json.Marshal(a.Vertex4)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex4': %w", err)
+		}
+	}
+
+	if a.Vertex5 != nil {
+		object["vertex5"], err = json.Marshal(a.Vertex5)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex5': %w", err)
+		}
+	}
+
+	if a.Vertex6 != nil {
+		object["vertex6"], err = json.Marshal(a.Vertex6)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex6': %w", err)
+		}
+	}
+
+	if a.Vertex7 != nil {
+		object["vertex7"], err = json.Marshal(a.Vertex7)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex7': %w", err)
+		}
+	}
+
+	if a.Vertex8 != nil {
+		object["vertex8"], err = json.Marshal(a.Vertex8)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex8': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex4) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex5) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex6) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex7) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2_Vertex8) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone2
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if raw, found := object["vertex3"]; found {
+		err = json.Unmarshal(raw, &a.Vertex3)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex3': %w", err)
+		}
+		delete(object, "vertex3")
+	}
+
+	if raw, found := object["vertex4"]; found {
+		err = json.Unmarshal(raw, &a.Vertex4)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex4': %w", err)
+		}
+		delete(object, "vertex4")
+	}
+
+	if raw, found := object["vertex5"]; found {
+		err = json.Unmarshal(raw, &a.Vertex5)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex5': %w", err)
+		}
+		delete(object, "vertex5")
+	}
+
+	if raw, found := object["vertex6"]; found {
+		err = json.Unmarshal(raw, &a.Vertex6)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex6': %w", err)
+		}
+		delete(object, "vertex6")
+	}
+
+	if raw, found := object["vertex7"]; found {
+		err = json.Unmarshal(raw, &a.Vertex7)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex7': %w", err)
+		}
+		delete(object, "vertex7")
+	}
+
+	if raw, found := object["vertex8"]; found {
+		err = json.Unmarshal(raw, &a.Vertex8)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex8': %w", err)
+		}
+		delete(object, "vertex8")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone2 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	if a.Vertex3 != nil {
+		object["vertex3"], err = json.Marshal(a.Vertex3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex3': %w", err)
+		}
+	}
+
+	if a.Vertex4 != nil {
+		object["vertex4"], err = json.Marshal(a.Vertex4)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex4': %w", err)
+		}
+	}
+
+	if a.Vertex5 != nil {
+		object["vertex5"], err = json.Marshal(a.Vertex5)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex5': %w", err)
+		}
+	}
+
+	if a.Vertex6 != nil {
+		object["vertex6"], err = json.Marshal(a.Vertex6)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex6': %w", err)
+		}
+	}
+
+	if a.Vertex7 != nil {
+		object["vertex7"], err = json.Marshal(a.Vertex7)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex7': %w", err)
+		}
+	}
+
+	if a.Vertex8 != nil {
+		object["vertex8"], err = json.Marshal(a.Vertex8)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex8': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex4) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex5) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex6) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex7) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3_Vertex8) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones_Zone3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones_Zone3
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones_Zone3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if raw, found := object["vertex3"]; found {
+		err = json.Unmarshal(raw, &a.Vertex3)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex3': %w", err)
+		}
+		delete(object, "vertex3")
+	}
+
+	if raw, found := object["vertex4"]; found {
+		err = json.Unmarshal(raw, &a.Vertex4)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex4': %w", err)
+		}
+		delete(object, "vertex4")
+	}
+
+	if raw, found := object["vertex5"]; found {
+		err = json.Unmarshal(raw, &a.Vertex5)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex5': %w", err)
+		}
+		delete(object, "vertex5")
+	}
+
+	if raw, found := object["vertex6"]; found {
+		err = json.Unmarshal(raw, &a.Vertex6)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex6': %w", err)
+		}
+		delete(object, "vertex6")
+	}
+
+	if raw, found := object["vertex7"]; found {
+		err = json.Unmarshal(raw, &a.Vertex7)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex7': %w", err)
+		}
+		delete(object, "vertex7")
+	}
+
+	if raw, found := object["vertex8"]; found {
+		err = json.Unmarshal(raw, &a.Vertex8)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex8': %w", err)
+		}
+		delete(object, "vertex8")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones_Zone3 to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones_Zone3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	if a.Vertex3 != nil {
+		object["vertex3"], err = json.Marshal(a.Vertex3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex3': %w", err)
+		}
+	}
+
+	if a.Vertex4 != nil {
+		object["vertex4"], err = json.Marshal(a.Vertex4)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex4': %w", err)
+		}
+	}
+
+	if a.Vertex5 != nil {
+		object["vertex5"], err = json.Marshal(a.Vertex5)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex5': %w", err)
+		}
+	}
+
+	if a.Vertex6 != nil {
+		object["vertex6"], err = json.Marshal(a.Vertex6)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex6': %w", err)
+		}
+	}
+
+	if a.Vertex7 != nil {
+		object["vertex7"], err = json.Marshal(a.Vertex7)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex7': %w", err)
+		}
+	}
+
+	if a.Vertex8 != nil {
+		object["vertex8"], err = json.Marshal(a.Vertex8)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex8': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_HybridMotionZones. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_HybridMotionZones) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_HybridMotionZones
+func (a *DeviceLegacySettings_HybridMotionZones) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones to handle AdditionalProperties
+func (a *DeviceLegacySettings_HybridMotionZones) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["active_motion_filter"]; found {
+		err = json.Unmarshal(raw, &a.ActiveMotionFilter)
+		if err != nil {
+			return fmt.Errorf("error reading 'active_motion_filter': %w", err)
+		}
+		delete(object, "active_motion_filter")
+	}
+
+	if raw, found := object["advanced_motion_zones_enabled"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedMotionZonesEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_motion_zones_enabled': %w", err)
+		}
+		delete(object, "advanced_motion_zones_enabled")
+	}
+
+	if raw, found := object["advanced_motion_zones_type"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedMotionZonesType)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_motion_zones_type': %w", err)
+		}
+		delete(object, "advanced_motion_zones_type")
+	}
+
+	if raw, found := object["advanced_object_settings"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedObjectSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_object_settings': %w", err)
+		}
+		delete(object, "advanced_object_settings")
+	}
+
+	if raw, found := object["advanced_pir_motion_zones"]; found {
+		err = json.Unmarshal(raw, &a.AdvancedPirMotionZones)
+		if err != nil {
+			return fmt.Errorf("error reading 'advanced_pir_motion_zones': %w", err)
+		}
+		delete(object, "advanced_pir_motion_zones")
+	}
+
+	if raw, found := object["enable_audio"]; found {
+		err = json.Unmarshal(raw, &a.EnableAudio)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_audio': %w", err)
+		}
+		delete(object, "enable_audio")
+	}
+
+	if raw, found := object["enable_ir"]; found {
+		err = json.Unmarshal(raw, &a.EnableIr)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_ir': %w", err)
+		}
+		delete(object, "enable_ir")
+	}
+
+	if raw, found := object["enable_pir_validation"]; found {
+		err = json.Unmarshal(raw, &a.EnablePirValidation)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_pir_validation': %w", err)
+		}
+		delete(object, "enable_pir_validation")
+	}
+
+	if raw, found := object["enable_rlmd"]; found {
+		err = json.Unmarshal(raw, &a.EnableRlmd)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_rlmd': %w", err)
+		}
+		delete(object, "enable_rlmd")
+	}
+
+	if raw, found := object["motion_snooze_privacy_timeout"]; found {
+		err = json.Unmarshal(raw, &a.MotionSnoozePrivacyTimeout)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_snooze_privacy_timeout': %w", err)
+		}
+		delete(object, "motion_snooze_privacy_timeout")
+	}
+
+	if raw, found := object["sensitivity"]; found {
+		err = json.Unmarshal(raw, &a.Sensitivity)
+		if err != nil {
+			return fmt.Errorf("error reading 'sensitivity': %w", err)
+		}
+		delete(object, "sensitivity")
+	}
+
+	if raw, found := object["zone1"]; found {
+		err = json.Unmarshal(raw, &a.Zone1)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone1': %w", err)
+		}
+		delete(object, "zone1")
+	}
+
+	if raw, found := object["zone2"]; found {
+		err = json.Unmarshal(raw, &a.Zone2)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone2': %w", err)
+		}
+		delete(object, "zone2")
+	}
+
+	if raw, found := object["zone3"]; found {
+		err = json.Unmarshal(raw, &a.Zone3)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone3': %w", err)
+		}
+		delete(object, "zone3")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_HybridMotionZones to handle AdditionalProperties
+func (a DeviceLegacySettings_HybridMotionZones) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ActiveMotionFilter != nil {
+		object["active_motion_filter"], err = json.Marshal(a.ActiveMotionFilter)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'active_motion_filter': %w", err)
+		}
+	}
+
+	if a.AdvancedMotionZonesEnabled != nil {
+		object["advanced_motion_zones_enabled"], err = json.Marshal(a.AdvancedMotionZonesEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_motion_zones_enabled': %w", err)
+		}
+	}
+
+	if a.AdvancedMotionZonesType != nil {
+		object["advanced_motion_zones_type"], err = json.Marshal(a.AdvancedMotionZonesType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_motion_zones_type': %w", err)
+		}
+	}
+
+	if a.AdvancedObjectSettings != nil {
+		object["advanced_object_settings"], err = json.Marshal(a.AdvancedObjectSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_object_settings': %w", err)
+		}
+	}
+
+	if a.AdvancedPirMotionZones != nil {
+		object["advanced_pir_motion_zones"], err = json.Marshal(a.AdvancedPirMotionZones)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'advanced_pir_motion_zones': %w", err)
+		}
+	}
+
+	if a.EnableAudio != nil {
+		object["enable_audio"], err = json.Marshal(a.EnableAudio)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_audio': %w", err)
+		}
+	}
+
+	object["enable_ir"], err = json.Marshal(a.EnableIr)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'enable_ir': %w", err)
+	}
+
+	if a.EnablePirValidation != nil {
+		object["enable_pir_validation"], err = json.Marshal(a.EnablePirValidation)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_pir_validation': %w", err)
+		}
+	}
+
+	if a.EnableRlmd != nil {
+		object["enable_rlmd"], err = json.Marshal(a.EnableRlmd)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_rlmd': %w", err)
+		}
+	}
+
+	if a.MotionSnoozePrivacyTimeout != nil {
+		object["motion_snooze_privacy_timeout"], err = json.Marshal(a.MotionSnoozePrivacyTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_snooze_privacy_timeout': %w", err)
+		}
+	}
+
+	if a.Sensitivity != nil {
+		object["sensitivity"], err = json.Marshal(a.Sensitivity)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sensitivity': %w", err)
+		}
+	}
+
+	if a.Zone1 != nil {
+		object["zone1"], err = json.Marshal(a.Zone1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone1': %w", err)
+		}
+	}
+
+	if a.Zone2 != nil {
+		object["zone2"], err = json.Marshal(a.Zone2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone2': %w", err)
+		}
+	}
+
+	if a.Zone3 != nil {
+		object["zone3"], err = json.Marshal(a.Zone3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone3': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone1_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone1_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone1_Vertex1
+func (a *DeviceLegacySettings_IgnoreZones_Zone1_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone1_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone1_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone1_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone1_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone1_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone1_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone1_Vertex2
+func (a *DeviceLegacySettings_IgnoreZones_Zone1_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone1_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone1_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone1_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone1_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone1
+func (a *DeviceLegacySettings_IgnoreZones_Zone1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone1 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone2_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone2_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone2_Vertex1
+func (a *DeviceLegacySettings_IgnoreZones_Zone2_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone2_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone2_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone2_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone2_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone2_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone2_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone2_Vertex2
+func (a *DeviceLegacySettings_IgnoreZones_Zone2_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone2_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone2_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone2_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone2_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone2
+func (a *DeviceLegacySettings_IgnoreZones_Zone2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone2 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone3_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone3_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone3_Vertex1
+func (a *DeviceLegacySettings_IgnoreZones_Zone3_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone3_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone3_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone3_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone3_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone3_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone3_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone3_Vertex2
+func (a *DeviceLegacySettings_IgnoreZones_Zone3_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone3_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone3_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone3_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone3_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone3. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone3) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone3
+func (a *DeviceLegacySettings_IgnoreZones_Zone3) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone3 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone3) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone3 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone3) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone4_Vertex1. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone4_Vertex1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone4_Vertex1
+func (a *DeviceLegacySettings_IgnoreZones_Zone4_Vertex1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone4_Vertex1 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone4_Vertex1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone4_Vertex1 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone4_Vertex1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone4_Vertex2. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone4_Vertex2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone4_Vertex2
+func (a *DeviceLegacySettings_IgnoreZones_Zone4_Vertex2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone4_Vertex2 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone4_Vertex2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone4_Vertex2 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone4_Vertex2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones_Zone4. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones_Zone4) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones_Zone4
+func (a *DeviceLegacySettings_IgnoreZones_Zone4) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone4 to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones_Zone4) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertex1"]; found {
+		err = json.Unmarshal(raw, &a.Vertex1)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex1': %w", err)
+		}
+		delete(object, "vertex1")
+	}
+
+	if raw, found := object["vertex2"]; found {
+		err = json.Unmarshal(raw, &a.Vertex2)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertex2': %w", err)
+		}
+		delete(object, "vertex2")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones_Zone4 to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones_Zone4) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertex1 != nil {
+		object["vertex1"], err = json.Marshal(a.Vertex1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex1': %w", err)
+		}
+	}
+
+	if a.Vertex2 != nil {
+		object["vertex2"], err = json.Marshal(a.Vertex2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertex2': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_IgnoreZones. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_IgnoreZones) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_IgnoreZones
+func (a *DeviceLegacySettings_IgnoreZones) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones to handle AdditionalProperties
+func (a *DeviceLegacySettings_IgnoreZones) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["zone1"]; found {
+		err = json.Unmarshal(raw, &a.Zone1)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone1': %w", err)
+		}
+		delete(object, "zone1")
+	}
+
+	if raw, found := object["zone2"]; found {
+		err = json.Unmarshal(raw, &a.Zone2)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone2': %w", err)
+		}
+		delete(object, "zone2")
+	}
+
+	if raw, found := object["zone3"]; found {
+		err = json.Unmarshal(raw, &a.Zone3)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone3': %w", err)
+		}
+		delete(object, "zone3")
+	}
+
+	if raw, found := object["zone4"]; found {
+		err = json.Unmarshal(raw, &a.Zone4)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone4': %w", err)
+		}
+		delete(object, "zone4")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_IgnoreZones to handle AdditionalProperties
+func (a DeviceLegacySettings_IgnoreZones) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Zone1 != nil {
+		object["zone1"], err = json.Marshal(a.Zone1)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone1': %w", err)
+		}
+	}
+
+	if a.Zone2 != nil {
+		object["zone2"], err = json.Marshal(a.Zone2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone2': %w", err)
+		}
+	}
+
+	if a.Zone3 != nil {
+		object["zone3"], err = json.Marshal(a.Zone3)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone3': %w", err)
+		}
+	}
+
+	if a.Zone4 != nil {
+		object["zone4"], err = json.Marshal(a.Zone4)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone4': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_LightSnoozeSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_LightSnoozeSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_LightSnoozeSettings
+func (a *DeviceLegacySettings_LightSnoozeSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_LightSnoozeSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_LightSnoozeSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["always_on"]; found {
+		err = json.Unmarshal(raw, &a.AlwaysOn)
+		if err != nil {
+			return fmt.Errorf("error reading 'always_on': %w", err)
+		}
+		delete(object, "always_on")
+	}
+
+	if raw, found := object["duration"]; found {
+		err = json.Unmarshal(raw, &a.Duration)
+		if err != nil {
+			return fmt.Errorf("error reading 'duration': %w", err)
+		}
+		delete(object, "duration")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_LightSnoozeSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_LightSnoozeSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["always_on"], err = json.Marshal(a.AlwaysOn)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'always_on': %w", err)
+	}
+
+	if a.Duration != nil {
+		object["duration"], err = json.Marshal(a.Duration)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'duration': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_Lite24x7. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_Lite24x7) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_Lite24x7
+func (a *DeviceLegacySettings_Lite24x7) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_Lite24x7 to handle AdditionalProperties
+func (a *DeviceLegacySettings_Lite24x7) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["frequency_secs"]; found {
+		err = json.Unmarshal(raw, &a.FrequencySecs)
+		if err != nil {
+			return fmt.Errorf("error reading 'frequency_secs': %w", err)
+		}
+		delete(object, "frequency_secs")
+	}
+
+	if raw, found := object["resolution_p"]; found {
+		err = json.Unmarshal(raw, &a.ResolutionP)
+		if err != nil {
+			return fmt.Errorf("error reading 'resolution_p': %w", err)
+		}
+		delete(object, "resolution_p")
+	}
+
+	if raw, found := object["subscribed"]; found {
+		err = json.Unmarshal(raw, &a.Subscribed)
+		if err != nil {
+			return fmt.Errorf("error reading 'subscribed': %w", err)
+		}
+		delete(object, "subscribed")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_Lite24x7 to handle AdditionalProperties
+func (a DeviceLegacySettings_Lite24x7) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.FrequencySecs != nil {
+		object["frequency_secs"], err = json.Marshal(a.FrequencySecs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'frequency_secs': %w", err)
+		}
+	}
+
+	if a.ResolutionP != nil {
+		object["resolution_p"], err = json.Marshal(a.ResolutionP)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'resolution_p': %w", err)
+		}
+	}
+
+	if a.Subscribed != nil {
+		object["subscribed"], err = json.Marshal(a.Subscribed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'subscribed': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_MotionSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_MotionSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_MotionSettings
+func (a *DeviceLegacySettings_MotionSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_MotionSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_MotionSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["motion_snooze_preset_profile"]; found {
+		err = json.Unmarshal(raw, &a.MotionSnoozePresetProfile)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion_snooze_preset_profile': %w", err)
+		}
+		delete(object, "motion_snooze_preset_profile")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_MotionSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_MotionSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.MotionSnoozePresetProfile != nil {
+		object["motion_snooze_preset_profile"], err = json.Marshal(a.MotionSnoozePresetProfile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion_snooze_preset_profile': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_NetworkSettings_NetworkDiagnosis. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_NetworkSettings_NetworkDiagnosis) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_NetworkSettings_NetworkDiagnosis
+func (a *DeviceLegacySettings_NetworkSettings_NetworkDiagnosis) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_NetworkSettings_NetworkDiagnosis to handle AdditionalProperties
+func (a *DeviceLegacySettings_NetworkSettings_NetworkDiagnosis) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["channel_analysis"]; found {
+		err = json.Unmarshal(raw, &a.ChannelAnalysis)
+		if err != nil {
+			return fmt.Errorf("error reading 'channel_analysis': %w", err)
+		}
+		delete(object, "channel_analysis")
+	}
+
+	if raw, found := object["lan_performance"]; found {
+		err = json.Unmarshal(raw, &a.LanPerformance)
+		if err != nil {
+			return fmt.Errorf("error reading 'lan_performance': %w", err)
+		}
+		delete(object, "lan_performance")
+	}
+
+	if raw, found := object["periodic_diagnosis"]; found {
+		err = json.Unmarshal(raw, &a.PeriodicDiagnosis)
+		if err != nil {
+			return fmt.Errorf("error reading 'periodic_diagnosis': %w", err)
+		}
+		delete(object, "periodic_diagnosis")
+	}
+
+	if raw, found := object["tcp_host"]; found {
+		err = json.Unmarshal(raw, &a.TcpHost)
+		if err != nil {
+			return fmt.Errorf("error reading 'tcp_host': %w", err)
+		}
+		delete(object, "tcp_host")
+	}
+
+	if raw, found := object["tcp_iperf"]; found {
+		err = json.Unmarshal(raw, &a.TcpIperf)
+		if err != nil {
+			return fmt.Errorf("error reading 'tcp_iperf': %w", err)
+		}
+		delete(object, "tcp_iperf")
+	}
+
+	if raw, found := object["tcp_port"]; found {
+		err = json.Unmarshal(raw, &a.TcpPort)
+		if err != nil {
+			return fmt.Errorf("error reading 'tcp_port': %w", err)
+		}
+		delete(object, "tcp_port")
+	}
+
+	if raw, found := object["udp_bandwidth"]; found {
+		err = json.Unmarshal(raw, &a.UdpBandwidth)
+		if err != nil {
+			return fmt.Errorf("error reading 'udp_bandwidth': %w", err)
+		}
+		delete(object, "udp_bandwidth")
+	}
+
+	if raw, found := object["udp_host"]; found {
+		err = json.Unmarshal(raw, &a.UdpHost)
+		if err != nil {
+			return fmt.Errorf("error reading 'udp_host': %w", err)
+		}
+		delete(object, "udp_host")
+	}
+
+	if raw, found := object["udp_iperf"]; found {
+		err = json.Unmarshal(raw, &a.UdpIperf)
+		if err != nil {
+			return fmt.Errorf("error reading 'udp_iperf': %w", err)
+		}
+		delete(object, "udp_iperf")
+	}
+
+	if raw, found := object["udp_port"]; found {
+		err = json.Unmarshal(raw, &a.UdpPort)
+		if err != nil {
+			return fmt.Errorf("error reading 'udp_port': %w", err)
+		}
+		delete(object, "udp_port")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_NetworkSettings_NetworkDiagnosis to handle AdditionalProperties
+func (a DeviceLegacySettings_NetworkSettings_NetworkDiagnosis) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["channel_analysis"], err = json.Marshal(a.ChannelAnalysis)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'channel_analysis': %w", err)
+	}
+
+	object["lan_performance"], err = json.Marshal(a.LanPerformance)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'lan_performance': %w", err)
+	}
+
+	object["periodic_diagnosis"], err = json.Marshal(a.PeriodicDiagnosis)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'periodic_diagnosis': %w", err)
+	}
+
+	object["tcp_host"], err = json.Marshal(a.TcpHost)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'tcp_host': %w", err)
+	}
+
+	object["tcp_iperf"], err = json.Marshal(a.TcpIperf)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'tcp_iperf': %w", err)
+	}
+
+	object["tcp_port"], err = json.Marshal(a.TcpPort)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'tcp_port': %w", err)
+	}
+
+	object["udp_bandwidth"], err = json.Marshal(a.UdpBandwidth)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'udp_bandwidth': %w", err)
+	}
+
+	object["udp_host"], err = json.Marshal(a.UdpHost)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'udp_host': %w", err)
+	}
+
+	object["udp_iperf"], err = json.Marshal(a.UdpIperf)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'udp_iperf': %w", err)
+	}
+
+	object["udp_port"], err = json.Marshal(a.UdpPort)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'udp_port': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_NetworkSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_NetworkSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_NetworkSettings
+func (a *DeviceLegacySettings_NetworkSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_NetworkSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_NetworkSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["data_restriction_enabled"]; found {
+		err = json.Unmarshal(raw, &a.DataRestrictionEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'data_restriction_enabled': %w", err)
+		}
+		delete(object, "data_restriction_enabled")
+	}
+
+	if raw, found := object["mac_address_ble"]; found {
+		err = json.Unmarshal(raw, &a.MacAddressBle)
+		if err != nil {
+			return fmt.Errorf("error reading 'mac_address_ble': %w", err)
+		}
+		delete(object, "mac_address_ble")
+	}
+
+	if raw, found := object["mac_address_wifi_24"]; found {
+		err = json.Unmarshal(raw, &a.MacAddressWifi24)
+		if err != nil {
+			return fmt.Errorf("error reading 'mac_address_wifi_24': %w", err)
+		}
+		delete(object, "mac_address_wifi_24")
+	}
+
+	if raw, found := object["mac_address_wifi_5"]; found {
+		err = json.Unmarshal(raw, &a.MacAddressWifi5)
+		if err != nil {
+			return fmt.Errorf("error reading 'mac_address_wifi_5': %w", err)
+		}
+		delete(object, "mac_address_wifi_5")
+	}
+
+	if raw, found := object["max_dynamic_listen_interval"]; found {
+		err = json.Unmarshal(raw, &a.MaxDynamicListenInterval)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_dynamic_listen_interval': %w", err)
+		}
+		delete(object, "max_dynamic_listen_interval")
+	}
+
+	if raw, found := object["multi_net_pref"]; found {
+		err = json.Unmarshal(raw, &a.MultiNetPref)
+		if err != nil {
+			return fmt.Errorf("error reading 'multi_net_pref': %w", err)
+		}
+		delete(object, "multi_net_pref")
+	}
+
+	if raw, found := object["network_diagnosis"]; found {
+		err = json.Unmarshal(raw, &a.NetworkDiagnosis)
+		if err != nil {
+			return fmt.Errorf("error reading 'network_diagnosis': %w", err)
+		}
+		delete(object, "network_diagnosis")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_NetworkSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_NetworkSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["data_restriction_enabled"], err = json.Marshal(a.DataRestrictionEnabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'data_restriction_enabled': %w", err)
+	}
+
+	object["mac_address_ble"], err = json.Marshal(a.MacAddressBle)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'mac_address_ble': %w", err)
+	}
+
+	object["mac_address_wifi_24"], err = json.Marshal(a.MacAddressWifi24)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'mac_address_wifi_24': %w", err)
+	}
+
+	object["mac_address_wifi_5"], err = json.Marshal(a.MacAddressWifi5)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'mac_address_wifi_5': %w", err)
+	}
+
+	object["max_dynamic_listen_interval"], err = json.Marshal(a.MaxDynamicListenInterval)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'max_dynamic_listen_interval': %w", err)
+	}
+
+	if a.MultiNetPref != nil {
+		object["multi_net_pref"], err = json.Marshal(a.MultiNetPref)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'multi_net_pref': %w", err)
+		}
+	}
+
+	if a.NetworkDiagnosis != nil {
+		object["network_diagnosis"], err = json.Marshal(a.NetworkDiagnosis)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'network_diagnosis': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_OfflineMotionEventSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_OfflineMotionEventSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_OfflineMotionEventSettings
+func (a *DeviceLegacySettings_OfflineMotionEventSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_OfflineMotionEventSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_OfflineMotionEventSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["frequency_after_secs"]; found {
+		err = json.Unmarshal(raw, &a.FrequencyAfterSecs)
+		if err != nil {
+			return fmt.Errorf("error reading 'frequency_after_secs': %w", err)
+		}
+		delete(object, "frequency_after_secs")
+	}
+
+	if raw, found := object["max_upload_kb"]; found {
+		err = json.Unmarshal(raw, &a.MaxUploadKb)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_upload_kb': %w", err)
+		}
+		delete(object, "max_upload_kb")
+	}
+
+	if raw, found := object["period_after_secs"]; found {
+		err = json.Unmarshal(raw, &a.PeriodAfterSecs)
+		if err != nil {
+			return fmt.Errorf("error reading 'period_after_secs': %w", err)
+		}
+		delete(object, "period_after_secs")
+	}
+
+	if raw, found := object["resolution_p"]; found {
+		err = json.Unmarshal(raw, &a.ResolutionP)
+		if err != nil {
+			return fmt.Errorf("error reading 'resolution_p': %w", err)
+		}
+		delete(object, "resolution_p")
+	}
+
+	if raw, found := object["subscribed"]; found {
+		err = json.Unmarshal(raw, &a.Subscribed)
+		if err != nil {
+			return fmt.Errorf("error reading 'subscribed': %w", err)
+		}
+		delete(object, "subscribed")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_OfflineMotionEventSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_OfflineMotionEventSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.FrequencyAfterSecs != nil {
+		object["frequency_after_secs"], err = json.Marshal(a.FrequencyAfterSecs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'frequency_after_secs': %w", err)
+		}
+	}
+
+	if a.MaxUploadKb != nil {
+		object["max_upload_kb"], err = json.Marshal(a.MaxUploadKb)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_upload_kb': %w", err)
+		}
+	}
+
+	if a.PeriodAfterSecs != nil {
+		object["period_after_secs"], err = json.Marshal(a.PeriodAfterSecs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'period_after_secs': %w", err)
+		}
+	}
+
+	if a.ResolutionP != nil {
+		object["resolution_p"], err = json.Marshal(a.ResolutionP)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'resolution_p': %w", err)
+		}
+	}
+
+	if a.Subscribed != nil {
+		object["subscribed"], err = json.Marshal(a.Subscribed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'subscribed': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_OtherPaidFeatures. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_OtherPaidFeatures) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_OtherPaidFeatures
+func (a *DeviceLegacySettings_OtherPaidFeatures) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_OtherPaidFeatures to handle AdditionalProperties
+func (a *DeviceLegacySettings_OtherPaidFeatures) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["alarm_triggered_recording"]; found {
+		err = json.Unmarshal(raw, &a.AlarmTriggeredRecording)
+		if err != nil {
+			return fmt.Errorf("error reading 'alarm_triggered_recording': %w", err)
+		}
+		delete(object, "alarm_triggered_recording")
+	}
+
+	if raw, found := object["alexa_concierge"]; found {
+		err = json.Unmarshal(raw, &a.AlexaConcierge)
+		if err != nil {
+			return fmt.Errorf("error reading 'alexa_concierge': %w", err)
+		}
+		delete(object, "alexa_concierge")
+	}
+
+	if raw, found := object["closed_caption"]; found {
+		err = json.Unmarshal(raw, &a.ClosedCaption)
+		if err != nil {
+			return fmt.Errorf("error reading 'closed_caption': %w", err)
+		}
+		delete(object, "closed_caption")
+	}
+
+	if raw, found := object["critical_alerts"]; found {
+		err = json.Unmarshal(raw, &a.CriticalAlerts)
+		if err != nil {
+			return fmt.Errorf("error reading 'critical_alerts': %w", err)
+		}
+		delete(object, "critical_alerts")
+	}
+
+	if raw, found := object["daily_digest"]; found {
+		err = json.Unmarshal(raw, &a.DailyDigest)
+		if err != nil {
+			return fmt.Errorf("error reading 'daily_digest': %w", err)
+		}
+		delete(object, "daily_digest")
+	}
+
+	if raw, found := object["ding_call"]; found {
+		err = json.Unmarshal(raw, &a.DingCall)
+		if err != nil {
+			return fmt.Errorf("error reading 'ding_call': %w", err)
+		}
+		delete(object, "ding_call")
+	}
+
+	if raw, found := object["extended_live_view"]; found {
+		err = json.Unmarshal(raw, &a.ExtendedLiveView)
+		if err != nil {
+			return fmt.Errorf("error reading 'extended_live_view': %w", err)
+		}
+		delete(object, "extended_live_view")
+	}
+
+	if raw, found := object["live_speak"]; found {
+		err = json.Unmarshal(raw, &a.LiveSpeak)
+		if err != nil {
+			return fmt.Errorf("error reading 'live_speak': %w", err)
+		}
+		delete(object, "live_speak")
+	}
+
+	if raw, found := object["multicam_live_view"]; found {
+		err = json.Unmarshal(raw, &a.MulticamLiveView)
+		if err != nil {
+			return fmt.Errorf("error reading 'multicam_live_view': %w", err)
+		}
+		delete(object, "multicam_live_view")
+	}
+
+	if raw, found := object["natural_language_search"]; found {
+		err = json.Unmarshal(raw, &a.NaturalLanguageSearch)
+		if err != nil {
+			return fmt.Errorf("error reading 'natural_language_search': %w", err)
+		}
+		delete(object, "natural_language_search")
+	}
+
+	if raw, found := object["package_protection"]; found {
+		err = json.Unmarshal(raw, &a.PackageProtection)
+		if err != nil {
+			return fmt.Errorf("error reading 'package_protection': %w", err)
+		}
+		delete(object, "package_protection")
+	}
+
+	if raw, found := object["recording_24x7"]; found {
+		err = json.Unmarshal(raw, &a.Recording24x7)
+		if err != nil {
+			return fmt.Errorf("error reading 'recording_24x7': %w", err)
+		}
+		delete(object, "recording_24x7")
+	}
+
+	if raw, found := object["sheila_cv"]; found {
+		err = json.Unmarshal(raw, &a.SheilaCv)
+		if err != nil {
+			return fmt.Errorf("error reading 'sheila_cv': %w", err)
+		}
+		delete(object, "sheila_cv")
+	}
+
+	if raw, found := object["sheila_recording"]; found {
+		err = json.Unmarshal(raw, &a.SheilaRecording)
+		if err != nil {
+			return fmt.Errorf("error reading 'sheila_recording': %w", err)
+		}
+		delete(object, "sheila_recording")
+	}
+
+	if raw, found := object["snapshot_capture_plus"]; found {
+		err = json.Unmarshal(raw, &a.SnapshotCapturePlus)
+		if err != nil {
+			return fmt.Errorf("error reading 'snapshot_capture_plus': %w", err)
+		}
+		delete(object, "snapshot_capture_plus")
+	}
+
+	if raw, found := object["system_level_pip"]; found {
+		err = json.Unmarshal(raw, &a.SystemLevelPip)
+		if err != nil {
+			return fmt.Errorf("error reading 'system_level_pip': %w", err)
+		}
+		delete(object, "system_level_pip")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_OtherPaidFeatures to handle AdditionalProperties
+func (a DeviceLegacySettings_OtherPaidFeatures) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AlarmTriggeredRecording != nil {
+		object["alarm_triggered_recording"], err = json.Marshal(a.AlarmTriggeredRecording)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'alarm_triggered_recording': %w", err)
+		}
+	}
+
+	if a.AlexaConcierge != nil {
+		object["alexa_concierge"], err = json.Marshal(a.AlexaConcierge)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'alexa_concierge': %w", err)
+		}
+	}
+
+	if a.ClosedCaption != nil {
+		object["closed_caption"], err = json.Marshal(a.ClosedCaption)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'closed_caption': %w", err)
+		}
+	}
+
+	if a.CriticalAlerts != nil {
+		object["critical_alerts"], err = json.Marshal(a.CriticalAlerts)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'critical_alerts': %w", err)
+		}
+	}
+
+	if a.DailyDigest != nil {
+		object["daily_digest"], err = json.Marshal(a.DailyDigest)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'daily_digest': %w", err)
+		}
+	}
+
+	if a.DingCall != nil {
+		object["ding_call"], err = json.Marshal(a.DingCall)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ding_call': %w", err)
+		}
+	}
+
+	if a.ExtendedLiveView != nil {
+		object["extended_live_view"], err = json.Marshal(a.ExtendedLiveView)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'extended_live_view': %w", err)
+		}
+	}
+
+	if a.LiveSpeak != nil {
+		object["live_speak"], err = json.Marshal(a.LiveSpeak)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'live_speak': %w", err)
+		}
+	}
+
+	if a.MulticamLiveView != nil {
+		object["multicam_live_view"], err = json.Marshal(a.MulticamLiveView)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'multicam_live_view': %w", err)
+		}
+	}
+
+	if a.NaturalLanguageSearch != nil {
+		object["natural_language_search"], err = json.Marshal(a.NaturalLanguageSearch)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'natural_language_search': %w", err)
+		}
+	}
+
+	if a.PackageProtection != nil {
+		object["package_protection"], err = json.Marshal(a.PackageProtection)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'package_protection': %w", err)
+		}
+	}
+
+	if a.Recording24x7 != nil {
+		object["recording_24x7"], err = json.Marshal(a.Recording24x7)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recording_24x7': %w", err)
+		}
+	}
+
+	if a.SheilaCv != nil {
+		object["sheila_cv"], err = json.Marshal(a.SheilaCv)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sheila_cv': %w", err)
+		}
+	}
+
+	if a.SheilaRecording != nil {
+		object["sheila_recording"], err = json.Marshal(a.SheilaRecording)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sheila_recording': %w", err)
+		}
+	}
+
+	if a.SnapshotCapturePlus != nil {
+		object["snapshot_capture_plus"], err = json.Marshal(a.SnapshotCapturePlus)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'snapshot_capture_plus': %w", err)
+		}
+	}
+
+	if a.SystemLevelPip != nil {
+		object["system_level_pip"], err = json.Marshal(a.SystemLevelPip)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'system_level_pip': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_PtzSettings_AutoScan. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_PtzSettings_AutoScan) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_PtzSettings_AutoScan
+func (a *DeviceLegacySettings_PtzSettings_AutoScan) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_AutoScan to handle AdditionalProperties
+func (a *DeviceLegacySettings_PtzSettings_AutoScan) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["pause_ms"]; found {
+		err = json.Unmarshal(raw, &a.PauseMs)
+		if err != nil {
+			return fmt.Errorf("error reading 'pause_ms': %w", err)
+		}
+		delete(object, "pause_ms")
+	}
+
+	if raw, found := object["step_size"]; found {
+		err = json.Unmarshal(raw, &a.StepSize)
+		if err != nil {
+			return fmt.Errorf("error reading 'step_size': %w", err)
+		}
+		delete(object, "step_size")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_AutoScan to handle AdditionalProperties
+func (a DeviceLegacySettings_PtzSettings_AutoScan) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.PauseMs != nil {
+		object["pause_ms"], err = json.Marshal(a.PauseMs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pause_ms': %w", err)
+		}
+	}
+
+	if a.StepSize != nil {
+		object["step_size"], err = json.Marshal(a.StepSize)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'step_size': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_PtzSettings_PanSettings_Movement. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_PtzSettings_PanSettings_Movement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_PtzSettings_PanSettings_Movement
+func (a *DeviceLegacySettings_PtzSettings_PanSettings_Movement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_PanSettings_Movement to handle AdditionalProperties
+func (a *DeviceLegacySettings_PtzSettings_PanSettings_Movement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["max_acceleration"]; found {
+		err = json.Unmarshal(raw, &a.MaxAcceleration)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_acceleration': %w", err)
+		}
+		delete(object, "max_acceleration")
+	}
+
+	if raw, found := object["max_speed"]; found {
+		err = json.Unmarshal(raw, &a.MaxSpeed)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_speed': %w", err)
+		}
+		delete(object, "max_speed")
+	}
+
+	if raw, found := object["step_size"]; found {
+		err = json.Unmarshal(raw, &a.StepSize)
+		if err != nil {
+			return fmt.Errorf("error reading 'step_size': %w", err)
+		}
+		delete(object, "step_size")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_PanSettings_Movement to handle AdditionalProperties
+func (a DeviceLegacySettings_PtzSettings_PanSettings_Movement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.MaxAcceleration != nil {
+		object["max_acceleration"], err = json.Marshal(a.MaxAcceleration)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_acceleration': %w", err)
+		}
+	}
+
+	if a.MaxSpeed != nil {
+		object["max_speed"], err = json.Marshal(a.MaxSpeed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_speed': %w", err)
+		}
+	}
+
+	if a.StepSize != nil {
+		object["step_size"], err = json.Marshal(a.StepSize)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'step_size': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_PtzSettings_PanSettings_Positions. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_PtzSettings_PanSettings_Positions) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_PtzSettings_PanSettings_Positions
+func (a *DeviceLegacySettings_PtzSettings_PanSettings_Positions) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_PanSettings_Positions to handle AdditionalProperties
+func (a *DeviceLegacySettings_PtzSettings_PanSettings_Positions) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["default"]; found {
+		err = json.Unmarshal(raw, &a.Default)
+		if err != nil {
+			return fmt.Errorf("error reading 'default': %w", err)
+		}
+		delete(object, "default")
+	}
+
+	if raw, found := object["max"]; found {
+		err = json.Unmarshal(raw, &a.Max)
+		if err != nil {
+			return fmt.Errorf("error reading 'max': %w", err)
+		}
+		delete(object, "max")
+	}
+
+	if raw, found := object["min"]; found {
+		err = json.Unmarshal(raw, &a.Min)
+		if err != nil {
+			return fmt.Errorf("error reading 'min': %w", err)
+		}
+		delete(object, "min")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_PanSettings_Positions to handle AdditionalProperties
+func (a DeviceLegacySettings_PtzSettings_PanSettings_Positions) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Default != nil {
+		object["default"], err = json.Marshal(a.Default)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default': %w", err)
+		}
+	}
+
+	if a.Max != nil {
+		object["max"], err = json.Marshal(a.Max)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max': %w", err)
+		}
+	}
+
+	if a.Min != nil {
+		object["min"], err = json.Marshal(a.Min)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'min': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_PtzSettings_PanSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_PtzSettings_PanSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_PtzSettings_PanSettings
+func (a *DeviceLegacySettings_PtzSettings_PanSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_PanSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_PtzSettings_PanSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["movement"]; found {
+		err = json.Unmarshal(raw, &a.Movement)
+		if err != nil {
+			return fmt.Errorf("error reading 'movement': %w", err)
+		}
+		delete(object, "movement")
+	}
+
+	if raw, found := object["positions"]; found {
+		err = json.Unmarshal(raw, &a.Positions)
+		if err != nil {
+			return fmt.Errorf("error reading 'positions': %w", err)
+		}
+		delete(object, "positions")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_PanSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_PtzSettings_PanSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Movement != nil {
+		object["movement"], err = json.Marshal(a.Movement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'movement': %w", err)
+		}
+	}
+
+	if a.Positions != nil {
+		object["positions"], err = json.Marshal(a.Positions)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'positions': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_PtzSettings_TiltSettings_Movement. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_PtzSettings_TiltSettings_Movement) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_PtzSettings_TiltSettings_Movement
+func (a *DeviceLegacySettings_PtzSettings_TiltSettings_Movement) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_TiltSettings_Movement to handle AdditionalProperties
+func (a *DeviceLegacySettings_PtzSettings_TiltSettings_Movement) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["max_acceleration"]; found {
+		err = json.Unmarshal(raw, &a.MaxAcceleration)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_acceleration': %w", err)
+		}
+		delete(object, "max_acceleration")
+	}
+
+	if raw, found := object["max_speed"]; found {
+		err = json.Unmarshal(raw, &a.MaxSpeed)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_speed': %w", err)
+		}
+		delete(object, "max_speed")
+	}
+
+	if raw, found := object["step_size"]; found {
+		err = json.Unmarshal(raw, &a.StepSize)
+		if err != nil {
+			return fmt.Errorf("error reading 'step_size': %w", err)
+		}
+		delete(object, "step_size")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_TiltSettings_Movement to handle AdditionalProperties
+func (a DeviceLegacySettings_PtzSettings_TiltSettings_Movement) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.MaxAcceleration != nil {
+		object["max_acceleration"], err = json.Marshal(a.MaxAcceleration)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_acceleration': %w", err)
+		}
+	}
+
+	if a.MaxSpeed != nil {
+		object["max_speed"], err = json.Marshal(a.MaxSpeed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_speed': %w", err)
+		}
+	}
+
+	if a.StepSize != nil {
+		object["step_size"], err = json.Marshal(a.StepSize)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'step_size': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_PtzSettings_TiltSettings_Positions. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_PtzSettings_TiltSettings_Positions) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_PtzSettings_TiltSettings_Positions
+func (a *DeviceLegacySettings_PtzSettings_TiltSettings_Positions) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_TiltSettings_Positions to handle AdditionalProperties
+func (a *DeviceLegacySettings_PtzSettings_TiltSettings_Positions) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["default"]; found {
+		err = json.Unmarshal(raw, &a.Default)
+		if err != nil {
+			return fmt.Errorf("error reading 'default': %w", err)
+		}
+		delete(object, "default")
+	}
+
+	if raw, found := object["max"]; found {
+		err = json.Unmarshal(raw, &a.Max)
+		if err != nil {
+			return fmt.Errorf("error reading 'max': %w", err)
+		}
+		delete(object, "max")
+	}
+
+	if raw, found := object["min"]; found {
+		err = json.Unmarshal(raw, &a.Min)
+		if err != nil {
+			return fmt.Errorf("error reading 'min': %w", err)
+		}
+		delete(object, "min")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_TiltSettings_Positions to handle AdditionalProperties
+func (a DeviceLegacySettings_PtzSettings_TiltSettings_Positions) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Default != nil {
+		object["default"], err = json.Marshal(a.Default)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'default': %w", err)
+		}
+	}
+
+	if a.Max != nil {
+		object["max"], err = json.Marshal(a.Max)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max': %w", err)
+		}
+	}
+
+	if a.Min != nil {
+		object["min"], err = json.Marshal(a.Min)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'min': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_PtzSettings_TiltSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_PtzSettings_TiltSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_PtzSettings_TiltSettings
+func (a *DeviceLegacySettings_PtzSettings_TiltSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_TiltSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_PtzSettings_TiltSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["movement"]; found {
+		err = json.Unmarshal(raw, &a.Movement)
+		if err != nil {
+			return fmt.Errorf("error reading 'movement': %w", err)
+		}
+		delete(object, "movement")
+	}
+
+	if raw, found := object["positions"]; found {
+		err = json.Unmarshal(raw, &a.Positions)
+		if err != nil {
+			return fmt.Errorf("error reading 'positions': %w", err)
+		}
+		delete(object, "positions")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings_TiltSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_PtzSettings_TiltSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Movement != nil {
+		object["movement"], err = json.Marshal(a.Movement)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'movement': %w", err)
+		}
+	}
+
+	if a.Positions != nil {
+		object["positions"], err = json.Marshal(a.Positions)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'positions': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_PtzSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_PtzSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_PtzSettings
+func (a *DeviceLegacySettings_PtzSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_PtzSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["auto_scan"]; found {
+		err = json.Unmarshal(raw, &a.AutoScan)
+		if err != nil {
+			return fmt.Errorf("error reading 'auto_scan': %w", err)
+		}
+		delete(object, "auto_scan")
+	}
+
+	if raw, found := object["mode"]; found {
+		err = json.Unmarshal(raw, &a.Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'mode': %w", err)
+		}
+		delete(object, "mode")
+	}
+
+	if raw, found := object["pan_settings"]; found {
+		err = json.Unmarshal(raw, &a.PanSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'pan_settings': %w", err)
+		}
+		delete(object, "pan_settings")
+	}
+
+	if raw, found := object["tilt_settings"]; found {
+		err = json.Unmarshal(raw, &a.TiltSettings)
+		if err != nil {
+			return fmt.Errorf("error reading 'tilt_settings': %w", err)
+		}
+		delete(object, "tilt_settings")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_PtzSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_PtzSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AutoScan != nil {
+		object["auto_scan"], err = json.Marshal(a.AutoScan)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'auto_scan': %w", err)
+		}
+	}
+
+	if a.Mode != nil {
+		object["mode"], err = json.Marshal(a.Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
+		}
+	}
+
+	if a.PanSettings != nil {
+		object["pan_settings"], err = json.Marshal(a.PanSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'pan_settings': %w", err)
+		}
+	}
+
+	if a.TiltSettings != nil {
+		object["tilt_settings"], err = json.Marshal(a.TiltSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tilt_settings': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_ServerSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_ServerSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_ServerSettings
+func (a *DeviceLegacySettings_ServerSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_ServerSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_ServerSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["ring_media_server_enabled"]; found {
+		err = json.Unmarshal(raw, &a.RingMediaServerEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'ring_media_server_enabled': %w", err)
+		}
+		delete(object, "ring_media_server_enabled")
+	}
+
+	if raw, found := object["ring_media_server_host"]; found {
+		err = json.Unmarshal(raw, &a.RingMediaServerHost)
+		if err != nil {
+			return fmt.Errorf("error reading 'ring_media_server_host': %w", err)
+		}
+		delete(object, "ring_media_server_host")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_ServerSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_ServerSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.RingMediaServerEnabled != nil {
+		object["ring_media_server_enabled"], err = json.Marshal(a.RingMediaServerEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ring_media_server_enabled': %w", err)
+		}
+	}
+
+	if a.RingMediaServerHost != nil {
+		object["ring_media_server_host"], err = json.Marshal(a.RingMediaServerHost)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ring_media_server_host': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_SheilaSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_SheilaSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_SheilaSettings
+func (a *DeviceLegacySettings_SheilaSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_SheilaSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_SheilaSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cv_processing_enabled"]; found {
+		err = json.Unmarshal(raw, &a.CvProcessingEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'cv_processing_enabled': %w", err)
+		}
+		delete(object, "cv_processing_enabled")
+	}
+
+	if raw, found := object["local_storage_enabled"]; found {
+		err = json.Unmarshal(raw, &a.LocalStorageEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'local_storage_enabled': %w", err)
+		}
+		delete(object, "local_storage_enabled")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_SheilaSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_SheilaSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.CvProcessingEnabled != nil {
+		object["cv_processing_enabled"], err = json.Marshal(a.CvProcessingEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cv_processing_enabled': %w", err)
+		}
+	}
+
+	if a.LocalStorageEnabled != nil {
+		object["local_storage_enabled"], err = json.Marshal(a.LocalStorageEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'local_storage_enabled': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_VideoSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_VideoSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_VideoSettings
+func (a *DeviceLegacySettings_VideoSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_VideoSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_VideoSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["encryption_eligibility_mode"]; found {
+		err = json.Unmarshal(raw, &a.EncryptionEligibilityMode)
+		if err != nil {
+			return fmt.Errorf("error reading 'encryption_eligibility_mode': %w", err)
+		}
+		delete(object, "encryption_eligibility_mode")
+	}
+
+	if raw, found := object["encryption_enabled"]; found {
+		err = json.Unmarshal(raw, &a.EncryptionEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'encryption_enabled': %w", err)
+		}
+		delete(object, "encryption_enabled")
+	}
+
+	if raw, found := object["encryption_method"]; found {
+		err = json.Unmarshal(raw, &a.EncryptionMethod)
+		if err != nil {
+			return fmt.Errorf("error reading 'encryption_method': %w", err)
+		}
+		delete(object, "encryption_method")
+	}
+
+	if raw, found := object["hevc_enabled"]; found {
+		err = json.Unmarshal(raw, &a.HevcEnabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'hevc_enabled': %w", err)
+		}
+		delete(object, "hevc_enabled")
+	}
+
+	if raw, found := object["recording_24x7_mode"]; found {
+		err = json.Unmarshal(raw, &a.Recording24x7Mode)
+		if err != nil {
+			return fmt.Errorf("error reading 'recording_24x7_mode': %w", err)
+		}
+		delete(object, "recording_24x7_mode")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_VideoSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_VideoSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["encryption_eligibility_mode"], err = json.Marshal(a.EncryptionEligibilityMode)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'encryption_eligibility_mode': %w", err)
+	}
+
+	if a.EncryptionEnabled != nil {
+		object["encryption_enabled"], err = json.Marshal(a.EncryptionEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'encryption_enabled': %w", err)
+		}
+	}
+
+	if a.EncryptionMethod != nil {
+		object["encryption_method"], err = json.Marshal(a.EncryptionMethod)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'encryption_method': %w", err)
+		}
+	}
+
+	if a.HevcEnabled != nil {
+		object["hevc_enabled"], err = json.Marshal(a.HevcEnabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'hevc_enabled': %w", err)
+		}
+	}
+
+	if a.Recording24x7Mode != nil {
+		object["recording_24x7_mode"], err = json.Marshal(a.Recording24x7Mode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recording_24x7_mode': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_ZoneSettings_Motion_Properties. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_ZoneSettings_Motion_Properties) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_ZoneSettings_Motion_Properties
+func (a *DeviceLegacySettings_ZoneSettings_Motion_Properties) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_ZoneSettings_Motion_Properties to handle AdditionalProperties
+func (a *DeviceLegacySettings_ZoneSettings_Motion_Properties) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["detection_types"]; found {
+		err = json.Unmarshal(raw, &a.DetectionTypes)
+		if err != nil {
+			return fmt.Errorf("error reading 'detection_types': %w", err)
+		}
+		delete(object, "detection_types")
+	}
+
+	if raw, found := object["zone_types"]; found {
+		err = json.Unmarshal(raw, &a.ZoneTypes)
+		if err != nil {
+			return fmt.Errorf("error reading 'zone_types': %w", err)
+		}
+		delete(object, "zone_types")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_ZoneSettings_Motion_Properties to handle AdditionalProperties
+func (a DeviceLegacySettings_ZoneSettings_Motion_Properties) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.DetectionTypes != nil {
+		object["detection_types"], err = json.Marshal(a.DetectionTypes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'detection_types': %w", err)
+		}
+	}
+
+	if a.ZoneTypes != nil {
+		object["zone_types"], err = json.Marshal(a.ZoneTypes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'zone_types': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_ZoneSettings_Motion_Vertices. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_ZoneSettings_Motion_Vertices) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_ZoneSettings_Motion_Vertices
+func (a *DeviceLegacySettings_ZoneSettings_Motion_Vertices) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_ZoneSettings_Motion_Vertices to handle AdditionalProperties
+func (a *DeviceLegacySettings_ZoneSettings_Motion_Vertices) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["x"]; found {
+		err = json.Unmarshal(raw, &a.X)
+		if err != nil {
+			return fmt.Errorf("error reading 'x': %w", err)
+		}
+		delete(object, "x")
+	}
+
+	if raw, found := object["y"]; found {
+		err = json.Unmarshal(raw, &a.Y)
+		if err != nil {
+			return fmt.Errorf("error reading 'y': %w", err)
+		}
+		delete(object, "y")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_ZoneSettings_Motion_Vertices to handle AdditionalProperties
+func (a DeviceLegacySettings_ZoneSettings_Motion_Vertices) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.X != nil {
+		object["x"], err = json.Marshal(a.X)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'x': %w", err)
+		}
+	}
+
+	if a.Y != nil {
+		object["y"], err = json.Marshal(a.Y)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'y': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_ZoneSettings_Motion. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_ZoneSettings_Motion) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_ZoneSettings_Motion
+func (a *DeviceLegacySettings_ZoneSettings_Motion) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_ZoneSettings_Motion to handle AdditionalProperties
+func (a *DeviceLegacySettings_ZoneSettings_Motion) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["properties"]; found {
+		err = json.Unmarshal(raw, &a.Properties)
+		if err != nil {
+			return fmt.Errorf("error reading 'properties': %w", err)
+		}
+		delete(object, "properties")
+	}
+
+	if raw, found := object["state"]; found {
+		err = json.Unmarshal(raw, &a.State)
+		if err != nil {
+			return fmt.Errorf("error reading 'state': %w", err)
+		}
+		delete(object, "state")
+	}
+
+	if raw, found := object["vertices"]; found {
+		err = json.Unmarshal(raw, &a.Vertices)
+		if err != nil {
+			return fmt.Errorf("error reading 'vertices': %w", err)
+		}
+		delete(object, "vertices")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_ZoneSettings_Motion to handle AdditionalProperties
+func (a DeviceLegacySettings_ZoneSettings_Motion) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Id != nil {
+		object["id"], err = json.Marshal(a.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'id': %w", err)
+		}
+	}
+
+	if a.Name != nil {
+		object["name"], err = json.Marshal(a.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if a.Properties != nil {
+		object["properties"], err = json.Marshal(a.Properties)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'properties': %w", err)
+		}
+	}
+
+	if a.State != nil {
+		object["state"], err = json.Marshal(a.State)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'state': %w", err)
+		}
+	}
+
+	if a.Vertices != nil {
+		object["vertices"], err = json.Marshal(a.Vertices)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'vertices': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for DeviceLegacySettings_ZoneSettings. Returns the specified
+// element and whether it was found
+func (a DeviceLegacySettings_ZoneSettings) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for DeviceLegacySettings_ZoneSettings
+func (a *DeviceLegacySettings_ZoneSettings) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for DeviceLegacySettings_ZoneSettings to handle AdditionalProperties
+func (a *DeviceLegacySettings_ZoneSettings) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["monitoring"]; found {
+		err = json.Unmarshal(raw, &a.Monitoring)
+		if err != nil {
+			return fmt.Errorf("error reading 'monitoring': %w", err)
+		}
+		delete(object, "monitoring")
+	}
+
+	if raw, found := object["motion"]; found {
+		err = json.Unmarshal(raw, &a.Motion)
+		if err != nil {
+			return fmt.Errorf("error reading 'motion': %w", err)
+		}
+		delete(object, "motion")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for DeviceLegacySettings_ZoneSettings to handle AdditionalProperties
+func (a DeviceLegacySettings_ZoneSettings) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Monitoring != nil {
+		object["monitoring"], err = json.Marshal(a.Monitoring)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'monitoring': %w", err)
+		}
+	}
+
+	if a.Motion != nil {
+		object["motion"], err = json.Marshal(a.Motion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'motion': %w", err)
 		}
 	}
 
@@ -6635,6 +28045,254 @@ func (a VolumeSettings) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// AsDeviceBatteryLife0 returns the union data inside the Device_BatteryLife as a DeviceBatteryLife0
+func (t Device_BatteryLife) AsDeviceBatteryLife0() (DeviceBatteryLife0, error) {
+	var body DeviceBatteryLife0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceBatteryLife0 overwrites any union data inside the Device_BatteryLife as the provided DeviceBatteryLife0
+func (t *Device_BatteryLife) FromDeviceBatteryLife0(v DeviceBatteryLife0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceBatteryLife0 performs a merge with any union data inside the Device_BatteryLife, using the provided DeviceBatteryLife0
+func (t *Device_BatteryLife) MergeDeviceBatteryLife0(v DeviceBatteryLife0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDeviceBatteryLife1 returns the union data inside the Device_BatteryLife as a DeviceBatteryLife1
+func (t Device_BatteryLife) AsDeviceBatteryLife1() (DeviceBatteryLife1, error) {
+	var body DeviceBatteryLife1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceBatteryLife1 overwrites any union data inside the Device_BatteryLife as the provided DeviceBatteryLife1
+func (t *Device_BatteryLife) FromDeviceBatteryLife1(v DeviceBatteryLife1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceBatteryLife1 performs a merge with any union data inside the Device_BatteryLife, using the provided DeviceBatteryLife1
+func (t *Device_BatteryLife) MergeDeviceBatteryLife1(v DeviceBatteryLife1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Device_BatteryLife) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Device_BatteryLife) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDeviceBatteryLife20 returns the union data inside the Device_BatteryLife2 as a DeviceBatteryLife20
+func (t Device_BatteryLife2) AsDeviceBatteryLife20() (DeviceBatteryLife20, error) {
+	var body DeviceBatteryLife20
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceBatteryLife20 overwrites any union data inside the Device_BatteryLife2 as the provided DeviceBatteryLife20
+func (t *Device_BatteryLife2) FromDeviceBatteryLife20(v DeviceBatteryLife20) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceBatteryLife20 performs a merge with any union data inside the Device_BatteryLife2, using the provided DeviceBatteryLife20
+func (t *Device_BatteryLife2) MergeDeviceBatteryLife20(v DeviceBatteryLife20) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDeviceBatteryLife21 returns the union data inside the Device_BatteryLife2 as a DeviceBatteryLife21
+func (t Device_BatteryLife2) AsDeviceBatteryLife21() (DeviceBatteryLife21, error) {
+	var body DeviceBatteryLife21
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceBatteryLife21 overwrites any union data inside the Device_BatteryLife2 as the provided DeviceBatteryLife21
+func (t *Device_BatteryLife2) FromDeviceBatteryLife21(v DeviceBatteryLife21) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceBatteryLife21 performs a merge with any union data inside the Device_BatteryLife2, using the provided DeviceBatteryLife21
+func (t *Device_BatteryLife2) MergeDeviceBatteryLife21(v DeviceBatteryLife21) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Device_BatteryLife2) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Device_BatteryLife2) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDeviceLegacySettingsEnableVod0 returns the union data inside the DeviceLegacySettings_EnableVod as a DeviceLegacySettingsEnableVod0
+func (t DeviceLegacySettings_EnableVod) AsDeviceLegacySettingsEnableVod0() (DeviceLegacySettingsEnableVod0, error) {
+	var body DeviceLegacySettingsEnableVod0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceLegacySettingsEnableVod0 overwrites any union data inside the DeviceLegacySettings_EnableVod as the provided DeviceLegacySettingsEnableVod0
+func (t *DeviceLegacySettings_EnableVod) FromDeviceLegacySettingsEnableVod0(v DeviceLegacySettingsEnableVod0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceLegacySettingsEnableVod0 performs a merge with any union data inside the DeviceLegacySettings_EnableVod, using the provided DeviceLegacySettingsEnableVod0
+func (t *DeviceLegacySettings_EnableVod) MergeDeviceLegacySettingsEnableVod0(v DeviceLegacySettingsEnableVod0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDeviceLegacySettingsEnableVod1 returns the union data inside the DeviceLegacySettings_EnableVod as a DeviceLegacySettingsEnableVod1
+func (t DeviceLegacySettings_EnableVod) AsDeviceLegacySettingsEnableVod1() (DeviceLegacySettingsEnableVod1, error) {
+	var body DeviceLegacySettingsEnableVod1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceLegacySettingsEnableVod1 overwrites any union data inside the DeviceLegacySettings_EnableVod as the provided DeviceLegacySettingsEnableVod1
+func (t *DeviceLegacySettings_EnableVod) FromDeviceLegacySettingsEnableVod1(v DeviceLegacySettingsEnableVod1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceLegacySettingsEnableVod1 performs a merge with any union data inside the DeviceLegacySettings_EnableVod, using the provided DeviceLegacySettingsEnableVod1
+func (t *DeviceLegacySettings_EnableVod) MergeDeviceLegacySettingsEnableVod1(v DeviceLegacySettingsEnableVod1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DeviceLegacySettings_EnableVod) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DeviceLegacySettings_EnableVod) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDeviceLegacySettingsMotionZones0 returns the union data inside the DeviceLegacySettings_MotionZones as a DeviceLegacySettingsMotionZones0
+func (t DeviceLegacySettings_MotionZones) AsDeviceLegacySettingsMotionZones0() (DeviceLegacySettingsMotionZones0, error) {
+	var body DeviceLegacySettingsMotionZones0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceLegacySettingsMotionZones0 overwrites any union data inside the DeviceLegacySettings_MotionZones as the provided DeviceLegacySettingsMotionZones0
+func (t *DeviceLegacySettings_MotionZones) FromDeviceLegacySettingsMotionZones0(v DeviceLegacySettingsMotionZones0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceLegacySettingsMotionZones0 performs a merge with any union data inside the DeviceLegacySettings_MotionZones, using the provided DeviceLegacySettingsMotionZones0
+func (t *DeviceLegacySettings_MotionZones) MergeDeviceLegacySettingsMotionZones0(v DeviceLegacySettingsMotionZones0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDeviceLegacySettingsMotionZones1 returns the union data inside the DeviceLegacySettings_MotionZones as a DeviceLegacySettingsMotionZones1
+func (t DeviceLegacySettings_MotionZones) AsDeviceLegacySettingsMotionZones1() (DeviceLegacySettingsMotionZones1, error) {
+	var body DeviceLegacySettingsMotionZones1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDeviceLegacySettingsMotionZones1 overwrites any union data inside the DeviceLegacySettings_MotionZones as the provided DeviceLegacySettingsMotionZones1
+func (t *DeviceLegacySettings_MotionZones) FromDeviceLegacySettingsMotionZones1(v DeviceLegacySettingsMotionZones1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDeviceLegacySettingsMotionZones1 performs a merge with any union data inside the DeviceLegacySettings_MotionZones, using the provided DeviceLegacySettingsMotionZones1
+func (t *DeviceLegacySettings_MotionZones) MergeDeviceLegacySettingsMotionZones1(v DeviceLegacySettingsMotionZones1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DeviceLegacySettings_MotionZones) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DeviceLegacySettings_MotionZones) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsDeviceOwnerId0 returns the union data inside the DeviceOwner_Id as a DeviceOwnerId0
 func (t DeviceOwner_Id) AsDeviceOwnerId0() (DeviceOwnerId0, error) {
 	var body DeviceOwnerId0
@@ -6879,6 +28537,18 @@ type ClientInterface interface {
 	// Legacy sound request from synthetic replay.
 	TestChimeSound(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// RegisterPushDeviceWithBody performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+	RegisterPushDeviceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RegisterPushDevice performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+	RegisterPushDevice(ctx context.Context, body RegisterPushDeviceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetActiveDings performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
 	//
 	// Existing Go active-dings route. No matching C1 capture was identified.
@@ -6920,6 +28590,9 @@ type ClientInterface interface {
 	// Existing Go history operation uses this doorbot path. The Go API exposes limit and kind; older_than is documented but not sent by the client. C1 history routes use EVM endpoints and are specified separately.
 	GetLegacyDeviceHistory(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SubscribeDeviceMotion performs a POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId) request.
+	SubscribeDeviceMotion(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// TurnSirenOff performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
 	TurnSirenOff(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6927,6 +28600,9 @@ type ClientInterface interface {
 	//
 	// No duration query or request body is present in the capture.
 	TurnSirenOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SubscribeDeviceDing performs a POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId) request.
+	SubscribeDeviceDing(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetLegacyDeviceHealth performs a GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId) request.
 	//
@@ -6969,6 +28645,18 @@ type ClientInterface interface {
 	// SendDeviceCommand performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request.
 	// Takes a body of the `application/json` content type.
 	SendDeviceCommand(ctx context.Context, deviceId DeviceId, body SendDeviceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnlockIntercomWithBody performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+	UnlockIntercomWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnlockIntercom performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+	UnlockIntercom(ctx context.Context, deviceId DeviceId, body UnlockIntercomJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListDevices performs a GET /device_info/v3/devices (the `ListDevices` operationId) request.
 	ListDevices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7121,6 +28809,38 @@ func (c *Client) TestChimeSound(ctx context.Context, deviceId DeviceId, params *
 	return c.Client.Do(req)
 }
 
+// RegisterPushDeviceWithBody performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request,
+// with any type of body and a specified content type.
+//
+// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+func (c *Client) RegisterPushDeviceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRegisterPushDeviceRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RegisterPushDevice performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+func (c *Client) RegisterPushDevice(ctx context.Context, body RegisterPushDeviceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRegisterPushDeviceRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetActiveDings performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
 //
 // Existing Go active-dings route. No matching C1 capture was identified.
@@ -7252,6 +28972,19 @@ func (c *Client) GetLegacyDeviceHistory(ctx context.Context, deviceId DeviceId, 
 	return c.Client.Do(req)
 }
 
+// SubscribeDeviceMotion performs a POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId) request.
+func (c *Client) SubscribeDeviceMotion(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubscribeDeviceMotionRequest(c.Server, deviceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // TurnSirenOff performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
 func (c *Client) TurnSirenOff(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnSirenOffRequest(c.Server, deviceId)
@@ -7270,6 +29003,19 @@ func (c *Client) TurnSirenOff(ctx context.Context, deviceId DeviceId, reqEditors
 // No duration query or request body is present in the capture.
 func (c *Client) TurnSirenOn(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTurnSirenOnRequest(c.Server, deviceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SubscribeDeviceDing performs a POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId) request.
+func (c *Client) SubscribeDeviceDing(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubscribeDeviceDingRequest(c.Server, deviceId)
 	if err != nil {
 		return nil, err
 	}
@@ -7392,6 +29138,38 @@ func (c *Client) SendDeviceCommandWithBody(ctx context.Context, deviceId DeviceI
 // Takes a body of the `application/json` content type.
 func (c *Client) SendDeviceCommand(ctx context.Context, deviceId DeviceId, body SendDeviceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSendDeviceCommandRequest(c.Server, deviceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UnlockIntercomWithBody performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request,
+// with any type of body and a specified content type.
+//
+// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+func (c *Client) UnlockIntercomWithBody(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnlockIntercomRequestWithBody(c.Server, deviceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UnlockIntercom performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+func (c *Client) UnlockIntercom(ctx context.Context, deviceId DeviceId, body UnlockIntercomJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnlockIntercomRequest(c.Server, deviceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7943,6 +29721,46 @@ func NewTestChimeSoundRequest(server string, deviceId DeviceId, params *TestChim
 	return req, nil
 }
 
+// NewRegisterPushDeviceRequest calls the generic RegisterPushDevice builder with application/json body
+func NewRegisterPushDeviceRequest(server string, body RegisterPushDeviceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRegisterPushDeviceRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewRegisterPushDeviceRequestWithBody constructs an http.Request for the RegisterPushDevice method, with any body, and a specified content type
+func NewRegisterPushDeviceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/clients_api/device")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetActiveDingsRequest constructs an http.Request for the GetActiveDings method
 func NewGetActiveDingsRequest(server string) (*http.Request, error) {
 	var err error
@@ -8391,6 +30209,40 @@ func NewGetLegacyDeviceHistoryRequest(server string, deviceId DeviceId, params *
 	return req, nil
 }
 
+// NewSubscribeDeviceMotionRequest constructs an http.Request for the SubscribeDeviceMotion method
+func NewSubscribeDeviceMotionRequest(server string, deviceId DeviceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/clients_api/doorbots/%s/motions_subscribe", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewTurnSirenOffRequest constructs an http.Request for the TurnSirenOff method
 func NewTurnSirenOffRequest(server string, deviceId DeviceId) (*http.Request, error) {
 	var err error
@@ -8452,6 +30304,40 @@ func NewTurnSirenOnRequest(server string, deviceId DeviceId) (*http.Request, err
 	}
 
 	req, err := http.NewRequest(http.MethodPut, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSubscribeDeviceDingRequest constructs an http.Request for the SubscribeDeviceDing method
+func NewSubscribeDeviceDingRequest(server string, deviceId DeviceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/clients_api/doorbots/%s/subscribe", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -8645,6 +30531,53 @@ func NewSendDeviceCommandRequestWithBody(server string, deviceId DeviceId, conte
 	}
 
 	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewUnlockIntercomRequest calls the generic UnlockIntercom builder with application/json body
+func NewUnlockIntercomRequest(server string, deviceId DeviceId, body UnlockIntercomJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUnlockIntercomRequestWithBody(server, deviceId, "application/json", bodyReader)
+}
+
+// NewUnlockIntercomRequestWithBody constructs an http.Request for the UnlockIntercom method, with any body, and a specified content type
+func NewUnlockIntercomRequestWithBody(server string, deviceId DeviceId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "device_id", deviceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/commands/v1/devices/%s/device_rpc", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -9588,6 +31521,20 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	TestChimeSoundWithResponse(ctx context.Context, deviceId DeviceId, params *TestChimeSoundParams, reqEditors ...RequestEditorFn) (*TestChimeSoundResponse, error)
 
+	// RegisterPushDeviceWithBodyWithResponse performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RegisterPushDeviceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterPushDeviceResponse, error)
+
+	// RegisterPushDeviceWithResponse performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+	RegisterPushDeviceWithResponse(ctx context.Context, body RegisterPushDeviceJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterPushDeviceResponse, error)
+
 	// GetActiveDingsWithResponse performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
 	//
 	// Existing Go active-dings route. No matching C1 capture was identified.
@@ -9647,6 +31594,11 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetLegacyDeviceHistoryWithResponse(ctx context.Context, deviceId DeviceId, params *GetLegacyDeviceHistoryParams, reqEditors ...RequestEditorFn) (*GetLegacyDeviceHistoryResponse, error)
 
+	// SubscribeDeviceMotionWithResponse performs a POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SubscribeDeviceMotionWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SubscribeDeviceMotionResponse, error)
+
 	// TurnSirenOffWithResponse performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -9658,6 +31610,11 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	TurnSirenOnWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*TurnSirenOnResponse, error)
+
+	// SubscribeDeviceDingWithResponse performs a POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SubscribeDeviceDingWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SubscribeDeviceDingResponse, error)
 
 	// GetLegacyDeviceHealthWithResponse performs a GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId) request.
 	//
@@ -9710,6 +31667,20 @@ type ClientWithResponsesInterface interface {
 	// SendDeviceCommandWithResponse performs a PATCH /commands/v1/devices/{device_id} (the `SendDeviceCommand` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	SendDeviceCommandWithResponse(ctx context.Context, deviceId DeviceId, body SendDeviceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*SendDeviceCommandResponse, error)
+
+	// UnlockIntercomWithBodyWithResponse performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UnlockIntercomWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UnlockIntercomResponse, error)
+
+	// UnlockIntercomWithResponse performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+	UnlockIntercomWithResponse(ctx context.Context, deviceId DeviceId, body UnlockIntercomJSONRequestBody, reqEditors ...RequestEditorFn) (*UnlockIntercomResponse, error)
 
 	// ListDevicesWithResponse performs a GET /device_info/v3/devices (the `ListDevices` operationId) request.
 	//
@@ -10004,6 +31975,40 @@ func (r TestChimeSoundResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r TestChimeSoundResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RegisterPushDeviceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// GetBody returns the raw response body bytes
+func (r RegisterPushDeviceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RegisterPushDeviceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RegisterPushDeviceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RegisterPushDeviceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -10414,6 +32419,40 @@ func (r GetLegacyDeviceHistoryResponse) ContentType() string {
 	return ""
 }
 
+type SubscribeDeviceMotionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// GetBody returns the raw response body bytes
+func (r SubscribeDeviceMotionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SubscribeDeviceMotionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SubscribeDeviceMotionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SubscribeDeviceMotionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type TurnSirenOffResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -10483,6 +32522,40 @@ func (r TurnSirenOnResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r TurnSirenOnResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SubscribeDeviceDingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// GetBody returns the raw response body bytes
+func (r SubscribeDeviceDingResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SubscribeDeviceDingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SubscribeDeviceDingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SubscribeDeviceDingResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -10702,6 +32775,40 @@ func (r SendDeviceCommandResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SendDeviceCommandResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UnlockIntercomResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// GetBody returns the raw response body bytes
+func (r UnlockIntercomResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UnlockIntercomResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnlockIntercomResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UnlockIntercomResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11459,6 +33566,32 @@ func (c *ClientWithResponses) TestChimeSoundWithResponse(ctx context.Context, de
 	return ParseTestChimeSoundResponse(rsp)
 }
 
+// RegisterPushDeviceWithBodyWithResponse performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request,
+// with any type of body and a specified content type.
+//
+// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RegisterPushDeviceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterPushDeviceResponse, error) {
+	rsp, err := c.RegisterPushDeviceWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRegisterPushDeviceResponse(rsp)
+}
+
+// RegisterPushDeviceWithResponse performs a PATCH /clients_api/device (the `RegisterPushDevice` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Register a caller-owned FCM token for Ring notifications; source-client contract, not observed in the camera HTTP capture.
+func (c *ClientWithResponses) RegisterPushDeviceWithResponse(ctx context.Context, body RegisterPushDeviceJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterPushDeviceResponse, error) {
+	rsp, err := c.RegisterPushDevice(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRegisterPushDeviceResponse(rsp)
+}
+
 // GetActiveDingsWithResponse performs a GET /clients_api/dings/active (the `GetActiveDings` operationId) request.
 //
 // Existing Go active-dings route. No matching C1 capture was identified.
@@ -11572,6 +33705,17 @@ func (c *ClientWithResponses) GetLegacyDeviceHistoryWithResponse(ctx context.Con
 	return ParseGetLegacyDeviceHistoryResponse(rsp)
 }
 
+// SubscribeDeviceMotionWithResponse performs a POST /clients_api/doorbots/{device_id}/motions_subscribe (the `SubscribeDeviceMotion` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SubscribeDeviceMotionWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SubscribeDeviceMotionResponse, error) {
+	rsp, err := c.SubscribeDeviceMotion(ctx, deviceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubscribeDeviceMotionResponse(rsp)
+}
+
 // TurnSirenOffWithResponse performs a PUT /clients_api/doorbots/{device_id}/siren_off (the `TurnSirenOff` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -11594,6 +33738,17 @@ func (c *ClientWithResponses) TurnSirenOnWithResponse(ctx context.Context, devic
 		return nil, err
 	}
 	return ParseTurnSirenOnResponse(rsp)
+}
+
+// SubscribeDeviceDingWithResponse performs a POST /clients_api/doorbots/{device_id}/subscribe (the `SubscribeDeviceDing` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SubscribeDeviceDingWithResponse(ctx context.Context, deviceId DeviceId, reqEditors ...RequestEditorFn) (*SubscribeDeviceDingResponse, error) {
+	rsp, err := c.SubscribeDeviceDing(ctx, deviceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubscribeDeviceDingResponse(rsp)
 }
 
 // GetLegacyDeviceHealthWithResponse performs a GET /clients_api/ring_devices/{device_id}/health (the `GetLegacyDeviceHealth` operationId) request.
@@ -11694,6 +33849,32 @@ func (c *ClientWithResponses) SendDeviceCommandWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseSendDeviceCommandResponse(rsp)
+}
+
+// UnlockIntercomWithBodyWithResponse performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request,
+// with any type of body and a specified content type.
+//
+// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UnlockIntercomWithBodyWithResponse(ctx context.Context, deviceId DeviceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UnlockIntercomResponse, error) {
+	rsp, err := c.UnlockIntercomWithBody(ctx, deviceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnlockIntercomResponse(rsp)
+}
+
+// UnlockIntercomWithResponse performs a PUT /commands/v1/devices/{device_id}/device_rpc (the `UnlockIntercom` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Intercom unlock route documented by the dgreif Ring client; not present in the camera capture.
+func (c *ClientWithResponses) UnlockIntercomWithResponse(ctx context.Context, deviceId DeviceId, body UnlockIntercomJSONRequestBody, reqEditors ...RequestEditorFn) (*UnlockIntercomResponse, error) {
+	rsp, err := c.UnlockIntercom(ctx, deviceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnlockIntercomResponse(rsp)
 }
 
 // ListDevicesWithResponse performs a GET /device_info/v3/devices (the `ListDevices` operationId) request.
@@ -12054,6 +34235,22 @@ func ParseTestChimeSoundResponse(rsp *http.Response) (*TestChimeSoundResponse, e
 	return response, nil
 }
 
+// ParseRegisterPushDeviceResponse parses an HTTP response from a RegisterPushDeviceWithResponse call
+func ParseRegisterPushDeviceResponse(rsp *http.Response) (*RegisterPushDeviceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RegisterPushDeviceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ParseGetActiveDingsResponse parses an HTTP response from a GetActiveDingsWithResponse call
 func ParseGetActiveDingsResponse(rsp *http.Response) (*GetActiveDingsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -12326,6 +34523,22 @@ func ParseGetLegacyDeviceHistoryResponse(rsp *http.Response) (*GetLegacyDeviceHi
 	return response, nil
 }
 
+// ParseSubscribeDeviceMotionResponse parses an HTTP response from a SubscribeDeviceMotionWithResponse call
+func ParseSubscribeDeviceMotionResponse(rsp *http.Response) (*SubscribeDeviceMotionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SubscribeDeviceMotionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
 // ParseTurnSirenOffResponse parses an HTTP response from a TurnSirenOffWithResponse call
 func ParseTurnSirenOffResponse(rsp *http.Response) (*TurnSirenOffResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -12363,6 +34576,22 @@ func ParseTurnSirenOnResponse(rsp *http.Response) (*TurnSirenOnResponse, error) 
 		}
 		response.JSON200 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseSubscribeDeviceDingResponse parses an HTTP response from a SubscribeDeviceDingWithResponse call
+func ParseSubscribeDeviceDingResponse(rsp *http.Response) (*SubscribeDeviceDingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SubscribeDeviceDingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	return response, nil
@@ -12502,6 +34731,22 @@ func ParseSendDeviceCommandResponse(rsp *http.Response) (*SendDeviceCommandRespo
 	}
 
 	response := &SendDeviceCommandResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseUnlockIntercomResponse parses an HTTP response from a UnlockIntercomWithResponse call
+func ParseUnlockIntercomResponse(rsp *http.Response) (*UnlockIntercomResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnlockIntercomResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

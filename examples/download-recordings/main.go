@@ -25,7 +25,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: accessToken}
 
 	// Step 1: List devices to select one
@@ -109,24 +109,31 @@ func main() {
 			log.Printf("  ✗ Failed to get recording %d: %v\n", recording.ID, err)
 			continue
 		}
-		defer stream.Body.Close()
 
 		// Create the file
 		out, err := os.Create(filepath)
 		if err != nil {
 			log.Printf("  ✗ Failed to create file %s: %v\n", filepath, err)
-			stream.Body.Close()
+			_ = stream.Body.Close()
 			continue
 		}
 
 		// Write the stream to file
 		written, err := io.Copy(out, stream.Body)
-		out.Close()
-		stream.Body.Close()
+		closeErr := out.Close()
+		bodyCloseErr := stream.Body.Close()
+		if err == nil {
+			err = closeErr
+		}
+		if err == nil {
+			err = bodyCloseErr
+		}
 
 		if err != nil {
 			log.Printf("  ✗ Failed to write recording %d to file: %v\n", recording.ID, err)
-			os.Remove(filepath) // Clean up partial file
+			if removeErr := os.Remove(filepath); removeErr != nil {
+				log.Printf("  ✗ Failed to remove incomplete recording %s: %v\n", filepath, removeErr)
+			}
 			continue
 		}
 

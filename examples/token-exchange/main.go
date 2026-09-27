@@ -30,12 +30,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	login, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password})
 	if err != nil {
 		log.Fatalf("Failed to start login: %v", err)
 	}
-	defer login.Close()
+	defer func() { _ = login.Close() }()
 
 	// Step 1: Authenticate with username/password to get access and refresh tokens
 	fmt.Println("Step 1: Authenticating with username/password...")

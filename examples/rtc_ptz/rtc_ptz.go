@@ -39,7 +39,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer pc.Close()
+	defer func() { _ = pc.Close() }()
 	if _, err = pc.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo, webrtc.RtpTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly}); err != nil {
 		return err
 	}
@@ -70,13 +70,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: token}
 	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{
 		DeviceID: deviceID,
 		Offer: ring.SessionDescription{
@@ -89,7 +89,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 	if answer := session.Answer(); answer.Type != ring.SDPTypeAnswer {
 		return fmt.Errorf("unexpected SDP type: %s", answer.Type)
 	} else if err = pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: answer.SDP}); err != nil {

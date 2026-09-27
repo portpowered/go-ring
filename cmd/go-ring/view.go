@@ -65,7 +65,7 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 	if err != nil {
 		return err
 	}
-	defer pc.Close()
+	defer func() { _ = pc.Close() }()
 	if opts.debug {
 		pc.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) { _, _ = fmt.Fprintf(out, "ICE connection: %s\n", state) })
 		pc.OnConnectionStateChange(func(state webrtc.PeerConnectionState) { _, _ = fmt.Fprintf(out, "Peer connection: %s\n", state) })
@@ -93,7 +93,7 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 				mediaErr <- err
 				return
 			}
-			defer recording.Close()
+			defer func() { _ = recording.Close() }()
 		}
 		var packets uint64
 		for {
@@ -117,8 +117,8 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-	defer session.Close()
+	defer func() { _ = conn.Close() }()
+	defer func() { _ = session.Close() }()
 	if opts.debug {
 		_, _ = fmt.Fprintln(out, "Remote SDP answer applied")
 	}
@@ -130,7 +130,7 @@ func view(parent context.Context, client *ring.Client, auth ring.AuthContext, de
 		if err != nil {
 			return err
 		}
-		defer term.Restore(int(file.Fd()), old)
+		defer func() { _ = term.Restore(int(file.Fd()), old) }()
 	}
 	go readKeys(in, keys)
 	_, _ = fmt.Fprintln(out, "Session active. Arrow keys move camera; Space stops; q quits.")

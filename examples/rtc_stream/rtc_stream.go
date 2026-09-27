@@ -44,7 +44,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer pc.Close()
+	defer func() { _ = pc.Close() }()
 	localCandidates := make(chan webrtc.ICECandidateInit, 128)
 	if *trickle {
 		pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
@@ -78,13 +78,13 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: token}
 	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	mode := ring.ICENonTrickle
 	if *trickle {
 		mode = ring.ICETrickle
@@ -93,7 +93,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 	if err = pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: session.Answer().SDP}); err != nil {
 		return err
 	}

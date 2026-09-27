@@ -13,7 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: os.Getenv("RING_ACCESS_TOKEN")}
 	devices, err := client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: auth})
 	if err != nil {

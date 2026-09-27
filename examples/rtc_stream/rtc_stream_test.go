@@ -19,11 +19,11 @@ func TestOfferProfilesUseLocalPeerDescriptions(t *testing.T) {
 		offer, err := makeOffer(ctx, pc, audio, false)
 		cancel()
 		if err != nil {
-			pc.Close()
+			_ = pc.Close()
 			t.Fatal(err)
 		}
 		if _, err = mediavalidation.ParseSDP(offer); err != nil {
-			pc.Close()
+			_ = pc.Close()
 			t.Fatal(err)
 		}
 		transceivers := pc.GetTransceivers()
@@ -44,7 +44,7 @@ func TestOfferProfilesUseLocalPeerDescriptions(t *testing.T) {
 		if pc.LocalDescription().SDP != offer {
 			t.Fatal("offer is not gathered local description")
 		}
-		pc.Close()
+		_ = pc.Close()
 	}
 }
 
@@ -59,7 +59,7 @@ func TestTrickleProfileBuffersPeerCandidatesWithMIDAndIndex(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer pc.Close()
+	defer func() { _ = pc.Close() }()
 	candidates := make(chan webrtc.ICECandidateInit, 128)
 	pc.OnICECandidate(func(candidate *webrtc.ICECandidate) {
 		if candidate != nil {

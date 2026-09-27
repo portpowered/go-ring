@@ -26,7 +26,7 @@ func eventClient(t *testing.T, send bool) *ring.Client {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		if send {
 			_ = conn.WriteJSON(map[string]any{"kind": "motion", "device_id": 987652, "timestamp": "2026-01-01T00:00:00Z"})
 		}
@@ -49,7 +49,7 @@ func TestEventsReceiveAndClose(t *testing.T) {
 	defer cancel()
 	conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	event, err := conn.Receive()
 	require.NoError(t, err)
 	require.Equal(t, ringapimodels.EventKind("motion"), event.Kind)
@@ -74,7 +74,7 @@ func TestEventsCancellationInterruptsIdleConnection(t *testing.T) {
 	defer cancel()
 	conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	cancel()
 	done := make(chan error, 1)
 	go func() { _, err := conn.Receive(); done <- err }()
@@ -101,7 +101,7 @@ func TestListenReturnsCallbackError(t *testing.T) {
 func TestEventsRejectInvalidEndpoint(t *testing.T) {
 	client, err := ring.NewClient(ring.WithEventWebSocketURL(":invalid"))
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	_, err = client.ConnectEvents(context.Background(), ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
 	require.True(t, ringapimodels.IsConnectionError(err))
 }

@@ -24,13 +24,13 @@ func TestPlaybackReplayConnectsPeersAndReceivesMedia(t *testing.T) {
 	conn := openRecordedPeer(t, func(socket *websocket.Conn) {
 		serverResult <- runPlaybackPeer(t, ctx, socket)
 	})
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	peer, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer peer.Close()
+	defer func() { _ = peer.Close() }()
 	if _, err = peer.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo, webrtc.RTPTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly}); err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestPlaybackReplayConnectsPeersAndReceivesMedia(t *testing.T) {
 	if session == nil {
 		return
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 	t.Run("remote ICE", func(t *testing.T) {
 		event, receiveErr := session.Receive(ctx)
 		if receiveErr != nil {
@@ -160,7 +160,7 @@ func runPlaybackPeer(t *testing.T, ctx context.Context, socket *websocket.Conn) 
 	if err != nil {
 		return err
 	}
-	defer peer.Close()
+	defer func() { _ = peer.Close() }()
 	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8}, "video", "playback")
 	if err != nil {
 		return err

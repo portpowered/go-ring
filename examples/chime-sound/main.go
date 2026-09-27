@@ -26,7 +26,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 	auth := ring.AuthContext{AccessToken: token}
 	if err := client.TestSound(context.Background(), ring.TestSoundRequest{Auth: auth,
 		DeviceID: chimeID,

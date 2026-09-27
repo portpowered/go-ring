@@ -1,0 +1,5 @@
+{
+  "source": "https://github.com/dgreif/ring/blob/main/packages/ring-client-api/ring-intercom.ts",
+  "request": {"method": "POST", "origin": "https://api.ring.com", "path": "/clients_api/doorbots/1000/subscribe", "query": [], "headers": {"Accept": ["application/json"]}, "headers_mode": "required", "body": null, "json": false},
+  "response": {"status": 200, "headers": {}, "body": null, "json": false}
+}

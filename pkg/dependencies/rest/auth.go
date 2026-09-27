@@ -118,7 +118,7 @@ func (c *Client) authenticateLegacy(ctx context.Context, username, password, har
 	if err != nil {
 		return nil, ringerrors.NewNetworkError("legacy auth request failed", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return decodeTokenResponse(resp)
 }
 
@@ -189,7 +189,7 @@ func (c *Client) initiatePKCE(ctx context.Context, hardwareID string) error {
 		}
 		if resp.StatusCode >= 300 && resp.StatusCode < 400 {
 			location := resp.Header.Get("Location")
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if location == "" {
 				return ringerrors.NewAuthenticationError("OAuth redirect missing location", resp.StatusCode)
 			}
@@ -201,7 +201,7 @@ func (c *Client) initiatePKCE(ctx context.Context, hardwareID string) error {
 			continue
 		}
 		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if readErr != nil {
 			return ringerrors.NewNetworkError("failed to read OAuth sign-in page", readErr)
 		}
@@ -267,7 +267,7 @@ func (c *Client) authFormRequest(ctx context.Context, client *http.Client, path 
 		return nil, nil, ringerrors.NewNetworkError("OAuth request failed", err)
 	}
 	body, readErr := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if readErr != nil {
 		return nil, nil, ringerrors.NewNetworkError("failed to read OAuth response", readErr)
 	}
@@ -288,7 +288,7 @@ func (c *Client) authorizationCode(ctx context.Context) (string, error) {
 			return "", ringerrors.NewNetworkError("failed to obtain OAuth authorization code", err)
 		}
 		location := resp.Header.Get("Location")
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if resp.StatusCode < 300 || resp.StatusCode >= 400 || location == "" {
 			return "", ringerrors.NewAuthenticationError("OAuth authorize endpoint did not redirect", resp.StatusCode)
 		}
@@ -326,7 +326,7 @@ func (c *Client) exchangeAuthorizationCode(ctx context.Context, code, hardwareID
 	if err != nil {
 		return nil, ringerrors.NewNetworkError("failed to exchange OAuth authorization code", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return decodeTokenResponse(resp)
 }
 
@@ -357,7 +357,7 @@ func (c *Client) refreshAccessToken(ctx context.Context, refreshToken, hardwareI
 	if err != nil {
 		return nil, ringerrors.NewNetworkError("failed to refresh access token", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return decodeTokenResponse(resp)
 }
 

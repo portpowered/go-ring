@@ -53,7 +53,7 @@ func TestPortableLegacyTicketFailureResponses(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer client.Close()
+			defer func() { _ = client.Close() }()
 			_, got := client.OpenSignaling(context.Background(), ring.OpenSignalingRequest{Auth: ring.AuthContext{AccessToken: "fixture-token"}})
 			if !transport.seen || got == nil {
 				t.Fatalf("ticket failure not reached: %v", got)

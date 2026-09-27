@@ -33,6 +33,8 @@ type Client struct {
 	mu                    sync.RWMutex
 	closed                bool
 	signalingConnections  map[*SignalingConnection]struct{}
+	pushConnections       map[*PushConnection]struct{}
+	fcmSource             FCMSource
 }
 
 // ClientAPI is the complete public account-level surface implemented by Client.
@@ -52,6 +54,7 @@ type ClientAPI interface {
 	GetDevice(context.Context, GetDeviceRequest) (ringapimodels.Device, error)
 	GetDeviceSettings(context.Context, GetDeviceSettingsRequest) (DeviceSettings, error)
 	GetDeviceDetail(context.Context, GetDeviceDetailRequest) (*DeviceDetail, error)
+	GetDeviceStatus(context.Context, GetDeviceDetailRequest) (*DeviceStatus, error)
 	ListLocations(context.Context, ListLocationsRequest) (*LocationList, error)
 	GetLocation(context.Context, GetLocationRequest) (*LocationDetail, error)
 	ListLocationGroups(context.Context, LocationRequest) (*LocationGroups, error)
@@ -71,6 +74,7 @@ type ClientAPI interface {
 	TestSound(context.Context, TestSoundRequest) error
 	SetInHomeChime(context.Context, SetInHomeChimeRequest) error
 	RebootDevice(context.Context, DeviceIDRequest) error
+	UnlockIntercom(context.Context, DeviceIDRequest) error
 	SetPersistentLiveViewEnabled(context.Context, SetPersistentLiveViewEnabledRequest) error
 
 	// Various recording APIs
@@ -85,6 +89,10 @@ type ClientAPI interface {
 	// Event and signaling connections
 	OpenSignaling(context.Context, OpenSignalingRequest) (*SignalingConnection, error)
 	ConnectEvents(context.Context, ConnectEventsRequest) (*EventConnection, error)
+	ConnectPush(context.Context, ConnectPushRequest) (*PushConnection, error)
+	RegisterPushDevice(context.Context, RegisterPushDeviceRequest) error
+	SubscribeDeviceDing(context.Context, DeviceIDRequest) error
+	SubscribeDeviceMotion(context.Context, DeviceIDRequest) error
 	Listen(context.Context, ringapimodels.EventCallback, ConnectEventsRequest) error
 }
 

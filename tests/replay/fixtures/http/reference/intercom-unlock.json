@@ -1,0 +1,21 @@
+{
+  "source": "https://github.com/dgreif/ring/blob/main/packages/ring-client-api/ring-intercom.ts",
+  "request": {
+    "method": "PUT",
+    "origin": "https://api.ring.com",
+    "path": "/commands/v1/devices/1000/device_rpc",
+    "query": [],
+    "headers": {"Accept": ["application/json"]},
+    "headers_mode": "required",
+    "body": {
+      "command_name": "device_rpc",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "unlock_door",
+        "params": {"door_id": 0, "user_id": 0}
+      }
+    },
+    "json": true
+  },
+  "response": {"status": 204, "headers": {}, "body": null, "json": false}
+}

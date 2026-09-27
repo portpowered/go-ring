@@ -71,7 +71,7 @@ func TestRecordedSessionNegotiationFailureVariants(t *testing.T) {
 					_, _, _ = c.ReadMessage()
 				}
 			})
-			defer conn.Close()
+			defer func() { _ = conn.Close() }()
 			wait := 2 * time.Second
 			if scenario == "camera start timeout" {
 				wait = 150 * time.Millisecond
