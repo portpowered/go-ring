@@ -1,5 +1,15 @@
 # dgreif feature gap plan
 
+## v0.4.0 implementation checkpoint
+
+The captured device detail and list responses now have named OpenAPI fields throughout the observed device, health, features, and settings trees. The generated model replay checks for captured fields that would otherwise fall into `AdditionalProperties`. Legacy family fixtures exposed mixed wire encodings for `battery_life`, `enable_vod`, and `motion_zones`; the schema now accepts those variants. Fields observed only as null remain marked as such rather than assigned an invented meaning.
+
+`Client.GetDeviceStatus` and `DeviceDetailDevice.Status` expose connection and battery state without treating a wired camera's `battery_life: 100` as proof of a battery. Numeric text is accepted; an out-of-range hardware value such as 4081 remains unknown. `Client.UnlockIntercom` uses a generated JSON-RPC request body and has source-contract replay, but this camera account cannot verify unlock or a physical door state.
+
+`Client.ConnectPush` owns a separate, optional FCM receiver. Auth and persisted FCM credentials are supplied by the caller, and `Close` ends the connection. Ring token registration and per-device ding/motion subscriptions have source-contract replays. A live watch on the camera received FCM credentials, Ring accepted the registration, and the receiver connected. No motion notification arrived during the watch window, so ding, motion, and unlocked event delivery remain unverified live. The first Go receiver attempt failed with HTTP 401 at FCM registration because it included the default VAPID key; the adapter omits that key and the live registration succeeds. The CLI can repeat the check with `events watch <camera-id>`.
+
+The remaining device gap is principally event payload confirmation on a triggered camera/intercom, intercom unlock response verification, and the P2 chime, location, and hub functions listed below. Keep those source-only cases distinct from captured and live-tested behavior in release notes.
+
 This plan compares the public Go client with the current dgreif Ring client. It is an inventory of behavior to validate, not a promise that a similarly named Ring endpoint still works. Use captured traffic and live verification ahead of another library's implementation when they disagree. The customer-facing API remains account-scoped through `AuthContext` and device IDs; it should not require callers to retain a mutable camera or intercom object.
 
 Sources: [dgreif API](https://github.com/dgreif/ring/blob/main/packages/ring-client-api/api.ts), [intercom](https://github.com/dgreif/ring/blob/main/packages/ring-client-api/ring-intercom.ts), [camera](https://github.com/dgreif/ring/blob/main/packages/ring-client-api/ring-camera.ts), [chime](https://github.com/dgreif/ring/blob/main/packages/ring-client-api/ring-chime.ts), and [location/hub](https://github.com/dgreif/ring/blob/main/packages/ring-client-api/location.ts). Go inventory: `pkg/ring/interface.go`, `api/openapi.yaml`, `api/asyncapi.yaml`, `docs/plans/parity-matrix.md`, and the sanitized replay fixtures.

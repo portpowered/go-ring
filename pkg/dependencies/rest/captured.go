@@ -122,6 +122,22 @@ func (c *Client) RebootDevice(ctx context.Context, id int64) error {
 	return c.doJSONRequest(ctx, http.MethodPatch, capturedIDPath(protocol.DeviceCommandPath, id), generatedhttp.DeviceCommand{CommandName: generatedhttp.Reboot}, nil)
 }
 
+// UnlockIntercom sends the documented device RPC to an intercom.
+func (c *Client) UnlockIntercom(ctx context.Context, id int64) error {
+	command := generatedhttp.IntercomUnlockCommand{
+		CommandName: generatedhttp.DeviceRpc,
+		Request: generatedhttp.IntercomUnlockRPC{
+			Jsonrpc: generatedhttp.N20,
+			Method:  generatedhttp.UnlockDoor,
+			Params: generatedhttp.IntercomUnlockParams{
+				DoorId: generatedhttp.IntercomUnlockParamsDoorIdN0,
+				UserId: generatedhttp.IntercomUnlockParamsUserIdN0,
+			},
+		},
+	}
+	return c.doJSONRequest(ctx, http.MethodPut, capturedIDPath(protocol.IntercomUnlockPath, id), command, nil)
+}
+
 func (c *Client) SetPersistentLiveViewEnabled(ctx context.Context, id int64, enabled bool) error {
 	body := generatedhttp.LiveViewSettingRequest{Entity: generatedhttp.LiveViewSetting{LiveViewEnabled: enabled}}
 	return c.doJSONRequest(ctx, http.MethodPut, capturedIDPath(protocol.PersistentLiveViewPath, id), body, nil)

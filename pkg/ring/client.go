@@ -22,6 +22,7 @@ func NewClient(opts ...Option) (*Client, error) {
 		region:               RegionUS,
 		eventWebSocketURL:    protocol.ExperimentalEventWebSocketURL,
 		signalingConnections: make(map[*SignalingConnection]struct{}),
+		pushConnections:      make(map[*PushConnection]struct{}),
 	}
 	if err := client.applyEndpointConfiguration(); err != nil {
 		return nil, err
@@ -107,6 +108,15 @@ func (c *Client) Close() error {
 	}
 	c.mu.Unlock()
 	for _, conn := range connections {
+		_ = conn.Close()
+	}
+	c.mu.RLock()
+	pushes := make([]*PushConnection, 0, len(c.pushConnections))
+	for conn := range c.pushConnections {
+		pushes = append(pushes, conn)
+	}
+	c.mu.RUnlock()
+	for _, conn := range pushes {
 		_ = conn.Close()
 	}
 	return nil

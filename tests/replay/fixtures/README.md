@@ -8,6 +8,8 @@ the final directory labels the evidence behind each case:
 | `http/captured/` | Sanitized HTTP requests and responses from the network recording. `variants/` holds additional responses and request bodies for the same operations. |
 | `signaling/captured/` | Ordered WebSocket application messages from two captured PTZ sessions. |
 | `http/baseline/` | Inherited, sanitized response fixtures whose original capture date and account provenance are unavailable. |
+| `http/reference/` | Source-derived request contracts for intercom unlock and FCM registration/subscriptions. These are not claims of captured Ring traffic. Each fixture names its source. |
+| `push/` | Authored FCM notification examples used to test typed event extraction; live event payloads have not yet been captured. |
 | `auth/synthetic/`, `account/synthetic/`, `http/synthetic/`, `media/synthetic/`, `signaling/synthetic/` | Authored failure, edge, and compatibility cases. These are test inputs, not observations of the current service. |
 | `schemas/` | JSON schemas used to validate captured fixture shape. |
 

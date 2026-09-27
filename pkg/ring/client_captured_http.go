@@ -33,6 +33,16 @@ func (c *Client) GetDeviceDetail(ctx context.Context, req GetDeviceDetailRequest
 	return detail, nil
 }
 
+// GetDeviceStatus returns the connection and battery state derived from device detail.
+func (c *Client) GetDeviceStatus(ctx context.Context, req GetDeviceDetailRequest) (*DeviceStatus, error) {
+	detail, err := c.GetDeviceDetail(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	status := detail.Device.Status()
+	return &status, nil
+}
+
 func (c *Client) ListLocations(ctx context.Context, req ListLocationsRequest) (*LocationList, error) {
 	ctx = c.accountContext(ctx, req.Auth)
 	if err := c.ensureSession(ctx); err != nil {
@@ -160,6 +170,19 @@ func (c *Client) RebootDevice(ctx context.Context, req DeviceIDRequest) error {
 		return err
 	}
 	return c.restClient.RebootDevice(ctx, id)
+}
+
+// UnlockIntercom requests an unlock on an intercom device ID.
+func (c *Client) UnlockIntercom(ctx context.Context, req DeviceIDRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
+	id, err := settingsDeviceID(req.DeviceID)
+	if err != nil {
+		return err
+	}
+	if err = c.ensureSession(ctx); err != nil {
+		return err
+	}
+	return c.restClient.UnlockIntercom(ctx, id)
 }
 
 func (c *Client) SetPersistentLiveViewEnabled(ctx context.Context, req SetPersistentLiveViewEnabledRequest) error {

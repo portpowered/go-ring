@@ -18,7 +18,7 @@ This is a bit unique compared to other ring-doorbell libraries since:
 Requires Go 1.24 or later.
 
 ```sh
-go get github.com/portpowered/go-ring@v0.3.0
+go get github.com/portpowered/go-ring@v0.4.0
 ```
 
 ## Examples
@@ -226,6 +226,7 @@ go build -o go-ring .
 ./go-ring siren <device-id> on
 ./go-ring snapshot <device-id> --output camera.jpg
 ./go-ring view <device-id> --continuous
+./go-ring events watch <device-id> --duration 60s
 ```
 
 Use the arrow keys to pan or tilt during `view`, Space to stop continuous
@@ -233,8 +234,57 @@ movement, and `q` to leave. On Windows, run `go build -o go-ring.exe .` and
 `./go-ring.exe ...`. To investigate decoder warnings, add
 `--record-rtp camera.rtp` to `view`, then use
 `./go-ring replay-video camera.rtp --output camera.h264` for offline playback.
-The recording contains camera footage. See the [CLI guide](cmd/go-ring/README.md)
+The recording contains camera footage. `events watch` registers an account-scoped
+FCM receiver, subscribes to camera motion, and stores its credentials privately
+for reconnection. Registration and connection do not guarantee that a motion
+notification will occur during the watch window. See the [CLI guide](cmd/go-ring/README.md)
 for health, reboot, chime sound, and capture details.
+
+For a compact device status, pass the same authentication context and device ID:
+
+```go
+status, err := client.GetDeviceStatus(ctx, ring.GetDeviceDetailRequest{Auth: auth, DeviceID: deviceID})
+if err != nil { return err }
+fmt.Printf("offline: %t\n", status.IsOffline)
+if status.BatteryPercent != nil {
+    fmt.Printf("battery: %.0f%%\n", *status.BatteryPercent)
+}
+```
+
+An intercom can be unlocked by ID. A successful call means Ring accepted the
+command; it does not establish that the door physically opened.
+
+```go
+err := client.UnlockIntercom(ctx, ring.DeviceIDRequest{Auth: auth, DeviceID: intercomID})
+if err != nil { return err }
+```
+
+To receive ding or motion events, keep one FCM connection open for the account.
+Persist each credentials event securely and pass it back on reconnect. The
+`Client` does not retain credentials or account authorization.
+
+```go
+push, err := client.ConnectPush(ctx, ring.ConnectPushRequest{
+    Auth: auth, DeviceIDs: []string{deviceID}, Ding: true, Motion: true,
+    Credentials: savedFCMCredentials,
+})
+if err != nil { return err }
+defer push.Close()
+for event := range push.Events() {
+    switch event.Kind {
+    case ring.PushCredentials:
+        if err := saveSecurely(event.Credentials); err != nil { return err }
+    case ring.PushMessage:
+        fmt.Printf("device=%s action=%s\n", event.DeviceID, event.Action)
+    case ring.PushRetry:
+        return event.Err
+    }
+}
+```
+
+The FCM transport was live-tested through registration and connection with a
+camera. Ding, motion, and intercom unlock delivery remain source-contract tests
+until those events can be triggered and observed on real devices.
 
 ## Supported operations
 
@@ -247,10 +297,11 @@ sessions, and push subscriptions.
 | Client setup and shutdown | `ring.NewClient`, `Client.Close` | Configuration is fixed at construction; one client can own several signaling connections. |
 | Login and tokens | `Client.NewLoginSession`, `LoginSession.Request2FACode`, `LoginSession.Authenticate`, `Client.RefreshToken` | Login state stays in one session; refresh tokens are passed per request. See [token exchange](examples/token-exchange/main.go). |
 | Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail` | `GetDeviceDetail` returns a typed client projection of the captured v3 response. |
-| Device health and settings | `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Health uses the generic device route and needs only a device ID. |
+| Device status, health, and settings | `Client.GetDeviceStatus`, `DeviceDetailDevice.Status`, `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Battery is unknown on wired devices unless battery presence is explicit; missing connection state is not treated as offline. |
 | Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Requests and results use client-owned types; the generated HTTP models stay inside the transport. |
 | Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolume`, `Client.SetInHomeChime` | Volume and in-home chime updates require the current device description for their legacy routes. |
 | Chime sound and reboot | `Client.TestSound`, `Client.RebootDevice` | See the inline code below. |
+| Intercom unlock | `Client.UnlockIntercom` | Source-derived request replay; requires live intercom confirmation. |
 | Snapshot | `Client.GetSnapshot` | Returns image bytes and metadata. |
 | Recording history | `Client.GetDeviceHistory`, `Client.GetHistoryDevices`, `Client.GetDeviceTimeline`, `Client.GetActiveDings`, `Client.GetLastRecordingID` | Legacy history and captured EVM history/timeline are separate APIs. |
 | Recording media and changes | `Client.GetRecording`, `Client.GetRecordingShareURL`, `Client.FavoriteRecording`, `Client.DeleteRecording` | Close the body returned by `GetRecording`. |
@@ -262,7 +313,8 @@ sessions, and push subscriptions.
 | Live audio and options | `DeviceSession.SetMicrophone`, `DeviceSession.SetStreamOptions` | Commands on an active device session. |
 | Live events and lifecycle | `DeviceSession.Receive`, `DeviceSession.State`, `DeviceSession.Wait`, `DeviceSession.Close` | `Wait` reports termination; sessions have a 60-minute maximum. |
 | Cloud playback | `SignalingConnection.StartPlayback`, `PlaybackSession.Answer`, `PlaybackSession.SendICE`, `PlaybackSession.Receive`, `PlaybackSession.Close` | Playback negotiates its own SDP/ICE conversation. |
-| Push notifications | `SignalingConnection.SubscribePush`, `PushSubscription.Receive`, `PushSubscription.Close` | Requires an active signaling connection. |
+| Signaling push | `SignalingConnection.SubscribePush`, `PushSubscription.Receive`, `PushSubscription.Close` | Requires an active signaling connection; captured replay covers shoulder taps. |
+| FCM notifications | `Client.ConnectPush`, `PushConnection.Events`, `PushConnection.Close`, `Client.RegisterPushDevice`, `Client.SubscribeDeviceDing`, `Client.SubscribeDeviceMotion` | Optional long-lived account connection; live registration and connection verified on a camera, event delivery pending a triggered notification. |
 | Captured GET ticket | `Client.GetCapturedTickets` | Separate from the POST ticket used by `OpenSignaling`. |
 ## References
 

@@ -60,21 +60,7 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 	}
 	switch args[0] {
 	case "auth":
-		if len(args) != 2 {
-			return usage(out)
-		}
-		switch args[1] {
-		case "login":
-			return login(ctx, store, in, out)
-		case "status":
-			return authStatus(store, out)
-		case "logout":
-			if err := os.Remove(store.path); err != nil && !errors.Is(err, os.ErrNotExist) {
-				return err
-			}
-			_, _ = fmt.Fprintln(out, "Local tokens removed")
-			return nil
-		}
+		return authCommand(ctx, store, args[1:], in, out)
 	case "devices":
 		if len(args) == 2 && args[1] == "list" {
 			return withClient(ctx, store, func(client *ring.Client, auth ring.AuthContext) error { return listDevices(ctx, client, auth, out) })
@@ -91,14 +77,40 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 		return soundCommand(ctx, store, args[1:], out)
 	case "view":
 		return viewCommand(ctx, store, args[1:], in, out)
+	case "events":
+		return eventsCommand(ctx, store, args[1:], out)
 	case "replay-video":
 		return replayVideoCommand(args[1:], out)
 	}
 	return usage(out)
 }
 
+func authCommand(ctx context.Context, store tokenStore, args []string, in io.Reader, out io.Writer) error {
+	if len(args) != 1 {
+		return usage(out)
+	}
+	switch args[0] {
+	case "login":
+		return login(ctx, store, in, out)
+	case "status":
+		return authStatus(store, out)
+	case "logout":
+		if err := os.Remove(store.path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		pushPath := filepath.Join(filepath.Dir(store.path), "push.json")
+		if err := os.Remove(pushPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		_, _ = fmt.Fprintln(out, "Local tokens and push credentials removed")
+		return nil
+	default:
+		return usage(out)
+	}
+}
+
 func usage(out io.Writer) error {
-	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file [--timeout 30s] [--ice-servers file.json] | siren <id> on|off | reboot <id> | health <id> [--refresh] | sound <chime-id> ding|motion | view <id> [--player ffplay] [--debug] [--record-rtp file] [--ice-servers file.json] [--continuous] [--speed 0.5] | replay-video <recording> --output file.h264")
+	_, _ = fmt.Fprintln(out, "Usage: go-ring [--token-file path] auth login|status|logout | devices list | snapshot <id> --output file [--timeout 30s] [--ice-servers file.json] | siren <id> on|off | reboot <id> | health <id> [--refresh] | sound <chime-id> ding|motion | view <id> [--player ffplay] [--debug] [--record-rtp file] [--ice-servers file.json] [--continuous] [--speed 0.5] | events watch <id> [--duration 60s] | replay-video <recording> --output file.h264")
 	return errors.New("invalid command")
 }
 

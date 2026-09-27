@@ -93,6 +93,11 @@ func TestCapturedHTTPPublicReads(t *testing.T) {
 				require.Equal(t, int64(1000), result.Device.ID)
 				if name == "device-detail" {
 					require.Equal(t, ring.DeviceKindStickUpMiniPTZ, result.Device.Kind)
+					status := result.Device.Status()
+					require.Equal(t, ring.ConnectionOnline, *status.Connection)
+					require.False(t, status.IsOffline)
+					require.Equal(t, ring.PowerModeWired, *status.PowerMode)
+					require.Nil(t, status.BatteryPercent)
 					require.Equal(t, ring.OwnerID("1000"), *result.Device.Owner.ID)
 					require.Contains(t, result.Device.Health.SupportedRPCCommands, "PTZ.Pan.Continuous")
 					require.Contains(t, result.OperationSets[",owner"], "device_live_view")
@@ -142,6 +147,17 @@ func TestCapturedHTTPPublicReads(t *testing.T) {
 			require.NoError(t, transport.AssertConsumed())
 		})
 	}
+}
+
+func TestCapturedDeviceStatus(t *testing.T) {
+	transport := replay.NewTransport(capturedExchange(t, "device-detail"))
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = client.Close() })
+	status, err := client.GetDeviceStatus(context.Background(), ring.GetDeviceDetailRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
+	require.NoError(t, err)
+	require.Equal(t, ring.ConnectionOnline, *status.Connection)
+	require.Nil(t, status.BatteryPercent)
 }
 
 func TestCapturedHTTPPublicMutations(t *testing.T) {

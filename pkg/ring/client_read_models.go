@@ -2,6 +2,7 @@ package ring
 
 import (
 	"encoding/json"
+	"math"
 	"strconv"
 	"time"
 
@@ -45,6 +46,104 @@ type DeviceDetailDevice struct {
 	LightBrightness        *int                  `json:"light_brightness,omitempty"`
 	Volume                 *int                  `json:"volume,omitempty"`
 	Health                 *DeviceDetailHealth   `json:"health,omitempty"`
+	Alerts                 *DeviceAlerts         `json:"alerts,omitempty"`
+	BatteryLife            *BatteryReading       `json:"battery_life,omitempty"`
+	BatteryLife2           *BatteryReading       `json:"battery_life_2,omitempty"`
+	ExternalConnection     *bool                 `json:"external_connection,omitempty"`
+}
+
+// BatteryReading accepts the numeric and numeric-text percentages Ring returns.
+type BatteryReading float64
+
+func (b *BatteryReading) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	var value json.Number
+	if err := json.Unmarshal(data, &value); err != nil {
+		var text string
+		if err = json.Unmarshal(data, &text); err != nil {
+			return err
+		}
+		value = json.Number(text)
+	}
+	percentage, err := strconv.ParseFloat(value.String(), 64)
+	if err != nil {
+		return err
+	}
+	*b = BatteryReading(percentage)
+	return nil
+}
+
+type DeviceAlerts struct {
+	Connection *ConnectionState `json:"connection,omitempty"`
+}
+
+// ConnectionState is open to new server-provided states.
+type ConnectionState string
+
+const (
+	ConnectionOnline  ConnectionState = "online"
+	ConnectionOffline ConnectionState = "offline"
+)
+
+// PowerMode is open to new device power configurations.
+type PowerMode string
+
+const PowerModeWired PowerMode = "wired"
+
+// DeviceStatus derives a concise health view without implying a battery on wired devices.
+type DeviceStatus struct {
+	BatteryPercent *float64         `json:"battery_percent,omitempty"`
+	Connection     *ConnectionState `json:"connection,omitempty"`
+	IsOffline      bool             `json:"is_offline"`
+	PowerMode      *PowerMode       `json:"power_mode,omitempty"`
+}
+
+func (d DeviceDetailDevice) Status() DeviceStatus {
+	status := DeviceStatus{}
+	if d.Settings != nil {
+		status.PowerMode = d.Settings.PowerMode
+	}
+	if d.Alerts != nil {
+		status.Connection = d.Alerts.Connection
+		status.IsOffline = d.Alerts.Connection != nil && *d.Alerts.Connection == ConnectionOffline
+	}
+	if status.Connection == nil && d.Health != nil && d.Health.Connected != nil {
+		state := ConnectionOffline
+		if *d.Health.Connected {
+			state = ConnectionOnline
+		}
+		status.Connection = &state
+		status.IsOffline = state == ConnectionOffline
+	}
+	if d.Health != nil && d.Health.BatteryPresent != nil && !*d.Health.BatteryPresent {
+		return status
+	}
+	if status.PowerMode != nil && *status.PowerMode == PowerModeWired && (d.Health == nil || d.Health.BatteryPresent == nil || !*d.Health.BatteryPresent) {
+		return status
+	}
+	if d.Health != nil {
+		switch {
+		case d.Health.BatteryPercentage != nil:
+			status.BatteryPercent = validBattery(*d.Health.BatteryPercentage)
+		case d.Health.BatteryLevel != nil:
+			status.BatteryPercent = validBattery(float64(*d.Health.BatteryLevel))
+		}
+	}
+	if status.BatteryPercent == nil && (status.PowerMode == nil || *status.PowerMode != PowerModeWired) {
+		if d.BatteryLife != nil {
+			status.BatteryPercent = validBattery(float64(*d.BatteryLife))
+		}
+	}
+	return status
+}
+
+func validBattery(value float64) *float64 {
+	if math.IsNaN(value) || value < 0 || value > 100 {
+		return nil
+	}
+	return &value
 }
 
 // OwnerID normalizes numeric and text identifiers to a string for callers.
@@ -75,13 +174,16 @@ type DeviceOwner struct {
 }
 
 type DeviceLegacySettings struct {
-	DoorbellVolume         *int  `json:"doorbell_volume,omitempty"`
-	LiveViewDisabled       *bool `json:"live_view_disabled,omitempty"`
-	MotionDetectionEnabled *bool `json:"motion_detection_enabled,omitempty"`
+	DoorbellVolume         *int       `json:"doorbell_volume,omitempty"`
+	LiveViewDisabled       *bool      `json:"live_view_disabled,omitempty"`
+	MotionDetectionEnabled *bool      `json:"motion_detection_enabled,omitempty"`
+	PowerMode              *PowerMode `json:"power_mode,omitempty"`
 }
 
 type DeviceDetailHealth struct {
 	BatteryLevel              *int     `json:"battery_level,omitempty"`
+	BatteryPercentage         *float64 `json:"battery_percentage,omitempty"`
+	BatteryPresent            *bool    `json:"battery_present,omitempty"`
 	BatteryPercentageCategory *string  `json:"battery_percentage_category,omitempty"`
 	BatteryStatus             *string  `json:"battery_status,omitempty"`
 	Connected                 *bool    `json:"connected,omitempty"`

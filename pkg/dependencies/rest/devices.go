@@ -28,7 +28,7 @@ func (c *Client) RegisterSession(ctx context.Context) error {
 				ApiVersion:  generatedhttp.N11,
 				DeviceModel: deviceModel,
 			},
-			Os: generatedhttp.Android,
+			Os: generatedhttp.ClientSessionRegistrationDeviceOsAndroid,
 		},
 	}
 	return c.doJSONRequest(ctx, http.MethodPost, protocol.SessionPath, body, nil)
