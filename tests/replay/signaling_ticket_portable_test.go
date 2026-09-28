@@ -21,7 +21,7 @@ func TestPortableLegacyTicketBootstrap(t *testing.T) {
 		t.Fatal(err)
 	}
 	transport := replay.NewTransport(x)
-	peer := replay.NewWebSocketServer(nil, time.Second)
+	peer := replay.NewWebSocketServer(nil, time.Second, replay.WSHandshake{Path: "/", Query: map[string][]string{"token": {"synthetic-legacy-ticket"}}})
 	defer peer.Close()
 	dialer := &captureDialer{delegate: websocket.DefaultDialer}
 	client, err := ring.NewClient(

@@ -51,6 +51,35 @@ func TestTransportStrictOnceAndFreshResponses(t *testing.T) {
 	}
 }
 
+func TestTransportRequiresRecordedOrder(t *testing.T) {
+	first := Exchange{Request: Request{Method: http.MethodGet, Origin: "https://example.test", Path: "/first", Headers: http.Header{}}, Response: Response{Status: http.StatusOK}}
+	second := Exchange{Request: Request{Method: http.MethodGet, Origin: "https://example.test", Path: "/second", Headers: http.Header{}}, Response: Response{Status: http.StatusNoContent}}
+	request := func(path string) *http.Request {
+		return httptest.NewRequest(http.MethodGet, "https://example.test"+path, nil)
+	}
+	ordered := NewTransport(first, second)
+	if response, err := ordered.RoundTrip(request("/second")); err == nil || response != nil {
+		if response != nil && response.Body != nil {
+			_ = response.Body.Close()
+		}
+		t.Fatalf("out-of-order request returned response %v, error %v", response, err)
+	}
+	if err := ordered.AssertConsumed(); err == nil {
+		t.Fatal("out-of-order request did not fail consumed assertion")
+	}
+	independent := NewUnorderedTransport(first, second)
+	for _, path := range []string{"/second", "/first"} {
+		response, err := independent.RoundTrip(request(path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = response.Body.Close()
+	}
+	if err := independent.AssertConsumed(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestTransportNilBodyAndCanceledContext(t *testing.T) {
 	x := Exchange{Request: Request{Method: http.MethodGet, Origin: "https://example.test", Path: "/", Headers: http.Header{}}, Response: Response{Status: http.StatusNoContent}}
 	tr := NewTransport(x)
@@ -173,5 +202,40 @@ func TestWebSocketCloseUnblocksActiveScript(t *testing.T) {
 	_ = c.Close()
 	if err = w.AssertComplete(time.Second); err == nil {
 		t.Fatal("expected active script to report disconnect")
+	}
+}
+
+func TestWebSocketReplayRejectsUpgradeAndTrailingFrame(t *testing.T) {
+	badUpgrade := NewWebSocketServer(nil, time.Second, WSHandshake{Path: "/", Query: map[string][]string{"token": {"expected"}}})
+	_, response, err := websocket.DefaultDialer.Dial(badUpgrade.URL()+"?token=wrong", nil)
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
+	if err == nil {
+		t.Fatal("wrong upgrade query was accepted")
+	}
+	if err := badUpgrade.AssertComplete(time.Second); err == nil {
+		t.Fatal("wrong upgrade did not fail replay assertion")
+	}
+	badUpgrade.Close()
+
+	extra := NewWebSocketServer([]WSStep{{Kind: "expect", Frame: "text", Body: []byte(`{"step":1}`)}}, time.Second)
+	defer extra.Close()
+	conn, response, err := websocket.DefaultDialer.Dial(extra.URL(), nil)
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close() }()
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"step":1}`)); err != nil {
+		t.Fatal(err)
+	}
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"extra":true}`)); err != nil {
+		t.Fatal(err)
+	}
+	if err := extra.AssertComplete(time.Second); err == nil {
+		t.Fatal("trailing frame did not fail replay assertion")
 	}
 }

@@ -46,6 +46,14 @@ origin, escaped path, query multimap, and body always match strictly. JSON
 comparison ignores object key order, preserves array order, compares numeric
 values without float precision loss, and rejects trailing JSON values.
 
+`replay.NewTransport` consumes HTTP exchanges in fixture order. A later
+exchange cannot satisfy an earlier request. Use `replay.NewUnorderedTransport`
+only when requests are independent and their arrival order is deliberately
+irrelevant. Both modes reject duplicate or unexpected requests and require
+`AssertConsumed`. Fixed synthetic token and identifier values in these
+cassettes match exactly; a new variable field needs an explicit format or
+decoded-value matcher before it can be called replay evidence.
+
 Use `replay.LoadExchange`, `replay.NewTransport`, and
 `Transport.AssertConsumed` from `internal/testkit/replay`. Each cassette is
 consumed once, each response receives a fresh body, and an unmatched request
@@ -59,9 +67,11 @@ current captured application messages are text JSON. The testkit script uses
 `WSStep{Kind, Frame, Body}`: map `client_to_server` to `expect`,
 `server_to_client` to `send`, and marshal the payload into `Body`. Text frames
 are compared as semantic JSON. Binary frames compare byte-for-byte. The local
-script server accepts one connection, applies bounded read/write deadlines,
-and exposes `AssertComplete` and `Close` for deterministic completion and
-cleanup.
+script server accepts one connection, checks the upgrade method, path, query,
+and configured application headers, applies bounded read/write deadlines,
+rejects an extra client frame after the script, and exposes `AssertComplete`
+and `Close` for deterministic completion and cleanup. Pass `WSHandshake` when
+the expected upgrade includes a query or application header.
 
 The transcripts include application heartbeat ping/pong, signaling setup and
 close messages, and nested PTZ RPC methods. They are not proof of unrecorded

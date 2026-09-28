@@ -87,10 +87,17 @@ type Transport struct {
 	mu        sync.Mutex
 	exchanges []Exchange
 	used      []bool
+	ordered   bool
 	err       error
 }
 
 func NewTransport(xs ...Exchange) *Transport {
+	return &Transport{exchanges: append([]Exchange(nil), xs...), used: make([]bool, len(xs)), ordered: true}
+}
+
+// NewUnorderedTransport permits explicitly independent requests to consume
+// cassettes in any order while still requiring a one-time exact match.
+func NewUnorderedTransport(xs ...Exchange) *Transport {
 	return &Transport{exchanges: append([]Exchange(nil), xs...), used: make([]bool, len(xs))}
 }
 func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -117,6 +124,16 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 		if t.used[i] {
 			t.mu.Unlock()
 			continue
+		}
+		if t.ordered {
+			first := 0
+			for first < len(t.used) && t.used[first] {
+				first++
+			}
+			if i != first {
+				t.mu.Unlock()
+				break
+			}
 		}
 		ok, _ := matches(x.Request, r, b)
 		if ok {
