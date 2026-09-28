@@ -39,6 +39,8 @@ type WSStep struct {
 	Kind  string          `json:"kind"`
 	Frame string          `json:"frame"`
 	Body  json.RawMessage `json:"body"`
+	// Template enables explicit $uuid:name and $ref:name bindings in JSON text frames.
+	Template bool `json:"template,omitempty"`
 }
 
 // WSHandshake is the expected upgrade origin, host, path, query, and application headers.
@@ -103,6 +105,7 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration, handshakes ...WSH
 		w.mu.Unlock()
 		defer func() { _ = c.Close() }()
 		defer func() { w.mu.Lock(); w.active = nil; w.mu.Unlock() }()
+		bindings := make(map[string]string)
 		for i, s := range steps {
 			_ = c.SetReadDeadline(time.Now().Add(timeout))
 			switch s.Kind {
@@ -113,7 +116,11 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration, handshakes ...WSH
 					return
 				}
 				want := messageType(s.Frame)
-				if mt != want || !frameEqual(want, s.Body, b) {
+				matched := mt == want && frameEqual(want, s.Body, b)
+				if mt == want && s.Template && want == websocket.TextMessage {
+					matched = matchFrameTemplate(s.Body, b, bindings) == nil
+				}
+				if !matched {
 					w.finish(webSocketReplayError{message: fmt.Sprintf("step %d expected %s frame %s, got %s frame %s", i, s.Frame, s.Body, frameName(mt), b)})
 					return
 				}
@@ -123,8 +130,17 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration, handshakes ...WSH
 					w.finish(webSocketReplayError{message: fmt.Sprintf("step %d: unsupported frame %q", i, s.Frame)})
 					return
 				}
+				body := []byte(s.Body)
+				if s.Template && mt == websocket.TextMessage {
+					var e error
+					body, e = renderFrameTemplate(s.Body, bindings)
+					if e != nil {
+						w.finish(webSocketReplayError{message: fmt.Sprintf("step %d template", i), cause: e})
+						return
+					}
+				}
 				_ = c.SetWriteDeadline(time.Now().Add(timeout))
-				if e := c.WriteMessage(mt, s.Body); e != nil {
+				if e := c.WriteMessage(mt, body); e != nil {
 					w.finish(webSocketReplayError{message: fmt.Sprintf("step %d write", i), cause: e})
 					return
 				}

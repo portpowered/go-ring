@@ -1,0 +1,10 @@
+{
+  "provenance": "hand-authored synthetic request/response transcript exercised through ring.Client.OpenSignaling and SignalingConnection.SubscribePush; no provider capture",
+  "handshake": {"path":"/ws","query":{"token":["synthetic-legacy-ticket"]}},
+  "steps": [
+    {"kind":"expect","frame":"text","template":true,"body":{"method":"push_subscribe","dialog_id":"$uuid:dialog","riid":"$uuid:subscribe_request","body":{"requested_notifications":[{"filter_identifier":"synthetic-filter","filters":{"doorbot_ids":[1000]},"notification_scope":"event","notification_type":"shoulder_tap"}]}}},
+    {"kind":"send","frame":"text","template":true,"body":{"method":"push_subscription_ack","dialog_id":"$ref:dialog","body":{"status":"ok","subscription_id":"synthetic-subscription"}}},
+    {"kind":"send","frame":"text","template":true,"body":{"method":"push_event","dialog_id":"$ref:dialog","body":{"notification_scope":"event","notification_type":"shoulder_tap","subscription_id":"synthetic-subscription","payload":{"device_id":"1000","location_id":"synthetic-location"}}}},
+    {"kind":"expect","frame":"text","template":true,"body":{"method":"push_unsubscribe","dialog_id":"$ref:dialog","riid":"$uuid:unsubscribe_request","body":{"subscription_id":"synthetic-subscription"}}}
+  ]
+}
