@@ -1,0 +1,99 @@
+---
+title: Push notifications
+description: Choose the FCM receiver or the signaling WebSocket subscription for device events.
+---
+
+`go-ring` exposes two push paths. The FCM receiver registers an FCM token and
+requests Ring ding or motion notifications over HTTP. A signaling push
+subscription listens for filtered events on an already-open Ring WebSocket.
+Choose the path that matches the events and lifecycle your application needs;
+they are separate subscriptions.
+
+## FCM receiver
+
+`Client.ConnectPush` starts the built-in FCM receiver. On first connection,
+omit `Credentials`; on later connections, pass the credentials blob from the
+last `ring.PushCredentials` event. When the receiver provides credentials,
+the client registers the FCM token with Ring and subscribes the requested
+devices to ding and/or motion notifications.
+
+```go
+push, err := client.ConnectPush(ctx, ring.ConnectPushRequest{
+	Auth:      auth,
+	Credentials: savedFCMCredentials, // empty on first connection
+	DeviceIDs: []string{deviceID},
+	Ding:      true,
+	Motion:    true,
+})
+if err != nil {
+	return err
+}
+defer push.Close()
+
+for event := range push.Events() {
+	switch event.Kind {
+	case ring.PushCredentials:
+		// Persist this JSON securely to restore the FCM registration later.
+		if err := saveFCMCredentials(event.Credentials); err != nil {
+			return err
+		}
+	case ring.PushRegistered, ring.PushConnected:
+		// Receiver setup or connection status changed.
+	case ring.PushMessage:
+		handleDeviceEvent(event.DeviceID, event.Action, event.Data)
+	case ring.PushRetry:
+		log.Printf("push receiver will retry: %v", event.Err)
+	case ring.PushClosed:
+		return nil
+	}
+}
+```
+
+Credentials are sensitive and belong to the caller. Store them securely and
+do not put them in logs or source control. `PushConnection.Close` stops the
+receiver; its event channel closes when the connection ends. For applications
+that manage FCM registration themselves, the client also exposes
+`RegisterPushDevice`, `SubscribeDeviceDing`, and `SubscribeDeviceMotion`.
+
+## Signaling WebSocket subscription
+
+Use `SignalingConnection.SubscribePush` for the filtered `shoulder_tap` style
+notification stream. It returns only after Ring acknowledges the
+subscription. Receive events until your context ends, then close the
+subscription; closing sends an unsubscribe request. Closing its parent
+signaling connection also ends the subscription.
+
+```go
+subscription, err := conn.SubscribePush(ctx, []ring.PushFilter{{
+	FilterIdentifier:  "front-door",
+	Filters:           ring.PushFilters{DoorbotIDs: []int64{doorbellNumericID}},
+	NotificationScope: "event",
+	NotificationType:  "shoulder_tap",
+}})
+if err != nil {
+	return err
+}
+defer subscription.Close()
+
+for {
+	event, err := subscription.Receive(ctx)
+	if err != nil {
+		return err
+	}
+	handleSignalingPush(event)
+}
+```
+
+The filter's `DoorbotIDs` values are numeric device IDs. The library maintains
+the WebSocket subscription heartbeat and verifies each event belongs to the
+subscription. See
+[`examples/session_push_events`](https://github.com/portpowered/go-ring/tree/main/examples/session_push_events)
+for a complete receiver.
+
+## Evidence notes
+
+The signaling push filter, acknowledgement, event, and message order appear
+in the sanitized live-session captures and replay tests. The HTTP FCM token
+registration and ding/motion subscription requests are source-derived
+reference contracts. FCM notification payload samples are synthetic; unknown
+notification fields remain available in `FCMEvent.Data`.

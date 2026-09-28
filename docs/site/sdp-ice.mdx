@@ -1,0 +1,79 @@
+---
+title: SDP and ICE
+description: Create an offer, select an ICE candidate mode, and apply the Ring answer.
+---
+
+The application owns the WebRTC peer. `go-ring` validates and relays the SDP
+and ICE messages over Ring signaling; it does not create the peer connection,
+render video, or capture audio for you.
+
+## Non-trickle ICE
+
+With non-trickle ICE, wait for local ICE gathering to finish before sending
+your offer. The SDP then carries the gathered candidates. Select
+`ring.ICENonTrickle` on `StartDeviceSession`.
+
+```go
+peer, err := webrtc.NewPeerConnection(webrtc.Configuration{})
+if err != nil {
+	return err
+}
+defer peer.Close()
+
+if _, err := peer.AddTransceiverFromKind(
+	webrtc.RTPCodecTypeVideo,
+	webrtc.RtpTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly},
+); err != nil {
+	return err
+}
+
+offer, err := peer.CreateOffer(nil)
+if err != nil {
+	return err
+}
+gathered := webrtc.GatheringCompletePromise(peer)
+if err := peer.SetLocalDescription(offer); err != nil {
+	return err
+}
+select {
+case <-gathered:
+case <-ctx.Done():
+	return ctx.Err()
+}
+offerSDP := peer.LocalDescription().SDP
+```
+
+Pass `offerSDP` in `StartDeviceSession`, then set `session.Answer().SDP` as the
+peer's remote answer. This is the simpler flow and is shown by the
+[`rtc_stream` example](https://github.com/portpowered/go-ring/tree/main/examples/rtc_stream).
+
+## Trickle ICE
+
+With trickle ICE, create the offer without waiting for gathering to finish and
+select `ring.ICETrickle`. Candidates can arrive before `StartDeviceSession`
+returns, so queue local candidates until you have the `DeviceSession`, then
+send each candidate:
+
+```go
+candidate := localCandidate.ToJSON()
+if candidate.SDPMid == nil || candidate.SDPMLineIndex == nil {
+	return errors.New("local ICE candidate has no media identity")
+}
+if err := session.SendICE(ctx, ring.ICECandidateRequest{
+	Candidate:  candidate.Candidate,
+	MID:        *candidate.SDPMid,
+	MLineIndex: int(*candidate.SDPMLineIndex),
+}); err != nil {
+	return err
+}
+```
+
+Read events with `session.Receive(ctx)`. Remote ICE events use method `ice`;
+their body contains the candidate in `ice` and its media-line index in
+`mlineindex`. Add each candidate to your peer with your WebRTC library. The
+complete runnable example shows how to queue local candidates during setup and
+forward remote candidates after activation.
+
+`SendICE` is only valid in trickle mode and requires a non-empty candidate,
+MID, and media-line index that belongs to the original offer. Playback uses
+its own offer and ICE exchange; see [cloud playback](./cloud-playback).

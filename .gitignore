@@ -1,5 +1,6 @@
 /bin/
 /coverage.*
+/api-docs-out/
 # Local environment for the vendored Python reference test suite.
 /.venv-reference/
 __pycache__/

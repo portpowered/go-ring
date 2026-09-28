@@ -16,3 +16,4 @@
 - **LIB-14** Keep the public client, README, examples, and reusable library template independent of any consuming application or backend. Put consumer-specific adapters and migration plans in the consumer's repository.
 - **LIB-15** Show Go version, CI, replay coverage, latest release, Go Reference, and license badges in the README. Link each badge to the corresponding live report or release.
 - **LIB-16** When the library has API schemas, generate its API documentation website from those checked-in schemas and publish it to GitHub Pages through CI. Link the published site from the README and verify the publishing workflow as part of release readiness.
+- **LIB-17** Add customer guide pages for supported operations and multi-step flows to the GitHub Pages site. Explain client calls, inputs, outputs, session lifecycle, and errors using the site's standard renderer; verify the pages and navigation in the generated site.

@@ -11,6 +11,10 @@
 A Go client for Ring authentication, device discovery and controls, recordings,
 and persistent signaling sessions.
 
+The [customer guides](https://portpowered.github.io/go-ring/docs/guides/) walk
+through authentication, device operations, live sessions, SDP and ICE,
+push notifications, and cloud playback alongside the generated API reference.
+
 
 This is a bit unique compared to other ring-doorbell libraries since: 
 1. It supports PTZ over signaling WebSockets and newer API versions.

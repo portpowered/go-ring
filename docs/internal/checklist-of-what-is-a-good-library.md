@@ -42,8 +42,9 @@ Library best practices:
         4. bespoke protocols are documented in whatever is appropriate (GRPC, custom openAPI, wtv)
         5. constants for API endpoints should be denoted, and if regional we should denote each
         6. our code should try to codegen as much as possible from the schema files
-        7. the object is defined as open additoinal properties, but the objects are not bare objects, we declare as much as possible from the traces so that codegeneration works well
-        8. for async event schemas where there are multiple types we declare each type separately, so that customers can know what they are without parsing independently.
+        7. Convert internal wire request, response, and event structs to generated models from the checked-in schemas; keep handwritten code for behavior, adaptation, and error handling. Regenerate in CI and fail on drift.
+        8. the object is defined as open additoinal properties, but the objects are not bare objects, we declare as much as possible from the traces so that codegeneration works well
+        9. for async event schemas where there are multiple types we declare each type separately, so that customers can know what they are without parsing independently.
     2. Architecture notes
         1. Denote how auth works, and what is needed (is it sessional, how does it do retry/permissions)
         2. Denote how APIs are used (what parts are sessional, how do different functionality work)
@@ -73,6 +74,7 @@ Library best practices:
     2. denote
 5. examples
     1. we should show examples of how a library works (auth, basic enumeration, any tooling/functionality we support)
+    2. Add customer guide pages to the GitHub Pages site for each supported operation and multi-step flow. Show the client method, required inputs, result shape, and lifecycle or failure handling; link to the generated API reference.
 6. linting
     1. we enforce linting by golang lint, biome or whateer is appropriate
         1. constraints on funlen, file len, as well as cyclomatic complexity, etc are covered by liniting, and the CI is covered as parts of tests.
@@ -90,7 +92,8 @@ CI:
 3. generated code coverage documentation
 4. merges to main should be blocked for things that do not pass CI.
 5. Generate an API documentation website from checked-in schemas, publish it to GitHub Pages, and link it from the README when the library has API schemas.
-6. Keep library documentation and reusable templates independent of any consuming backend; document consumer-specific migration in that consumer's repository.
+6. Include authored customer operation guides in that generated site, and verify the guide navigation and pages in the Pages build.
+7. Keep library documentation and reusable templates independent of any consuming backend; document consumer-specific migration in that consumer's repository.
 
 AGENTS.md
 1. short and to the point (languages, systems)
