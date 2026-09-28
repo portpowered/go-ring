@@ -1,10 +1,12 @@
 # go-ring
 
+[![Go version](https://img.shields.io/github/go-mod/go-version/portpowered/go-ring)](go.mod)
 [![CI](https://github.com/portpowered/go-ring/actions/workflows/ci.yml/badge.svg)](https://github.com/portpowered/go-ring/actions/workflows/ci.yml)
 [![Replay coverage](https://github.com/portpowered/go-ring/wiki/coverage.svg)](https://raw.githack.com/wiki/portpowered/go-ring/coverage.html)
 [![Release](https://img.shields.io/github/v/release/portpowered/go-ring?display_name=tag)](https://github.com/portpowered/go-ring/releases/latest)
 [![Go Reference](https://pkg.go.dev/badge/github.com/portpowered/go-ring.svg)](https://pkg.go.dev/github.com/portpowered/go-ring)
 [![License](https://img.shields.io/github/license/portpowered/go-ring)](LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://portpowered.github.io/go-ring/)
 
 A Go client for Ring authentication, device discovery and controls, recordings,
 and persistent signaling sessions.
