@@ -36,9 +36,11 @@ func (e webSocketReplayError) Unwrap() error { return e.cause }
 
 // WSStep either expects a client frame or sends a server frame. Kind is "expect" or "send".
 type WSStep struct {
-	Kind  string          `json:"kind"`
-	Frame string          `json:"frame"`
-	Body  json.RawMessage `json:"body"`
+	// Channel names an AsyncAPI channel for the production inventory gate.
+	Channel string          `json:"channel,omitempty"`
+	Kind    string          `json:"kind"`
+	Frame   string          `json:"frame"`
+	Body    json.RawMessage `json:"body"`
 	// Template enables explicit $uuid:name and $ref:name bindings in JSON text frames.
 	Template bool `json:"template,omitempty"`
 }
@@ -58,10 +60,12 @@ type WSHandshake struct {
 type WebSocketServer struct {
 	Server   *httptest.Server
 	done     chan error
+	steps    chan int
 	mu       sync.Mutex
 	accepted bool
 	active   *websocket.Conn
 	result   error
+	lastStep int
 	once     sync.Once
 }
 
@@ -70,7 +74,7 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration, handshakes ...WSH
 	if timeout <= 0 {
 		timeout = 2 * time.Second
 	}
-	w := &WebSocketServer{done: make(chan error, 1)}
+	w := &WebSocketServer{done: make(chan error, 1), steps: make(chan int, len(steps)), lastStep: -1}
 	want := WSHandshake{Path: "/", Query: url.Values{}}
 	if len(handshakes) > 0 {
 		want = handshakes[0]
@@ -148,6 +152,10 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration, handshakes ...WSH
 				w.finish(webSocketReplayError{message: fmt.Sprintf("step %d: invalid kind %q", i, s.Kind)})
 				return
 			}
+			w.mu.Lock()
+			w.lastStep = i
+			w.mu.Unlock()
+			w.steps <- i
 		}
 		grace := timeout
 		if grace > terminalFrameGrace {
@@ -160,6 +168,37 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration, handshakes ...WSH
 		w.finish(nil)
 	}))
 	return w
+}
+
+// WaitStep waits until the strict peer has consumed step index, or reports its
+// first mismatch. It lets tests trigger later client actions without sleeping.
+func (w *WebSocketServer) WaitStep(index int, timeout time.Duration) error {
+	if timeout <= 0 {
+		timeout = defaultWebSocketAssertTimeout
+	}
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	for {
+		select {
+		case done := <-w.steps:
+			if done >= index {
+				return nil
+			}
+		case <-w.done:
+			w.mu.Lock()
+			complete := w.lastStep >= index
+			w.mu.Unlock()
+			if complete {
+				return nil
+			}
+			if err := w.AssertComplete(timeout); err != nil {
+				return err
+			}
+			return webSocketReplayError{message: "websocket replay: requested step was not reached"}
+		case <-timer.C:
+			return webSocketReplayError{message: "websocket replay: step did not complete before deadline"}
+		}
+	}
 }
 func matchesHandshake(r *http.Request, want WSHandshake, serverHost string) bool {
 	host := want.Host

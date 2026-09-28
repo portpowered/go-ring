@@ -2,9 +2,11 @@ package protocols
 
 import (
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -65,6 +67,72 @@ func TestSyntheticSignalingTranscriptMatchesEachAsyncAPIChannel(t *testing.T) {
 	if len(seen) != len(channels) {
 		t.Fatalf("covered %d of %d AsyncAPI channels", len(seen), len(channels))
 	}
+}
+
+func TestProductionSignalingTranscriptsMatchAsyncAPIChannels(t *testing.T) {
+	doc := readYAMLObject(t, filepath.Join(repositoryRoot(t), "api", "asyncapi.yaml"))
+	channels := mapValue(doc["channels"])
+	components := mapValue(doc["components"])
+	messages := mapValue(components["messages"])
+	directory := os.DirFS(filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "signaling", "synthetic", "paired"))
+	seen := map[string]bool{}
+	for _, name := range []string{"push-production.json", "push-heartbeat-production.json", "playback-production.json", "live-production.json"} {
+		data, err := fs.ReadFile(directory, name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var transcript syntheticSignalingChannelTranscript
+		if err := json.Unmarshal(data, &transcript); err != nil {
+			t.Fatal(err)
+		}
+		for _, step := range transcript.Steps {
+			if step.Channel == "" {
+				continue
+			}
+			channel := mapValue(channels[step.Channel])
+			if channel == nil {
+				t.Fatalf("unknown channel %q in %s", step.Channel, name)
+			}
+			seen[step.Channel] = true
+			var reference string
+			for _, raw := range mapValue(channel["messages"]) {
+				reference = stringValue(mapValue(raw)["$ref"])
+			}
+			const prefix = "#/components/messages/"
+			if !strings.HasPrefix(reference, prefix) {
+				t.Fatalf("invalid message reference %q", reference)
+			}
+			payload := mapValue(mapValue(messages[strings.TrimPrefix(reference, prefix)])["payload"])
+			validator := compileJSONSchema(t, map[string]any{"components": components}, payload)
+			if err := validator.Validate(schemaExampleValue(step.Body)); err != nil {
+				t.Errorf("%s in %s violates AsyncAPI: %v", step.Channel, name, err)
+			}
+		}
+	}
+	if len(seen) != len(channels) {
+		t.Fatalf("production transcripts cover %d of %d AsyncAPI channels", len(seen), len(channels))
+	}
+}
+
+func schemaExampleValue(value any) any {
+	switch data := value.(type) {
+	case map[string]any:
+		for key, field := range data {
+			data[key] = schemaExampleValue(field)
+		}
+	case []any:
+		for i, field := range data {
+			data[i] = schemaExampleValue(field)
+		}
+	case string:
+		if data == "$epochMillis" {
+			return float64(1700000000000)
+		}
+		if strings.HasPrefix(data, "$uuid:") || strings.HasPrefix(data, "$ref:") {
+			return "30f4af1f-b705-42e7-ab2d-baf8bbca9657"
+		}
+	}
+	return value
 }
 
 func capturedSignalingMessages(t *testing.T) []capturedSignalingMessage {

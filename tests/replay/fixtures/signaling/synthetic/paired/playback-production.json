@@ -1,0 +1,133 @@
+{
+  "provenance": "hand-authored synthetic ordered playback exchange exercised through ring.Client and PlaybackSession; no provider capture",
+  "handshake": {
+    "path": "/ws",
+    "query": {
+      "token": [
+        "synthetic-legacy-ticket"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "playback",
+        "dialog_id": "$uuid:dialog",
+        "riid": "$uuid:offer_request",
+        "body": {
+          "doorbot_id": 1000,
+          "entry_point": "timeline",
+          "sdp": "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\nc=IN IP4 0.0.0.0\r\na=mid:0\r\na=recvonly\r\n",
+          "type": "cloud"
+        }
+      },
+      "channel": "playbackOffer"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "sdp",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-playback",
+          "type": "answer",
+          "sdp": "v=0\r\no=- 2 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\nc=IN IP4 0.0.0.0\r\na=mid:0\r\na=sendonly\r\n",
+          "session_info": {
+            "ping_interval": 1
+          }
+        }
+      },
+      "channel": "playbackAnswer"
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "ice",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-playback",
+          "ice": "candidate:synthetic",
+          "mlineindex": 0
+        }
+      },
+      "channel": "iCECandidate"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "notification",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-playback",
+          "is_ok": true,
+          "text": "accepted"
+        }
+      },
+      "channel": "sessionNotification"
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "ping",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-playback"
+        }
+      },
+      "channel": "sessionPing"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "pong",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-playback"
+        }
+      },
+      "channel": "sessionPong"
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "close",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-playback",
+          "reason": {
+            "code": 0,
+            "text": "client_closed"
+          }
+        }
+      },
+      "channel": "playbackClose"
+    }
+  ]
+}

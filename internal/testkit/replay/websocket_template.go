@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -42,30 +43,7 @@ func decodeTemplateJSON(body []byte) (any, error) {
 func matchTemplateValue(want, got any, bindings map[string]string) error {
 	switch value := want.(type) {
 	case string:
-		actual, ok := got.(string)
-		if !ok {
-			return webSocketReplayError{message: fmt.Sprintf("expected string %q, got %T", value, got)}
-		}
-		if name, ok := strings.CutPrefix(value, "$uuid:"); ok {
-			if name == "" {
-				return webSocketReplayError{message: "empty UUID binding name"}
-			}
-			if _, err := uuid.Parse(actual); err != nil {
-				return webSocketReplayError{message: fmt.Sprintf("binding %s is not a UUID", name), cause: err}
-			}
-			if bound, exists := bindings[name]; exists && bound != actual {
-				return webSocketReplayError{message: fmt.Sprintf("binding %s changed", name)}
-			}
-			bindings[name] = actual
-			return nil
-		}
-		if name, ok := strings.CutPrefix(value, "$ref:"); ok {
-			bound, exists := bindings[name]
-			if !exists || actual != bound {
-				return webSocketReplayError{message: fmt.Sprintf("binding %s mismatch or missing", name)}
-			}
-			return nil
-		}
+		return matchTemplateString(value, got, bindings)
 	case map[string]any:
 		actual, ok := got.(map[string]any)
 		if !ok || len(value) != len(actual) {
@@ -97,6 +75,55 @@ func matchTemplateValue(want, got any, bindings map[string]string) error {
 		return webSocketReplayError{message: fmt.Sprintf("JSON value differs: want %v, got %v", want, got)}
 	}
 	return nil
+}
+
+func matchTemplateString(value string, got any, bindings map[string]string) error {
+	if value == "$epochMillis" {
+		actual, ok := got.(json.Number)
+		if !ok {
+			return webSocketReplayError{message: "expected epoch millisecond number"}
+		}
+		milliseconds, err := actual.Int64()
+		if err != nil || abs64(time.Now().UnixMilli()-milliseconds) > int64(time.Minute/time.Millisecond) {
+			return webSocketReplayError{message: "epoch millisecond value outside one-minute window", cause: err}
+		}
+		return nil
+	}
+	actual, ok := got.(string)
+	if !ok {
+		return webSocketReplayError{message: fmt.Sprintf("expected string %q, got %T", value, got)}
+	}
+	if name, ok := strings.CutPrefix(value, "$uuid:"); ok {
+		if name == "" {
+			return webSocketReplayError{message: "empty UUID binding name"}
+		}
+		if _, err := uuid.Parse(actual); err != nil {
+			return webSocketReplayError{message: fmt.Sprintf("binding %s is not a UUID", name), cause: err}
+		}
+		if bound, exists := bindings[name]; exists && bound != actual {
+			return webSocketReplayError{message: fmt.Sprintf("binding %s changed", name)}
+		}
+		bindings[name] = actual
+		return nil
+	}
+	if name, ok := strings.CutPrefix(value, "$ref:"); ok {
+		bound, exists := bindings[name]
+		if !exists || actual != bound {
+			return webSocketReplayError{message: fmt.Sprintf("binding %s mismatch or missing", name)}
+		}
+		return nil
+	}
+	if value != actual {
+		return webSocketReplayError{message: fmt.Sprintf("JSON value differs: want %q, got %q", value, actual)}
+	}
+	return nil
+}
+
+func abs64(value int64) int64 {
+	if value < 0 {
+		return -value
+	}
+	return value
 }
 
 func renderFrameTemplate(body []byte, bindings map[string]string) ([]byte, error) {

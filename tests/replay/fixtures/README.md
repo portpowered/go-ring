@@ -7,7 +7,7 @@ the final directory labels the evidence behind each case:
 | --- | --- |
 | `http/historical/` | Inherited sanitized HTTP pairs without verifiable source and UTC capture dates. `variants/` holds additional response and request-body cases. They are historical references, not current provider evidence. |
 | `signaling/historical/` | Inherited ordered WebSocket application messages from two sessions without verifiable source and UTC capture dates. |
-| `signaling/synthetic/paired/` | Hand-authored WebSocket examples. `full-session.json` is a 17-channel schema illustration exercised by a generic socket and does not count as production-client replay. `push-production.json` is an ordered four-frame transcript exercised through the public Ring client, including ticket bootstrap and upgrade. Neither is provider evidence. |
+| `signaling/synthetic/paired/` | Hand-authored WebSocket examples. `full-session.json` is a 17-channel schema illustration exercised by a generic socket and does not count as production-client replay. The four `*-production.json` transcripts exercise the public client and its push, playback, and live sessions, including ticket bootstrap and upgrade. None is provider evidence. |
 | `http/baseline/` | Inherited, sanitized response fixtures whose original capture date and account provenance are unavailable. |
 | `http/reference/` | Source-derived request contracts for intercom unlock and FCM registration/subscriptions. These are not claims of captured Ring traffic. Each fixture names its source. |
 | `http/synthetic/paired/` | Thirty-eight hand-authored, schema-shaped HTTP request/response pairs. They use fixed synthetic credentials, identifiers, and response values; they are not copied captures or provider observations. A separate synthetic signaling-ticket pair covers the thirty-ninth OpenAPI operation. |
@@ -32,10 +32,14 @@ from item-15 coverage. Generated-client replay consumes and checks every new
 pair; the existing signaling-ticket replay consumes the remaining pair.
 The separate AsyncAPI inventory gate requires every channel in the synthetic
 signaling transcript and checks each frame against its channel schema.
-The production push transcript matches the complete outbound JSON, binds
-generated UUIDs by format and exact reuse, injects only stored responses,
-and checks public subscription and event results. The other channels still
-need stored production-client transcripts before full LIB-05 signoff.
+The production transcripts cover all 17 AsyncAPI channels through public
+client/session flows, plus the push heartbeat through its production timer
+method at a test-only interval. A separate inventory test rejects missing
+channels. They match complete outbound JSON, bind generated UUIDs by format
+and exact reuse, validate PTZ timestamps within a one-minute window, inject
+only stored responses, and check public results. Server-to-client channels
+(subscription acknowledgment, push event, SDP, notification, pong, and session
+created) are receive-only and are checked as sent frames and public results.
 
 Go replay tests load these files through `internal/testkit/replay`; protocol
 and fixture contract tests validate the historical files against OpenAPI,

@@ -1,5 +1,5 @@
 {
-  "provenance": "hand-authored synthetic request/response transcript exercised through ring.Client.OpenSignaling and SignalingConnection.SubscribePush; no provider capture",
+  "provenance": "hand-authored synthetic push heartbeat exchange exercised through the production PushSubscription heartbeat method at a test-only short interval; no provider capture",
   "handshake": {
     "path": "/ws",
     "query": {
@@ -49,23 +49,18 @@
       "channel": "pushSubscriptionAck"
     },
     {
-      "kind": "send",
+      "kind": "expect",
       "frame": "text",
       "template": true,
       "body": {
-        "method": "push_event",
+        "method": "push_heartbeat",
         "dialog_id": "$ref:dialog",
+        "riid": "$uuid:heartbeat_request",
         "body": {
-          "notification_scope": "event",
-          "notification_type": "shoulder_tap",
-          "subscription_id": "synthetic-subscription",
-          "payload": {
-            "device_id": "1000",
-            "location_id": "synthetic-location"
-          }
+          "subscription_id": "synthetic-subscription"
         }
       },
-      "channel": "pushEvent"
+      "channel": "pushHeartbeat"
     },
     {
       "kind": "expect",

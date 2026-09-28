@@ -1,8 +1,12 @@
 package replay
 
 import (
+	"net/http"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 func TestFrameTemplateBindsOnlyUUIDAndExactReferences(t *testing.T) {
@@ -32,5 +36,31 @@ func TestFrameTemplateBindsOnlyUUIDAndExactReferences(t *testing.T) {
 	}
 	if _, err := renderFrameTemplate([]byte(`{"dialog_id":"$ref:missing"}`), bindings); err == nil {
 		t.Fatal("template rendered an unbound reference")
+	}
+}
+
+func TestTemplateMismatchNeverSendsStoredResponse(t *testing.T) {
+	peer := NewWebSocketServer([]WSStep{
+		{Kind: "expect", Frame: "text", Template: true, Body: []byte(`{"dialog_id":"$uuid:dialog","body":{"value":1}}`)},
+		{Kind: "send", Frame: "text", Template: true, Body: []byte(`{"dialog_id":"$ref:dialog","ok":true}`)},
+	}, time.Second)
+	defer peer.Close()
+	conn, response, err := websocket.DefaultDialer.Dial(peer.URL(), http.Header{})
+	if response != nil && response.Body != nil {
+		_ = response.Body.Close()
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = conn.Close() }()
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"dialog_id":"wrong","body":{"value":1}}`)); err != nil {
+		t.Fatal(err)
+	}
+	_ = conn.SetReadDeadline(time.Now().Add(time.Second))
+	if _, _, err := conn.ReadMessage(); err == nil {
+		t.Fatal("mismatched request received stored response")
+	}
+	if err := peer.AssertComplete(time.Second); err == nil {
+		t.Fatal("mismatched transcript was accepted")
 	}
 }

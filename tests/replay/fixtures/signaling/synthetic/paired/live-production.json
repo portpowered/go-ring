@@ -1,0 +1,205 @@
+{
+  "provenance": "hand-authored synthetic ordered live-view and PTZ exchange exercised through ring.Client and DeviceSession; no provider capture",
+  "handshake": {
+    "path": "/ws",
+    "query": {
+      "token": [
+        "synthetic-legacy-ticket"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "live_view",
+        "dialog_id": "$uuid:dialog",
+        "body": {
+          "doorbot_id": 1000,
+          "sdp": "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\nc=IN IP4 0.0.0.0\r\na=mid:0\r\na=recvonly\r\n",
+          "stream_options": {
+            "video_enabled": true
+          },
+          "type": "offer"
+        }
+      },
+      "channel": "liveView"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "session_created",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live"
+        }
+      },
+      "channel": "sessionCreated"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "sdp",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "type": "answer",
+          "sdp": "v=0\r\no=- 2 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\nc=IN IP4 0.0.0.0\r\na=mid:0\r\na=sendonly\r\n",
+          "session_info": {
+            "session_id": "synthetic-control",
+            "ping_interval": 10
+          }
+        }
+      },
+      "channel": "liveAnswer"
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "activate_session",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live"
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "mic_enable",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "stream_options",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "audio_enabled": false
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "camera_started",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live"
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "ice",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "ice": "candidate:synthetic",
+          "mid": "0",
+          "mlineindex": 0
+        }
+      },
+      "channel": "liveICE"
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "command": {
+            "jsonrpc": "2.0",
+            "id": "synthetic-control-1",
+            "method": "PTZ.Pan.Step",
+            "params": {
+              "sessionId": "synthetic-control",
+              "timestamp": "$epochMillis",
+              "version": 1,
+              "direction": "RIGHT"
+            }
+          }
+        }
+      },
+      "channel": "pTZCommand"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "command": {
+            "jsonrpc": "2.0",
+            "id": "synthetic-control-1",
+            "result": {
+              "sessionId": "synthetic-control",
+              "timestamp": 1700000000001,
+              "version": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "close",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live"
+        }
+      }
+    }
+  ]
+}
