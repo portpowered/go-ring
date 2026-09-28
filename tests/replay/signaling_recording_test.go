@@ -124,7 +124,7 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 
 func loadConversation(t *testing.T, name string) recordedMessages {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("fixtures", "signaling", "captured", name)) // #nosec G304 -- name comes from fixed captured-recording cases in this test package.
+	b, err := os.ReadFile(filepath.Join("fixtures", "signaling", "historical", name)) // #nosec G304 -- name comes from fixed captured-recording cases in this test package.
 	if err != nil {
 		t.Fatal(err)
 	}

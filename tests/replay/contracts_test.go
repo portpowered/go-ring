@@ -52,11 +52,11 @@ func object(v any) map[string]any { m, _ := v.(map[string]any); return m }
 func TestRecordedHTTPMethodsAreInOpenAPI(t *testing.T) {
 	doc := loadYAML(t, filepath.Join("..", "..", "api", "openapi.yaml"))
 	paths := object(doc["paths"])
-	files, e := filepath.Glob(filepath.Join("fixtures", "http", "captured", "*.json"))
+	files, e := filepath.Glob(filepath.Join("fixtures", "http", "historical", "*.json"))
 	if e != nil {
 		t.Fatal(e)
 	}
-	variants, e := filepath.Glob(filepath.Join("fixtures", "http", "captured", "variants", "*.json"))
+	variants, e := filepath.Glob(filepath.Join("fixtures", "http", "historical", "variants", "*.json"))
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -102,6 +102,9 @@ func TestRecordedHTTPMethodsAreInOpenAPI(t *testing.T) {
 	}
 }
 func templatePath(actual string, paths map[string]any) map[string]any {
+	if exact, ok := paths[actual]; ok {
+		return object(exact)
+	}
 	for k, v := range paths {
 		if samePath(k, actual) {
 			return object(v)
@@ -131,7 +134,7 @@ func TestSessionRecordingsUseAsyncAPIEnvelopeAndPTZMethods(t *testing.T) {
 	client := enumSet(t, object(schemas["ClientEnvelope"]))
 	server := enumSet(t, object(schemas["ServerEnvelope"]))
 	ptz := enumSet(t, object(schemas["PTZRPC"]))
-	files, e := filepath.Glob(filepath.Join("fixtures", "signaling", "captured", "*.json"))
+	files, e := filepath.Glob(filepath.Join("fixtures", "signaling", "historical", "*.json"))
 	if e != nil {
 		t.Fatal(e)
 	}

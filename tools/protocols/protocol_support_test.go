@@ -271,8 +271,8 @@ func operationFor(t *testing.T, doc openAPIDocument, path, method string) *opena
 
 func capturedHTTPFiles(t *testing.T) []string {
 	t.Helper()
-	pattern := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "http", "captured", "**", "*.json")
-	root := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "http", "captured")
+	pattern := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "http", "historical", "**", "*.json")
+	root := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "http", "historical")
 	files := make([]string, 0)
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {

@@ -18,9 +18,9 @@ import (
 
 func capturedExchange(t *testing.T, name string) replay.Exchange {
 	t.Helper()
-	path := filepath.Join("fixtures", "http", "captured", name+".json")
+	path := filepath.Join("fixtures", "http", "historical", name+".json")
 	if strings.HasSuffix(name, "-02") || strings.HasSuffix(name, "-03") {
-		path = filepath.Join("fixtures", "http", "captured", "variants", name+".json")
+		path = filepath.Join("fixtures", "http", "historical", "variants", name+".json")
 	}
 	x, err := replay.LoadExchange(path)
 	require.NoError(t, err)

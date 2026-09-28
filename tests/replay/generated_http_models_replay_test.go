@@ -24,7 +24,7 @@ type capturedHTTPResponse struct {
 func TestCapturedDeviceFieldsHaveGeneratedTypes(t *testing.T) {
 	paths := []string{"device-detail.json", "device-list.json"}
 	for _, pattern := range []string{"device-detail-*.json", "device-list-*.json"} {
-		matches, err := filepath.Glob(filepath.Join("fixtures", "http", "captured", "variants", pattern))
+		matches, err := filepath.Glob(filepath.Join("fixtures", "http", "historical", "variants", pattern))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -34,7 +34,7 @@ func TestCapturedDeviceFieldsHaveGeneratedTypes(t *testing.T) {
 	}
 	for _, name := range paths {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("fixtures", "http", "captured", name)) // #nosec G304 -- name comes from fixed fixture names or the variants glob above.
+			data, err := os.ReadFile(filepath.Join("fixtures", "http", "historical", name)) // #nosec G304 -- name comes from fixed fixture names or the variants glob above.
 			if err != nil {
 				t.Fatal(err)
 			}

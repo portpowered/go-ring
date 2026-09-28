@@ -1,0 +1,23 @@
+{
+  "provenance": "hand-authored synthetic transcript from api/asyncapi.yaml; no provider capture",
+  "handshake": {"origin":"https://synthetic.example","host":"<loopback>","path":"/ws","query":{"token":["synthetic-ticket"]},"headers":{"Authorization":["Bearer synthetic-access"]}},
+  "steps": [
+    {"channel":"pushSubscribe","kind":"expect","frame":"text","body":{"method":"push_subscribe","dialog_id":"synthetic-dialog","body":{"requested_notifications":[{"notification_scope":"event","notification_type":"shoulder_tap","filter_identifier":"synthetic-filter","filters":{"doorbot_ids":[1000]}}]}}},
+    {"channel":"pushSubscriptionAck","kind":"send","frame":"text","body":{"method":"push_subscription_ack","dialog_id":"synthetic-dialog","body":{"status":"ok","subscription_id":"synthetic-subscription"}}},
+    {"channel":"pushEvent","kind":"send","frame":"text","body":{"method":"push_event","dialog_id":"synthetic-dialog","body":{"notification_scope":"event","notification_type":"shoulder_tap","subscription_id":"synthetic-subscription","payload":{"device_id":"1000","location_id":"synthetic-location"}}}},
+    {"channel":"pushHeartbeat","kind":"expect","frame":"text","body":{"method":"push_heartbeat","dialog_id":"synthetic-dialog","body":{"subscription_id":"synthetic-subscription"}}},
+    {"channel":"pushUnsubscribe","kind":"expect","frame":"text","body":{"method":"push_unsubscribe","dialog_id":"synthetic-dialog","body":{"subscription_id":"synthetic-subscription"}}},
+    {"channel":"playbackOffer","kind":"expect","frame":"text","body":{"method":"playback","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"entry_point":"timeline","sdp":"synthetic-offer","type":"cloud"}}},
+    {"channel":"playbackAnswer","kind":"send","frame":"text","body":{"method":"sdp","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","type":"answer","sdp":"synthetic-answer"}}},
+    {"channel":"iCECandidate","kind":"expect","frame":"text","body":{"method":"ice","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","ice":"candidate:synthetic","mlineindex":0}}},
+    {"channel":"sessionNotification","kind":"send","frame":"text","body":{"method":"notification","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","is_ok":true,"text":"accepted"}}},
+    {"channel":"sessionPing","kind":"expect","frame":"text","body":{"method":"ping","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
+    {"channel":"sessionPong","kind":"send","frame":"text","body":{"method":"pong","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
+    {"channel":"playbackClose","kind":"expect","frame":"text","body":{"method":"close","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","reason":{"code":0,"text":"client_closed"}}}},
+    {"channel":"liveView","kind":"expect","frame":"text","body":{"method":"live_view","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"sdp":"synthetic-live-offer","stream_options":{"audio_enabled":false,"video_enabled":true},"type":"offer"}}},
+    {"channel":"sessionCreated","kind":"send","frame":"text","body":{"method":"session_created","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
+    {"channel":"liveAnswer","kind":"send","frame":"text","body":{"method":"sdp","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","sdp":"synthetic-live-answer","session_info":{"session_id":"synthetic-control"},"type":"answer"}}},
+    {"channel":"liveICE","kind":"expect","frame":"text","body":{"method":"ice","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"ice":"candidate:synthetic","mid":"0","mlineindex":0}}},
+    {"channel":"pTZCommand","kind":"expect","frame":"text","body":{"method":"rpc","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","command":{"jsonrpc":"2.0","id":"synthetic-command","method":"PTZ.Pan.Step","params":{"sessionId":"synthetic-control","timestamp":1700000000000,"version":1,"direction":"RIGHT"}}}}}
+  ]
+}

@@ -1,0 +1,691 @@
+[
+  {
+    "operation_id": "listDevices",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/device_info/v3/devices",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "devices": [
+          {
+            "id": 1000,
+            "kind": "synthetic_camera",
+            "description": "Synthetic camera"
+          }
+        ]
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getDevice",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/device_info/v3/devices/1000",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "device": {
+          "id": 1000,
+          "kind": "synthetic_camera",
+          "description": "Synthetic camera"
+        }
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getDeviceSettings",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/devices/v1/devices/1000/settings",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "motion_settings": {
+          "motion_detection_enabled": true
+        }
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "patchDeviceSettings",
+    "request": {
+      "method": "PATCH",
+      "origin": "https://api.ring.com",
+      "path": "/devices/v1/devices/1000/settings",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": {
+        "motion_settings": {
+          "motion_detection_enabled": false
+        }
+      },
+      "json": true
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "motion_settings": {
+          "motion_detection_enabled": false
+        }
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getDeviceTimeline",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/evm/v2/timeline/devices/1000",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "items": []
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getHistoryDevices",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/evm/v3/history/devices",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "events": []
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "turnSirenOn",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/doorbots/1000/siren_on",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "started_at": "2025-01-01T00:00:00Z",
+        "ends_at": "2025-01-01T00:00:30Z",
+        "duration": 30,
+        "seconds_remaining": 30
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "turnSirenOff",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/doorbots/1000/siren_off",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  },
+  {
+    "operation_id": "getCapturedLocationTickets",
+    "request": {
+      "method": "GET",
+      "origin": "https://prd-api-us.prd.rings.solutions",
+      "path": "/api/v1/clap/tickets",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "host": "synthetic.example",
+        "ticket": "synthetic-ticket"
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "sendDeviceCommand",
+    "request": {
+      "method": "PATCH",
+      "origin": "https://api.ring.com",
+      "path": "/commands/v1/devices/1000",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": {
+        "command_name": "reboot"
+      },
+      "json": true
+    },
+    "response": {
+      "status": 204,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  },
+  {
+    "operation_id": "unlockIntercom",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/commands/v1/devices/1000/device_rpc",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": {
+        "command_name": "device_rpc",
+        "request": {
+          "jsonrpc": "2.0",
+          "method": "unlock_door",
+          "params": {
+            "door_id": 0,
+            "user_id": 0
+          }
+        }
+      },
+      "json": true
+    },
+    "response": {
+      "status": 204,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  },
+  {
+    "operation_id": "setLiveViewEnabled",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/duos/v1/devices/1000/update",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": {
+        "entity": {
+          "live_view_enabled": true
+        }
+      },
+      "json": true
+    },
+    "response": {
+      "status": 204,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  },
+  {
+    "operation_id": "listLocationDevices",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/groups/v1/locations/synthetic-location/devices",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "groups": []
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "listLocationGroups",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/groups/v1/locations/synthetic-location/groups",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "device_groups": [],
+        "is_owner": true
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "listLocations",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/location_info/v3/locations",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "user_locations": [
+          {
+            "location_id": "synthetic-location",
+            "name": "Synthetic home"
+          }
+        ]
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getLocation",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/location_info/v4/locations/synthetic-location",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "data": {
+          "type": "locations",
+          "id": "synthetic-location"
+        }
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "deleteRecording",
+    "request": {
+      "method": "DELETE",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/dings/1000",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 204,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  },
+  {
+    "operation_id": "favoriteRecording",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/dings/1000/favorite",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 201,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  },
+  {
+    "operation_id": "registerPushDevice",
+    "request": {
+      "method": "PATCH",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/device",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": {
+        "device": {
+          "metadata": {
+            "pn_dict_version": "2.0.0",
+            "pn_service": "fcm"
+          },
+          "os": "android",
+          "push_notification_token": "synthetic-push-token"
+        }
+      },
+      "json": true
+    },
+    "response": {
+      "status": 204,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  },
+  {
+    "operation_id": "subscribeDeviceDing",
+    "request": {
+      "method": "POST",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/doorbots/1000/subscribe",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  },
+  {
+    "operation_id": "subscribeDeviceMotion",
+    "request": {
+      "method": "POST",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/doorbots/1000/motions_subscribe",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {},
+      "body": null,
+      "json": false
+    }
+  }
+]

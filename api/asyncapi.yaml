@@ -3,14 +3,15 @@ info:
   title: Ring signaling application messages
   version: 0.3.0
   description: >-
-    Observed WebSocket application envelope and PTZ RPC shapes from the included
-    sanitized signaling conversations. Binary/control frames and complete media
-    negotiation semantics are outside this contract.
+    WebSocket application envelope and PTZ RPC shapes from inherited sanitized
+    signaling conversations without verifiable capture provenance. These are
+    historical regression inputs, not current provider evidence. Binary/control
+    frames and complete media negotiation semantics are outside this contract.
 servers:
   ring:
     host: api.prod.signalling.ring.devices.a2z.com
     protocol: wss
-    description: Captured signaling host; tests use a local peer.
+    description: Historical signaling host; tests use a local peer.
 channels:
   pushSubscribe:
     address: /ws
@@ -508,7 +509,7 @@ components:
         payload: {$ref: '#/components/schemas/PushEventPayload'}
         subscription_id: {type: string}
     PushEventPayload:
-      description: Captured shoulder-tap event payload; other notification types may extend it.
+      description: Historical shoulder-tap event payload; other notification types may extend it.
       type: object
       properties:
         device_id: {type: string}
@@ -575,8 +576,8 @@ components:
       type: object
       required: [code, text]
       properties:
-        code: {type: integer, description: Captured client close uses zero.}
-        text: {type: string, description: Captured client close uses client_closed.}
+        code: {type: integer, description: Historical client close uses zero.}
+        text: {type: string, description: Historical client close uses client_closed.}
     ClientEnvelope:
       type: object
       required: [method, dialog_id, body]
@@ -784,7 +785,7 @@ components:
             code: {type: integer}
             message: {type: string}
     Heartbeat:
-      description: Captured application ping from client and pong from server; timing policy is not specified here.
+      description: Historical application ping from client and pong from server; timing policy is not specified here.
       type: object
       properties:
         method: {type: string, enum: [ping, pong]}

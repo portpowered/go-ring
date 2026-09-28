@@ -28,7 +28,7 @@ type recordedDevice struct {
 
 func deviceListExchange(t *testing.T, origin string) replay.Exchange {
 	t.Helper()
-	x, err := replay.LoadExchange(filepath.Join("fixtures", "http", "captured", "device-list.json"))
+	x, err := replay.LoadExchange(filepath.Join("fixtures", "http", "historical", "device-list.json"))
 	require.NoError(t, err)
 	// C1 captures only Accept among request headers; preserve that observed
 	// requirement while allowing the public client to add its normal headers.

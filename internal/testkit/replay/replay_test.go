@@ -219,6 +219,27 @@ func TestWebSocketReplayRejectsUpgradeAndTrailingFrame(t *testing.T) {
 	}
 	badUpgrade.Close()
 
+	for _, tc := range []struct {
+		name    string
+		want    WSHandshake
+		headers http.Header
+	}{
+		{name: "origin", want: WSHandshake{Path: "/", Origin: "https://expected.example"}, headers: http.Header{"Origin": {"https://unexpected.example"}}},
+		{name: "host", want: WSHandshake{Path: "/", Host: "expected.example"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := NewWebSocketServer(nil, time.Second, tc.want)
+			defer server.Close()
+			_, response, dialErr := websocket.DefaultDialer.Dial(server.URL(), tc.headers)
+			if response != nil && response.Body != nil {
+				_ = response.Body.Close()
+			}
+			if dialErr == nil || server.AssertComplete(time.Second) == nil {
+				t.Fatal("mismatched upgrade origin or host was accepted")
+			}
+		})
+	}
+
 	extra := NewWebSocketServer([]WSStep{{Kind: "expect", Frame: "text", Body: []byte(`{"step":1}`)}}, time.Second)
 	defer extra.Close()
 	conn, response, err := websocket.DefaultDialer.Dial(extra.URL(), nil)

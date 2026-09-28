@@ -17,9 +17,59 @@ type capturedSignalingFile struct {
 	Messages []capturedSignalingMessage `json:"messages"`
 }
 
+type syntheticSignalingChannelStep struct {
+	Channel string         `json:"channel"`
+	Body    map[string]any `json:"body"`
+}
+
+type syntheticSignalingChannelTranscript struct {
+	Steps []syntheticSignalingChannelStep `json:"steps"`
+}
+
+func TestSyntheticSignalingTranscriptMatchesEachAsyncAPIChannel(t *testing.T) {
+	path := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "signaling", "synthetic", "paired", "full-session.json")
+	data, err := os.ReadFile(path) // #nosec G304 -- fixed repository-owned synthetic fixture.
+	if err != nil {
+		t.Fatal(err)
+	}
+	var transcript syntheticSignalingChannelTranscript
+	if err := json.Unmarshal(data, &transcript); err != nil {
+		t.Fatal(err)
+	}
+	doc := readYAMLObject(t, filepath.Join(repositoryRoot(t), "api", "asyncapi.yaml"))
+	channels := mapValue(doc["channels"])
+	components := mapValue(doc["components"])
+	messages := mapValue(components["messages"])
+	seen := map[string]bool{}
+	for _, step := range transcript.Steps {
+		channel := mapValue(channels[step.Channel])
+		if channel == nil || seen[step.Channel] {
+			t.Fatalf("unknown or duplicate channel %q", step.Channel)
+		}
+		seen[step.Channel] = true
+		var reference string
+		for _, raw := range mapValue(channel["messages"]) {
+			reference = stringValue(mapValue(raw)["$ref"])
+		}
+		const prefix = "#/components/messages/"
+		if len(reference) <= len(prefix) || reference[:len(prefix)] != prefix {
+			t.Fatalf("channel %s has invalid message reference %q", step.Channel, reference)
+		}
+		name := reference[len(prefix):]
+		payload := mapValue(mapValue(messages[name])["payload"])
+		validator := compileJSONSchema(t, map[string]any{"components": components}, payload)
+		if err := validator.Validate(step.Body); err != nil {
+			t.Errorf("%s synthetic frame violates AsyncAPI: %v", step.Channel, err)
+		}
+	}
+	if len(seen) != len(channels) {
+		t.Fatalf("covered %d of %d AsyncAPI channels", len(seen), len(channels))
+	}
+}
+
 func capturedSignalingMessages(t *testing.T) []capturedSignalingMessage {
 	t.Helper()
-	pattern := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "signaling", "captured", "*.json")
+	pattern := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "signaling", "historical", "*.json")
 	files, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatal(err)

@@ -4,8 +4,10 @@ info:
   version: 0.3.0
   description: >-
     HTTP endpoints for Ring account authentication, devices, settings, recordings,
-    locations, notifications, and signaling. The contract describes documented
-    behavior and is not a complete specification of Ring’s evolving API.
+    locations, notifications, and signaling. Some shapes come from inherited
+    historical fixtures without verifiable capture provenance; synthetic cases
+    are test contracts, not current provider evidence. This is not a complete
+    specification of Ring's evolving API.
 servers:
   - url: https://api.ring.com
     description: Ring API endpoint
@@ -518,7 +520,7 @@ components:
     order: {name: order, in: query, required: false, description: Descending order was recorded; other values may be accepted., schema: {type: string, x-extensible-enum: [desc]}}
     limit: {name: limit, in: query, required: false, description: Positive maximum number of results; 20 was recorded., schema: {type: integer, minimum: 1}}
     capabilities: {name: capabilities, in: query, required: false, description: "Comma-separated capability tokens. Observed tokens are offline_event, vehicle and ringtercom; future tokens are possible.", schema: {type: string, x-known-tokens: [offline_event, vehicle, ringtercom]}}
-    source_ids: {name: source_ids, in: query, required: false, description: Observed query name; value is sanitized in the capture., schema: {type: string}}
+    source_ids: {name: source_ids, in: query, required: false, description: Historical query name; values are syntheticized., schema: {type: string}}
     allowUserOnly: {name: allowUserOnly, in: query, required: false, description: Boolean encoded as a query string; false was recorded., schema: {type: boolean}}
     locationID: {name: locationID, in: query, required: false, schema: {type: string}}
     locationSubscription: {name: locationSubscription, in: query, required: false, schema: {type: string}}
@@ -814,7 +816,7 @@ components:
           additionalProperties: {$ref: '#/components/schemas/DeviceOperationSet'}
       additionalProperties: true
     Device:
-      description: Captured inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
+      description: Historical inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
       type: object
       required:
       - id
@@ -901,10 +903,10 @@ components:
           properties:
             id:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
             account_group_revision_id:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
           additionalProperties: true
         device_resource_id:
           type: string
@@ -918,10 +920,10 @@ components:
           type: boolean
         ring_id:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         shared_at:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         subscribed:
           type: boolean
         subscribed_motions:
@@ -933,13 +935,13 @@ components:
           description: Null in the v3 camera capture; text in a legacy device response.
         active_schedule_uuid:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         alerts:
           type: object
           properties:
             connection:
               type: string
-              description: Online in the captured camera response; offline in a baseline family fixture. Other states remain valid.
+              description: Online in the historical camera response; offline in a baseline family fixture. Other states remain valid.
               x-extensible-enum: [online, offline]
             ota_status:
               type: string
@@ -957,7 +959,7 @@ components:
           - {type: 'null'}
         snooze_settings:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         camera_location_indoor:
           type: boolean
         facing_window:
@@ -976,7 +978,7 @@ components:
           additionalProperties: true
         ext_power_state:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         battery_life:
           description: Ring has returned a percentage, numeric text, and out-of-range hardware values (for example 4081 in a baseline fixture); callers must validate before treating it as a percentage.
           oneOf:
@@ -995,15 +997,15 @@ components:
       type: string
       enum: [doorbots, chimes, stickup_cams, other]
     DoorbellDeviceKind:
-      description: Known doorbell kinds from captured and baseline inventories; unknown kinds remain valid on Device.kind.
+      description: Known doorbell kinds from historical and baseline inventories; unknown kinds remain valid on Device.kind.
       type: string
       enum: [doorbot, doorbell, doorbell_v3, doorbell_v4, doorbell_v5, doorbell_scallop_lite, doorbell_oyster, doorbell_scallop, lpd_v1, lpd_v2, lpd_v3, lpd_v4, jbox_v1, doorbell_graham_cracker, df_doorbell_clownfish, doorbell_portal, cocoa_doorbell, cocoa_doorbell_v2]
     ChimeDeviceKind:
-      description: Known chime kinds from captured and baseline inventories.
+      description: Known chime kinds from historical and baseline inventories.
       type: string
       enum: [chime, chime_v2, chime_pro, chime_pro_v2]
     CameraDeviceKind:
-      description: Known camera kinds from captured and baseline inventories.
+      description: Known camera kinds from historical and baseline inventories.
       type: string
       enum: [hp_cam_v1, floodlight_v2, floodlight_pro, cocoa_floodlight, stickup_cam_mini, stickup_cam_mini_v2, stickup_cam_mini_ptz_v1, stickup_cam_v4, hp_cam_v2, spotlightw_v2, cocoa_spotlight, stickup_cam_longfin, stickup_cam, stickup_cam_v3, stickup_cam_lunar, stickup_cam_elite, stickup_cam_wired, cocoa_camera]
     OtherDeviceKind:
@@ -1031,10 +1033,10 @@ components:
           type: number
           minimum: 0
           maximum: 100
-          description: Seen in other Ring device families; absent from the captured wired camera.
+          description: Seen in other Ring device families; absent from the historical wired camera.
         battery_present:
           type: boolean
-          description: Seen in other Ring device families; absent from the captured wired camera.
+          description: Seen in other Ring device families; absent from the historical wired camera.
         battery_status:
           type: string
         signal_strength:
@@ -1164,7 +1166,7 @@ components:
           type: boolean
         package_warning:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         smart_video_search:
           type: object
           properties:
@@ -1350,7 +1352,7 @@ components:
           additionalProperties: true
         transformer_score:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         video_donation:
           type: object
           properties:
@@ -1391,13 +1393,13 @@ components:
           additionalProperties: true
         automated_siren:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         alexa_plus_greetings:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         remote_access_control:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         ai_labs_daily_clip:
           type: object
           properties:
@@ -1494,10 +1496,10 @@ components:
           additionalProperties: true
         auto_shutoff_device:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         tracklight:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         motion_zone_recommendation:
           type: boolean
         motion_message_enabled:
@@ -1575,7 +1577,7 @@ components:
     VideoRenderingFeature:
       type: object
       properties:
-        max_digital_zoom_level: {type: number, minimum: 0, description: Device-reported maximum digital zoom level; units beyond the capture are not established.}
+        max_digital_zoom_level: {type: number, minimum: 0, description: Device-reported maximum digital zoom level; units beyond the historical fixture are not established.}
       additionalProperties: true
     DeviceLegacySettings:
       type: object
@@ -2125,55 +2127,55 @@ components:
           properties:
             mac_address_ble:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
             max_dynamic_listen_interval:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
             network_diagnosis:
               type: object
               properties:
                 channel_analysis:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 periodic_diagnosis:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 lan_performance:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 tcp_iperf:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 tcp_host:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 tcp_port:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 udp_iperf:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 udp_host:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 udp_port:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
                 udp_bandwidth:
                   type: 'null'
-                  description: Only null was observed in the captured device response; future values are unverified.
+                  description: Only null was observed in the historical device response; future values are unverified.
               additionalProperties: true
             multi_net_pref:
               type: integer
             data_restriction_enabled:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
             mac_address_wifi_24:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
             mac_address_wifi_5:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
           additionalProperties: true
         audio_settings:
           type: object
@@ -2194,7 +2196,7 @@ components:
           - {type: object, additionalProperties: true}
         active_streaming_event_led_enabled:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         enable_vod:
           description: Integer in the v3 camera capture; boolean in legacy family responses.
           oneOf:
@@ -2217,7 +2219,7 @@ components:
               type: integer
             encryption_eligibility_mode:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
             hevc_enabled:
               type: boolean
             recording_24x7_mode:
@@ -2465,17 +2467,17 @@ components:
           additionalProperties: true
         terms_of_service_accepted:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         stark_enabled:
           type: 'null'
-          description: Only null was observed in the captured device response; future values are unverified.
+          description: Only null was observed in the historical device response; future values are unverified.
         motion_announcement:
           type: boolean
         enable_ir_led:
           type: boolean
         power_mode:
           type: string
-          description: Wired in the captured camera response; other power modes remain valid.
+          description: Wired in the historical camera response; other power modes remain valid.
           x-extensible-enum: [wired]
         ptz_settings:
           type: object
@@ -2546,7 +2548,7 @@ components:
               type: integer
             enable_ir:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
             active_motion_filter:
               type: integer
             enable_pir_validation:
@@ -2845,7 +2847,7 @@ components:
               type: integer
             always_on:
               type: 'null'
-              description: Only null was observed in the captured device response; future values are unverified.
+              description: Only null was observed in the historical device response; future values are unverified.
           additionalProperties: true
         flick_elim_recommended_mode:
           type: integer
@@ -2867,7 +2869,7 @@ components:
           additionalProperties: true
       additionalProperties: true
     DeviceOperationSet:
-      description: Operation names are dynamic; captured entries are empty capability descriptors.
+      description: Operation names are dynamic; historical entries are empty capability descriptors.
       type: object
       additionalProperties: {type: object, additionalProperties: true}
     DeviceSettings:
@@ -2899,7 +2901,7 @@ components:
       type: object
       properties:
         pause_ms: {type: integer, minimum: 0, description: Auto-scan pause in milliseconds.}
-        step_size: {type: number, minimum: 0, description: Device-reported auto-scan step size; units are not established by the capture.}
+        step_size: {type: number, minimum: 0, description: Device-reported auto-scan step size; units are not established by the historical fixture.}
       additionalProperties: true
     PTZAxisSettings:
       type: object
@@ -2912,7 +2914,7 @@ components:
       properties:
         max_acceleration: {type: number, minimum: 0, description: Non-negative device-reported acceleration limit; its scale is not established.}
         max_speed: {type: number, minimum: 0, maximum: 1, description: "Device-reported normalized maximum PTZ speed, distinct from a command's requested speed."}
-        step_size: {type: number, minimum: 0, description: Device-reported movement step size; units are not established by the capture.}
+        step_size: {type: number, minimum: 0, description: Device-reported movement step size; units are not established by the historical fixture.}
       additionalProperties: true
     PTZPositions:
       type: object
@@ -2926,7 +2928,7 @@ components:
       properties:
         hdr_enable: {type: boolean}
         hevc_enabled: {type: boolean}
-        brightness: {type: integer, minimum: 0, description: Device-reported brightness level; the capture does not establish a maximum.}
+        brightness: {type: integer, minimum: 0, description: Device-reported brightness level; the historical fixture does not establish a maximum.}
         clip_length_max: {type: integer, minimum: 0, description: Maximum clip duration in seconds.}
         clip_length_min: {type: integer, minimum: 0, description: Minimum clip duration in seconds.}
       additionalProperties: true
@@ -2942,13 +2944,13 @@ components:
       properties:
         duration: {type: integer, minimum: 0, description: Chime duration in seconds.}
         enable: {type: boolean}
-        type: {type: integer, description: Captured chime type code is 2; other numeric codes remain valid., x-extensible-enum: [2]}
+        type: {type: integer, description: Historical chime type code is 2; other numeric codes remain valid., x-extensible-enum: [2]}
       additionalProperties: true
     DeviceSettingsPatch:
       type: object
       minProperties: 1
       description: >-
-        Extensible wire patch. Captured variants include motion_settings,
+        Extensible wire patch. Historical variants include motion_settings,
         video_settings, general_settings, and volume_settings. Additional settings may be available for other device types.
       properties:
         motion_settings: {$ref: '#/components/schemas/MotionSettingsPatch'}
@@ -2997,11 +2999,11 @@ components:
         event_id: {type: string}
         start_time: {type: string, format: date-time}
         end_time: {type: [string, 'null'], format: date-time}
-        event_type: {type: string, description: Captured type is on_demand; other event kinds remain valid., x-extensible-enum: [on_demand]}
-        state: {type: string, description: Captured event state is completed; other states remain valid., x-extensible-enum: [completed]}
+        event_type: {type: string, description: Historical type is on_demand; other event kinds remain valid., x-extensible-enum: [on_demand]}
+        state: {type: string, description: Historical event state is completed; other states remain valid., x-extensible-enum: [completed]}
         duration_ms: {type: integer, minimum: 0, description: Event duration in milliseconds.}
         is_favorite: {type: boolean}
-        recording_status: {type: string, description: Captured recording status is ready; other statuses remain valid., x-extensible-enum: [ready]}
+        recording_status: {type: string, description: Historical recording status is ready; other statuses remain valid., x-extensible-enum: [ready]}
         device: {$ref: '#/components/schemas/TimelineDevice'}
       additionalProperties: true
     TimelineDevice:
@@ -3031,7 +3033,7 @@ components:
       type: object
       properties:
         id: {type: string}
-        type: {type: string, description: Captured feed item type is EVENT; other types remain valid., x-extensible-enum: [EVENT]}
+        type: {type: string, description: Historical feed item type is EVENT; other types remain valid., x-extensible-enum: [EVENT]}
       additionalProperties: true
     LocationGroupDevices:
       type: object
@@ -3046,7 +3048,7 @@ components:
         is_owner: {type: boolean}
       additionalProperties: true
     LocationGroup:
-      description: Group entries were empty or null in the capture; identity fields follow the baseline fixtures.
+      description: Group entries were empty or null in the historical fixture; identity fields follow the baseline fixtures.
       type: object
       properties:
         id: {type: string}

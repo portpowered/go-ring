@@ -521,7 +521,7 @@ type AuthorizationCodeGrant struct {
 // AuthorizationCodeGrantGrantType defines model for AuthorizationCodeGrant.GrantType.
 type AuthorizationCodeGrantGrantType string
 
-// CameraDeviceKind Known camera kinds from captured and baseline inventories.
+// CameraDeviceKind Known camera kinds from historical and baseline inventories.
 type CameraDeviceKind string
 
 // CapturedTickets defines model for CapturedTickets.
@@ -533,7 +533,7 @@ type CapturedTickets struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// ChimeDeviceKind Known chime kinds from captured and baseline inventories.
+// ChimeDeviceKind Known chime kinds from historical and baseline inventories.
 type ChimeDeviceKind string
 
 // ChimeSettings defines model for ChimeSettings.
@@ -542,7 +542,7 @@ type ChimeSettings struct {
 	Duration *int  `json:"duration,omitempty"`
 	Enable   *bool `json:"enable,omitempty"`
 
-	// Type Captured chime type code is 2; other numeric codes remain valid.
+	// Type Historical chime type code is 2; other numeric codes remain valid.
 	Type                 *int                   `json:"type,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -574,9 +574,9 @@ type ClientSessionRegistration_Device struct {
 	AdditionalProperties map[string]interface{}                    `json:"-"`
 }
 
-// Device Captured inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
+// Device Historical inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
 type Device struct {
-	// ActiveScheduleUuid Only null was observed in the captured device response; future values are unverified.
+	// ActiveScheduleUuid Only null was observed in the historical device response; future values are unverified.
 	ActiveScheduleUuid any            `json:"active_schedule_uuid,omitempty"`
 	Address            *string        `json:"address,omitempty"`
 	Alerts             *Device_Alerts `json:"alerts,omitempty"`
@@ -594,7 +594,7 @@ type Device struct {
 	DeviceResourceId     *string                 `json:"device_resource_id,omitempty"`
 	EncryptionGroup      *Device_EncryptionGroup `json:"encryption_group,omitempty"`
 
-	// ExtPowerState Only null was observed in the captured device response; future values are unverified.
+	// ExtPowerState Only null was observed in the historical device response; future values are unverified.
 	ExtPowerState      any   `json:"ext_power_state,omitempty"`
 	ExternalConnection *bool `json:"external_connection,omitempty"`
 	FacingWindow       *bool `json:"facing_window,omitempty"`
@@ -623,7 +623,7 @@ type Device struct {
 	Owned        *bool        `json:"owned,omitempty"`
 	Owner        *DeviceOwner `json:"owner,omitempty"`
 
-	// RingId Only null was observed in the captured device response; future values are unverified.
+	// RingId Only null was observed in the historical device response; future values are unverified.
 	RingId any `json:"ring_id,omitempty"`
 
 	// RingNetId Null in the v3 camera capture; text in a legacy device response.
@@ -631,11 +631,11 @@ type Device struct {
 	SchemaId  *string               `json:"schema_id,omitempty"`
 	Settings  *DeviceLegacySettings `json:"settings,omitempty"`
 
-	// SharedAt Only null was observed in the captured device response; future values are unverified.
+	// SharedAt Only null was observed in the historical device response; future values are unverified.
 	SharedAt    any                 `json:"shared_at,omitempty"`
 	SirenStatus *Device_SirenStatus `json:"siren_status,omitempty"`
 
-	// SnoozeSettings Only null was observed in the captured device response; future values are unverified.
+	// SnoozeSettings Only null was observed in the historical device response; future values are unverified.
 	SnoozeSettings    any   `json:"snooze_settings,omitempty"`
 	Stolen            *bool `json:"stolen,omitempty"`
 	Subscribed        *bool `json:"subscribed,omitempty"`
@@ -652,7 +652,7 @@ type Device struct {
 
 // Device_Alerts defines model for Device.Alerts.
 type Device_Alerts struct {
-	// Connection Online in the captured camera response; offline in a baseline family fixture. Other states remain valid.
+	// Connection Online in the historical camera response; offline in a baseline family fixture. Other states remain valid.
 	Connection           *string                `json:"connection,omitempty"`
 	OtaStatus            *string                `json:"ota_status,omitempty"`
 	PrivacyCoverEnabled  *bool                  `json:"privacy_cover_enabled,omitempty"`
@@ -684,10 +684,10 @@ type Device_BatteryLife2 struct {
 
 // Device_EncryptionGroup defines model for Device.EncryptionGroup.
 type Device_EncryptionGroup struct {
-	// AccountGroupRevisionId Only null was observed in the captured device response; future values are unverified.
+	// AccountGroupRevisionId Only null was observed in the historical device response; future values are unverified.
 	AccountGroupRevisionId any `json:"account_group_revision_id,omitempty"`
 
-	// Id Only null was observed in the captured device response; future values are unverified.
+	// Id Only null was observed in the historical device response; future values are unverified.
 	Id                   any                    `json:"id,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -717,7 +717,7 @@ type DeviceCommandCommandName string
 
 // DeviceDetail defines model for DeviceDetail.
 type DeviceDetail struct {
-	// Device Captured inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
+	// Device Historical inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
 	Device               Device                         `json:"device"`
 	DeviceOperationSet   *map[string]DeviceOperationSet `json:"device_operation_set,omitempty"`
 	AdditionalProperties map[string]interface{}         `json:"-"`
@@ -732,16 +732,16 @@ type DeviceFeatures struct {
 	AiLabsDailyClip        *DeviceFeatures_AiLabsDailyClip        `json:"ai_labs_daily_clip,omitempty"`
 	AiLabsMemorableMoments *DeviceFeatures_AiLabsMemorableMoments `json:"ai_labs_memorable_moments,omitempty"`
 
-	// AlexaPlusGreetings Only null was observed in the captured device response; future values are unverified.
+	// AlexaPlusGreetings Only null was observed in the historical device response; future values are unverified.
 	AlexaPlusGreetings      any   `json:"alexa_plus_greetings,omitempty"`
 	AnimalDetectionEligible *bool `json:"animal_detection_eligible,omitempty"`
 
-	// AutoShutoffDevice Only null was observed in the captured device response; future values are unverified.
+	// AutoShutoffDevice Only null was observed in the historical device response; future values are unverified.
 	AutoShutoffDevice any                  `json:"auto_shutoff_device,omitempty"`
 	AutoTrack         *FeatureAvailability `json:"auto_track,omitempty"`
 	AutoZoomTrack     *FeatureAvailability `json:"auto_zoom_track,omitempty"`
 
-	// AutomatedSiren Only null was observed in the captured device response; future values are unverified.
+	// AutomatedSiren Only null was observed in the historical device response; future values are unverified.
 	AutomatedSiren                    any                                               `json:"automated_siren,omitempty"`
 	CfesEligible                      *bool                                             `json:"cfes_eligible,omitempty"`
 	ChimeSettings                     *DeviceFeatures_ChimeSettings                     `json:"chime_settings,omitempty"`
@@ -755,14 +755,14 @@ type DeviceFeatures struct {
 	NetworkBackupHost                 *DeviceFeatures_NetworkBackupHost                 `json:"network_backup_host,omitempty"`
 	OriginalVideoQualityDownloadOffer *DeviceFeatures_OriginalVideoQualityDownloadOffer `json:"original_video_quality_download_offer,omitempty"`
 
-	// PackageWarning Only null was observed in the captured device response; future values are unverified.
+	// PackageWarning Only null was observed in the historical device response; future values are unverified.
 	PackageWarning        any                                  `json:"package_warning,omitempty"`
 	PersonIdentification  *DeviceFeatures_PersonIdentification `json:"person_identification,omitempty"`
 	PropertyView          *DeviceFeatures_PropertyView         `json:"property_view,omitempty"`
 	PtzSetupComplete      *bool                                `json:"ptz_setup_complete,omitempty"`
 	Recording24x7Eligible *bool                                `json:"recording_24x7_eligible,omitempty"`
 
-	// RemoteAccessControl Only null was observed in the captured device response; future values are unverified.
+	// RemoteAccessControl Only null was observed in the historical device response; future values are unverified.
 	RemoteAccessControl            any                                   `json:"remote_access_control,omitempty"`
 	RetinalTuning                  *DeviceFeatures_RetinalTuning         `json:"retinal_tuning,omitempty"`
 	RichNotificationsEligible      *bool                                 `json:"rich_notifications_eligible,omitempty"`
@@ -776,10 +776,10 @@ type DeviceFeatures struct {
 	SmartVideoDescription          *DeviceFeatures_SmartVideoDescription `json:"smart_video_description,omitempty"`
 	SmartVideoSearch               *DeviceFeatures_SmartVideoSearch      `json:"smart_video_search,omitempty"`
 
-	// Tracklight Only null was observed in the captured device response; future values are unverified.
+	// Tracklight Only null was observed in the historical device response; future values are unverified.
 	Tracklight any `json:"tracklight,omitempty"`
 
-	// TransformerScore Only null was observed in the captured device response; future values are unverified.
+	// TransformerScore Only null was observed in the historical device response; future values are unverified.
 	TransformerScore         any                            `json:"transformer_score,omitempty"`
 	UnusualAlert             *DeviceFeatures_UnusualAlert   `json:"unusual_alert,omitempty"`
 	VehicleDetectionEligible *bool                          `json:"vehicle_detection_eligible,omitempty"`
@@ -1109,13 +1109,13 @@ type DeviceHealth struct {
 	BatteryError      *bool `json:"battery_error,omitempty"`
 	BatteryLevel      *int  `json:"battery_level,omitempty"`
 
-	// BatteryPercentage Seen in other Ring device families; absent from the captured wired camera.
+	// BatteryPercentage Seen in other Ring device families; absent from the historical wired camera.
 	BatteryPercentage *float32 `json:"battery_percentage,omitempty"`
 
 	// BatteryPercentageCategory The capture reports unknown; other battery categories remain valid.
 	BatteryPercentageCategory *string `json:"battery_percentage_category,omitempty"`
 
-	// BatteryPresent Seen in other Ring device families; absent from the captured wired camera.
+	// BatteryPresent Seen in other Ring device families; absent from the historical wired camera.
 	BatteryPresent           *bool    `json:"battery_present,omitempty"`
 	BatteryStatus            *string  `json:"battery_status,omitempty"`
 	BatteryVoltageCategory   *string  `json:"battery_voltage_category,omitempty"`
@@ -1169,7 +1169,7 @@ type DeviceHealth struct {
 
 // DeviceLegacySettings defines model for DeviceLegacySettings.
 type DeviceLegacySettings struct {
-	// ActiveStreamingEventLedEnabled Only null was observed in the captured device response; future values are unverified.
+	// ActiveStreamingEventLedEnabled Only null was observed in the historical device response; future values are unverified.
 	ActiveStreamingEventLedEnabled       any                                          `json:"active_streaming_event_led_enabled,omitempty"`
 	AdvancedMotionDetectionEnabled       *bool                                        `json:"advanced_motion_detection_enabled,omitempty"`
 	AdvancedMotionDetectionHumanOnlyMode *bool                                        `json:"advanced_motion_detection_human_only_mode,omitempty"`
@@ -1216,7 +1216,7 @@ type DeviceLegacySettings struct {
 	PeopleDetectionEligible    *bool                                            `json:"people_detection_eligible,omitempty"`
 	PirSensitivity1            *int                                             `json:"pir_sensitivity_1,omitempty"`
 
-	// PowerMode Wired in the captured camera response; other power modes remain valid.
+	// PowerMode Wired in the historical camera response; other power modes remain valid.
 	PowerMode                        *string                              `json:"power_mode,omitempty"`
 	PtzSettings                      *DeviceLegacySettings_PtzSettings    `json:"ptz_settings,omitempty"`
 	RichNotificationsBillingEligible *bool                                `json:"rich_notifications_billing_eligible,omitempty"`
@@ -1225,11 +1225,11 @@ type DeviceLegacySettings struct {
 	ServerSettings                   *DeviceLegacySettings_ServerSettings `json:"server_settings,omitempty"`
 	SheilaSettings                   *DeviceLegacySettings_SheilaSettings `json:"sheila_settings,omitempty"`
 
-	// StarkEnabled Only null was observed in the captured device response; future values are unverified.
+	// StarkEnabled Only null was observed in the historical device response; future values are unverified.
 	StarkEnabled  any   `json:"stark_enabled,omitempty"`
 	StarkEnrolled *bool `json:"stark_enrolled,omitempty"`
 
-	// TermsOfServiceAccepted Only null was observed in the captured device response; future values are unverified.
+	// TermsOfServiceAccepted Only null was observed in the historical device response; future values are unverified.
 	TermsOfServiceAccepted    any                                 `json:"terms_of_service_accepted,omitempty"`
 	UserSpecifiedRecordingTtl *int                                `json:"user_specified_recording_ttl,omitempty"`
 	VideoSettings             *DeviceLegacySettings_VideoSettings `json:"video_settings,omitempty"`
@@ -1998,7 +1998,7 @@ type DeviceLegacySettings_HybridMotionZones struct {
 	AdvancedPirMotionZones     *DeviceLegacySettings_HybridMotionZones_AdvancedPirMotionZones `json:"advanced_pir_motion_zones,omitempty"`
 	EnableAudio                *bool                                                          `json:"enable_audio,omitempty"`
 
-	// EnableIr Only null was observed in the captured device response; future values are unverified.
+	// EnableIr Only null was observed in the historical device response; future values are unverified.
 	EnableIr                   any                                           `json:"enable_ir,omitempty"`
 	EnablePirValidation        *bool                                         `json:"enable_pir_validation,omitempty"`
 	EnableRlmd                 *bool                                         `json:"enable_rlmd,omitempty"`
@@ -2113,7 +2113,7 @@ type DeviceLegacySettings_IgnoreZones struct {
 
 // DeviceLegacySettings_LightSnoozeSettings defines model for DeviceLegacySettings.LightSnoozeSettings.
 type DeviceLegacySettings_LightSnoozeSettings struct {
-	// AlwaysOn Only null was observed in the captured device response; future values are unverified.
+	// AlwaysOn Only null was observed in the historical device response; future values are unverified.
 	AlwaysOn             any                    `json:"always_on,omitempty"`
 	Duration             *int                   `json:"duration,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
@@ -2147,53 +2147,53 @@ type DeviceLegacySettings_MotionZones struct {
 
 // DeviceLegacySettings_NetworkSettings_NetworkDiagnosis defines model for DeviceLegacySettings.NetworkSettings.NetworkDiagnosis.
 type DeviceLegacySettings_NetworkSettings_NetworkDiagnosis struct {
-	// ChannelAnalysis Only null was observed in the captured device response; future values are unverified.
+	// ChannelAnalysis Only null was observed in the historical device response; future values are unverified.
 	ChannelAnalysis any `json:"channel_analysis,omitempty"`
 
-	// LanPerformance Only null was observed in the captured device response; future values are unverified.
+	// LanPerformance Only null was observed in the historical device response; future values are unverified.
 	LanPerformance any `json:"lan_performance,omitempty"`
 
-	// PeriodicDiagnosis Only null was observed in the captured device response; future values are unverified.
+	// PeriodicDiagnosis Only null was observed in the historical device response; future values are unverified.
 	PeriodicDiagnosis any `json:"periodic_diagnosis,omitempty"`
 
-	// TcpHost Only null was observed in the captured device response; future values are unverified.
+	// TcpHost Only null was observed in the historical device response; future values are unverified.
 	TcpHost any `json:"tcp_host,omitempty"`
 
-	// TcpIperf Only null was observed in the captured device response; future values are unverified.
+	// TcpIperf Only null was observed in the historical device response; future values are unverified.
 	TcpIperf any `json:"tcp_iperf,omitempty"`
 
-	// TcpPort Only null was observed in the captured device response; future values are unverified.
+	// TcpPort Only null was observed in the historical device response; future values are unverified.
 	TcpPort any `json:"tcp_port,omitempty"`
 
-	// UdpBandwidth Only null was observed in the captured device response; future values are unverified.
+	// UdpBandwidth Only null was observed in the historical device response; future values are unverified.
 	UdpBandwidth any `json:"udp_bandwidth,omitempty"`
 
-	// UdpHost Only null was observed in the captured device response; future values are unverified.
+	// UdpHost Only null was observed in the historical device response; future values are unverified.
 	UdpHost any `json:"udp_host,omitempty"`
 
-	// UdpIperf Only null was observed in the captured device response; future values are unverified.
+	// UdpIperf Only null was observed in the historical device response; future values are unverified.
 	UdpIperf any `json:"udp_iperf,omitempty"`
 
-	// UdpPort Only null was observed in the captured device response; future values are unverified.
+	// UdpPort Only null was observed in the historical device response; future values are unverified.
 	UdpPort              any                    `json:"udp_port,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // DeviceLegacySettings_NetworkSettings defines model for DeviceLegacySettings.NetworkSettings.
 type DeviceLegacySettings_NetworkSettings struct {
-	// DataRestrictionEnabled Only null was observed in the captured device response; future values are unverified.
+	// DataRestrictionEnabled Only null was observed in the historical device response; future values are unverified.
 	DataRestrictionEnabled any `json:"data_restriction_enabled,omitempty"`
 
-	// MacAddressBle Only null was observed in the captured device response; future values are unverified.
+	// MacAddressBle Only null was observed in the historical device response; future values are unverified.
 	MacAddressBle any `json:"mac_address_ble,omitempty"`
 
-	// MacAddressWifi24 Only null was observed in the captured device response; future values are unverified.
+	// MacAddressWifi24 Only null was observed in the historical device response; future values are unverified.
 	MacAddressWifi24 any `json:"mac_address_wifi_24,omitempty"`
 
-	// MacAddressWifi5 Only null was observed in the captured device response; future values are unverified.
+	// MacAddressWifi5 Only null was observed in the historical device response; future values are unverified.
 	MacAddressWifi5 any `json:"mac_address_wifi_5,omitempty"`
 
-	// MaxDynamicListenInterval Only null was observed in the captured device response; future values are unverified.
+	// MaxDynamicListenInterval Only null was observed in the historical device response; future values are unverified.
 	MaxDynamicListenInterval any                                                    `json:"max_dynamic_listen_interval,omitempty"`
 	MultiNetPref             *int                                                   `json:"multi_net_pref,omitempty"`
 	NetworkDiagnosis         *DeviceLegacySettings_NetworkSettings_NetworkDiagnosis `json:"network_diagnosis,omitempty"`
@@ -2310,7 +2310,7 @@ type DeviceLegacySettings_SheilaSettings struct {
 
 // DeviceLegacySettings_VideoSettings defines model for DeviceLegacySettings.VideoSettings.
 type DeviceLegacySettings_VideoSettings struct {
-	// EncryptionEligibilityMode Only null was observed in the captured device response; future values are unverified.
+	// EncryptionEligibilityMode Only null was observed in the historical device response; future values are unverified.
 	EncryptionEligibilityMode any                    `json:"encryption_eligibility_mode,omitempty"`
 	EncryptionEnabled         *bool                  `json:"encryption_enabled,omitempty"`
 	EncryptionMethod          *int                   `json:"encryption_method,omitempty"`
@@ -2357,7 +2357,7 @@ type DeviceList struct {
 	AdditionalProperties map[string]interface{}         `json:"-"`
 }
 
-// DeviceOperationSet Operation names are dynamic; captured entries are empty capability descriptors.
+// DeviceOperationSet Operation names are dynamic; historical entries are empty capability descriptors.
 type DeviceOperationSet map[string]map[string]interface{}
 
 // DeviceOwner defines model for DeviceOwner.
@@ -2392,7 +2392,7 @@ type DeviceSettings struct {
 	AdditionalProperties map[string]JsonValue `json:"-"`
 }
 
-// DeviceSettingsPatch Extensible wire patch. Captured variants include motion_settings, video_settings, general_settings, and volume_settings. Additional settings may be available for other device types.
+// DeviceSettingsPatch Extensible wire patch. Historical variants include motion_settings, video_settings, general_settings, and volume_settings. Additional settings may be available for other device types.
 type DeviceSettingsPatch struct {
 	GeneralSettings      *SettingsObject           `json:"general_settings,omitempty"`
 	MotionSettings       *MotionSettingsPatch      `json:"motion_settings,omitempty"`
@@ -2408,7 +2408,7 @@ type DeviceTimeline struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// DoorbellDeviceKind Known doorbell kinds from captured and baseline inventories; unknown kinds remain valid on Device.kind.
+// DoorbellDeviceKind Known doorbell kinds from historical and baseline inventories; unknown kinds remain valid on Device.kind.
 type DoorbellDeviceKind string
 
 // ExtensibleObject defines model for ExtensibleObject.
@@ -2456,7 +2456,7 @@ type HistoryDevices struct {
 type HistoryFeedItem struct {
 	Id *string `json:"id,omitempty"`
 
-	// Type Captured feed item type is EVENT; other types remain valid.
+	// Type Historical feed item type is EVENT; other types remain valid.
 	Type                 *string                `json:"type,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -2568,7 +2568,7 @@ type LocationDetail struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// LocationGroup Group entries were empty or null in the capture; identity fields follow the baseline fixtures.
+// LocationGroup Group entries were empty or null in the historical fixture; identity fields follow the baseline fixtures.
 type LocationGroup struct {
 	Id                   *string                `json:"id,omitempty"`
 	Name                 *string                `json:"name,omitempty"`
@@ -2656,7 +2656,7 @@ type PTZAutoScan struct {
 	// PauseMs Auto-scan pause in milliseconds.
 	PauseMs *int `json:"pause_ms,omitempty"`
 
-	// StepSize Device-reported auto-scan step size; units are not established by the capture.
+	// StepSize Device-reported auto-scan step size; units are not established by the historical fixture.
 	StepSize             *float32               `json:"step_size,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -2676,7 +2676,7 @@ type PTZMovement struct {
 	// MaxSpeed Device-reported normalized maximum PTZ speed, distinct from a command's requested speed.
 	MaxSpeed *float32 `json:"max_speed,omitempty"`
 
-	// StepSize Device-reported movement step size; units are not established by the capture.
+	// StepSize Device-reported movement step size; units are not established by the historical fixture.
 	StepSize             *float32               `json:"step_size,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -2831,17 +2831,17 @@ type TimelineEvent struct {
 	EndTime    *time.Time `json:"end_time,omitempty"`
 	EventId    string     `json:"event_id"`
 
-	// EventType Captured type is on_demand; other event kinds remain valid.
+	// EventType Historical type is on_demand; other event kinds remain valid.
 	EventType  string `json:"event_type"`
 	IsFavorite *bool  `json:"is_favorite,omitempty"`
 
-	// RecordingStatus Captured recording status is ready; other statuses remain valid.
+	// RecordingStatus Historical recording status is ready; other statuses remain valid.
 	RecordingStatus *string   `json:"recording_status,omitempty"`
 	Schema          *string   `json:"schema,omitempty"`
 	SourceId        *string   `json:"source_id,omitempty"`
 	StartTime       time.Time `json:"start_time"`
 
-	// State Captured event state is completed; other states remain valid.
+	// State Historical event state is completed; other states remain valid.
 	State                *string                `json:"state,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -2858,14 +2858,14 @@ type TwoFactorFormRememberMe string
 
 // VideoRenderingFeature defines model for VideoRenderingFeature.
 type VideoRenderingFeature struct {
-	// MaxDigitalZoomLevel Device-reported maximum digital zoom level; units beyond the capture are not established.
+	// MaxDigitalZoomLevel Device-reported maximum digital zoom level; units beyond the historical fixture are not established.
 	MaxDigitalZoomLevel  *float32               `json:"max_digital_zoom_level,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // VideoSettings defines model for VideoSettings.
 type VideoSettings struct {
-	// Brightness Device-reported brightness level; the capture does not establish a maximum.
+	// Brightness Device-reported brightness level; the historical fixture does not establish a maximum.
 	Brightness *int `json:"brightness,omitempty"`
 
 	// ClipLengthMax Maximum clip duration in seconds.
@@ -3044,7 +3044,7 @@ type GetDeviceTimelineParams struct {
 
 // GetHistoryDevicesParams defines parameters for GetHistoryDevices.
 type GetHistoryDevicesParams struct {
-	// SourceIds Observed query name; value is sanitized in the capture.
+	// SourceIds Historical query name; values are syntheticized.
 	SourceIds *SourceIds `form:"source_ids,omitempty" json:"source_ids,omitempty"`
 
 	// Capabilities Comma-separated capability tokens. Observed tokens are offline_event, vehicle and ringtercom; future tokens are possible.

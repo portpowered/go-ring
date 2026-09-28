@@ -47,7 +47,7 @@ func TestCapturedFixturesMatchTheirSchemaContracts(t *testing.T) {
 	httpSchema := compileFixtureSchema(t, "http-exchange.schema.json")
 	sessionSchema := compileFixtureSchema(t, "session.schema.json")
 	compileFixtureSchema(t, "shape-regression.schema.json")
-	for _, path := range filesUnder(t, filepath.Join(capturedFixtureRoot, "http", "captured"), true) {
+	for _, path := range filesUnder(t, filepath.Join(capturedFixtureRoot, "http", "historical"), true) {
 		if filepath.Ext(path) != ".json" {
 			continue
 		}
@@ -55,7 +55,7 @@ func TestCapturedFixturesMatchTheirSchemaContracts(t *testing.T) {
 			t.Errorf("%s: %v", filepath.Base(path), err)
 		}
 	}
-	for _, path := range filesUnder(t, filepath.Join(capturedFixtureRoot, "signaling", "captured"), false) {
+	for _, path := range filesUnder(t, filepath.Join(capturedFixtureRoot, "signaling", "historical"), false) {
 		if filepath.Ext(path) != ".json" {
 			continue
 		}
@@ -97,7 +97,7 @@ func TestShapeRegressionSchemaPinsNullArrayAndIdentityTypes(t *testing.T) {
 }
 
 func TestCapturedVariantsCoverDistinctOperations(t *testing.T) {
-	variants := filesUnder(t, filepath.Join(capturedFixtureRoot, "http", "captured", "variants"), false)
+	variants := filesUnder(t, filepath.Join(capturedFixtureRoot, "http", "historical", "variants"), false)
 	if len(variants) < 10 {
 		t.Fatalf("found %d variant fixtures, want at least 10", len(variants))
 	}
@@ -117,7 +117,7 @@ func TestCapturedVariantsCoverDistinctOperations(t *testing.T) {
 }
 
 func TestCapturedDeviceRPCCapabilitiesKeepProtocolNames(t *testing.T) {
-	fixture := decodeFixtureFile(t, filepath.Join(capturedFixtureRoot, "http", "captured", "device-list.json"))
+	fixture := decodeFixtureFile(t, filepath.Join(capturedFixtureRoot, "http", "historical", "device-list.json"))
 	response := testObject(t, testValue(t, fixture, "response"))
 	var commandArrays [][]any
 	collectRPCCommands(testValue(t, response, "body"), &commandArrays)
@@ -140,12 +140,12 @@ func TestCapturedDeviceRPCCapabilitiesKeepProtocolNames(t *testing.T) {
 }
 
 func TestCapturedPathsKeepVersionSegmentsAndTemplateIdentifiers(t *testing.T) {
-	settings := decodeFixtureFile(t, filepath.Join(capturedFixtureRoot, "http", "captured", "device-settings-patch.json"))
+	settings := decodeFixtureFile(t, filepath.Join(capturedFixtureRoot, "http", "historical", "device-settings-patch.json"))
 	request := testObject(t, testValue(t, settings, "request"))
 	if got := testValue(t, request, "path"); got != "/devices/v1/devices/{device_id}/settings" {
 		t.Fatalf("versioned device settings path changed: %v", got)
 	}
-	for _, path := range filesUnder(t, filepath.Join(capturedFixtureRoot, "http", "captured"), true) {
+	for _, path := range filesUnder(t, filepath.Join(capturedFixtureRoot, "http", "historical"), true) {
 		if filepath.Ext(path) != ".json" {
 			continue
 		}
@@ -160,7 +160,7 @@ func TestCapturedPathsKeepVersionSegmentsAndTemplateIdentifiers(t *testing.T) {
 
 func TestCapturedSessionsKeepFullConversationShapes(t *testing.T) {
 	for _, test := range []struct{ flowNumber, want int }{{21, 254}, {402, 243}} {
-		path := filepath.Join(capturedFixtureRoot, "signaling", "captured", fmt.Sprintf("flow-%d.json", test.flowNumber))
+		path := filepath.Join(capturedFixtureRoot, "signaling", "historical", fmt.Sprintf("flow-%d.json", test.flowNumber))
 		fixture := decodeFixtureFile(t, path)
 		messages := testValue(t, fixture, "messages").([]any)
 		if len(messages) != test.want {
@@ -217,7 +217,7 @@ func validateFixtureFile(path string, schema *jsonschema.Schema) error {
 
 func capturedJSONFiles(t *testing.T) []string {
 	t.Helper()
-	files := append(filesUnder(t, filepath.Join(capturedFixtureRoot, "http", "captured"), true), filesUnder(t, filepath.Join(capturedFixtureRoot, "signaling", "captured"), false)...)
+	files := append(filesUnder(t, filepath.Join(capturedFixtureRoot, "http", "historical"), true), filesUnder(t, filepath.Join(capturedFixtureRoot, "signaling", "historical"), false)...)
 	filtered := files[:0]
 	for _, path := range files {
 		if filepath.Ext(path) == ".json" {

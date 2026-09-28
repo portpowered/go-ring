@@ -14,11 +14,12 @@ arbitrary settings map. History kind stays an open string because the server
 may introduce new recording kinds.
 
 The legacy account-event WebSocket has no captured wire schema in this
-repository and remains separate from the captured signaling protocol. Its
+repository and remains separate from the historical signaling examples. Its
 transport passes through decoded JSON; `pkg/ring` projects that data into the
 public `Event` model.
 
-The OpenAPI files describe captured HTTP responses and public SDK models.
+The OpenAPI files describe HTTP responses from historical and synthetic
+examples and public SDK models.
 `asyncapi.yaml` describes signaling frames. Each schema
 names observed values without treating one recording as the complete set of
 possible future vendor values.

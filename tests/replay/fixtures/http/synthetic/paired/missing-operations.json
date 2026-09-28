@@ -1,0 +1,579 @@
+[
+  {
+    "operation_id": "beginOrContinueOAuthAuthorization",
+    "request": {
+      "method": "GET",
+      "origin": "https://oauth.ring.com",
+      "path": "/oauth/v2/authorize",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "text/html"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "body": "<html>synthetic sign-in</html>",
+      "json": false
+    }
+  },
+  {
+    "operation_id": "submitOAuthCredentials",
+    "request": {
+      "method": "POST",
+      "origin": "https://oauth.ring.com",
+      "path": "/oauth/v2/signin",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/x-www-form-urlencoded"
+        ]
+      },
+      "headers_mode": "required",
+      "body": "csrf-token=synthetic-csrf&password=synthetic-password&username=synthetic-user",
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "tsv_state": "pending"
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "verifyOAuthTwoFactorCode",
+    "request": {
+      "method": "POST",
+      "origin": "https://oauth.ring.com",
+      "path": "/oauth/v2/2fa/verify",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/x-www-form-urlencoded"
+        ]
+      },
+      "headers_mode": "required",
+      "body": "2fa_code=123456&csrf-token=synthetic-csrf&remember_me=false",
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "verified": true
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "exchangeOrRefreshOAuthToken",
+    "request": {
+      "method": "POST",
+      "origin": "https://oauth.ring.com",
+      "path": "/oauth/token",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/x-www-form-urlencoded"
+        ]
+      },
+      "headers_mode": "required",
+      "body": "client_id=synthetic-client&code=synthetic-code&code_verifier=synthetic-verifier&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fsynthetic.example%2Fcallback",
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "access_token": "synthetic-access",
+        "refresh_token": "synthetic-refresh",
+        "token_type": "Bearer",
+        "expires_in": 3600
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "registerClientSession",
+    "request": {
+      "method": "POST",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/session",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": {
+        "device": {
+          "hardware_id": "synthetic-hardware",
+          "metadata": {
+            "api_version": 11,
+            "device_model": "synthetic-model"
+          },
+          "os": "android"
+        }
+      },
+      "json": true
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "registered": true
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "turnFloodlightOff",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/doorbots/1000/floodlight_light_off",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "success": true
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getLegacyDeviceHealth",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/ring_devices/1000/health",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "battery_level": 75,
+        "signal_strength": -50
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getLegacyDeviceHistory",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/doorbots/1000/history",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": [],
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getActiveDings",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/dings/active",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": [],
+      "json": true
+    }
+  },
+  {
+    "operation_id": "streamRecording",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/dings/1000/recording",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "video/mp4"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "video/mp4"
+        ]
+      },
+      "body": "synthetic-mp4-bytes",
+      "json": false
+    }
+  },
+  {
+    "operation_id": "getLegacyRecordingShareURL",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/dings/1000/share/play",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "url": "https://synthetic.example/recording/1000"
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "refreshLegacySnapshotTimestamp",
+    "request": {
+      "method": "POST",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/snapshots/timestamps",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Content-Type": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": {
+        "doorbot_ids": [
+          1000
+        ]
+      },
+      "json": true
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "timestamps": [
+          {
+            "timestamp": 1700000000
+          }
+        ]
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "getLegacySnapshotImage",
+    "request": {
+      "method": "GET",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/snapshots/image/1000",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "image/jpeg"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "image/jpeg"
+        ]
+      },
+      "body": "synthetic-jpeg-bytes",
+      "json": false
+    }
+  },
+  {
+    "operation_id": "setChimeVolume",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/chimes/1000",
+      "query": [
+        {
+          "name": "chime[description]",
+          "value": "synthetic chime"
+        },
+        {
+          "name": "chime[settings][volume]",
+          "value": "5"
+        }
+      ],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "success": true
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "updateLegacyDoorbotControls",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/doorbots/1000",
+      "query": [
+        {
+          "name": "doorbot[description]",
+          "value": "synthetic doorbell"
+        }
+      ],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "success": true
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "testChimeSound",
+    "request": {
+      "method": "POST",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/chimes/1000/play_sound",
+      "query": [
+        {
+          "name": "kind",
+          "value": "ding"
+        }
+      ],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "success": true
+      },
+      "json": true
+    }
+  },
+  {
+    "operation_id": "turnFloodlightOn",
+    "request": {
+      "method": "PUT",
+      "origin": "https://api.ring.com",
+      "path": "/clients_api/doorbots/1000/floodlight_light_on",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "application/json"
+        ],
+        "Authorization": [
+          "Bearer synthetic-access"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      },
+      "body": {
+        "success": true
+      },
+      "json": true
+    }
+  }
+]

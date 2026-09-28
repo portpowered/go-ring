@@ -52,7 +52,7 @@ func portableSessionCases(t *testing.T) map[string]json.RawMessage {
 
 func recordedLiveView(t *testing.T) (string, map[string]json.RawMessage) {
 	t.Helper()
-	r, err := replay.LoadSessionRecording(filepath.Join("fixtures", "signaling", "captured", "flow-402.json"))
+	r, err := replay.LoadSessionRecording(filepath.Join("fixtures", "signaling", "historical", "flow-402.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

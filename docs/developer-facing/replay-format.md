@@ -1,14 +1,18 @@
-# Recorded HTTP and signaling fixtures
+# HTTP and signaling replay fixtures
 
-The checked-in recordings under `tests/replay/fixtures` contain sanitized HTTP
-exchanges and ordered WebSocket application messages. They preserve observed
-request/response fields, message directions, and JSON bodies. They do not carry
-manifests, provenance digests, capture timestamps, environment labels, or extraction
-metadata. Synthetic identity replacements are consistent within each session.
+The inherited HTTP pairs and WebSocket application messages under
+`tests/replay/fixtures/*/historical` have no verifiable source or UTC capture
+date. They preserve request/response fields, message directions, and JSON
+bodies as historical regression inputs. They are not current provider evidence.
+The new pairs under `http/synthetic/paired/` are authored examples. Synthetic
+identity replacements are consistent within each session.
+`signaling/synthetic/paired/full-session.json` holds a separately authored
+upgrade expectation and bidirectional transcript covering all 17 AsyncAPI
+channels. The protocol tests validate each frame against its channel schema.
 
 ## HTTP exchange JSON
 
-Each `tests/replay/fixtures/http/captured/*.json` file has this shape:
+Each `tests/replay/fixtures/http/historical/*.json` file has this shape:
 
 ```json
 {
@@ -57,44 +61,47 @@ decoded-value matcher before it can be called replay evidence.
 Use `replay.LoadExchange`, `replay.NewTransport`, and
 `Transport.AssertConsumed` from `internal/testkit/replay`. Each cassette is
 consumed once, each response receives a fresh body, and an unmatched request
-causes the test's final consumed assertion to fail.
+causes the test's final consumed assertion to fail. The OpenAPI inventory gate
+counts only complete synthetic pairs; historical fixtures do not count.
 
 ## WebSocket session recordings
 
-Each `tests/replay/fixtures/signaling/captured/*.json` file contains an ordered `messages`
+Each `tests/replay/fixtures/signaling/historical/*.json` file contains an ordered `messages`
 array. Entries have `direction`, `frame`, and structured `payload` fields. The
-current captured application messages are text JSON. The testkit script uses
+historical application messages are text JSON. The testkit script uses
 `WSStep{Kind, Frame, Body}`: map `client_to_server` to `expect`,
 `server_to_client` to `send`, and marshal the payload into `Body`. Text frames
 are compared as semantic JSON. Binary frames compare byte-for-byte. The local
-script server accepts one connection, checks the upgrade method, path, query,
-and configured application headers, applies bounded read/write deadlines,
+script server accepts one connection, checks the upgrade method, host, Origin,
+path, query, and configured application headers, applies bounded read/write deadlines,
 rejects an extra client frame after the script, and exposes `AssertComplete`
 and `Close` for deterministic completion and cleanup. Pass `WSHandshake` when
 the expected upgrade includes a query or application header.
 
-The transcripts include application heartbeat ping/pong, signaling setup and
-close messages, and nested PTZ RPC methods. They are not proof of unrecorded
+The historical transcripts include application heartbeat ping/pong, signaling setup and
+close messages, and nested PTZ RPC methods. A full-flow test consumes every
+application frame from each file with a separately authored local handshake.
+They are not proof of unrecorded
 handshake variants or remote media success. Runtime heartbeat intervals,
-expiry, retry, and cancellation rules remain SDK policy unless directly
-captured. HTTP PTZ routes are not part of these recordings or specifications.
+expiry, retry, and cancellation rules remain SDK policy. HTTP PTZ routes are
+not part of these recordings or specifications.
 
 ## Contract documents and baseline pairing
 
-`api/openapi.yaml` distinguishes captured HTTP operations from existing and
-synthetic-replay HTTP/auth operations; `api/asyncapi.yaml` describes observed
+`api/openapi.yaml` describes historical and synthetic-replay HTTP/auth operations;
+`api/asyncapi.yaml` describes historical
 signaling envelope methods and PTZ RPC shapes. `tests/replay/contracts_test.go`
-checks recorded HTTP method/path/status/origin and signaling method constants.
-The Go tests in `tools/protocols` validate recorded payloads against the
+checks historical HTTP method/path/status/origin and signaling method constants.
+The Go tests in `tools/protocols` validate historical payloads against the
 schemas and validate the full OpenAPI and AsyncAPI documents. `tests/replay/contracts.md` records historical
 test mappings and labels signaling and other route-only additions as
-capture-only. See that file before treating a captured route as proof of
+historical. See that file before treating a historical route as proof of
 equivalent high-level behavior.
 
 ## Repeatable verification order
 
 Run the Go replay suite, then `make test-contracts` for independent protocol
-and capture contract tests. CI installs Node.js dependencies for the AsyncAPI
+and fixture contract tests. CI installs Node.js dependencies for the AsyncAPI
 validator, then runs the Go tests.
 
 Next run `go test -race ./... -timeout 120s` with `GOWORK=off`, followed by
@@ -110,6 +117,6 @@ implementation complete.
 ## Portable replay
 
 Additional JSON inputs under each feature's `synthetic/` directory are cases
-for legacy routes and failures absent from the capture. They are not capture
+for legacy routes and failures absent from the historical set. They are not capture
 observations. Go reads the JSON files directly. See the
 [fixture guide](../../tests/replay/fixtures/README.md) for the full layout.

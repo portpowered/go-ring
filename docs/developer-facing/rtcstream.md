@@ -41,11 +41,11 @@ the signaling contract is in [AsyncAPI](../../api/asyncapi.yaml).
 
 | Surface | Evidence and limits |
 |---|---|
-| Authentication and existing HTTP methods | Go regression tests; the new capture contains no OAuth token exchange. |
-| v3 device inventory | Recorded Go replay tests; legacy inventory fixtures do not establish the v3 route. |
-| SDP and PTZ | Captured conversation/schema replay plus local connection tests. Signaling ticket bootstrap is separately based on the existing POST mechanism. |
-| Other captured HTTP routes | Committed schemas and exchanges; presence in OpenAPI does not imply a public SDK method. |
-| Push and playback | Present in recordings; full public abstractions remain planned. Existing event WebSocket behavior is experimental. |
+| Authentication and existing HTTP methods | Synthetic paired replay; the historical set contains no OAuth token exchange. |
+| v3 device inventory | Synthetic paired replay and historical regression cases; legacy inventory fixtures do not establish the v3 route. |
+| SDP and PTZ | Historical conversation/schema replay plus local connection tests. Signaling ticket bootstrap is separately based on the existing POST mechanism. |
+| Other HTTP routes | Committed schemas and synthetic pairs; presence in OpenAPI does not imply a public SDK method. |
+| Push and playback | Historical examples and synthetic replay; full public abstractions remain planned. Existing event WebSocket behavior is experimental. |
 
 The captured GET `/api/v1/clap/tickets` has not been proven equivalent to the
 existing POST signaling ticket bootstrap. Offline replay is not a live
