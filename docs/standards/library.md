@@ -4,7 +4,7 @@
 - **LIB-02** Keep the CLI in its separate module. Let it consume the public library API.
 - **LIB-03** Keep service constants in `internal/protocol`, local lifecycle policy in `internal/signaling`, and generated enum values in schemas.
 - **LIB-04** Use one fixture tree at `tests/replay/fixtures`. Label each fixture as captured or synthetic and group it by protocol and behavior.
-- **LIB-05** Use replay tests as the primary compatibility measure. Assert the request, response, event order, and public result for each behavior.
+- **LIB-05** Use replay tests as the primary compatibility measure. Store paired request and response expectations, or ordered bidirectional message transcripts. Match method, origin, escaped path, repeated query values, relevant headers, and body or frame payload before returning a response; check response status, headers, body, event order, and public result. Reject unexpected or duplicate calls, assert every expected exchange was consumed, and never return a fallback response after a mismatch. Give redacted or volatile fields explicit format or decoded-value match rules.
 - **LIB-06** Split session replay into focused cases for establishment, SDP, ICE, PTZ, ping and pong, expiry, close, push, playback, and failure order.
 - **LIB-07** Measure replay, unit, combined, and live integration coverage separately. Do not use an integration result as proof of replay coverage.
 - **LIB-08** Test close, RPC, heartbeat expiry, connection failure, queue pressure, and PTZ overlap under the race detector.
