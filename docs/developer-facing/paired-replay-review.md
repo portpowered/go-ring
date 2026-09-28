@@ -1,70 +1,80 @@
 # Independent paired-replay review
 
-Reviewed commit: `8f169c0e770690cc3b5d240d4d364235ac33d1f6`.
+Reviewed implementation commit: `09d3a563cd251b09e8ef14f73f9a2d6e5a62b45c`.
 Criteria: **LIB-05** in `docs/standards/library.md` and item 15 of
-`go-third-party-template/docs/library-standards.md`. This report reviews
-evidence only; it does not sign off the implementation.
+`go-third-party-template/docs/library-standards.md`. This review changes no
+replay implementation.
 
 | Criterion | Verdict | Evidence |
 | --- | --- | --- |
-| LIB-05 / template item 15 | **Open** | Paired HTTP and ordered signaling cassettes exist, but order, socket-upgrade and terminal-frame matching, volatile-field rules, provenance, and complete operation coverage remain unverified or incomplete. |
-| Renewed independent signoff | **Open** | Recheck this standard and the rest of the checklist after repairs at the final commit. |
+| LIB-05 / template item 15 | **Open** | Ordered HTTP and signaling replay boundaries are stronger, but the stored-pair inventory and captured provenance remain incomplete. |
+| Renewed independent signoff | **Open** | Recheck every library criterion after the remaining findings are repaired. |
 
-## Evidence and gaps
+## Verified improvements
 
-1. **Actual pairs versus model inputs.** All 30 JSON files under
-   `tests/replay/fixtures/http/captured/`, including its `variants/`
-   directory, have `request` and `response` objects. The two files under
-   `signaling/captured/` contain ordered, directed application frames.
-   `internal/testkit/replay.Transport` matches HTTP method, origin, escaped
-   path, repeated query values, configured headers, and body before returning
-   a fresh response; it marks the cassette used and `AssertConsumed` reports
-   unused or unexpected calls. The WebSocket script compares expected text
-   JSON or binary frames in sequence and has `AssertComplete`. The 15
-   inherited `http/baseline/` files are response-only historical model
-   inputs, and `push/` holds authored event examples; neither is an HTTP or
-   socket replay cassette. `http/reference/` has source-derived pairs, but
-   they are not provider captures.
-2. **HTTP order is not enforced.** `Transport.RoundTrip` scans every unused
-   cassette and serves whichever request matches. If a workflow supplies
-   exchanges A then B, the client can issue B then A and consume both, so
-   `AssertConsumed` succeeds despite reversed order. LIB-05 requires order
-   where it matters, notably authentication and dependent session setup.
-   The testkit needs an ordered mode or explicit dependency/order assertion
-   for such workflows.
-3. **Socket replay starts after an unchecked upgrade.**
-   `NewWebSocketServer` accepts the first upgrade request without validating
-   method, origin, escaped path, query, or relevant authorization headers.
-   It finishes successfully as soon as the last scripted frame is sent or
-   received. An extra client frame after that step is not read or rejected;
-   `AssertComplete` can therefore pass without proving transcript exhaustion
-   at the connection boundary. Tests that use `LoadSessionRecording` often
-   select individual messages for a behavior rather than replaying the whole
-   recorded flow, as `internal/testkit/replay/recording.go` documents.
-4. **No explicit volatile/redacted matcher.** HTTP cassette fields are exact
-   strings or semantic JSON. The captured tests replace path placeholders
-   and supply fixed synthetic tokens, but there is no reusable rule to
-   verify the format or decoded meaning of a changing token, timestamp,
-   signature, route ID, SDP identifier, or redacted credential. Tests that
-   need a dynamic value cannot currently prove it conforms to a captured
-   request expectation without editing that expectation or bypassing the
-   cassette.
-5. **Coverage and provenance need a checked inventory.** OpenAPI lists 39
-   HTTP operations. The 30 captured files include variants of the same
-   operations; synthetic and reference pairs cover additional paths, while
-   many tests construct inline responses or model inputs. There is no
-   operation-by-operation gate showing that every supported HTTP operation
-   and socket exchange is exercised by a consumed pair or transcript.
-   `docs/developer-facing/replay-format.md` also states that the files
-   labeled `captured` lack capture timestamps and extraction metadata.
-   The shared verification standard requires known capture date and source
-   for that classification; supply provenance or reclassify evidence whose
-   capture origin cannot be established.
+`internal/testkit/replay.NewTransport` now consumes HTTP cassettes in order.
+`NewUnorderedTransport` is an explicit choice for independent requests.
+`RoundTrip` matches method, origin, escaped path, repeated query values,
+headers, and body before serving a fresh response; it rejects an unmatched
+or duplicate call, and `AssertConsumed` reports unused or unexpected calls.
+The testkit checks out-of-order and duplicate cases. `NewWebSocketServer`
+now checks upgrade method, escaped path, query, and configured application
+headers, and reads once after the final scripted step to reject a trailing
+client frame. `AssertComplete` persists the result. The 30 HTTP JSON files
+under `http/captured/` have request and response objects; two signaling
+files contain directed application frames. Historical baseline responses,
+source-derived reference pairs, and authored synthetic inputs remain
+separately described in the fixture guide.
 
-`make lint` passed. The first `make check` attempt was blocked by the
-checkout's Git ownership guard during Go VCS stamping. Repeating it with
-a process-local `safe.directory` setting passed build, protocol checks,
-package tests, and vet. Unrelated local executable and coverage files were
-left untouched.
+## Open findings
 
-**Signoff:** LIB-05 and template item 15 remain open at this commit.
+1. **No complete operation-to-pair gate.** OpenAPI declares 39 HTTP
+   method/path operations. A recursive inventory of stored JSON objects with
+   both `request` and `response` found 45 pairs across the fixture tree,
+   covering only 26 distinct schema method/path entries. Thirteen have no
+   stored JSON pair: `beginOrContinueOAuthAuthorization`,
+   `submitOAuthCredentials`, `verifyOAuthTwoFactorCode`,
+   `exchangeOrRefreshOAuthToken`, `registerClientSession`,
+   `turnFloodlightOff`, `getLegacyDeviceHealth`,
+   `getLegacyDeviceHistory`, `getActiveDings`, `streamRecording`,
+   `getLegacyRecordingShareURL`, `refreshLegacySnapshotTimestamp`, and
+   `getLegacySnapshotImage`.
+   Some have inline response tests, but those are not a checked stored pair
+   with full outbound expectations. Array-based synthetic cases can also
+   omit origin or headers and acquire them in test code. Add a checked
+   inventory that maps every supported operation to a consumed, complete
+   pair and distinguishes any operation deliberately unsupported.
+2. **Socket handshake and recorded-flow coverage remain partial.** The
+   scripted peer checks path/query/configured headers, but
+   `websocket.Upgrader.CheckOrigin` always returns true and `WSHandshake`
+   has no expected origin/host field. The two captured signaling files hold
+   application frames without a paired upgrade expectation. Tests often
+   select particular messages from `LoadSessionRecording` rather than
+   consuming an entire recorded flow. Record and check the relevant upgrade
+   fields and map each supported socket exchange to an exhaustive ordered
+   transcript. The new trailing-frame check closes the earlier immediate
+   extra-frame gap; it does not supply missing capture steps.
+3. **“Captured” lacks verifiable provenance.** The 30 HTTP files and two
+   signaling files are still labeled `captured`, while
+   `docs/developer-facing/replay-format.md` says they have no capture dates,
+   environment labels, extraction metadata, or provenance digests. The
+   shared verification guide requires a known source and UTC capture date
+   before that label is used. Add those records or reclassify the files as
+   historical/synthetic; do not use them as current provider evidence until
+   provenance is established.
+
+Fixed synthetic token and identifier values in current cassettes match
+exactly. This is an explicit synthetic matching policy, not provider-format
+validation; any newly variable or redacted field needs its own format or
+decoded-value rule before it counts as replay evidence.
+
+`make lint` passed. The first `make check` run failed once in
+`TestRecordedPublicPushSubscriptionAndEvent` with `signaling send failed`;
+ten targeted repeats passed, then a second full `make check` passed. Fresh
+`go test -count=1 -race ./internal/testkit/replay ./tests/replay -timeout 120s`
+also passed. The intermittent failure should be tracked separately from the
+LIB-05 inventory and provenance gaps. The pre-existing untracked executable
+and coverage file were left untouched.
+
+**Signoff:** LIB-05, template item 15, and renewed independent signoff remain
+open.
