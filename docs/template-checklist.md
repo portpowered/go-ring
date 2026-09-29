@@ -2,7 +2,7 @@
 
 Copied from go-third-party-template. Check each item only after its evidence and independent final-commit review pass.
 
-Independent v0.5.0 review: [review report](developer-facing/independent-review-v0.5.0.md), covering implementation commit `1d4974750aad2d5c07a4b934a230fa1c88505423` and exact-SHA CI run [36635837736](https://github.com/portpowered/go-ring/actions/runs/36635837736) (all 13 jobs passed).
+Independent v0.5.0 review: [review report](developer-facing/independent-review-v0.5.0.md), covering implementation commit `916f23132b27b720e0aef95fa26eb5c63b52c809` and exact-SHA CI run [36641559097](https://github.com/portpowered/go-ring/actions/runs/36641559097) (all 13 jobs passed).
 
 - [x] **1.** Keep the public client, examples, README, and site independent of any consuming application. Put application adapters and rollout plans in the consuming repository.
 - [x] **2.** Document supported operations, authentication, errors, and transport injection with examples that match the exported API. Add customer-facing operation guides for important workflows, and distinguish verified behavior from synthetic examples and historical references.

@@ -6,17 +6,17 @@ wire and public models, testkit, examples, tests, and tools are excluded.
 
 | Suite | Profile | Current coverage | CI floor |
 | --- | --- | ---: | ---: |
-| Replay | `coverage.replay.out` | 3,048/3,579 (85.16%) | 85% |
-| Unit | `coverage.unit.out` | 2,470/3,579 (69.01%) | 50% |
-| Combined | `coverage.combined.out` | 3,339/3,579 (93.29%) | 90%, plus package floors |
+| Replay | `coverage.replay.out` | 3,050/3,579 (85.22%) | 85% |
+| Unit | `coverage.unit.out` | 2,476/3,579 (69.18%) | 50% |
+| Combined | `coverage.combined.out` | 3,340/3,579 (93.32%) | 90%, plus package floors |
 
-These values come from [CI run 36635837736](https://github.com/portpowered/go-ring/actions/runs/36635837736)
+These values come from [CI run 36641559097](https://github.com/portpowered/go-ring/actions/runs/36641559097)
 on 2026-09-29. Replay tests drive the
 public API against local HTTP, WebSocket, and MCS peers with captured or
 labeled synthetic fixtures. They validate those exchanges, not unrecorded
 accounts, devices, or regions. The combined gate also includes co-located unit
 tests; it does not replace the replay gate. Current combined package coverage
-is 90.5% for WebSocket, 95.0% for REST, 88.7% for push, and 92.9% for `pkg/ring`.
+is 90.8% for WebSocket, 95.0% for REST, 88.7% for push, and 92.8% for `pkg/ring`.
 
 CI uploads replay and unit profiles separately to Codecov. On `main`, the
 replay profile also produces the README badge and HTML report in the Wiki.
