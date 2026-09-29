@@ -13,15 +13,24 @@ import (
 // The generated client must decode the same recorded payload used by the
 // domain client. This catches schema drift without contacting Ring.
 func TestGeneratedHTTPDeviceListReplay(t *testing.T) {
+	t.Parallel()
+
 	const origin = "https://api.ring.com"
+
 	transport := replay.NewTransport(deviceListExchange(t, origin))
-	client, err := generatedhttp.NewClientWithResponses(origin, generatedhttp.WithHTTPClient(&http.Client{Transport: transport}))
+	client, err := generatedhttp.NewClientWithResponses(
+		origin,
+		generatedhttp.WithHTTPClient(&http.Client{Transport: transport}),
+	)
 	require.NoError(t, err)
 
-	response, err := client.ListDevicesWithResponse(context.Background(), func(_ context.Context, request *http.Request) error {
-		request.Header.Set("Accept", "application/json")
-		return nil
-	})
+	response, err := client.ListDevicesWithResponse(
+		context.Background(),
+		func(_ context.Context, request *http.Request) error {
+			request.Header.Set("Accept", "application/json")
+
+			return nil
+		})
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, response.StatusCode())
 	require.NotNil(t, response.JSON200)

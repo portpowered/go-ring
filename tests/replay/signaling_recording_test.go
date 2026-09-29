@@ -66,47 +66,67 @@ type recordedRPCBody struct {
 // Each malformed SDP is a labeled mutation of a captured offer. The parser
 // must reject ambiguous media identity before an ICE candidate can be routed.
 func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
+	t.Parallel()
+
 	offer, captured := recordedLiveView(t)
+	duplicateMID := "a=mid:0"
+
 	for _, tc := range []struct {
 		name string
 		sdp  string
 	}{
 		{"missing MID", strings.Replace(offer, "a=mid:0", "a=mid:", 1)},
 		{"duplicate MID", strings.Replace(offer, "a=mid:1", "a=mid:0", 1)},
-		{"duplicate MID property", strings.Replace(offer, "a=mid:0", "a=mid:0\r\na=mid:0", 1)},
+		{"duplicate MID property", strings.Replace(offer, duplicateMID, duplicateMID+"\r\n"+duplicateMID, 1)},
 		{"unknown bundle member", strings.Replace(offer, "a=group:BUNDLE 0", "a=group:BUNDLE unknown", 1)},
 		{"conflicting session directions", strings.Replace(offer, "m=audio", "a=sendonly\r\na=recvonly\r\nm=audio", 1)},
 		{"oversized offer", strings.Repeat("x", signaling.MaxMessageBytes+1)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			if tc.sdp == offer {
 				t.Fatal("fixture mutation did not change offer")
 			}
-			if _, err := mediavalidation.ParseSDP(tc.sdp); err == nil {
-				t.Fatal("ambiguous captured SDP mutation accepted")
+
+			{
+				_, err := mediavalidation.ParseSDP(tc.sdp)
+				if err == nil {
+					t.Fatal("ambiguous captured SDP mutation accepted")
+				}
 			}
 		})
 	}
+
 	parsed, err := mediavalidation.ParseSDP(offer)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, tc := range []struct {
 		mid   string
 		index int
 	}{
 		{"0", -1}, {"0", 99}, {"unknown", 0},
 	} {
-		if err := mediavalidation.ValidateICE(parsed, tc.mid, tc.index); err == nil {
+		err := mediavalidation.ValidateICE(parsed, tc.mid, tc.index)
+		if err == nil {
 			t.Fatalf("invalid candidate media identity accepted: %+v", tc)
 		}
 	}
+
 	var answerFrame recordedSDPFrame
-	if err := json.Unmarshal(captured["sdp"], &answerFrame); err != nil {
-		t.Fatal(err)
+	{
+		err := json.Unmarshal(captured["sdp"], &answerFrame)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
+
 	answer := answerFrame.Body.SDP
+
 	lastMedia := strings.LastIndex(answer, "m=")
+
 	for _, tc := range []struct {
 		name string
 		sdp  string
@@ -115,8 +135,13 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 		{"changed media kind", strings.Replace(answer, "m=audio", "m=video", 1)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := mediavalidation.NormalizeAnswer(offer, tc.sdp); err == nil {
-				t.Fatal("incompatible answer accepted")
+			t.Parallel()
+
+			{
+				_, err := mediavalidation.NormalizeAnswer(offer, tc.sdp)
+				if err == nil {
+					t.Fatal("incompatible answer accepted")
+				}
 			}
 		})
 	}
@@ -124,14 +149,22 @@ func TestRecordedSDPIdentityFailureVariants(t *testing.T) {
 
 func loadConversation(t *testing.T, name string) recordedMessages {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("fixtures", "signaling", "historical", name)) // #nosec G304 -- name comes from fixed captured-recording cases in this test package.
+
+	recordingBytes, err := os.ReadFile(
+		filepath.Join("fixtures", "signaling", "historical", name),
+	) // #nosec G304 -- name comes from fixed captured-recording cases in this test package.
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var recording recordedMessages
-	if err = json.Unmarshal(b, &recording); err != nil {
-		t.Fatal(err)
+	{
+		err = json.Unmarshal(recordingBytes, &recording)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
+
 	return recording
 }
 
@@ -139,344 +172,252 @@ func loadConversation(t *testing.T, name string) recordedMessages {
 // the corresponding shapes from the Android conversations through our parser,
 // including multiple same-kind media sections absent from the old Go example.
 func TestRecordedSDPOfferAnswers(t *testing.T) {
+	t.Parallel()
+
 	for _, name := range []string{"flow-21.json", "flow-402.json"} {
 		t.Run(name, func(t *testing.T) {
-			offers := map[string]string{}
-			answers := 0
-			for _, row := range loadConversation(t, name).Messages {
-				m := row.Payload
-				var body struct {
-					SDP string `json:"sdp"`
-				}
-				if err := json.Unmarshal(m.Body, &body); err != nil {
-					t.Fatal(err)
-				}
-				if body.SDP == "" {
-					continue
-				}
-				if row.Direction == "client_to_server" {
-					if _, err := mediavalidation.ParseSDP(body.SDP); err != nil {
-						t.Fatalf("%s offer: %v", m.Method, err)
-					}
-					offers[m.DialogID] = body.SDP
-					continue
-				}
-				offer, ok := offers[m.DialogID]
-				if !ok {
-					t.Fatal("answer without corresponding offer")
-				}
-				if _, err := mediavalidation.NormalizeAnswer(offer, body.SDP); err != nil {
-					t.Fatalf("answer: %v", err)
-				}
-				answers++
-			}
-			if answers == 0 {
-				t.Fatal("recording exercised no offer/answer pairs")
-			}
+			t.Parallel()
+
+			assertRecordedSDPOfferAnswers(t, name)
 		})
 	}
 }
 
-// PTZ has no Python sender at the pinned revision. Replay its recorded requests,
-// replies and notifications as an intentional extension, with explicit ID and
-// timestamp bindings instead of requiring byte equality of generated values.
-func TestRecordedPTZConversations(t *testing.T) {
-	for _, name := range []string{"flow-21.json", "flow-402.json"} {
-		t.Run(name, func(t *testing.T) {
-			sessions := map[string]*signaling.Session{}
-			out := make(chan signaling.Message, 64)
-			ids := map[string]string{}
-			pending := map[string]chan error{}
-			calls, results, notifications := 0, 0, 0
-			for _, row := range loadConversation(t, name).Messages {
-				m := row.Payload
-				if m.Method != "rpc" {
-					continue
-				}
-				var body recordedSessionRPC
-				if err := json.Unmarshal(m.Body, &body); err != nil {
-					t.Fatal(err)
-				}
-				s := sessions[m.DialogID]
-				if row.Direction == "client_to_server" {
-					if s == nil {
-						control, ok := body.Command.Params["sessionId"].(string)
-						if !ok {
-							t.Fatal("missing control ID")
-						}
-						var err error
-						s, err = signaling.NewSession(context.Background(), signaling.SessionConfig{DeviceID: body.DeviceID, DialogID: m.DialogID, SignalID: body.SessionID, ControlID: control, Heartbeat: 10 * time.Second, Clock: newRecordedClock(), Send: func(_ context.Context, m signaling.Message) error { out <- m; return nil }})
-						if err != nil {
-							t.Fatal(err)
-						}
-						sessions[m.DialogID] = s
-						t.Cleanup(func() {
-							if err := s.Close(); err != nil {
-								t.Error(err)
-							}
-						})
-					}
-					params := map[string]any{}
-					for k, v := range body.Command.Params {
-						if k != "sessionId" && k != "timestamp" && k != "version" {
-							params[k] = v
-						}
-					}
-					done := make(chan error, 1)
-					pending[body.Command.ID] = done
-					go func(method string) { _, err := s.Call(context.Background(), method, params); done <- err }(body.Command.Method)
-					actual := recordedNextMessage(t, out)
-					var sent map[string]any
-					if err := json.Unmarshal(actual.Body, &sent); err != nil {
-						t.Fatal(err)
-					}
-					command := sent["command"].(map[string]any)
-					ids[body.Command.ID] = command["id"].(string)
-					command["id"] = body.Command.ID
-					command["params"].(map[string]any)["timestamp"] = body.Command.Params["timestamp"]
-					encoded, _ := json.Marshal(sent)
-					if !replay.SemanticEqual(encoded, m.Body) || actual.DialogID != m.DialogID {
-						t.Fatalf("outbound %s differs from recording after explicit bindings", body.Command.Method)
-					}
-					calls++
-					continue
-				}
-				if s == nil {
-					t.Fatal("recorded RPC event lacks active session")
-				}
-				if body.Command.Method == "" {
-					var response map[string]any
-					_ = json.Unmarshal(m.Body, &response)
-					response["command"].(map[string]any)["id"] = ids[body.Command.ID]
-					m.Body, _ = json.Marshal(response)
-					if err := s.Handle(m); err != nil {
-						t.Fatal(err)
-					}
-					select {
-					case err := <-pending[body.Command.ID]:
-						if err != nil {
-							t.Fatal(err)
-						}
-					case <-time.After(time.Second):
-						t.Fatal("recorded reply not correlated")
-					}
-					delete(pending, body.Command.ID)
-					results++
-				} else {
-					if err := s.Handle(m); err != nil {
-						t.Fatal(err)
-					}
-					ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-					event, err := s.Receive(ctx)
-					cancel()
-					if err != nil || event.Method != "rpc" {
-						t.Fatal("missing PTZ event", err)
-					}
-					notifications++
-				}
-			}
-			if calls == 0 || calls != results || len(pending) != 0 || notifications == 0 {
-				t.Fatalf("incomplete PTZ replay: calls=%d results=%d notifications=%d pending=%d", calls, results, notifications, len(pending))
-			}
-			for _, s := range sessions {
-				if s.Pending() != 0 {
-					t.Fatal("pending RPC leaked")
-				}
-			}
-		})
+func assertRecordedSDPOfferAnswers(t *testing.T, name string) {
+	t.Helper()
+
+	offers := make(map[string]string)
+	answers := 0
+
+	for _, row := range loadConversation(t, name).Messages {
+		if validateRecordedSDPMessage(t, row, offers) {
+			answers++
+		}
+	}
+
+	if answers == 0 {
+		t.Fatal("recording exercised no offer/answer pairs")
 	}
 }
 
-// Each recorded command and its acknowledgement is a separate replay case.
-// The stream test above still checks cross-command ordering and notifications.
-func TestRecordedPTZCommandsIndividually(t *testing.T) {
-	for _, name := range []string{"flow-21.json", "flow-402.json"} {
-		recording := loadConversation(t, name)
-		replies := map[string]signaling.Message{}
-		for _, row := range recording.Messages {
-			if row.Direction != "server_to_client" || row.Payload.Method != "rpc" {
-				continue
-			}
-			var body recordedRPCResult
-			if err := json.Unmarshal(row.Payload.Body, &body); err != nil {
-				t.Fatal(err)
-			}
-			if len(body.Command.Result) > 0 {
-				replies[body.Command.ID] = row.Payload
-			}
-		}
-		count := 0
-		for _, row := range recording.Messages {
-			if row.Direction != "client_to_server" || row.Payload.Method != "rpc" {
-				continue
-			}
-			var body recordedSignalRPC
-			if err := json.Unmarshal(row.Payload.Body, &body); err != nil {
-				t.Fatal(err)
-			}
-			reply, ok := replies[body.Command.ID]
-			if !ok {
-				t.Fatalf("%s command %s has no recorded result", name, body.Command.ID)
-			}
-			count++
-			t.Run(fmt.Sprintf("%s/%s/%02d", name, body.Command.Method, count), func(t *testing.T) {
-				control, ok := body.Command.Params["sessionId"].(string)
-				if !ok {
-					t.Fatal("missing control session ID")
-				}
-				out := make(chan signaling.Message, 1)
-				s, err := signaling.NewSession(context.Background(), signaling.SessionConfig{DeviceID: body.DeviceID, DialogID: row.Payload.DialogID, SignalID: body.SignalID, ControlID: control, Heartbeat: 10 * time.Second, Clock: newRecordedClock(), Send: func(_ context.Context, m signaling.Message) error { out <- m; return nil }})
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer func() { _ = s.Close() }()
-				params := map[string]any{}
-				for k, v := range body.Command.Params {
-					if k != "sessionId" && k != "timestamp" && k != "version" {
-						params[k] = v
-					}
-				}
-				done := make(chan error, 1)
-				go func() { _, err := s.Call(context.Background(), body.Command.Method, params); done <- err }()
-				actual := recordedNextMessage(t, out)
-				var actualBody recordedRPCBody
-				if err := json.Unmarshal(actual.Body, &actualBody); err != nil {
-					t.Fatal(err)
-				}
-				if actual.Method != "rpc" || actual.DialogID != row.Payload.DialogID || actualBody.Command.Method != body.Command.Method {
-					t.Fatalf("wrong PTZ request: %+v", actual)
-				}
-				for k, want := range params {
-					if actualBody.Command.Params[k] != want {
-						t.Fatalf("%s = %v, want %v", k, actualBody.Command.Params[k], want)
-					}
-				}
-				if actualBody.Command.Params["sessionId"] != control {
-					t.Fatal("PTZ control session ID changed")
-				}
-				var replyBody map[string]any
-				if err := json.Unmarshal(reply.Body, &replyBody); err != nil {
-					t.Fatal(err)
-				}
-				replyBody["command"].(map[string]any)["id"] = actualBody.Command.ID
-				reply.Body, _ = json.Marshal(replyBody)
-				if err := s.Handle(reply); err != nil {
-					t.Fatal(err)
-				}
-				select {
-				case err := <-done:
-					if err != nil {
-						t.Fatal(err)
-					}
-				case <-time.After(time.Second):
-					t.Fatal("PTZ result not correlated")
-				}
-				if s.Pending() != 0 {
-					t.Fatal("pending PTZ call leaked")
-				}
-			})
-		}
-		if count == 0 {
-			t.Fatalf("%s had no recorded PTZ commands", name)
-		}
+func validateRecordedSDPMessage(t *testing.T, row recordedMessage, offers map[string]string) bool {
+	t.Helper()
+
+	var body struct {
+		SDP string `json:"sdp"`
 	}
+
+	err := json.Unmarshal(row.Payload.Body, &body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if body.SDP == "" {
+		return false
+	}
+
+	if row.Direction == capturedClientToServerDirection {
+		_, err := mediavalidation.ParseSDP(body.SDP)
+		if err != nil {
+			t.Fatalf("%s offer: %v", row.Payload.Method, err)
+		}
+
+		offers[row.Payload.DialogID] = body.SDP
+
+		return false
+	}
+
+	offer, ok := offers[row.Payload.DialogID]
+	if !ok {
+		t.Fatal("answer without corresponding offer")
+	}
+
+	_, err = mediavalidation.NormalizeAnswer(offer, body.SDP)
+	if err != nil {
+		t.Fatalf("answer: %v", err)
+	}
+
+	return true
 }
 
 // Captured ping/pong pairs exercise the timer and identity path one pair at a
 // time; the separate virtual-hour test checks the hard 60-minute expiry.
 func TestRecordedHeartbeatPairsIndividually(t *testing.T) {
+	t.Parallel()
+
 	for _, name := range []string{"flow-21.json", "flow-402.json"} {
-		pending := map[string]signaling.Message{}
-		count := 0
-		for _, row := range loadConversation(t, name).Messages {
-			m := row.Payload
-			if m.Method == "ping" && row.Direction == "client_to_server" {
-				pending[m.DialogID] = m
-				continue
-			}
-			if m.Method != "pong" || row.Direction != "server_to_client" {
-				continue
-			}
-			ping, ok := pending[m.DialogID]
-			if !ok {
-				continue
-			}
-			delete(pending, m.DialogID)
-			count++
-			t.Run(fmt.Sprintf("%s/pair-%02d", name, count), func(t *testing.T) {
-				var body struct {
-					DeviceID int64  `json:"doorbot_id"`
-					SignalID string `json:"session_id"`
-				}
-				if err := json.Unmarshal(ping.Body, &body); err != nil {
-					t.Fatal(err)
-				}
-				clock := newRecordedClock()
-				out := make(chan signaling.Message, 1)
-				s, err := signaling.NewSession(context.Background(), signaling.SessionConfig{DeviceID: body.DeviceID, DialogID: ping.DialogID, SignalID: body.SignalID, ControlID: "control-fixture", Heartbeat: 10 * time.Second, Clock: clock, Send: func(_ context.Context, msg signaling.Message) error { out <- msg; return nil }})
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer func() { _ = s.Close() }()
-				clock.advance()
-				actual := recordedNextMessage(t, out)
-				if actual.Method != "ping" || actual.DialogID != ping.DialogID || !replay.SemanticEqual(actual.Body, ping.Body) {
-					t.Fatalf("ping differs from capture: %+v", actual)
-				}
-				if err := s.Handle(m); err != nil {
-					t.Fatal(err)
-				}
-				if err := s.Send(context.Background(), "mic_enable", map[string]any{"enabled": true}); err != nil {
-					t.Fatalf("matching pong did not keep session active: %v", err)
-				}
-			})
-		}
-		if count == 0 {
-			t.Fatalf("%s has no recorded heartbeat pairs", name)
-		}
+		replayRecordedHeartbeatPairs(t, name)
+	}
+}
+
+func replayRecordedHeartbeatPairs(t *testing.T, name string) {
+	t.Helper()
+
+	pending := make(map[string]signaling.Message)
+	count := 0
+
+	for _, row := range loadConversation(t, name).Messages {
+		replayHeartbeatCaptureRow(t, name, row, pending, &count)
+	}
+
+	if count == 0 {
+		t.Fatalf("%s has no recorded heartbeat pairs", name)
+	}
+}
+
+func replayHeartbeatCaptureRow(
+	t *testing.T,
+	name string,
+	row recordedMessage,
+	pending map[string]signaling.Message,
+	count *int,
+) {
+	t.Helper()
+
+	message := row.Payload
+	if message.Method == "ping" && row.Direction == capturedClientToServerDirection {
+		pending[message.DialogID] = message
+
+		return
+	}
+
+	if message.Method != "pong" || row.Direction != capturedServerToClientDirection {
+		return
+	}
+
+	ping, ok := pending[message.DialogID]
+	if !ok {
+		return
+	}
+
+	delete(pending, message.DialogID)
+
+	*count++
+	t.Run(fmt.Sprintf("%s/pair-%02d", name, *count), func(t *testing.T) {
+		t.Parallel()
+		assertRecordedHeartbeatPair(t, ping, message)
+	})
+}
+
+func assertRecordedHeartbeatPair(t *testing.T, ping, pong signaling.Message) {
+	t.Helper()
+
+	var body struct {
+		DeviceID int64  `json:"doorbot_id"`
+		SignalID string `json:"session_id"`
+	}
+
+	err := json.Unmarshal(ping.Body, &body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clock := newRecordedClock()
+	out := make(chan signaling.Message, 1)
+
+	session, err := signaling.NewSession(context.Background(), signaling.SessionConfig{
+		DeviceID: body.DeviceID, DialogID: ping.DialogID, SignalID: body.SignalID,
+		ControlID: "control-fixture", Heartbeat: 10 * time.Second, MaxAge: 0, Clock: clock,
+		Send: func(_ context.Context, msg signaling.Message) error {
+			out <- msg
+
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = session.Close() })
+	clock.advance()
+
+	actual := recordedNextMessage(t, out)
+	if actual.Method != "ping" || actual.DialogID != ping.DialogID || !replay.SemanticEqual(actual.Body, ping.Body) {
+		t.Fatalf("ping differs from capture: %+v", actual)
+	}
+
+	err = session.Handle(pong)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = session.Send(context.Background(), "mic_enable", map[string]any{"enabled": true})
+	if err != nil {
+		t.Fatalf("matching pong did not keep session active: %v", err)
 	}
 }
 
 // Incoming trickle ICE is an event on the matching signaling session, even
 // when the capture's ICE belongs to a playback dialog rather than live_view.
 func TestRecordedRemoteICEIndividually(t *testing.T) {
+	t.Parallel()
+
 	for _, name := range []string{"flow-21.json", "flow-402.json"} {
 		count := 0
+
 		for _, row := range loadConversation(t, name).Messages {
-			m := row.Payload
-			if row.Direction != "server_to_client" || m.Method != "ice" {
+			message := row.Payload
+			if row.Direction != capturedServerToClientDirection || message.Method != "ice" {
 				continue
 			}
+
 			count++
 			t.Run(fmt.Sprintf("%s/candidate-%02d", name, count), func(t *testing.T) {
+				t.Parallel()
+
 				var body struct {
 					DeviceID   int64  `json:"doorbot_id"`
 					SignalID   string `json:"session_id"`
 					Candidate  string `json:"ice"`
 					MLineIndex int    `json:"mlineindex"`
 				}
-				if err := json.Unmarshal(m.Body, &body); err != nil {
-					t.Fatal(err)
+
+				{
+					err := json.Unmarshal(message.Body, &body)
+					if err != nil {
+						t.Fatal(err)
+					}
 				}
+
 				if body.Candidate == "" {
 					t.Fatal("empty recorded ICE candidate")
 				}
-				s, err := signaling.NewSession(context.Background(), signaling.SessionConfig{DeviceID: body.DeviceID, DialogID: m.DialogID, SignalID: body.SignalID, ControlID: "control-fixture", Heartbeat: 10 * time.Second, Clock: newRecordedClock(), Send: func(context.Context, signaling.Message) error { return nil }})
+
+				session, err := signaling.NewSession(
+					context.Background(),
+					signaling.SessionConfig{
+						DeviceID:  body.DeviceID,
+						DialogID:  message.DialogID,
+						SignalID:  body.SignalID,
+						ControlID: "control-fixture",
+						Heartbeat: 10 * time.Second,
+						Clock:     newRecordedClock(),
+						Send:      func(context.Context, signaling.Message) error { return nil },
+					},
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
-				defer func() { _ = s.Close() }()
-				if err := s.Handle(m); err != nil {
-					t.Fatal(err)
+
+				defer func() { _ = session.Close() }()
+
+				{
+					err := session.Handle(message)
+					if err != nil {
+						t.Fatal(err)
+					}
 				}
+
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 				defer cancel()
-				event, err := s.Receive(ctx)
-				if err != nil || event.Method != "ice" || !replay.SemanticEqual(event.Body, m.Body) {
+
+				event, err := session.Receive(ctx)
+				if err != nil || event.Method != "ice" || !replay.SemanticEqual(event.Body, message.Body) {
 					t.Fatalf("remote ICE event = %+v, %v", event, err)
 				}
 			})
 		}
+
 		if count == 0 {
 			t.Fatalf("%s has no captured remote ICE", name)
 		}

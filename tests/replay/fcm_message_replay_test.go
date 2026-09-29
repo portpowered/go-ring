@@ -10,6 +10,8 @@ import (
 )
 
 func TestFCMNotificationShapes(t *testing.T) {
+	t.Parallel()
+
 	for _, test := range []struct {
 		name, deviceID string
 		action         ring.PushAction
@@ -18,8 +20,11 @@ func TestFCMNotificationShapes(t *testing.T) {
 		{"intercom-unlocked", "1000", ring.PushAction("intercom_unlock")},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			data, err := os.ReadFile(filepath.Join("fixtures", "push", test.name+".json"))
 			require.NoError(t, err)
+
 			event := ring.ParseFCMNotification(data)
 			require.Equal(t, ring.PushMessage, event.Kind)
 			require.Equal(t, test.deviceID, event.DeviceID)

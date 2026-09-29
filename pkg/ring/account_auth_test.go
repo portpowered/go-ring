@@ -12,9 +12,15 @@ import (
 )
 
 func TestAccountContextRequiresRequestCredentials(t *testing.T) {
+	t.Parallel()
+
 	client, err := NewClient()
 	require.NoError(t, err)
-	ctx := client.accountContext(context.Background(), AuthContext{AccessToken: "request-token", HardwareID: "request-hardware"})
+
+	ctx := client.accountContext(
+		context.Background(),
+		AuthContext{AccessToken: "request-token", HardwareID: "request-hardware"},
+	)
 	token, err := client.getToken(ctx)
 	require.NoError(t, err)
 	require.Equal(t, "request-token", token)
@@ -22,16 +28,20 @@ func TestAccountContextRequiresRequestCredentials(t *testing.T) {
 	_, err = client.getToken(context.Background())
 	require.True(t, ringapimodels.IsTokenError(err))
 	require.Empty(t, client.hardwareIDFor(context.Background()))
-	_, err = client.getToken(client.accountContext(ctx, AuthContext{HardwareID: "other-hardware"}))
+	_, err = client.getToken(client.accountContext(ctx, AuthContext{HardwareID: "other-hardware", AccessToken: ""}))
 	require.True(t, ringapimodels.IsTokenError(err))
 }
 
 func TestLoginSessionLifecycle(t *testing.T) {
+	t.Parallel()
+
 	client, err := NewClient()
 	require.NoError(t, err)
 	_, err = client.NewLoginSession(LoginSessionRequest{})
 	require.True(t, ringapimodels.IsBadRequestError(err))
-	flow, err := client.NewLoginSession(LoginSessionRequest{Username: "user@example.test", Password: "synthetic-password"})
+	flow, err := client.NewLoginSession(
+		LoginSessionRequest{Username: "user@example.test", Password: "synthetic-password"},
+	)
 	require.NoError(t, err)
 	require.NotEmpty(t, flow.HardwareID())
 	require.NoError(t, flow.Close())
@@ -41,6 +51,8 @@ func TestLoginSessionLifecycle(t *testing.T) {
 }
 
 func TestSharedClientRejectsCookieJar(t *testing.T) {
+	t.Parallel()
+
 	jar, err := cookiejar.New(nil)
 	require.NoError(t, err)
 	_, err = NewClient(WithHTTPClient(&http.Client{Jar: jar}))
@@ -48,24 +60,36 @@ func TestSharedClientRejectsCookieJar(t *testing.T) {
 }
 
 func TestRefreshDoesNotBindToken(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = r.ParseForm()
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
+		_ = request.ParseForm()
+
 		wantHardware := "refresh-hardware"
-		if r.Form.Get("refresh_token") == "another-refresh" {
+		if request.Form.Get("refresh_token") == "another-refresh" {
 			wantHardware = ""
 		}
-		if r.Header.Get("hardware_id") != wantHardware {
+
+		if request.Header.Get("Hardware_id") != wantHardware {
 			t.Errorf("refresh used another account's hardware ID")
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"access_token":"new-token","refresh_token":"new-refresh","token_type":"Bearer"}`))
+
+		responseWriter.Header().Set("Content-Type", "application/json")
+
+		responseBody := []byte(`{"access_token":"new-token","refresh_token":"new-refresh","token_type":"Bearer"}`)
+		_, _ = responseWriter.Write(responseBody)
 	}))
-	defer server.Close()
+	t.Cleanup(server.Close)
+
 	client, err := NewClient(WithHTTPClient(server.Client()), WithEndpoints(Endpoints{OAuthBaseURL: server.URL}))
 	require.NoError(t, err)
-	response, err := client.RefreshToken(context.Background(), RefreshTokenRequest{RefreshToken: "old-refresh", HardwareID: "refresh-hardware"})
+	response, err := client.RefreshToken(
+		context.Background(),
+		RefreshTokenRequest{RefreshToken: "old-refresh", HardwareID: "refresh-hardware"},
+	)
 	require.NoError(t, err)
 	require.Equal(t, "new-token", response.AccessToken)
+
 	_, err = client.RefreshToken(context.Background(), RefreshTokenRequest{RefreshToken: "another-refresh"})
 	require.NoError(t, err)
 	_, err = client.RefreshToken(context.Background(), RefreshTokenRequest{})

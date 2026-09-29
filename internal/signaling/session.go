@@ -4,15 +4,35 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/portpowered/go-ring/internal/protocol"
-	"github.com/portpowered/go-ring/internal/ringerrors"
 	"sync"
 	"time"
+
+	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 )
 
 type terminalError string
 
 func (r terminalError) Error() string { return string(r) }
+
+type sessionContextError struct {
+	operation string
+	cause     error
+}
+
+func (failure sessionContextError) Error() string {
+	return failure.operation + ": " + failure.cause.Error()
+}
+
+func (failure sessionContextError) Unwrap() error { return failure.cause }
+
+func wrapSessionContextError(operation string, cause error) error {
+	if cause == nil {
+		return nil
+	}
+
+	return sessionContextError{operation: operation, cause: cause}
+}
 
 var (
 	ErrClosed       error = terminalError("session closed")
@@ -24,7 +44,7 @@ var (
 // Clock allows deterministic deadlines without waiting real session lifetimes.
 type Clock interface {
 	Now() time.Time
-	After(time.Duration) <-chan time.Time
+	After(duration time.Duration) <-chan time.Time
 }
 type RealClock struct{}
 
@@ -108,88 +128,100 @@ type SessionConfig struct {
 	Send                          func(context.Context, Message) error
 }
 
-func NewSession(ctx context.Context, c SessionConfig) (*Session, error) {
-	if c.DeviceID <= 0 || c.DialogID == "" || c.SignalID == "" || c.ControlID == "" || c.SignalID == c.ControlID || c.Send == nil {
+func NewSession(ctx context.Context, config SessionConfig) (*Session, error) {
+	if config.DeviceID <= 0 ||
+		config.DialogID == "" ||
+		config.SignalID == "" ||
+		config.ControlID == "" ||
+		config.SignalID == config.ControlID ||
+		config.Send == nil {
 		return nil, ringerrors.NewBadRequestError("invalid session configuration", nil)
 	}
-	if c.Heartbeat <= 0 || c.Heartbeat > MaxHeartbeatInterval {
+
+	if config.Heartbeat <= 0 || config.Heartbeat > MaxHeartbeatInterval {
 		return nil, ringerrors.NewBadRequestError("invalid heartbeat interval", nil)
 	}
-	if c.MaxAge == 0 {
-		c.MaxAge = MaxSessionAge
+
+	if config.MaxAge == 0 {
+		config.MaxAge = MaxSessionAge
 	}
-	if c.MaxAge <= 0 || c.MaxAge > MaxSessionAge {
+
+	if config.MaxAge <= 0 || config.MaxAge > MaxSessionAge {
 		return nil, ringerrors.NewBadRequestError("invalid maximum session age", nil)
 	}
-	if err := ctx.Err(); err != nil {
-		return nil, err
+
+	err := ctx.Err()
+	if err != nil {
+		return nil, wrapSessionContextError("create signaling session", err)
 	}
-	if c.Clock == nil {
-		c.Clock = RealClock{}
+
+	if config.Clock == nil {
+		config.Clock = RealClock{}
 	}
+
 	child, cancel := context.WithCancel(ctx)
-	s := &Session{ctx: child, cancel: cancel, done: make(chan struct{}), clock: c.Clock, send: c.Send, deviceID: c.DeviceID, dialogID: c.DialogID, signalID: c.SignalID, controlID: c.ControlID, lastPong: c.Clock.Now(), expiresAt: c.Clock.Now().Add(c.MaxAge), pending: make(map[string]chan rpcReply), events: make(chan Message, EventQueueCapacity)}
+	session := &Session{
+		ctx:       child,
+		cancel:    cancel,
+		done:      make(chan struct{}),
+		clock:     config.Clock,
+		send:      config.Send,
+		deviceID:  config.DeviceID,
+		dialogID:  config.DialogID,
+		signalID:  config.SignalID,
+		controlID: config.ControlID,
+		lastPong:  config.Clock.Now(),
+		expiresAt: config.Clock.Now().Add(config.MaxAge),
+		pending:   make(map[string]chan rpcReply),
+		events:    make(chan Message, EventQueueCapacity),
+	}
 	// Create timers before returning so fake-clock advances cannot race startup.
-	expiry := c.Clock.After(c.MaxAge)
-	tick := c.Clock.After(c.Heartbeat)
-	s.workers.Add(2)
+	expiry := config.Clock.After(config.MaxAge)
+	tick := config.Clock.After(config.Heartbeat)
+
+	session.workers.Add(2)
+
 	go func() {
-		defer s.workers.Done()
+		defer session.workers.Done()
+
 		select {
-		case <-s.ctx.Done():
-			s.finish(s.ctx.Err())
+		case <-session.ctx.Done():
+			session.finish(session.ctx.Err())
 		case <-expiry:
-			s.finish(ErrExpired)
+			session.finish(ErrExpired)
 		}
 	}()
 	go func() {
-		defer s.workers.Done()
+		defer session.workers.Done()
+
 		for {
 			select {
-			case <-s.ctx.Done():
+			case <-session.ctx.Done():
 				return
 			case <-tick:
-				s.mu.Lock()
-				age := s.clock.Now().Sub(s.lastPong)
-				s.mu.Unlock()
-				if age >= MissedHeartbeatIntervals*c.Heartbeat {
-					s.finish(ErrHeartbeat)
+				session.mu.Lock()
+				age := session.clock.Now().Sub(session.lastPong)
+				session.mu.Unlock()
+
+				if age >= MissedHeartbeatIntervals*config.Heartbeat {
+					session.finish(ErrHeartbeat)
+
 					return
 				}
 				// Arm the next tick before sending to make the observable send a barrier.
-				tick = s.clock.After(c.Heartbeat)
-				if err := s.Send(s.ctx, protocol.MethodPing, nil); err != nil {
-					s.finish(err)
+				tick = session.clock.After(config.Heartbeat)
+
+				err := session.Send(session.ctx, protocol.MethodPing, nil)
+				if err != nil {
+					session.finish(err)
+
 					return
 				}
 			}
 		}
 	}()
-	return s, nil
-}
 
-func (s *Session) finish(err error) {
-	s.mu.Lock()
-	if s.closed {
-		s.mu.Unlock()
-		return
-	}
-	s.closed = true
-	s.terminal = err
-	pending := s.pending
-	s.pending = make(map[string]chan rpcReply)
-	s.mu.Unlock()
-	for _, ch := range pending {
-		select {
-		case ch <- rpcReply{err: err}:
-		default:
-		}
-	}
-	close(s.done)
-	// Publish the terminal cause before canceling an in-flight transport write.
-	// Otherwise that write can return context.Canceled before Call can observe
-	// the actual session failure through done.
-	s.cancel()
+	return session, nil
 }
 
 func (s *Session) Wait(ctx context.Context) error {
@@ -197,42 +229,57 @@ func (s *Session) Wait(ctx context.Context) error {
 	case <-s.done:
 		s.mu.Lock()
 		defer s.mu.Unlock()
+
 		return s.terminal
 	case <-ctx.Done():
-		return ctx.Err()
+		return wrapSessionContextError("wait for signaling session", ctx.Err())
 	}
 }
-func (s *Session) terminalCause() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.terminal
+func (s *Session) Close() error {
+	s.finish(ErrClosed)
+	s.workers.Wait()
+
+	return nil
 }
-func (s *Session) Close() error { s.finish(ErrClosed); s.workers.Wait(); return nil }
 
 // Fail terminates from the connection reader without joining any worker.
 func (s *Session) Fail(err error) {
 	if err == nil {
 		err = ErrClosed
 	}
+
 	s.finish(err)
 }
-func (s *Session) Pending() int { s.mu.Lock(); defer s.mu.Unlock(); return len(s.pending) }
+func (s *Session) Pending() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return len(s.pending)
+}
 
 func (s *Session) Send(ctx context.Context, method string, fields map[string]any) error {
-	if err := ctx.Err(); err != nil {
-		return err
+	{
+		err := ctx.Err()
+		if err != nil {
+			return wrapSessionContextError("send signaling message", err)
+		}
 	}
+
 	s.mu.Lock()
 	closed := s.closed
 	terminal := s.terminal
 	s.mu.Unlock()
+
 	if closed {
 		return terminal
 	}
+
 	if !s.clock.Now().Before(s.expiresAt) {
 		s.finish(ErrExpired)
+
 		return ErrExpired
 	}
+
 	body := make(map[string]any, len(fields)+2)
 	for k, v := range fields {
 		body[k] = v
@@ -240,32 +287,45 @@ func (s *Session) Send(ctx context.Context, method string, fields map[string]any
 	// Routing fields cannot be overridden by command payloads.
 	body[protocol.FieldDeviceID] = s.deviceID
 	body[protocol.FieldSessionID] = s.signalID
+
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		return ringerrors.NewInternalServerError("invalid session payload", err)
 	}
+
 	writeCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	// The session context must also cancel a write when the caller context is still active.
 	//nolint:contextcheck // AfterFunc explicitly links the inherited write context to the session lifetime.
 	stop := context.AfterFunc(s.ctx, cancel)
 	defer stop()
-	return s.send(writeCtx, Message{Method: method, DialogID: s.dialogID, Body: encoded})
+
+	return s.send(writeCtx, Message{
+		Method:   method,
+		DialogID: s.dialogID,
+		RIID:     "",
+		Body:     encoded,
+	})
 }
 
 // Call registers correlation before sending. A result acknowledges the command;
 // it does not claim physical motion completed. Calls are never retried.
 func (s *Session) Call(ctx context.Context, method string, params map[string]any) (json.RawMessage, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
+	{
+		err := ctx.Err()
+		if err != nil {
+			return nil, wrapSessionContextError("start signaling RPC", err)
+		}
 	}
 	// Every RPC has a bounded result wait even when the caller provides no
 	// deadline. The injected clock also cancels a queued or blocked write.
 	callCtx, cancel := context.WithCancelCause(ctx)
 	timeout := s.clock.After(RPCResponseTimeout)
 	finished, stopped := make(chan struct{}), make(chan struct{})
+
 	go func() {
 		defer close(stopped)
+
 		select {
 		case <-finished:
 		case <-s.done:
@@ -275,32 +335,55 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 			cancel(context.DeadlineExceeded)
 		}
 	}()
+
 	defer func() { close(finished); cancel(nil); <-stopped }()
+
 	ctx = callCtx
+
 	s.mu.Lock()
+
 	if s.closed {
 		err := s.terminal
 		s.mu.Unlock()
+
 		return nil, err
 	}
+
 	s.sequence++
 	id := fmt.Sprintf("%s-%d", s.controlID, s.sequence)
 	ch := make(chan rpcReply, 1)
 	s.pending[id] = ch
 	s.mu.Unlock()
+
 	defer func() { s.mu.Lock(); delete(s.pending, id); s.mu.Unlock() }()
+
 	const rpcIdentityFields = 3
-	p := make(map[string]any, len(params)+rpcIdentityFields)
+
+	rpcParams := make(map[string]any, len(params)+rpcIdentityFields)
 	for k, v := range params {
-		p[k] = v
+		rpcParams[k] = v
 	}
-	p[protocol.FieldSessionIDRPC] = s.controlID
-	p[protocol.FieldTimestamp] = s.clock.Now().UnixMilli()
-	p[protocol.FieldVersion] = protocol.PTZVersion
-	err := s.Send(ctx, protocol.MethodRPC, map[string]any{protocol.FieldCommand: rpcCommandRequest{Version: protocol.JSONRPCVersion, ID: id, Method: method, Params: p}})
+
+	rpcParams[protocol.FieldSessionIDRPC] = s.controlID
+	rpcParams[protocol.FieldTimestamp] = s.clock.Now().UnixMilli()
+	rpcParams[protocol.FieldVersion] = protocol.PTZVersion
+
+	err := s.Send(
+		ctx,
+		protocol.MethodRPC,
+		map[string]any{
+			protocol.FieldCommand: rpcCommandRequest{
+				Version: protocol.JSONRPCVersion,
+				ID:      id,
+				Method:  method,
+				Params:  rpcParams,
+			},
+		},
+	)
 	if err != nil {
-		if cause := context.Cause(callCtx); cause != nil {
-			return nil, cause
+		cause := context.Cause(callCtx)
+		if cause != nil {
+			return nil, wrapSessionContextError("send signaling RPC", cause)
 		}
 		// The session may cancel the write before the call's cancellation
 		// watcher runs. Preserve its terminal cause rather than leaking the
@@ -310,13 +393,15 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 			return nil, s.terminalCause()
 		default:
 		}
+
 		return nil, err
 	}
+
 	select {
 	case reply := <-ch:
 		return reply.result, reply.err
 	case <-ctx.Done():
-		return nil, context.Cause(callCtx)
+		return nil, wrapSessionContextError("wait for signaling RPC reply", context.Cause(callCtx))
 	case <-s.done:
 		return nil, s.terminalCause()
 	}
@@ -324,71 +409,48 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 
 // Handle is called by the connection's sole reader. Wrong-session messages are
 // ignored; they must not satisfy a pending request or renew its heartbeat.
-func (s *Session) Handle(m Message) error {
-	if m.DialogID != s.dialogID {
+func (s *Session) Handle(message Message) error {
+	if message.DialogID != s.dialogID {
 		return nil
 	}
+
 	var body sessionMessageBody
-	if err := json.Unmarshal(m.Body, &body); err != nil {
+
+	err := json.Unmarshal(message.Body, &body)
+	if err != nil {
 		return ringerrors.NewConnectionError("invalid session body", err)
 	}
+
 	if body.DeviceID != s.deviceID || body.SignalID != s.signalID {
 		return nil
 	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if s.closed {
 		return s.terminal
 	}
-	if m.Method == protocol.MethodPong {
+
+	if message.Method == protocol.MethodPong {
 		s.lastPong = s.clock.Now()
+
 		return nil
 	}
-	if m.Method == protocol.MethodRPC {
-		var command rpcCommandReply
-		if err := json.Unmarshal(body.Command, &command); err != nil {
-			return ringerrors.NewConnectionError("invalid RPC envelope (command cannot be decoded)", err)
+
+	if message.Method == protocol.MethodRPC {
+		handled, err := s.handleRPC(body.Command)
+		if err != nil {
+			return err
 		}
-		if command.Version == "" {
-			var wrapper rpcCommandWrapper
-			if err := json.Unmarshal(body.Command, &wrapper); err == nil && len(wrapper.Message) > 0 {
-				if err := json.Unmarshal(wrapper.Message, &command); err != nil {
-					return ringerrors.NewConnectionError("invalid wrapped RPC envelope", err)
-				}
-			}
-		}
-		if command.Version != protocol.JSONRPCVersion {
-			return ringerrors.NewConnectionError("invalid RPC envelope (unsupported or missing jsonrpc version)", nil)
-		}
-		if command.Method == "" {
-			if (len(command.Result) == 0) == (command.Error == nil) {
-				return ringerrors.NewConnectionError("RPC reply must have exactly one result or error", nil)
-			}
-			if command.Error == nil {
-				var result rpcResultIdentity
-				if err := json.Unmarshal(command.Result, &result); err != nil {
-					return ringerrors.NewConnectionError("invalid RPC result identity", err)
-				}
-				if result.SessionID == "" {
-					return ringerrors.NewConnectionError("invalid RPC result identity", nil)
-				}
-				if result.SessionID != s.controlID {
-					return nil
-				}
-			}
-			if ch, ok := s.pending[command.ID]; ok {
-				reply := rpcReply{result: command.Result}
-				if command.Error != nil {
-					reply.err = command.Error
-				}
-				ch <- reply
-				delete(s.pending, command.ID)
-			}
+
+		if handled {
 			return nil
 		}
 	}
+
 	select {
-	case s.events <- m:
+	case s.events <- message:
 		return nil
 	default:
 		return ErrBackpressure
@@ -402,6 +464,108 @@ func (s *Session) Receive(ctx context.Context) (Message, error) {
 	case <-s.done:
 		return Message{}, s.terminalCause()
 	case <-ctx.Done():
-		return Message{}, ctx.Err()
+		return Message{}, wrapSessionContextError("receive signaling event", ctx.Err())
 	}
+}
+
+func (s *Session) finish(err error) {
+	s.mu.Lock()
+
+	if s.closed {
+		s.mu.Unlock()
+
+		return
+	}
+
+	s.closed = true
+	s.terminal = err
+	pending := s.pending
+	s.pending = make(map[string]chan rpcReply)
+	s.mu.Unlock()
+
+	for _, ch := range pending {
+		select {
+		case ch <- rpcReply{result: nil, err: err}:
+		default:
+		}
+	}
+
+	close(s.done)
+	// Publish the terminal cause before canceling an in-flight transport write.
+	// Otherwise that write can return context.Canceled before Call can observe
+	// the actual session failure through done.
+	s.cancel()
+}
+
+func (s *Session) terminalCause() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.terminal
+}
+
+func (s *Session) handleRPC(body json.RawMessage) (bool, error) {
+	var command rpcCommandReply
+
+	err := json.Unmarshal(body, &command)
+	if err != nil {
+		return false, ringerrors.NewConnectionError("invalid RPC envelope (command cannot be decoded)", err)
+	}
+
+	if command.Version == "" {
+		var wrapper rpcCommandWrapper
+
+		err := json.Unmarshal(body, &wrapper)
+		if err == nil && len(wrapper.Message) > 0 {
+			err := json.Unmarshal(wrapper.Message, &command)
+			if err != nil {
+				return false, ringerrors.NewConnectionError("invalid wrapped RPC envelope", err)
+			}
+		}
+	}
+
+	if command.Version != protocol.JSONRPCVersion {
+		return false, ringerrors.NewConnectionError(
+			"invalid RPC envelope (unsupported or missing jsonrpc version)",
+			nil,
+		)
+	}
+
+	if command.Method != "" {
+		return false, nil
+	}
+
+	if (len(command.Result) == 0) == (command.Error == nil) {
+		return false, ringerrors.NewConnectionError("RPC reply must have exactly one result or error", nil)
+	}
+
+	if command.Error == nil {
+		var result rpcResultIdentity
+
+		err := json.Unmarshal(command.Result, &result)
+		if err != nil {
+			return false, ringerrors.NewConnectionError("invalid RPC result identity", err)
+		}
+
+		if result.SessionID == "" {
+			return false, ringerrors.NewConnectionError("invalid RPC result identity", nil)
+		}
+
+		if result.SessionID != s.controlID {
+			return true, nil
+		}
+	}
+
+	if ch, ok := s.pending[command.ID]; ok {
+		reply := rpcReply{result: command.Result, err: nil}
+		if command.Error != nil {
+			reply.err = command.Error
+		}
+
+		ch <- reply
+
+		delete(s.pending, command.ID)
+	}
+
+	return true, nil
 }

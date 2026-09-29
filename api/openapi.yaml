@@ -46,7 +46,7 @@ paths:
       servers: [{url: https://oauth.ring.com}]
       security: []
       parameters:
-        - {name: redirect_uri, in: query, required: false, schema: {type: string, format: uri}}
+        - {name: redirect_uri, in: query, required: false, schema: {type: string, format: uri, default: 'https://ring.com/signin/callback'}}
         - {name: client_id, in: query, required: false, schema: {type: string}}
         - {name: response_type, in: query, required: false, schema: {type: string, enum: [code]}}
         - {name: prompt, in: query, required: false, description: The implemented PKCE flow sends login; other OAuth prompts may exist., schema: {type: string, x-extensible-enum: [login]}}
@@ -609,6 +609,10 @@ components:
             items: {$ref: '#/components/schemas/Recording'}
     Json: {description: JSON response, content: {application/json: {schema: {$ref: '#/components/schemas/JsonValue'}}}}
   schemas:
+    RingHeaderName:
+      type: string
+      description: Named outbound Ring request headers used by the handwritten adapters.
+      enum: [2fa-Code, 2fa-Support, Accept, Authorization, Content-Type, Hardware_id, User-Agent]
     SignInForm:
       type: object
       required: [username, password, csrf-token]

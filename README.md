@@ -15,17 +15,16 @@ The [customer guides](https://portpowered.github.io/go-ring/docs/guides/) walk
 through authentication, device operations, live sessions, SDP and ICE,
 push notifications, and cloud playback alongside the generated API reference.
 
-
-This is a bit unique compared to other ring-doorbell libraries since: 
-1. It supports PTZ over signaling WebSockets and newer API versions.
-2. Its replay suite covers sanitized 2026 network captures.
+The client supports PTZ over signaling WebSockets. Paired replays are labeled
+synthetic; inherited sanitized captures without source provenance are kept as
+historical regressions, not current provider evidence.
 
 ## Install
 
 Requires Go 1.24 or later.
 
 ```sh
-go get github.com/portpowered/go-ring@v0.4.0
+go get github.com/portpowered/go-ring@v0.5.0
 ```
 
 ## Examples
@@ -40,7 +39,6 @@ Create a login session, request a verification code, and complete the exchange.
 ```go
 client, err := ring.NewClient()
 if err != nil { return err }
-defer client.Close()
 login, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password})
 if err != nil { return err }
 defer login.Close()
@@ -65,7 +63,6 @@ Pass the resulting authentication context to each request.
 ```go
 client, err := ring.NewClient()
 if err != nil { return err }
-defer client.Close()
 
 devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 if err != nil { return err }
@@ -79,7 +76,7 @@ for _, device := range devices.Devices {
 
 Each device reports capabilities confirmed by its inventory response. An absent
 capability means support is unknown, so the server remains the final authority
-for a control request. See the [device enumeration plan](docs/plans/device-enumeration.md).
+for a control request. See the [device operations guide](https://portpowered.github.io/go-ring/docs/guides/device-operations/).
 
 [enumerate-devices example](examples/enumerate-devices/main.go).
 
@@ -88,7 +85,6 @@ for a control request. See the [device enumeration plan](docs/plans/device-enume
 ```go
 client, err := ring.NewClient()
 if err != nil { return err }
-defer client.Close()
 
 if err := client.RebootDevice(ctx, ring.DeviceIDRequest{Auth: auth, DeviceID: deviceID}); err != nil {
     return err
@@ -104,7 +100,6 @@ This command requires a chime device.
 ```go
 client, err := ring.NewClient()
 if err != nil { return err }
-defer client.Close()
 
 if err := client.TestSound(ctx, ring.TestSoundRequest{
     Auth:     auth,
@@ -148,7 +143,6 @@ case <-ctx.Done(): return ctx.Err()
 
 client, err := ring.NewClient()
 if err != nil { return err }
-defer client.Close()
 
 // establish persistent connection session
 conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
@@ -218,10 +212,10 @@ For `TiltContinuous`, stop with `ring.TiltAxis`. See the
 
 ## API reference
 
-The Ring actual APIs are visualized at [go-ring API reference](https://portpowered.github.io/go-ring/).
+Browse the [generated Ring API reference](https://portpowered.github.io/go-ring/).
 
 ## CLI quick start
-We have a small diagnostic CLI you can test
+The diagnostic CLI exercises common workflows:
 
 ```sh
 git clone https://github.com/portpowered/go-ring.git
@@ -234,16 +228,19 @@ go build -o go-ring .
 ./go-ring view <device-id> --continuous
 ./go-ring events watch <device-id> --duration 60s
 ```
-See the [CLI guide](cmd/go-ring/README.md) for more details. 
+See the [diagnostic CLI guide](https://portpowered.github.io/go-ring/docs/guides/diagnostic-cli/) for commands and troubleshooting.
 ## Supported operations
 
-`Client` handles authentication and HTTP requests. `SignalingConnection` owns
-the persistent signaling socket; it can start live device sessions, playback
-sessions, and push subscriptions.
+`Client` handles authentication and HTTP requests and can be reused across
+accounts. Each returned connection owns its own lifetime. `SignalingConnection`
+owns the persistent signaling socket; it can start live device sessions,
+playback sessions, and push subscriptions. Close the returned connection or
+session when its work ends. `Client.Close` remains for source compatibility and
+does not close those objects.
 
 | Feature | Object and Go calls | Notes |
 | --- | --- | --- |
-| Client setup and shutdown | `ring.NewClient`, `Client.Close` | Configuration is fixed at construction; one client can own several signaling connections. |
+| Client setup and reuse | `ring.NewClient` | Configuration is fixed at construction; one stateless client can serve multiple accounts. `Client.Close` remains a no-op compatibility method. |
 | Login and tokens | `Client.NewLoginSession`, `LoginSession.Request2FACode`, `LoginSession.Authenticate`, `Client.RefreshToken` | Login state stays in one session; refresh tokens are passed per request. See [token exchange](examples/token-exchange/main.go). |
 | Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail`, `Device.Supports` | One list of devices; capabilities come from explicit inventory fields. `GetDeviceDetail` returns the typed captured v3 detail. |
 | Device status, health, and settings | `Client.GetDeviceStatus`, `DeviceDetailDevice.Status`, `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Battery is unknown on wired devices unless battery presence is explicit; missing connection state is not treated as offline. |
@@ -269,7 +266,7 @@ sessions, and push subscriptions.
 
 ### Reverse engineering resources
 
-- [Ring API architecture](docs/developer-facing/ring-api-architecture.md)
+- [Ring API and customer guides](https://portpowered.github.io/go-ring/docs/guides/)
 - [Reverse engineering process](docs/internal/process-of-reverse-engineering.md)
 - [Ring OpenAPI HTTP contracts](api/openapi.yaml) and [Ring AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
 
@@ -279,7 +276,6 @@ sessions, and push subscriptions.
 - [Public model schema](api/client-models.openapi.yaml)
 - [Recording formats and verification order](docs/developer-facing/replay-format.md)
 - [Replay, unit, and live integration coverage](docs/developer-facing/coverage.md)
-- [Device enumeration and capabilities](docs/plans/device-enumeration.md)
 - [API replay recordings](tests/replay/fixtures/README.md)
 - [Contributing](CONTRIBUTING.md)
 

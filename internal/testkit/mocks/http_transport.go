@@ -8,13 +8,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 )
 
 const ringOAuthFixtureFilename = "ring_oauth.json"
 
-// RequestRecord represents a recorded HTTP request
+// RequestRecord represents a recorded HTTP request.
 type RequestRecord struct {
 	Method      string
 	URL         string
@@ -24,7 +25,7 @@ type RequestRecord struct {
 	QueryParams map[string]string
 }
 
-// MockTransport is a mock HTTP RoundTripper that records requests and returns fixture-based responses
+// MockTransport is a mock HTTP RoundTripper that records requests and returns fixture-based responses.
 type MockTransport struct {
 	mu              sync.RWMutex
 	requests        []*RequestRecord
@@ -33,16 +34,18 @@ type MockTransport struct {
 	defaultResponse *http.Response
 }
 
-// NewMockTransport creates a new MockTransport
+// NewMockTransport creates a new MockTransport.
 func NewMockTransport(fixtureDir string) *MockTransport {
 	return &MockTransport{
-		requests:   make([]*RequestRecord, 0),
-		responses:  make(map[string]*http.Response),
-		fixtureDir: fixtureDir,
+		mu:              sync.RWMutex{},
+		requests:        make([]*RequestRecord, 0),
+		responses:       make(map[string]*http.Response),
+		fixtureDir:      fixtureDir,
+		defaultResponse: nil,
 	}
 }
 
-// RoundTrip implements http.RoundTripper
+// RoundTrip implements http.RoundTripper.
 func (m *MockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Record the request
 	_ = m.recordRequest(req)
@@ -78,7 +81,84 @@ func (m *MockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
-// recordRequest records the request for later assertions
+// SetResponse sets a specific response for a request pattern.
+func (m *MockTransport) SetResponse(method, path string, response *http.Response) {
+	key := fmt.Sprintf("%s %s", method, path)
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.responses[key] = response
+}
+
+// SetResponseWithBody sets a response with JSON body.
+func (m *MockTransport) SetResponseWithBody(method, path string, statusCode int, body interface{}) {
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		panic(fmt.Sprintf("marshal mock response body: %v", err))
+	}
+
+	response := &http.Response{
+		StatusCode: statusCode,
+		Status:     strconv.Itoa(statusCode),
+		Body:       io.NopCloser(bytes.NewBuffer(bodyBytes)),
+		Header: map[string][]string{
+			"Content-Type": {"application/json"},
+		},
+	}
+	m.SetResponse(method, path, response)
+}
+
+// SetDefaultResponse sets a default response for unmatched requests.
+func (m *MockTransport) SetDefaultResponse(response *http.Response) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.defaultResponse = response
+}
+
+// GetRequests returns all recorded requests.
+func (m *MockTransport) GetRequests() []*RequestRecord {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	requests := make([]*RequestRecord, len(m.requests))
+	copy(requests, m.requests)
+
+	return requests
+}
+
+// ClearRequests clears the request history.
+func (m *MockTransport) ClearRequests() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.requests = make([]*RequestRecord, 0)
+}
+
+// GetRequestCount returns the number of recorded requests.
+func (m *MockTransport) GetRequestCount() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	return len(m.requests)
+}
+
+// FindRequest finds a request matching the criteria.
+func (m *MockTransport) FindRequest(method, pathContains string) *RequestRecord {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	for _, req := range m.requests {
+		if req.Method == method && strings.Contains(req.URL, pathContains) {
+			return req
+		}
+	}
+
+	return nil
+}
+
+// recordRequest records the request for later assertions.
 func (m *MockTransport) recordRequest(req *http.Request) *RequestRecord {
 	var bodyBytes []byte
 	if req.Body != nil {
@@ -109,12 +189,12 @@ func (m *MockTransport) recordRequest(req *http.Request) *RequestRecord {
 	return record
 }
 
-// getRequestKey generates a key for request matching
+// getRequestKey generates a key for request matching.
 func (m *MockTransport) getRequestKey(req *http.Request) string {
 	return fmt.Sprintf("%s %s", req.Method, req.URL.Path)
 }
 
-// loadFixtureResponse loads a response from a fixture file based on the request
+// loadFixtureResponse loads a response from a fixture file based on the request.
 func (m *MockTransport) loadFixtureResponse(req *http.Request) *http.Response {
 	fixtureName := m.getFixtureName(req)
 	if fixtureName == "" {
@@ -122,7 +202,10 @@ func (m *MockTransport) loadFixtureResponse(req *http.Request) *http.Response {
 	}
 
 	fixturePath := filepath.Join(m.fixtureDir, fixtureName)
-	data, err := os.ReadFile(fixturePath) // #nosec G304 -- fixtureName is selected from fixed filenames in getFixtureName.
+
+	data, err := os.ReadFile(
+		fixturePath,
+	) // #nosec G304 -- fixtureName is selected from fixed filenames in getFixtureName.
 	if err != nil {
 		return nil
 	}
@@ -134,6 +217,7 @@ func (m *MockTransport) loadFixtureResponse(req *http.Request) *http.Response {
 	body := bytes.NewBuffer(data)
 	header := make(http.Header)
 	header.Set("Content-Type", "application/json")
+
 	return &http.Response{
 		StatusCode: http.StatusOK,
 		Status:     "200 OK",
@@ -143,7 +227,7 @@ func (m *MockTransport) loadFixtureResponse(req *http.Request) *http.Response {
 	}
 }
 
-// wrapFixtureResponse wraps array responses in the expected object structure
+// wrapFixtureResponse wraps array responses in the expected object structure.
 func (m *MockTransport) wrapFixtureResponse(req *http.Request, data []byte) []byte {
 	if strings.Contains(req.URL.Path, "/device_info/v3/devices") {
 		var grouped map[string][]json.RawMessage
@@ -152,119 +236,158 @@ func (m *MockTransport) wrapFixtureResponse(req *http.Request, data []byte) []by
 			for _, key := range []string{"doorbots", "authorized_doorbots", "chimes", "stickup_cams", "other"} {
 				devices = append(devices, grouped[key]...)
 			}
+
 			wrapped, err := json.Marshal(map[string]any{"devices": devices})
 			if err == nil {
 				return wrapped
 			}
 		}
 	}
+
 	return data
 }
 
-// getFixtureName determines which fixture file to use based on the request
+// getFixtureName determines which fixture file to use based on the request.
 func (m *MockTransport) getFixtureName(req *http.Request) string {
 	path := req.URL.Path
 	url := req.URL.String()
 
-	// OAuth token endpoint
-	if strings.Contains(url, "/oauth/token") {
-		if req.Method == http.MethodPost {
-			// Check if it's a refresh token request
-			bodyBytes := m.readBody(req)
-			if strings.Contains(req.URL.RawQuery, "refresh_token") ||
-				strings.Contains(string(bodyBytes), "refresh_token") {
-				return ringOAuthFixtureFilename // Same fixture for now
-			}
-			return ringOAuthFixtureFilename
-		}
+	if fixture := m.oauthFixtureName(req, url); fixture != "" {
+		return fixture
 	}
 
-	// Session endpoint
 	if strings.Contains(path, "/session") {
 		return "ring_session.json"
 	}
 
-	// Devices endpoint
-	if strings.Contains(path, "/ring_devices") || strings.Contains(path, "/device_info/v3/devices") {
-		// Check for updated devices
-		if strings.Contains(url, "updated") {
-			return "ring_devices_updated.json"
-		}
-		return "ring_devices.json"
+	if fixture := deviceFixtureName(path, url); fixture != "" {
+		return fixture
 	}
 
-	// Device health endpoint
-	if strings.Contains(path, "/health") {
-		deviceID := m.extractDeviceID(path)
-		if deviceID == "987653" {
-			return "ring_doorboot_health_attrs_id987653.json"
-		}
-		// Check if it's a chime
-		if strings.Contains(path, "chime") {
-			return "ring_chime_health_attrs.json"
-		}
-		return "ring_doorboot_health_attrs.json"
+	if fixture := m.healthFixtureName(path); fixture != "" {
+		return fixture
 	}
 
-	// Active dings
 	if strings.Contains(path, "/dings/active") {
 		return "ring_ding_active.json"
 	}
 
-	// History endpoint - support both old /dings/history and new /doorbots/{id}/history
-	if strings.Contains(path, "/dings/history") || (strings.Contains(path, "/doorbots/") && strings.Contains(path, "/history")) {
-		if strings.Contains(path, "intercom") {
-			return "ring_intercom_history.json"
-		}
-		return "ring_doorbot_history.json"
+	if fixture := historyFixtureName(path); fixture != "" {
+		return fixture
 	}
 
-	// Recording endpoint
 	if strings.Contains(path, "/recording") {
-		// Return a simple JSON with URL
-		return "" // Will be handled by SetResponse
+		return ""
 	}
 
-	// Listen credentials
 	if strings.Contains(path, "/listen/credentials") {
 		return "ring_listen_credentials.json"
 	}
 
-	// Groups
-	if strings.Contains(path, "/groups") {
-		if strings.Contains(path, "/devices") {
-			return "ring_group_devices.json"
-		}
-		return "ring_groups.json"
+	if fixture := groupFixtureName(path); fixture != "" {
+		return fixture
 	}
 
-	// Intercom
-	if strings.Contains(path, "/intercom") {
-		if strings.Contains(path, "/settings") {
-			return "ring_intercom_settings.json"
-		}
-		if strings.Contains(path, "/users") {
-			return "ring_intercom_users.json"
-		}
+	return intercomFixtureName(path)
+}
+
+func (m *MockTransport) oauthFixtureName(req *http.Request, requestURL string) string {
+	if !strings.Contains(requestURL, "/oauth/token") || req.Method != http.MethodPost {
+		return ""
+	}
+
+	// Read and restore the body before selecting the shared token fixture.
+	_ = m.readBody(req)
+
+	return ringOAuthFixtureFilename
+}
+
+func deviceFixtureName(path, requestURL string) string {
+	if !strings.Contains(path, "/ring_devices") && !strings.Contains(path, "/device_info/v3/devices") {
+		return ""
+	}
+
+	if strings.Contains(requestURL, "updated") {
+		return "ring_devices_updated.json"
+	}
+
+	return "ring_devices.json"
+}
+
+func (m *MockTransport) healthFixtureName(path string) string {
+	if !strings.Contains(path, "/health") {
+		return ""
+	}
+
+	deviceID := m.extractDeviceID(path)
+	if deviceID == "987653" {
+		return "ring_doorboot_health_attrs_id987653.json"
+	}
+
+	if strings.Contains(path, "chime") {
+		return "ring_chime_health_attrs.json"
+	}
+
+	return "ring_doorboot_health_attrs.json"
+}
+
+func historyFixtureName(path string) string {
+	if !strings.Contains(path, "/dings/history") &&
+		(!strings.Contains(path, "/doorbots/") || !strings.Contains(path, "/history")) {
+		return ""
+	}
+
+	if strings.Contains(path, "intercom") {
+		return "ring_intercom_history.json"
+	}
+
+	return "ring_doorbot_history.json"
+}
+
+func groupFixtureName(path string) string {
+	if !strings.Contains(path, "/groups") {
+		return ""
+	}
+
+	if strings.Contains(path, "/devices") {
+		return "ring_group_devices.json"
+	}
+
+	return "ring_groups.json"
+}
+
+func intercomFixtureName(path string) string {
+	if !strings.Contains(path, "/intercom") {
+		return ""
+	}
+
+	if strings.Contains(path, "/settings") {
+		return "ring_intercom_settings.json"
+	}
+
+	if strings.Contains(path, "/users") {
+		return "ring_intercom_users.json"
 	}
 
 	return ""
 }
 
 // readBody reads the request body (helper for getFixtureName)
-// Note: This should be called before the body is consumed
+// Note: This should be called before the body is consumed.
 func (m *MockTransport) readBody(req *http.Request) []byte {
 	if req.Body == nil {
 		return nil
 	}
+
 	bodyBytes, _ := io.ReadAll(req.Body)
 	if len(bodyBytes) > 0 {
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
+
 	return bodyBytes
 }
 
-// extractDeviceID extracts device ID from path
+// extractDeviceID extracts device ID from path.
 func (m *MockTransport) extractDeviceID(path string) string {
 	parts := strings.Split(path, "/")
 	for i, part := range parts {
@@ -274,72 +397,6 @@ func (m *MockTransport) extractDeviceID(path string) string {
 			}
 		}
 	}
+
 	return ""
-}
-
-// SetResponse sets a specific response for a request pattern
-func (m *MockTransport) SetResponse(method, path string, response *http.Response) {
-	key := fmt.Sprintf("%s %s", method, path)
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.responses[key] = response
-}
-
-// SetResponseWithBody sets a response with JSON body
-func (m *MockTransport) SetResponseWithBody(method, path string, statusCode int, body interface{}) {
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		panic(fmt.Sprintf("marshal mock response body: %v", err))
-	}
-	response := &http.Response{
-		StatusCode: statusCode,
-		Status:     fmt.Sprintf("%d", statusCode),
-		Body:       io.NopCloser(bytes.NewBuffer(bodyBytes)),
-		Header: map[string][]string{
-			"Content-Type": {"application/json"},
-		},
-	}
-	m.SetResponse(method, path, response)
-}
-
-// SetDefaultResponse sets a default response for unmatched requests
-func (m *MockTransport) SetDefaultResponse(response *http.Response) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.defaultResponse = response
-}
-
-// GetRequests returns all recorded requests
-func (m *MockTransport) GetRequests() []*RequestRecord {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	requests := make([]*RequestRecord, len(m.requests))
-	copy(requests, m.requests)
-	return requests
-}
-
-// ClearRequests clears the request history
-func (m *MockTransport) ClearRequests() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.requests = make([]*RequestRecord, 0)
-}
-
-// GetRequestCount returns the number of recorded requests
-func (m *MockTransport) GetRequestCount() int {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return len(m.requests)
-}
-
-// FindRequest finds a request matching the criteria
-func (m *MockTransport) FindRequest(method, pathContains string) *RequestRecord {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	for _, req := range m.requests {
-		if req.Method == method && strings.Contains(req.URL, pathContains) {
-			return req
-		}
-	}
-	return nil
 }

@@ -3,7 +3,6 @@ package replay_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -32,93 +31,195 @@ type portableSnapshot struct {
 }
 
 func TestPortableRecordingBytes(t *testing.T) {
-	b, err := os.ReadFile(filepath.Join("fixtures", "media", "synthetic", "media-variants.json"))
+	t.Parallel()
+
+	recordingBytes, err := os.ReadFile(filepath.Join("fixtures", "media", "synthetic", "media-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var media portableMedia
-	if err := json.Unmarshal(b, &media); err != nil {
-		t.Fatal(err)
+	{
+		err := json.Unmarshal(recordingBytes, &media)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
+
 	if media.Recording.BodyText == "" || media.Recording.ShareURL == "" || media.Snapshot.BodyText == "" {
 		t.Fatal("incomplete shared media fixture")
 	}
+
 	const origin = "https://portable.example.test"
+
 	responseBody, err := json.Marshal(media.Recording.BodyText)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	transport := replay.NewTransport(replay.Exchange{
-		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/recording", Headers: http.Header{"Accept": []string{"video/mp4,*/*"}}, HeadersMode: replay.HeadersRequired},
-		Response: replay.Response{Status: 200, Headers: http.Header{"Content-Type": []string{"video/mp4"}}, Body: responseBody},
+		Request: replay.Request{
+			Method:      "GET",
+			Origin:      origin,
+			Path:        "/clients_api/dings/42/recording",
+			Headers:     http.Header{"Accept": []string{"video/mp4,*/*"}},
+			HeadersMode: replay.HeadersRequired,
+		},
+		Response: replay.Response{
+			Status:  200,
+			Headers: http.Header{"Content-Type": []string{"video/mp4"}},
+			Body:    responseBody,
+		},
 	})
-	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+
+	client, err := ring.NewClient(
+		ring.WithHTTPClient(&http.Client{Transport: transport}),
+		ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	stream, err := client.GetRecording(context.Background(), ring.GetRecordingRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, RecordingID: 42})
+
+	stream, err := client.GetRecording(
+		context.Background(),
+		ring.GetRecordingRequest{
+			Auth:        ring.AuthContext{AccessToken: "portable-token", HardwareID: ""},
+			RecordingID: 42,
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = stream.Body.Close() }()
+
 	got, err := io.ReadAll(stream.Body)
 	if err != nil || string(got) != media.Recording.BodyText || stream.ContentType != "video/mp4" {
 		t.Fatalf("recording stream = %q, %s, %v", got, stream.ContentType, err)
 	}
-	if err := transport.AssertConsumed(); err != nil {
-		t.Fatal(err)
+
+	{
+		err := transport.AssertConsumed()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
 func TestPortableRecordingShareURL(t *testing.T) {
-	b, err := os.ReadFile(filepath.Join("fixtures", "media", "synthetic", "media-variants.json"))
+	t.Parallel()
+
+	recordingBytes, err := os.ReadFile(filepath.Join("fixtures", "media", "synthetic", "media-variants.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var media portableMedia
-	if err := json.Unmarshal(b, &media); err != nil {
-		t.Fatal(err)
+	{
+		err := json.Unmarshal(recordingBytes, &media)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
+
 	const origin = "https://portable.example.test"
+
 	responseBody, err := json.Marshal(map[string]string{"url": media.Recording.ShareURL})
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	transport := replay.NewTransport(replay.Exchange{
-		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/share/play", HeadersMode: replay.HeadersRequired},
+		Request: replay.Request{
+			Method:      "GET",
+			Origin:      origin,
+			Path:        "/clients_api/dings/42/share/play",
+			HeadersMode: replay.HeadersRequired,
+		},
 		Response: replay.Response{Status: 200, Body: responseBody, JSON: true},
 	})
-	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+
+	client, err := ring.NewClient(
+		ring.WithHTTPClient(&http.Client{Transport: transport}),
+		ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, RecordingID: 42})
+
+	got, err := client.GetRecordingShareURL(
+		context.Background(),
+		ring.GetRecordingShareURLRequest{
+			Auth:        ring.AuthContext{AccessToken: "portable-token", HardwareID: ""},
+			RecordingID: 42,
+		},
+	)
 	if err != nil || got != media.Recording.ShareURL {
 		t.Fatalf("share URL = %q, %v", got, err)
 	}
-	if err := transport.AssertConsumed(); err != nil {
-		t.Fatal(err)
+
+	{
+		err := transport.AssertConsumed()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
 func TestPortableRecordingShareURLInvalidAndMissing(t *testing.T) {
+	t.Parallel()
+
 	const origin = "https://portable.example.test"
+
 	transport := replay.NewTransport(replay.Exchange{
-		Request:  replay.Request{Method: "GET", Origin: origin, Path: "/clients_api/dings/42/share/play", HeadersMode: replay.HeadersRequired},
+		Request: replay.Request{
+			Method:      "GET",
+			Origin:      origin,
+			Path:        "/clients_api/dings/42/share/play",
+			HeadersMode: replay.HeadersRequired,
+		},
 		Response: replay.Response{Status: 200, Body: json.RawMessage(`{}`), JSON: true},
 	})
-	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}))
+
+	client, err := ring.NewClient(
+		ring.WithHTTPClient(&http.Client{Transport: transport}),
+		ring.WithEndpoints(ring.Endpoints{APIBaseURL: origin}),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, RecordingID: 0}); err == nil {
-		t.Fatal("zero recording ID accepted")
+
+	{
+		_, err := client.GetRecordingShareURL(
+			context.Background(),
+			ring.GetRecordingShareURLRequest{
+				Auth:        ring.AuthContext{AccessToken: "portable-token", HardwareID: ""},
+				RecordingID: 0,
+			},
+		)
+		if err == nil {
+			t.Fatal("zero recording ID accepted")
+		}
 	}
-	if _, err := client.GetRecordingShareURL(context.Background(), ring.GetRecordingShareURLRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, RecordingID: 42}); err == nil {
-		t.Fatal("missing share URL accepted")
+
+	{
+		_, err := client.GetRecordingShareURL(
+			context.Background(),
+			ring.GetRecordingShareURLRequest{
+				Auth:        ring.AuthContext{AccessToken: "portable-token", HardwareID: ""},
+				RecordingID: 42,
+			},
+		)
+		if err == nil {
+			t.Fatal("missing share URL accepted")
+		}
 	}
-	if err := transport.AssertConsumed(); err != nil {
-		t.Fatal(err)
+
+	{
+		err := transport.AssertConsumed()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -132,37 +233,65 @@ type failureTransport struct {
 	err    error
 }
 
-func (f failureTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+func (f failureTransport) RoundTrip(request *http.Request) (*http.Response, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
-	return &http.Response{StatusCode: f.status, Status: http.StatusText(f.status), Body: io.NopCloser(strings.NewReader("")), Header: http.Header{}, Request: r}, nil
+
+	return &http.Response{
+		StatusCode: f.status,
+		Status:     http.StatusText(f.status),
+		Body:       io.NopCloser(strings.NewReader("")),
+		Header:     http.Header{},
+		Request:    request,
+	}, nil
 }
 
 func TestPortableHTTPFailures(t *testing.T) {
-	cases, err := replay.LoadCases[portableFailure](filepath.Join("fixtures", "http", "synthetic", "http-failures.json"))
+	t.Parallel()
+
+	cases, err := replay.LoadCases[portableFailure](
+		filepath.Join("fixtures", "http", "synthetic", "http-failures.json"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(cases) != 4 {
 		t.Fatalf("expected four shared failure cases, got %d", len(cases))
 	}
+
 	for _, tc := range cases {
 		t.Run(tc.Case, func(t *testing.T) {
-			f := failureTransport{status: tc.Status}
+			t.Parallel()
+
+			transport := failureTransport{status: tc.Status}
 			if tc.Outcome == "timeout" {
-				f.err = context.DeadlineExceeded
+				transport.err = context.DeadlineExceeded
 			} else if tc.Outcome != "" {
-				f.err = errors.New(tc.Outcome)
+				transport.err = testReplayError(tc.Outcome)
 			}
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: f}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}))
+
+			client, err := ring.NewClient(
+				ring.WithHTTPClient(&http.Client{Transport: transport}),
+				ring.WithEndpoints(ring.Endpoints{APIBaseURL: "https://portable.example.test"}),
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = client.SetSiren(context.Background(), ring.SetSirenRequest{Auth: ring.AuthContext{AccessToken: "portable-token"}, DeviceID: "12345", Enabled: false})
+
+			err = client.SetSiren(
+				context.Background(),
+				ring.SetSirenRequest{
+					Auth:     ring.AuthContext{AccessToken: "portable-token", HardwareID: ""},
+					DeviceID: "12345",
+					Enabled:  false,
+				},
+			)
 			if err == nil {
 				t.Fatal("transport failure was accepted")
 			}
+
 			if tc.Status > 0 {
 				if !ringapimodels.IsHTTPError(err) {
 					t.Fatalf("status %d error = %v", tc.Status, err)

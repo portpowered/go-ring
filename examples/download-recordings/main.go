@@ -9,12 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/portpowered/go-ring/examples/internal/exampleerrors"
 	"github.com/portpowered/go-ring/pkg/ring"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
-	if err := run(); err != nil {
+	err := run()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -32,13 +34,14 @@ func run() error {
 	// Create client with access token
 	client, err := ring.NewClient()
 	if err != nil {
-		return err
+		return exampleerrors.Wrap("create Ring client", err)
 	}
-	defer func() { _ = client.Close() }()
-	auth := ring.AuthContext{AccessToken: accessToken}
+
+	auth := ring.AuthContext{AccessToken: accessToken, HardwareID: ""}
 
 	// Step 1: List devices to select one
 	fmt.Println("Step 1: Enumerating devices...")
+
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 	if err != nil {
 		return ringapimodels.NewConnectionError("Failed to list devices", err)
@@ -64,10 +67,12 @@ func run() error {
 
 	// Step 3: Get device history (recordings)
 	fmt.Printf("Step 3: Retrieving recording history for device %s...\n", deviceName)
+
 	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{Auth: auth,
-		DeviceID: deviceID,
-		Limit:    5,
-		Kind:     "",
+		DeviceID:  deviceID,
+		Limit:     5,
+		Kind:      "",
+		OlderThan: nil,
 	}) // Get up to 5 recordings
 	if err != nil {
 		return ringapimodels.NewConnectionError("Failed to get device history", err)
@@ -80,67 +85,93 @@ func run() error {
 	if len(history.Recordings) == 0 {
 		fmt.Printf("No recordings found for device %s\n", deviceName)
 		fmt.Println("Example completed (no recordings to download)")
+
 		return nil
 	}
 
-	fmt.Printf("✓ Found %d recording(s)\n", len(history.Recordings))
-	for i, recording := range history.Recordings {
+	downloadRecordings(ctx, client, auth, history.Recordings)
+
+	return nil
+}
+
+func downloadRecordings(
+	ctx context.Context,
+	client *ring.Client,
+	auth ring.AuthContext,
+	recordings []ringapimodels.Recording,
+) {
+	fmt.Printf("✓ Found %d recording(s)\n", len(recordings))
+
+	for i, recording := range recordings {
 		fmt.Printf("  %d. ID: %d, Kind: %s, Created: %s\n", i+1, recording.ID, recording.Kind, recording.CreatedAt)
 	}
-	fmt.Println()
 
-	// Step 4: Download recordings
+	fmt.Println()
 	fmt.Println("Step 4: Downloading recordings...")
-	for i, recording := range history.Recordings {
-		// Create filename based on recording ID
-		filename := fmt.Sprintf("recording_%d_%s.mp4", recording.ID, safeFilenamePart(recording.Kind))
-		filepath := filepath.Join(".", filename)
 
+	for recordingIndex, recording := range recordings {
 		fmt.Printf("  Downloading recording %d/%d (ID: %d, Kind: %s)...\n",
-			i+1, len(history.Recordings), recording.ID, recording.Kind)
-
-		// Get the video stream
-		stream, err := client.GetRecording(ctx, ring.GetRecordingRequest{Auth: auth,
-			RecordingID: recording.ID,
-		})
-		if err != nil {
-			log.Printf("  ✗ Failed to get recording %d: %v\n", recording.ID, err)
-			continue
-		}
-
-		// Create the file
-		out, err := os.Create(filepath) // #nosec G304 -- filename contains only sanitized characters and stays in the current directory.
-		if err != nil {
-			log.Printf("  ✗ Failed to create file %s: %v\n", filepath, err)
-			_ = stream.Body.Close()
-			continue
-		}
-
-		// Write the stream to file
-		written, err := io.Copy(out, stream.Body)
-		closeErr := out.Close()
-		bodyCloseErr := stream.Body.Close()
-		if err == nil {
-			err = closeErr
-		}
-		if err == nil {
-			err = bodyCloseErr
-		}
-
-		if err != nil {
-			log.Printf("  ✗ Failed to write recording %d to file: %v\n", recording.ID, err)
-			if removeErr := os.Remove(filepath); removeErr != nil {
-				log.Printf("  ✗ Failed to remove incomplete recording %s: %v\n", filepath, removeErr)
-			}
-			continue
-		}
-
-		fmt.Printf("  ✓ Downloaded to %s (%d bytes, Content-Type: %s)\n", filepath, written, stream.ContentType)
+			recordingIndex+1, len(recordings), recording.ID, recording.Kind)
+		downloadRecording(ctx, client, auth, recording)
 	}
-	fmt.Println()
 
+	fmt.Println()
 	fmt.Println("Example completed successfully!")
-	return nil
+}
+func downloadRecording(
+	ctx context.Context,
+	client *ring.Client,
+	auth ring.AuthContext,
+	recording ringapimodels.Recording,
+) {
+	filename := fmt.Sprintf("recording_%d_%s.mp4", recording.ID, safeFilenamePart(recording.Kind))
+	path := filepath.Join(".", filename)
+
+	stream, err := client.GetRecording(ctx, ring.GetRecordingRequest{Auth: auth, RecordingID: recording.ID})
+	if err != nil {
+		log.Printf("  ✗ Failed to get recording %d: %v\n", recording.ID, err)
+
+		return
+	}
+
+	out, err := os.Create(
+		path,
+	) // #nosec G304 -- filename contains only sanitized characters and stays in the current directory.
+	if err != nil {
+		log.Printf("  ✗ Failed to create file %s: %v\n", path, err)
+		closeIgnoringError(stream.Body.Close)
+
+		return
+	}
+
+	written, err := io.Copy(out, stream.Body)
+	closeErr := out.Close()
+	bodyCloseErr := stream.Body.Close()
+
+	if err == nil {
+		err = closeErr
+	}
+
+	if err == nil {
+		err = bodyCloseErr
+	}
+
+	if err != nil {
+		log.Printf("  ✗ Failed to write recording %d to file: %v\n", recording.ID, err)
+
+		removeErr := os.Remove(path)
+		if removeErr != nil {
+			log.Printf("  ✗ Failed to remove incomplete recording %s: %v\n", path, removeErr)
+		}
+
+		return
+	}
+
+	fmt.Printf("  ✓ Downloaded to %s (%d bytes, Content-Type: %s)\n", path, written, stream.ContentType)
+}
+
+func closeIgnoringError(closeFunc func() error) {
+	_ = closeFunc()
 }
 
 func safeFilenamePart(value string) string {
@@ -148,11 +179,15 @@ func safeFilenamePart(value string) string {
 		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_' {
 			return r
 		}
+
 		return '_'
 	}, value)
+
 	part = strings.Trim(part, "_")
+
 	if part == "" {
 		return "unknown"
 	}
+
 	return part
 }

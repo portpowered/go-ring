@@ -3,7 +3,8 @@
   "private": true,
   "devDependencies": {
     "@asyncapi/modelina": "5.10.1",
-    "@asyncapi/parser": "3.6.3"
+    "@asyncapi/parser": "3.6.3",
+    "yaml": "2.9.1"
   },
   "overrides": {
     "parserapiv1": "npm:@asyncapi/parser@3.6.3",

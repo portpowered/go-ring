@@ -2,10 +2,9 @@ package rest
 
 import (
 	"context"
-	"net/http"
 
-	"github.com/portpowered/go-ring/internal/protocol"
-	"github.com/portpowered/go-ring/pkg/generatedhttp"
+	"github.com/portpowered/go-ring/internal/generatedhttp"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 )
 
 // RegisterPushDevice binds an FCM token to the authenticated Ring account.
@@ -20,13 +19,29 @@ func (c *Client) RegisterPushDevice(ctx context.Context, token string) error {
 		Os:                    generatedhttp.PushDeviceRegistrationDeviceOsAndroid,
 		PushNotificationToken: token,
 	}}
-	return c.doJSONRequest(ctx, http.MethodPatch, protocol.PushDeviceRegistrationPath, body, nil)
+
+	req, err := generatedhttp.NewRegisterPushDeviceRequest(generatedServerBase(c.baseURI), body)
+	if err != nil {
+		return ringerrors.NewNetworkError("failed to build push registration request", err)
+	}
+
+	return c.doGeneratedJSON(ctx, req, nil)
 }
 
 func (c *Client) SubscribeDeviceDing(ctx context.Context, id int64) error {
-	return c.doJSONRequest(ctx, http.MethodPost, capturedIDPath(protocol.DeviceDingSubscribePath, id), nil, nil)
+	req, err := generatedhttp.NewSubscribeDeviceDingRequest(generatedServerBase(c.baseURI), id)
+	if err != nil {
+		return ringerrors.NewNetworkError("failed to build ding subscription request", err)
+	}
+
+	return c.doGeneratedJSON(ctx, req, nil)
 }
 
 func (c *Client) SubscribeDeviceMotion(ctx context.Context, id int64) error {
-	return c.doJSONRequest(ctx, http.MethodPost, capturedIDPath(protocol.DeviceMotionSubscribePath, id), nil, nil)
+	req, err := generatedhttp.NewSubscribeDeviceMotionRequest(generatedServerBase(c.baseURI), id)
+	if err != nil {
+		return ringerrors.NewNetworkError("failed to build motion subscription request", err)
+	}
+
+	return c.doGeneratedJSON(ctx, req, nil)
 }

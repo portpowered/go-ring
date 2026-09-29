@@ -1,0 +1,36 @@
+{
+  "request": {
+    "method": "POST",
+    "origin": "https://firebaseinstallations.googleapis.com",
+    "path": "/v1/projects/ring-17770/installations",
+    "query": [],
+    "headers": {
+      "Accept": ["application/json"],
+      "Content-Type": ["application/json"],
+      "X-Goog-Api-Key": ["AIzaSyCv-hdFBmmdBBJadNy-TFwB-xN_H5m3Bk8"]
+    },
+    "json": true,
+    "body": {
+      "appId": "1:876313859327:android:e10ec6ddb3c81f39",
+      "authVersion": "FIS_v2",
+      "fid": "cAAAAAAAAAAAAAAAAAAAAAA=",
+      "sdkVersion": "w:0.6.17"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": ["application/json"]
+    },
+    "json": true,
+    "body": {
+      "name": "projects/ring-17770/installations/cAAAAAAAAAAAAAAAAAAAAAA=",
+      "fid": "cAAAAAAAAAAAAAAAAAAAAAA=",
+      "refreshToken": "synthetic-refresh-token",
+      "authToken": {
+        "token": "synthetic-installation-token",
+        "expiresIn": "3600s"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "label": "synthetic",
+  "protocol": "MCS",
+  "behavior": "encrypted_ring_event",
+  "credentials": {
+    "androidId": 12345,
+    "securityToken": 67890,
+    "token": "synthetic-fcm-token",
+    "privateKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=",
+    "authSecret": "CgoKCgoKCgoKCgoKCgoKCg=="
+  },
+  "server_message": {
+    "tag": 8,
+    "payload": {
+      "from": "google.com/gcm/notification",
+      "category": "com.ringapp",
+      "persistentId": "synthetic-ring-event-1",
+      "streamId": 7,
+      "appData": [
+        {"key": "content-encoding", "value": "aesgcm"},
+        {"key": "crypto-key", "value": "dh=BHzyexiNA09-ilI4AwS1GsPAiWnid_IbNaYLSPxHZpl4B3dVENuO0EApPZrGn3Qw27p9reY86YIpngS3nSJ4c9E="},
+        {"key": "encryption", "value": "salt=Hx8fHx8fHx8fHx8fHx8fHw=="}
+      ],
+      "rawData": "QeQlxNeO7fQABlHhNF1i43T51tAyvuiiTDcLV6/Nzm0GYLEbTRYQDQBgoTK76cCWhs95ZM7QX8b4OuohQN2mPSpUqnTKL8eQQ7eg+GQQvgjCYgBXfv31s7293EB081/wLPdGnw6LoYhGR1txR+h4xmEOS3xEIrxGJ1TmQP82pEW7EID6Tgc="
+    }
+  },
+  "expected_event": {
+    "persistentId": "synthetic-ring-event-1",
+    "from": "google.com/gcm/notification",
+    "to": "",
+    "ttl": 0,
+    "sent": 0,
+    "data": "{\"android_config\":\"{\\\"category\\\":\\\"ding\\\"}\",\"data\":\"{\\\"device\\\":{\\\"id\\\":123456},\\\"gcmData\\\":{\\\"action\\\":\\\"ding\\\"}}\"}"
+  },
+  "schema_expectation": {
+    "android_config": {"category": "ding"},
+    "data": {"device": {"id": 123456}, "gcmData": {"action": "ding"}}
+  }
+}

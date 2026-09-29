@@ -1,0 +1,30 @@
+{
+  "provenance": "synthetic",
+  "request": {
+    "method": "POST",
+    "origin": "https://api.ring.com",
+    "path": "/clients_api/session",
+    "query": [],
+    "headers": {
+      "Accept": ["application/json"]
+    },
+    "headers_mode": "required",
+    "body": {
+      "device": {
+        "hardware_id": "synthetic-hardware-id",
+        "metadata": {
+          "api_version": 11,
+          "device_model": "go-ring"
+        },
+        "os": "android"
+      }
+    },
+    "json": true
+  },
+  "response": {
+    "status": 204,
+    "headers": {},
+    "body": null,
+    "json": false
+  }
+}

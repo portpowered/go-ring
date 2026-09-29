@@ -1,0 +1,18 @@
+{
+  "title": "Guides",
+  "pages": [
+    "index",
+    "diagnostic-cli",
+    "client-configuration",
+    "authentication",
+    "device-operations",
+    "locations-and-status",
+    "snapshots-and-intercom",
+    "recordings-and-timeline",
+    "account-events-and-tickets",
+    "live-sessions",
+    "sdp-ice",
+    "push-notifications",
+    "cloud-playback"
+  ]
+}

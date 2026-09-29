@@ -2,124 +2,144 @@ package rest
 
 import (
 	"context"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
-	"time"
 
-	"github.com/portpowered/go-ring/internal/protocol"
-	"github.com/portpowered/go-ring/pkg/generatedhttp"
+	"github.com/portpowered/go-ring/internal/generatedhttp"
+	"github.com/portpowered/go-ring/internal/ringerrors"
 )
-
-func capturedIDPath(pattern string, id int64) string {
-	return strings.Replace(pattern, "{id}", strconv.FormatInt(id, 10), 1)
-}
-
-func capturedLocationPath(pattern, id string) string {
-	return strings.Replace(pattern, "{id}", url.PathEscape(id), 1)
-}
-
-func capturedQuery(path string, query url.Values) string {
-	if len(query) == 0 {
-		return path
-	}
-	return path + "?" + query.Encode()
-}
 
 // GetDeviceDetail returns the captured v3 detail envelope.
 func (c *Client) GetDeviceDetail(ctx context.Context, id int64) (*generatedhttp.DeviceDetail, error) {
 	var result generatedhttp.DeviceDetail
-	err := c.doJSONRequest(ctx, http.MethodGet, capturedIDPath(protocol.DeviceDetailV3Path, id), nil, &result)
+
+	req, err := generatedhttp.NewGetDeviceRequest(generatedServerBase(c.baseURI), id)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build device detail request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
 func (c *Client) ListLocations(ctx context.Context) (*generatedhttp.LocationList, error) {
 	var result generatedhttp.LocationList
-	err := c.doJSONRequest(ctx, http.MethodGet, protocol.LocationListV3Path, nil, &result)
+
+	req, err := generatedhttp.NewListLocationsRequest(generatedServerBase(c.baseURI))
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build locations request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
-func (c *Client) GetLocation(ctx context.Context, id string, params generatedhttp.GetLocationParams) (*generatedhttp.LocationDetail, error) {
-	query := url.Values{}
-	if params.Include != nil {
-		query.Set("include", *params.Include)
-	}
+func (c *Client) GetLocation(
+	ctx context.Context,
+	id string,
+	params generatedhttp.GetLocationParams,
+) (*generatedhttp.LocationDetail, error) {
 	var result generatedhttp.LocationDetail
-	err := c.doJSONRequest(ctx, http.MethodGet, capturedQuery(capturedLocationPath(protocol.LocationDetailV4Path, id), query), nil, &result)
+
+	req, err := generatedhttp.NewGetLocationRequest(generatedServerBase(c.baseURI), id, &params)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build location request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
 func (c *Client) ListLocationGroups(ctx context.Context, id string) (*generatedhttp.LocationGroups, error) {
 	var result generatedhttp.LocationGroups
-	err := c.doJSONRequest(ctx, http.MethodGet, capturedLocationPath(protocol.LocationGroupsPath, id), nil, &result)
+
+	req, err := generatedhttp.NewListLocationGroupsRequest(generatedServerBase(c.baseURI), id)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build location groups request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
 func (c *Client) ListLocationDevices(ctx context.Context, id string) (*generatedhttp.LocationGroupDevices, error) {
 	var result generatedhttp.LocationGroupDevices
-	err := c.doJSONRequest(ctx, http.MethodGet, capturedLocationPath(protocol.LocationDevicesPath, id), nil, &result)
+
+	req, err := generatedhttp.NewListLocationDevicesRequest(generatedServerBase(c.baseURI), id)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build location devices request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
-func (c *Client) GetDeviceTimeline(ctx context.Context, id int64, params generatedhttp.GetDeviceTimelineParams) (*generatedhttp.DeviceTimeline, error) {
-	query := url.Values{}
-	if params.StartTime != nil {
-		query.Set("start_time", params.StartTime.Format(time.RFC3339))
-	}
-	if params.EndTime != nil {
-		query.Set("end_time", params.EndTime.Format(time.RFC3339))
-	}
-	if params.Order != nil {
-		query.Set("order", *params.Order)
-	}
-	if params.Limit != nil {
-		query.Set("limit", strconv.Itoa(*params.Limit))
-	}
-	if params.Capabilities != nil {
-		query.Set("capabilities", *params.Capabilities)
-	}
+func (c *Client) GetDeviceTimeline(
+	ctx context.Context,
+	id int64,
+	params generatedhttp.GetDeviceTimelineParams,
+) (*generatedhttp.DeviceTimeline, error) {
 	var result generatedhttp.DeviceTimeline
-	err := c.doJSONRequest(ctx, http.MethodGet, capturedQuery(capturedIDPath(protocol.DeviceTimelinePath, id), query), nil, &result)
+
+	req, err := generatedhttp.NewGetDeviceTimelineRequest(generatedServerBase(c.baseURI), id, &params)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build device timeline request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
-func (c *Client) GetHistoryDevices(ctx context.Context, params generatedhttp.GetHistoryDevicesParams) (*generatedhttp.HistoryDevices, error) {
-	query := url.Values{}
-	if params.SourceIds != nil {
-		query.Set("source_ids", *params.SourceIds)
-	}
-	if params.Capabilities != nil {
-		query.Set("capabilities", *params.Capabilities)
-	}
+func (c *Client) GetHistoryDevices(
+	ctx context.Context,
+	params generatedhttp.GetHistoryDevicesParams,
+) (*generatedhttp.HistoryDevices, error) {
 	var result generatedhttp.HistoryDevices
-	err := c.doJSONRequest(ctx, http.MethodGet, capturedQuery(protocol.HistoryDevicesPath, query), nil, &result)
+
+	req, err := generatedhttp.NewGetHistoryDevicesRequest(generatedServerBase(c.baseURI), &params)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build history devices request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
 func (c *Client) RebootDevice(ctx context.Context, id int64) error {
-	return c.doJSONRequest(ctx, http.MethodPatch, capturedIDPath(protocol.DeviceCommandPath, id), generatedhttp.DeviceCommand{CommandName: generatedhttp.Reboot}, nil)
+	command := generatedhttp.DeviceCommand{CommandName: generatedhttp.Reboot}
+
+	req, err := generatedhttp.NewSendDeviceCommandRequest(generatedServerBase(c.baseURI), id, command)
+	if err != nil {
+		return ringerrors.NewNetworkError("failed to build reboot request", err)
+	}
+
+	return c.doGeneratedJSON(ctx, req, nil)
 }
 
 // UnlockIntercom sends the documented device RPC to an intercom.
@@ -135,22 +155,42 @@ func (c *Client) UnlockIntercom(ctx context.Context, id int64) error {
 			},
 		},
 	}
-	return c.doJSONRequest(ctx, http.MethodPut, capturedIDPath(protocol.IntercomUnlockPath, id), command, nil)
+
+	req, err := generatedhttp.NewUnlockIntercomRequest(generatedServerBase(c.baseURI), id, command)
+	if err != nil {
+		return ringerrors.NewNetworkError("failed to build intercom unlock request", err)
+	}
+
+	return c.doGeneratedJSON(ctx, req, nil)
 }
 
 func (c *Client) SetPersistentLiveViewEnabled(ctx context.Context, id int64, enabled bool) error {
 	body := generatedhttp.LiveViewSettingRequest{Entity: generatedhttp.LiveViewSetting{LiveViewEnabled: enabled}}
-	return c.doJSONRequest(ctx, http.MethodPut, capturedIDPath(protocol.PersistentLiveViewPath, id), body, nil)
+
+	req, err := generatedhttp.NewSetLiveViewEnabledRequest(generatedServerBase(c.baseURI), id, body)
+	if err != nil {
+		return ringerrors.NewNetworkError("failed to build live view settings request", err)
+	}
+
+	return c.doGeneratedJSON(ctx, req, nil)
 }
 
 func (c *Client) FavoriteRecording(ctx context.Context, id int64) error {
-	return c.doJSONRequest(ctx, http.MethodPut, capturedIDPath(protocol.RecordingFavoritePath, id), nil, nil)
+	req, err := generatedhttp.NewFavoriteRecordingRequest(generatedServerBase(c.baseURI), id)
+	if err != nil {
+		return ringerrors.NewNetworkError("failed to build favorite recording request", err)
+	}
+
+	return c.doGeneratedJSON(ctx, req, nil)
 }
 
 func (c *Client) DeleteRecording(ctx context.Context, id int64, confirmFavorite *bool) error {
-	query := url.Values{}
-	if confirmFavorite != nil {
-		query.Set("confirm_delete_favorite", strconv.FormatBool(*confirmFavorite))
+	params := &generatedhttp.DeleteRecordingParams{ConfirmDeleteFavorite: confirmFavorite}
+
+	req, err := generatedhttp.NewDeleteRecordingRequest(generatedServerBase(c.baseURI), id, params)
+	if err != nil {
+		return ringerrors.NewNetworkError("failed to build delete recording request", err)
 	}
-	return c.doJSONRequest(ctx, http.MethodDelete, capturedQuery(capturedIDPath(protocol.RecordingDeletePath, id), query), nil, nil)
+
+	return c.doGeneratedJSON(ctx, req, nil)
 }

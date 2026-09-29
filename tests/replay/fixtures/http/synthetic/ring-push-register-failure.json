@@ -1,0 +1,36 @@
+{
+  "provenance": "synthetic",
+  "request": {
+    "method": "PATCH",
+    "origin": "https://api.ring.com",
+    "path": "/clients_api/device",
+    "query": [],
+    "headers": {
+      "Accept": ["application/json"]
+    },
+    "headers_mode": "required",
+    "body": {
+      "device": {
+        "metadata": {
+          "api_version": 11,
+          "device_model": "go-ring",
+          "pn_dict_version": "2.0.0",
+          "pn_service": "fcm"
+        },
+        "os": "android",
+        "push_notification_token": "synthetic-fcm-token"
+      }
+    },
+    "json": true
+  },
+  "response": {
+    "status": 503,
+    "headers": {
+      "Content-Type": ["application/json"]
+    },
+    "body": {
+      "error": "synthetic unavailable"
+    },
+    "json": true
+  }
+}

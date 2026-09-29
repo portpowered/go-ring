@@ -11,14 +11,17 @@ import (
 // v1 settings resource. Unrecognized settings are ignored.
 func (c *Client) GetDeviceSettings(ctx context.Context, req GetDeviceSettingsRequest) (DeviceSettings, error) {
 	ctx = c.accountContext(ctx, req.Auth)
+
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return DeviceSettings{}, err
 	}
+
 	enabled, err := c.restClient.GetMotionDetectionEnabled(ctx, id)
 	if err != nil {
 		return DeviceSettings{}, err
 	}
+
 	return DeviceSettings{MotionDetectionEnabled: enabled}, nil
 }
 
@@ -26,13 +29,16 @@ func (c *Client) GetDeviceSettings(ctx context.Context, req GetDeviceSettingsReq
 // field is rejected instead of silently sending an empty or guessed patch.
 func (c *Client) PatchDeviceSettings(ctx context.Context, req PatchDeviceSettingsRequest) error {
 	ctx = c.accountContext(ctx, req.Auth)
+
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err
 	}
+
 	if req.MotionDetectionEnabled == nil {
 		return ringapimodels.NewBadRequestError("no supported settings fields were supplied", nil)
 	}
+
 	return c.restClient.PatchMotionDetectionEnabled(ctx, id, *req.MotionDetectionEnabled)
 }
 
@@ -40,10 +46,12 @@ func (c *Client) PatchDeviceSettings(ctx context.Context, req PatchDeviceSetting
 // reports 30 seconds for the on call, but the request does not accept duration.
 func (c *Client) SetSiren(ctx context.Context, req SetSirenRequest) error {
 	ctx = c.accountContext(ctx, req.Auth)
+
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err
 	}
+
 	return c.restClient.SetSiren(ctx, id, req.Enabled)
 }
 
@@ -52,5 +60,6 @@ func settingsDeviceID(value string) (int64, error) {
 	if err != nil || id <= 0 {
 		return 0, ringapimodels.NewBadRequestError("invalid device ID", err)
 	}
+
 	return id, nil
 }

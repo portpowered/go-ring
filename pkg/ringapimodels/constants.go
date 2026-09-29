@@ -1,6 +1,6 @@
 package ringapimodels
 
-// DeviceFamily represents the family/type of a Ring device
+// DeviceFamily represents the family/type of a Ring device.
 type DeviceFamily string
 
 const (

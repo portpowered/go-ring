@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/portpowered/go-ring/examples/internal/exampleerrors"
 	"github.com/portpowered/go-ring/pkg/ring"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
-	if err := run(); err != nil {
+	err := run()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -24,44 +26,55 @@ func run() error {
 	refreshToken := os.Getenv("RING_REFRESH_TOKEN")
 
 	if accessToken == "" && refreshToken == "" {
-		return ringapimodels.NewBadRequestError("Either RING_ACCESS_TOKEN or RING_REFRESH_TOKEN environment variable must be set", nil)
+		return ringapimodels.NewBadRequestError(
+			"Either RING_ACCESS_TOKEN or RING_REFRESH_TOKEN environment variable must be set",
+			nil,
+		)
 	}
 
-	var client *ring.Client
-	var err error
+	var (
+		client *ring.Client
+		err    error
+	)
 
 	// Create client with access token if available, otherwise use refresh token
+
 	if accessToken != "" {
 		fmt.Println("Creating client with access token...")
+
 		client, err = ring.NewClient()
 		if err != nil {
-			return err
+			return exampleerrors.Wrap("create Ring client", err)
 		}
 	} else {
 		fmt.Println("Creating client to refresh token...")
+
 		client, err = ring.NewClient()
 		if err != nil {
-			return err
+			return exampleerrors.Wrap("create Ring client", err)
 		}
 
 		// Refresh token to get access token
 		authResp, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
 			RefreshToken: refreshToken,
+			HardwareID:   "",
 		})
 		if err != nil {
-			return err
+			return exampleerrors.Wrap("refresh Ring access token", err)
 		}
+
 		fmt.Printf("✓ Token refreshed successfully (expires in %d seconds)\n\n", authResp.ExpiresIn)
 		accessToken = authResp.AccessToken
 	}
-	defer func() { _ = client.Close() }()
-	auth := ring.AuthContext{AccessToken: accessToken}
+
+	auth := ring.AuthContext{AccessToken: accessToken, HardwareID: ""}
 
 	// List all devices
 	fmt.Println("Enumerating devices...")
+
 	devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
 	if err != nil {
-		return err
+		return exampleerrors.Wrap("list Ring devices", err)
 	}
 
 	if devices == nil {
@@ -72,9 +85,11 @@ func run() error {
 	totalDevices := len(devices.Devices)
 	fmt.Printf("✓ Found %d total device(s)\n", totalDevices)
 	fmt.Println()
+
 	for i, device := range devices.Devices {
 		fmt.Printf("  %d. %s (ID: %s, kind: %s, family: %s)\n", i+1, device.Name, device.ID, device.Kind, device.Family)
 		fmt.Printf("     Capabilities: %v\n", device.Capabilities)
+
 		if device.Health != nil && device.Health.BatteryLevel != nil {
 			fmt.Printf("     Battery: %d%%\n", *device.Health.BatteryLevel)
 		}
@@ -85,5 +100,6 @@ func run() error {
 	} else {
 		fmt.Println("Example completed successfully!")
 	}
+
 	return nil
 }

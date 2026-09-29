@@ -1,104 +1,230 @@
 asyncapi: 3.0.0
 info:
-  title: Ring signaling application messages
+  title: Ring WebSocket application messages
   version: 0.3.0
   description: >-
     WebSocket application envelope and PTZ RPC shapes from inherited sanitized
     signaling conversations without verifiable capture provenance. These are
-    historical regression inputs, not current provider evidence. Binary/control
-    frames and complete media negotiation semantics are outside this contract.
+    historical regression inputs, not current provider evidence. The account
+    event WebSocket contract is implementation-derived and experimental. Binary
+    control frames and complete media negotiation semantics are outside this contract.
 servers:
   ring:
-    host: api.prod.signalling.ring.devices.a2z.com
+    host: api.prod.signalling.ring.devices.a2z.com:443
     protocol: wss
     description: Historical signaling host; tests use a local peer.
+  accountEvents:
+    host: api.ring.com
+    protocol: wss
+    description: Implementation-derived experimental account event host; no sanitized live capture.
 channels:
+  serverEnvelope:
+    address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: &signalingWebSocketBinding
+      ws:
+        method: GET
+        query:
+          type: object
+          required: [api_version, auth_type, client_id, token]
+          properties:
+            api_version: {type: string, const: '4.0'}
+            auth_type: {type: string, const: ring_solutions}
+            client_id: {type: string, pattern: '^ring_site-.+$'}
+            token: {type: string, minLength: 1}
+          additionalProperties: false
+        bindingVersion: '0.1.0'
+    messages:
+      inboundDiscriminator: {$ref: '#/components/messages/InboundDiscriminator'}
+      pushEvent: {$ref: '#/components/messages/PushEvent'}
+      pushSubscriptionAck: {$ref: '#/components/messages/PushSubscriptionAck'}
+      playbackAnswer: {$ref: '#/components/messages/PlaybackAnswer'}
+      liveAnswer: {$ref: '#/components/messages/LiveAnswer'}
+      liveICE: {$ref: '#/components/messages/LiveICE'}
+      serverICE: {$ref: '#/components/messages/ServerICE'}
+      sessionNotification: {$ref: '#/components/messages/SessionNotification'}
+      sessionPong: {$ref: '#/components/messages/SessionPong'}
+      sessionCreated: {$ref: '#/components/messages/SessionCreated'}
+      serverCameraStarted: {$ref: '#/components/messages/ServerCameraStarted'}
+      serverClose: {$ref: '#/components/messages/ServerClose'}
+      serverRPC: {$ref: '#/components/messages/ServerRPC'}
   pushSubscribe:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       pushSubscribe:
         $ref: '#/components/messages/PushSubscribe'
   pushEvent:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       pushEvent:
         $ref: '#/components/messages/PushEvent'
   pushSubscriptionAck:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       pushSubscriptionAck:
         $ref: '#/components/messages/PushSubscriptionAck'
   pushHeartbeat:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       pushHeartbeat:
         $ref: '#/components/messages/PushHeartbeat'
   pushUnsubscribe:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       pushUnsubscribe:
         $ref: '#/components/messages/PushUnsubscribe'
   playbackOffer:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       playbackOffer:
         $ref: '#/components/messages/PlaybackOffer'
   playbackAnswer:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       playbackAnswer:
         $ref: '#/components/messages/PlaybackAnswer'
   playbackClose:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       playbackClose:
         $ref: '#/components/messages/PlaybackClose'
   iCECandidate:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       iCECandidate:
         $ref: '#/components/messages/ICECandidate'
   sessionNotification:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       sessionNotification:
         $ref: '#/components/messages/SessionNotification'
   sessionPing:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       sessionPing:
         $ref: '#/components/messages/SessionPing'
+  sessionActivate:
+    address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
+    messages:
+      sessionActivate:
+        $ref: '#/components/messages/SessionActivate'
+  sessionMicrophone:
+    address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
+    messages:
+      sessionMicrophone:
+        $ref: '#/components/messages/SessionMicrophone'
+  sessionStreamOptions:
+    address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
+    messages:
+      sessionStreamAudioOptions:
+        $ref: '#/components/messages/SessionStreamAudioOptions'
+      sessionStreamVideoOptions:
+        $ref: '#/components/messages/SessionStreamVideoOptions'
+      sessionStreamAudioVideoOptions:
+        $ref: '#/components/messages/SessionStreamAudioVideoOptions'
+  sessionClose:
+    address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
+    messages:
+      sessionClose:
+        $ref: '#/components/messages/SessionClose'
   sessionPong:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       sessionPong:
         $ref: '#/components/messages/SessionPong'
   liveView:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       liveView:
         $ref: '#/components/messages/LiveView'
   sessionCreated:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       sessionCreated:
         $ref: '#/components/messages/SessionCreated'
   liveAnswer:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       liveAnswer:
         $ref: '#/components/messages/LiveAnswer'
   liveICE:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       liveICE:
         $ref: '#/components/messages/LiveICE'
   pTZCommand:
     address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
     messages:
       pTZCommand:
         $ref: '#/components/messages/PTZCommand'
+      pTZContinuousCommand:
+        $ref: '#/components/messages/PTZContinuousCommand'
+  accountEvent:
+    address: /clients_api/ws
+    servers: [{$ref: '#/servers/accountEvents'}]
+    bindings:
+      ws:
+        method: GET
+        headers:
+          type: object
+          required: [Authorization]
+          properties:
+            Authorization: {type: string, description: Bearer access token from the caller's account context.}
+            Hardware_id: {type: string, description: Optional persistent hardware identifier.}
+        bindingVersion: '0.1.0'
+    messages:
+      accountEvent:
+        $ref: '#/components/messages/AccountEvent'
 operations:
+  receiveServerEnvelope:
+    action: receive
+    title: Receive a signaling envelope
+    summary: Dispatch a signaling message by its method.
+    description: The common inbound envelope is decoded before each method-specific frame is validated.
+    tags: [{name: Session}]
+    channel: {$ref: '#/channels/serverEnvelope'}
   sendPushSubscribe:
     action: send
     title: Subscribe to push notifications
@@ -187,6 +313,34 @@ operations:
     tags: [{name: Session}]
     channel:
       $ref: '#/channels/sessionPing'
+  sendSessionActivate:
+    action: send
+    title: Activate a device session
+    summary: Start the negotiated device session.
+    description: Sends the negotiated device and session identifiers to activate a live stream.
+    tags: [{name: Session}]
+    channel: {$ref: '#/channels/sessionActivate'}
+  sendSessionMicrophone:
+    action: send
+    title: Set microphone state
+    summary: Enable or disable microphone audio in a device session.
+    description: Sends the device and session identifiers with the requested microphone state.
+    tags: [{name: Session}]
+    channel: {$ref: '#/channels/sessionMicrophone'}
+  sendSessionStreamOptions:
+    action: send
+    title: Set stream options
+    summary: Update audio or video options for a device session.
+    description: Sends the device and session identifiers with the supplied option values.
+    tags: [{name: Session}]
+    channel: {$ref: '#/channels/sessionStreamOptions'}
+  sendSessionClose:
+    action: send
+    title: Close a device session
+    summary: Request termination of a live device session.
+    description: Sends the device and session identifiers to close the signaling session.
+    tags: [{name: Session}]
+    channel: {$ref: '#/channels/sessionClose'}
   receiveSessionPong:
     action: receive
     title: Receive a session heartbeat response
@@ -235,12 +389,30 @@ operations:
     tags: [{name: Camera controls}]
     channel:
       $ref: '#/channels/pTZCommand'
+  receiveAccountEvent:
+    action: receive
+    title: Receive an account event
+    summary: Receive an experimental account event over the WebSocket.
+    description: Implementation-derived frame projection; only kind, device ID, and timestamp are currently typed.
+    tags: [{name: Account events}]
+    channel:
+      $ref: '#/channels/accountEvent'
 components:
   messages:
     ClientMessage:
       payload: {$ref: '#/components/schemas/ClientEnvelope'}
     ServerMessage:
       payload: {$ref: '#/components/schemas/ServerEnvelope'}
+    InboundDiscriminator:
+      payload: {$ref: '#/components/schemas/SignalingInboundDiscriminator'}
+    ServerICE:
+      payload: {$ref: '#/components/schemas/ServerICEFrame'}
+    ServerCameraStarted:
+      payload: {$ref: '#/components/schemas/ServerCameraStartedFrame'}
+    ServerClose:
+      payload: {$ref: '#/components/schemas/ServerCloseFrame'}
+    ServerRPC:
+      payload: {$ref: '#/components/schemas/ServerRPCFrame'}
     PushSubscribe:
       payload: {$ref: '#/components/schemas/PushSubscribeFrame'}
     PushEvent:
@@ -263,6 +435,18 @@ components:
       payload: {$ref: '#/components/schemas/SessionNotificationFrame'}
     SessionPing:
       payload: {$ref: '#/components/schemas/SessionPingFrame'}
+    SessionActivate:
+      payload: {$ref: '#/components/schemas/SessionActivateFrame'}
+    SessionMicrophone:
+      payload: {$ref: '#/components/schemas/SessionMicrophoneFrame'}
+    SessionStreamAudioOptions:
+      payload: {$ref: '#/components/schemas/SessionStreamAudioOptionsFrame'}
+    SessionStreamVideoOptions:
+      payload: {$ref: '#/components/schemas/SessionStreamVideoOptionsFrame'}
+    SessionStreamAudioVideoOptions:
+      payload: {$ref: '#/components/schemas/SessionStreamAudioVideoOptionsFrame'}
+    SessionClose:
+      payload: {$ref: '#/components/schemas/SessionCloseFrame'}
     SessionPong:
       payload: {$ref: '#/components/schemas/SessionPongFrame'}
     LiveView:
@@ -275,7 +459,118 @@ components:
       payload: {$ref: '#/components/schemas/LiveICEFrame'}
     PTZCommand:
       payload: {$ref: '#/components/schemas/PTZCommandFrame'}
+    PTZContinuousCommand:
+      payload: {$ref: '#/components/schemas/PTZContinuousCommandFrame'}
+    AccountEvent:
+      payload: {$ref: '#/components/schemas/AccountEventFrame'}
   schemas:
+    ServerCameraStartedFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: camera_started}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionBody'}
+    ServerCloseFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: close}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/ServerCloseBody'}
+    ServerCloseBody:
+      type: object
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        reason: {$ref: '#/components/schemas/ServerCloseReason'}
+      additionalProperties: true
+    ServerCloseReason:
+      type: object
+      properties:
+        code: {oneOf: [{type: integer}, {type: string}]}
+        text: {type: string}
+      additionalProperties: true
+    ServerICEFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: ice}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/ServerICEBody'}
+    ServerICEBody:
+      type: object
+      required: [ice, mlineindex]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        user_id: {type: integer}
+        ice: {type: string}
+        mid: {type: string}
+        mlineindex: {type: integer, minimum: 0}
+      additionalProperties: true
+    ServerRPCFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: rpc}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/ServerRPCBody'}
+    ServerRPCBody:
+      type: object
+      required: [command]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        command: {$ref: '#/components/schemas/ServerRPCCommand'}
+      additionalProperties: true
+    ServerRPCCommand:
+      type: object
+      required: [jsonrpc, id]
+      properties:
+        jsonrpc: {type: string, const: '2.0'}
+        id: {type: string}
+        result: {$ref: '#/components/schemas/RPCResultValue'}
+        error: {$ref: '#/components/schemas/RPCErrorValue'}
+        method: {type: string}
+        params: {type: object, additionalProperties: true}
+      additionalProperties: true
+    RPCResultValue:
+      type: object
+      properties:
+        sessionId: {type: string}
+        timestamp: {type: number}
+        version: {type: number}
+      additionalProperties: true
+    RPCErrorValue:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: integer}
+        message: {type: string}
+      additionalProperties: true
+    SignalingInboundDiscriminator:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method:
+          type: string
+          enum: [camera_started, close, ice, notification, pong, push_event, push_subscription_ack, rpc, sdp, session_created]
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {type: object, additionalProperties: true}
+    AccountEventFrame:
+      description: Synthetic implementation-derived event shape; other event fields remain unverified and extensible.
+      type: object
+      properties:
+        kind: {type: string}
+        device_id: {type: integer, format: int64}
+        timestamp: {type: string}
+      additionalProperties: true
     LiveViewFrame:
       type: object
       required: [method, dialog_id, body]
@@ -288,7 +583,7 @@ components:
       required: [doorbot_id, sdp, stream_options, type]
       properties:
         doorbot_id: {type: integer}
-        sdp: {type: string, minLength: 1}
+        sdp: {type: string, minLength: 1, x-sdp-media-direction: {type: string, enum: [sendrecv, sendonly, recvonly, inactive]}}
         stream_options: {$ref: '#/components/schemas/LiveStreamOptions'}
         type: {type: string, const: offer}
     LiveStreamOptions:
@@ -360,6 +655,39 @@ components:
         dialog_id: {type: string}
         riid: {type: string}
         body: {$ref: '#/components/schemas/PTZCommandBody'}
+    PTZContinuousCommandFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: rpc}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/PTZContinuousCommandBody'}
+    PTZContinuousCommandBody:
+      type: object
+      required: [doorbot_id, session_id, command]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        command: {$ref: '#/components/schemas/PTZContinuousWireCommand'}
+    PTZContinuousWireCommand:
+      type: object
+      required: [jsonrpc, id, method, params]
+      properties:
+        jsonrpc: {type: string, const: '2.0'}
+        id: {type: string}
+        method: {type: string, enum: [PTZ.Pan.Continuous, PTZ.Tilt.Continuous]}
+        params: {$ref: '#/components/schemas/PTZContinuousParams'}
+    PTZContinuousParams:
+      type: object
+      required: [sessionId, timestamp, version, direction, speed]
+      properties:
+        sessionId: {type: string}
+        timestamp: {type: integer, format: int64, minimum: 0}
+        version: {type: integer, const: 1}
+        direction: {$ref: '#/components/schemas/PTZDirection'}
+        speed: {type: number, minimum: 0, maximum: 1, description: Zero stops continuous movement.}
+        reason: {type: string, description: Optional halt reason.}
     PTZCommandBody:
       type: object
       required: [doorbot_id, session_id, command]
@@ -466,6 +794,86 @@ components:
       required: [method, dialog_id, body]
       properties:
         method: {type: string, const: ping}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionBody'}
+    SessionActivateFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: activate_session}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionBody'}
+    SessionMicrophoneFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: mic_enable}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionMicrophoneBody'}
+    SessionMicrophoneBody:
+      type: object
+      required: [doorbot_id, session_id, enabled]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        enabled: {type: boolean}
+    SessionStreamAudioOptionsFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: stream_options}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionStreamAudioOptionsBody'}
+    SessionStreamAudioOptionsBody:
+      type: object
+      required: [doorbot_id, session_id, audio_enabled]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        audio_enabled: {type: boolean}
+      additionalProperties: false
+    SessionStreamVideoOptionsFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: stream_options}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionStreamVideoOptionsBody'}
+    SessionStreamVideoOptionsBody:
+      type: object
+      required: [doorbot_id, session_id, video_enabled]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        video_enabled: {type: boolean}
+      additionalProperties: false
+    SessionStreamAudioVideoOptionsFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: stream_options}
+        dialog_id: {type: string}
+        riid: {type: string}
+        body: {$ref: '#/components/schemas/SessionStreamAudioVideoOptionsBody'}
+    SessionStreamAudioVideoOptionsBody:
+      type: object
+      required: [doorbot_id, session_id, audio_enabled, video_enabled]
+      properties:
+        doorbot_id: {type: integer}
+        session_id: {type: string}
+        audio_enabled: {type: boolean}
+        video_enabled: {type: boolean}
+      additionalProperties: false
+    SessionCloseFrame:
+      type: object
+      required: [method, dialog_id, body]
+      properties:
+        method: {type: string, const: close}
         dialog_id: {type: string}
         riid: {type: string}
         body: {$ref: '#/components/schemas/SessionBody'}

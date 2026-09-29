@@ -27,6 +27,7 @@ func (m *pkceMockTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		body, _ = io.ReadAll(req.Body)
 		req.Body = io.NopCloser(bytes.NewReader(body))
 	}
+
 	m.requests = append(m.requests, req.Clone(req.Context()))
 	m.bodies = append(m.bodies, string(body))
 
@@ -34,39 +35,66 @@ func (m *pkceMockTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		if headers == nil {
 			headers = make(http.Header)
 		}
-		return &http.Response{StatusCode: status, Status: http.StatusText(status), Header: headers, Body: io.NopCloser(strings.NewReader(body)), Request: req}
+
+		return &http.Response{
+			StatusCode: status,
+			Status:     http.StatusText(status),
+			Header:     headers,
+			Body:       io.NopCloser(strings.NewReader(body)),
+			Request:    req,
+		}
 	}
 
 	switch {
-	case req.Method == http.MethodGet && req.URL.Path == "/oauth/v2/authorize" && req.URL.Query().Get("response_type") == "code":
+	case req.Method == http.MethodGet &&
+		req.URL.Path == oauthAuthorizePath &&
+		req.URL.Query().Get("response_type") == "code":
 		m.state = req.URL.Query().Get("state")
+
 		return respond(http.StatusOK, `<script id="oauth-args">{"csrf-token":"csrf-value"}</script>`, nil), nil
 	case req.Method == http.MethodPost && req.URL.Path == "/oauth/v2/signin":
-		return respond(http.StatusPreconditionFailed, `{"tsv_state":"email"}`, nil), nil
+		return respond(http.StatusPreconditionFailed, syntheticEmailTwoFactorState, nil), nil
 	case req.Method == http.MethodPost && req.URL.Path == "/oauth/v2/2fa/verify":
 		return respond(http.StatusOK, `{}`, nil), nil
-	case req.Method == http.MethodGet && req.URL.Path == "/oauth/v2/authorize":
+	case req.Method == http.MethodGet && req.URL.Path == oauthAuthorizePath:
 		headers := make(http.Header)
 		headers.Set("Location", "https://ring.com/signin/callback?code=auth-code&state="+url.QueryEscape(m.state))
+
 		return respond(http.StatusFound, "", headers), nil
 	case req.Method == http.MethodPost && req.URL.Path == "/oauth/token":
 		if strings.Contains(string(body), "grant_type=refresh_token") {
-			return respond(http.StatusOK, `{"access_token":"pkce-access-refreshed","refresh_token":"pkce-refresh-rotated","expires_in":14400,"token_type":"Bearer"}`, nil), nil
+			return respond(
+				http.StatusOK,
+				`{"access_token":"pkce-access-refreshed",`+
+					`"refresh_token":"pkce-refresh-rotated","`+
+					`expires_in":14400,"token_type":"Bearer"}`,
+				nil,
+			), nil
 		}
-		return respond(http.StatusOK, `{"access_token":"pkce-access","refresh_token":"pkce-refresh","expires_in":14400,"token_type":"Bearer"}`, nil), nil
+
+		return respond(
+			http.StatusOK,
+			`{"access_token":"pkce-access","refresh_token":"pkce-refresh","expires_in":14400,"token_type":"Bearer"}`,
+			nil,
+		), nil
 	default:
 		return respond(http.StatusNotFound, `{}`, nil), nil
 	}
 }
 
 func TestAuthenticate_PKCEWith2FA(t *testing.T) {
+	t.Parallel()
+
 	transport := &pkceMockTransport{}
 	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 	require.NoError(t, err)
+
 	defer func() { _ = client.Close() }()
+
 	ctx := newTestContext()
 	flow, err := client.NewLoginSession(ring.LoginSessionRequest{Username: "testuser", Password: "testpass"})
 	require.NoError(t, err)
+
 	defer func() { _ = flow.Close() }()
 
 	err = flow.Request2FACode(ctx)
@@ -84,7 +112,10 @@ func TestAuthenticate_PKCEWith2FA(t *testing.T) {
 }
 
 func TestAuthenticate_Success(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClient()
+
 	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
@@ -116,7 +147,10 @@ func TestAuthenticate_Success(t *testing.T) {
 }
 
 func TestAuthenticate_WithOTP(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClient()
+
 	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
@@ -134,12 +168,15 @@ func TestAuthenticate_WithOTP(t *testing.T) {
 	requests := mockTransport.GetRequests()
 	require.Len(t, requests, 2)
 	req := requests[1]
-	assert.Equal(t, "true", req.Headers.Get("2fa-support"))
-	assert.Equal(t, "123456", req.Headers.Get("2fa-code"))
+	assert.Equal(t, "true", req.Headers.Get("2fa-Support"))
+	assert.Equal(t, "123456", req.Headers.Get("2fa-Code"))
 }
 
 func TestAuthenticate_Requires2FA(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClient()
+
 	defer func() { _ = client.Close() }()
 
 	// Set up a 412 response for 2FA requirement
@@ -156,12 +193,15 @@ func TestAuthenticate_Requires2FA(t *testing.T) {
 
 	// Should return a Requires2FAError
 	assert.Nil(t, authResp)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, ringapimodels.IsRequires2FAError(err))
 }
 
 func TestAuthenticate_InvalidCredentials(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClient()
+
 	defer func() { _ = client.Close() }()
 
 	// Set up a 401 response for invalid credentials
@@ -177,12 +217,15 @@ func TestAuthenticate_InvalidCredentials(t *testing.T) {
 	})
 
 	assert.Nil(t, authResp)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, ringapimodels.IsAuthenticationError(err))
 }
 
 func TestRequest2FACode(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClient()
+
 	defer func() { _ = client.Close() }()
 
 	// Set up a 412 response for 2FA requirement
@@ -197,7 +240,7 @@ func TestRequest2FACode(t *testing.T) {
 	})
 
 	// Should succeed (2FA requirement is expected)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Verify request was made
 	requests := mockTransport.GetRequests()
@@ -208,7 +251,10 @@ func TestRequest2FACode(t *testing.T) {
 }
 
 func TestRefreshToken_Success(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClient()
+
 	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
@@ -235,7 +281,10 @@ func TestRefreshToken_Success(t *testing.T) {
 }
 
 func TestRefreshToken_InvalidToken(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClient()
+
 	defer func() { _ = client.Close() }()
 
 	// Set up a 401 response for invalid refresh token
@@ -249,13 +298,16 @@ func TestRefreshToken_InvalidToken(t *testing.T) {
 	})
 
 	assert.Nil(t, authResp)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, ringapimodels.IsAuthenticationError(err))
 }
 
 func TestNewClientWithoutBoundToken(t *testing.T) {
+	t.Parallel()
+
 	client, err := ring.NewClient()
 	require.NoError(t, err)
+
 	defer func() { _ = client.Close() }()
 
 	// Client does not own account credentials.
@@ -263,16 +315,22 @@ func TestNewClientWithoutBoundToken(t *testing.T) {
 }
 
 func TestAuthContextHeaders(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 	// Verify request-scoped credentials reach the transport.
 	ctx := newTestContext()
-	_, _ = client.ListDevices(ctx, ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "new_token", HardwareID: "test_hardware_id"}})
+	_, _ = client.ListDevices(
+		ctx,
+		ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "new_token", HardwareID: "test_hardware_id"}},
+	)
 
 	requests := mockTransport.GetRequests()
 	if len(requests) > 0 {
 		req := requests[0]
 		assert.NotEmpty(t, req.Headers.Get("User-Agent"))
-		assert.Equal(t, "test_hardware_id", req.Headers.Get("hardware_id"))
+		assert.Equal(t, "test_hardware_id", req.Headers.Get("Hardware_id"))
 	}
 }

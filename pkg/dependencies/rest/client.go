@@ -3,20 +3,21 @@
 package rest
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
+	"github.com/portpowered/go-ring/internal/generatedhttp"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/requestauth"
 	"github.com/portpowered/go-ring/internal/ringerrors"
 )
 
-// Client is a REST API client for Ring services
+// Client is a REST API client for Ring services.
 type Client struct {
 	httpClient   *http.Client
 	baseURI      string
@@ -27,17 +28,17 @@ type Client struct {
 	pendingPKCE  *pkceState
 }
 
-// ClientOption is a function that configures a Client
+// ClientOption is a function that configures a Client.
 type ClientOption func(*Client)
 
-// WithHTTPClient sets a custom HTTP client
+// WithHTTPClient sets a custom HTTP client.
 func WithHTTPClient(httpClient *http.Client) ClientOption {
 	return func(c *Client) {
 		c.httpClient = httpClient
 	}
 }
 
-// WithBaseURI sets the base URL for the Ring API
+// WithBaseURI sets the base URL for the Ring API.
 func WithBaseURI(baseURL string) ClientOption {
 	return func(c *Client) {
 		c.baseURI = baseURL
@@ -49,21 +50,21 @@ func WithEndpointBases(apiBase, oauthBase string) ClientOption {
 	return func(c *Client) { c.baseURI, c.oauthBaseURI = apiBase, oauthBase }
 }
 
-// WithUserAgent sets a custom user agent
+// WithUserAgent sets a custom user agent.
 func WithUserAgent(userAgent string) ClientOption {
 	return func(c *Client) {
 		c.userAgent = userAgent
 	}
 }
 
-// WithHardwareID sets the hardware ID for authentication
+// WithHardwareID sets the hardware ID for authentication.
 func WithHardwareID(hardwareID string) ClientOption {
 	return func(c *Client) {
 		c.hardwareID = hardwareID
 	}
 }
 
-// NewClient creates a new REST API client
+// NewClient creates a new REST API client.
 func NewClient(opts ...ClientOption) *Client {
 	client := &Client{
 		baseURI:      protocol.APIBaseURL,
@@ -81,11 +82,32 @@ func NewClient(opts ...ClientOption) *Client {
 	return client
 }
 
-// Apply applies the options to the client
+// Apply applies the options to the client.
 func (c *Client) Apply(opts ...ClientOption) {
 	for _, opt := range opts {
 		opt(c)
 	}
+}
+
+// HTTPClient returns the underlying HTTP client.
+func (c *Client) HTTPClient() *http.Client {
+	return c.httpClient
+}
+
+// generatedServerBase preserves a caller-supplied base path when generated
+// operation paths are resolved relative to that base URL.
+func generatedServerBase(base string) string {
+	parsed, err := url.Parse(base)
+	if err != nil {
+		return base
+	}
+
+	if parsed.Path != "" && parsed.Path != "/" && parsed.Path[len(parsed.Path)-1] != '/' {
+		parsed.Path += "/"
+		parsed.RawPath = ""
+	}
+
+	return parsed.String()
 }
 
 // getToken retrieves credentials scoped to the current operation.
@@ -94,8 +116,10 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 		if auth.AccessToken == "" {
 			return "", ringerrors.NewTokenError("no token in request", nil)
 		}
+
 		return auth.AccessToken, nil
 	}
+
 	return "", ringerrors.NewTokenError("no token in request", nil)
 }
 
@@ -103,53 +127,58 @@ func (c *Client) hardwareIDFor(ctx context.Context) string {
 	if auth, ok := requestauth.FromContext(ctx); ok {
 		return auth.HardwareID
 	}
+
 	return c.hardwareID
 }
 
-// doRequest performs an HTTP request with retry logic
-func (c *Client) doRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
-	if err := ctx.Err(); err != nil {
+func (c *Client) sendAuthorizedRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	err := ctx.Err()
+	if err != nil {
 		return nil, ringerrors.NewNetworkError("request canceled", err)
 	}
-	var bodyReader io.Reader
-	if body != nil {
-		bodyBytes, err := json.Marshal(body)
-		if err != nil {
-			return nil, ringerrors.NewBadRequestError("failed to marshal request body", err)
-		}
-		bodyReader = bytes.NewReader(bodyBytes)
-	}
 
-	url := c.baseURI + path
-	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
-	if err != nil {
-		return nil, ringerrors.NewNetworkError("failed to create request", err)
-	}
+	req = req.WithContext(ctx)
 
 	// Get token and set authorization header
 	token, err := c.getToken(ctx)
 	if err != nil {
 		return nil, ringerrors.NewTokenError("failed to retrieve access token", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", c.userAgent)
+	req.Header.Set(string(generatedhttp.Authorization), "Bearer "+token)
+
+	if req.Header.Get("Content-Type") == "" {
+		req.Header.Set(string(generatedhttp.ContentType), "application/json")
+	}
+
+	if req.Header.Get("Accept") == "" {
+		req.Header.Set(string(generatedhttp.Accept), "application/json")
+	}
+
+	req.Header.Set(string(generatedhttp.UserAgent), c.userAgent)
 
 	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
-		req.Header.Set("hardware_id", hardwareID)
+		req.Header.Set(string(generatedhttp.HardwareId), hardwareID)
 	}
 
+	return c.sendWithRetry(ctx, req)
+}
+
+func (c *Client) sendWithRetry(ctx context.Context, req *http.Request) (*http.Response, error) {
 	// Retry logic
 	maxRetries := 1
-	if method == http.MethodGet || method == http.MethodHead {
+	if req.Method == http.MethodGet || req.Method == http.MethodHead {
 		maxRetries = 3
 	}
-	var resp *http.Response
-	for i := 0; i < maxRetries; i++ {
+
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	for retryIndex := range maxRetries {
 		attemptReq := req
-		if i > 0 {
+		if retryIndex > 0 {
 			attemptReq = req.Clone(ctx)
 			if req.GetBody != nil {
 				attemptReq.Body, err = req.GetBody()
@@ -158,17 +187,18 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 				}
 			}
 		}
+
 		resp, err = c.httpClient.Do(attemptReq)
 		if err == nil && resp.StatusCode < 500 {
 			break
 		}
 
-		if i < maxRetries-1 {
+		if retryIndex < maxRetries-1 {
 			if resp != nil && resp.Body != nil {
 				_ = resp.Body.Close()
 			}
 			// Exponential backoff
-			backoff := time.Duration(i+1) * time.Second
+			backoff := time.Duration(retryIndex+1) * time.Second
 			select {
 			case <-ctx.Done():
 				return nil, ringerrors.NewNetworkError("request canceled during retry", ctx.Err())
@@ -184,14 +214,19 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	return resp, nil
 }
 
-// doJSONRequest performs a request and unmarshals the JSON response
-func (c *Client) doJSONRequest(ctx context.Context, method, path string, body interface{}, result interface{}) error {
-	resp, err := c.doRequest(ctx, method, path, body)
+// doGeneratedJSON sends a request built by a generated OpenAPI operation.
+func (c *Client) doGeneratedJSON(ctx context.Context, req *http.Request, result interface{}) error {
+	resp, err := c.sendAuthorizedRequest(ctx, req)
 	if err != nil {
 		return err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
+	return decodeJSONResponse(resp, result)
+}
+
+func decodeJSONResponse(resp *http.Response, result interface{}) error {
 	// Read the response body before decoding so the transport can be reused.
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -203,15 +238,11 @@ func (c *Client) doJSONRequest(ctx context.Context, method, path string, body in
 	}
 
 	if result != nil {
-		if err := json.Unmarshal(bodyBytes, result); err != nil {
+		err := json.Unmarshal(bodyBytes, result)
+		if err != nil {
 			return ringerrors.NewInternalServerError("failed to decode response", err)
 		}
 	}
 
 	return nil
-}
-
-// HTTPClient returns the underlying HTTP client
-func (c *Client) HTTPClient() *http.Client {
-	return c.httpClient
 }

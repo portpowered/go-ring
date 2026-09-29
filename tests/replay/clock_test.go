@@ -28,22 +28,28 @@ func newRecordedClock() *recordedClock {
 func (c *recordedClock) Now() time.Time {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	return c.now
 }
 
 func (c *recordedClock) After(d time.Duration) <-chan time.Time {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	ch := make(chan time.Time, 1)
 	c.alarms = append(c.alarms, recordedAlarm{when: c.now.Add(d), ch: ch})
+
 	return ch
 }
 
 func (c *recordedClock) advance() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	c.now = c.now.Add(recordedClockStep)
+
 	remaining := c.alarms[:0]
+
 	for _, alarm := range c.alarms {
 		if !alarm.when.After(c.now) {
 			alarm.ch <- c.now
@@ -51,16 +57,19 @@ func (c *recordedClock) advance() {
 			remaining = append(remaining, alarm)
 		}
 	}
+
 	c.alarms = remaining
 }
 
 func recordedNextMessage(t *testing.T, out <-chan signaling.Message) signaling.Message {
 	t.Helper()
+
 	select {
 	case message := <-out:
 		return message
 	case <-time.After(time.Second):
 		t.Fatal("no outbound signaling message")
+
 		return signaling.Message{}
 	}
 }

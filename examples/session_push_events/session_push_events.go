@@ -8,12 +8,14 @@ import (
 	"os/signal"
 	"strconv"
 
+	"github.com/portpowered/go-ring/examples/internal/exampleerrors"
 	"github.com/portpowered/go-ring/pkg/ring"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
-	if err := run(); err != nil {
+	err := run()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -21,23 +23,30 @@ func main() {
 
 func run() error {
 	token := os.Getenv("RING_ACCESS_TOKEN")
+
 	deviceID, err := strconv.ParseInt(os.Getenv("RING_DEVICE_ID"), 10, 64)
+
 	if token == "" || err != nil || deviceID <= 0 {
 		return ringapimodels.NewBadRequestError("set RING_ACCESS_TOKEN and a positive RING_DEVICE_ID", err)
 	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
 	client, err := ring.NewClient()
 	if err != nil {
-		return err
+		return exampleerrors.Wrap("create Ring client", err)
 	}
-	defer func() { _ = client.Close() }()
-	auth := ring.AuthContext{AccessToken: token}
+
+	auth := ring.AuthContext{AccessToken: token, HardwareID: ""}
+
 	conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
 	if err != nil {
-		return err
+		return exampleerrors.Wrap("open Ring signaling", err)
 	}
+
 	defer func() { _ = conn.Close() }()
+
 	subscription, err := conn.SubscribePush(ctx, []ring.PushFilter{{
 		FilterIdentifier:  "device-events",
 		Filters:           ring.PushFilters{DoorbotIDs: []int64{deviceID}},
@@ -45,19 +54,23 @@ func run() error {
 		NotificationType:  "shoulder_tap",
 	}})
 	if err != nil {
-		return err
+		return exampleerrors.Wrap("subscribe to device push events", err)
 	}
+
 	defer func() { _ = subscription.Close() }()
 
 	fmt.Println("Listening for device push events; Ctrl+C closes the subscription.")
+
 	for {
 		event, err := subscription.Receive(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil
 			}
-			return err
+
+			return exampleerrors.Wrap("receive device push event", err)
 		}
+
 		fmt.Printf("%s: %s\n", event.NotificationType, event.Payload)
 	}
 }

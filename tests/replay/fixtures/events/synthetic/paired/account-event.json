@@ -1,0 +1,31 @@
+{
+  "provenance": "synthetic",
+  "handshake": {
+    "request": {
+      "method": "GET",
+      "origin": "$configuredEventOrigin",
+      "escaped_path": "/clients_api/ws",
+      "headers": {
+        "Authorization": "Bearer $accessToken"
+      }
+    },
+    "response": {
+      "status": 101,
+      "headers": {
+        "Connection": "Upgrade",
+        "Upgrade": "websocket"
+      }
+    }
+  },
+  "frames": [
+    {
+      "direction": "server_to_client",
+      "payload": {
+        "kind": "motion",
+        "device_id": 987652,
+        "timestamp": "2026-01-01T00:00:00Z",
+        "source": "synthetic-account"
+      }
+    }
+  ]
+}

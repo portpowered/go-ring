@@ -23,8 +23,14 @@ jobs:
         env:
           VERSION: ${{ github.ref_name }}
         run: go run ./tools/compatibility -policy release -base previous-release -version "$VERSION"
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.0
+      - name: Run all lint checks
+        run: make lint
       - run: go test -race ./... -timeout 120s
       - run: go vet ./...
+      - name: Check CLI module
+        run: make check-cli
       - name: Verify public module
         env:
           VERSION: ${{ github.ref_name }}
@@ -33,8 +39,29 @@ jobs:
           go mod init example.com/release-check
           GOPROXY=https://proxy.golang.org,direct go get "github.com/portpowered/go-ring@$VERSION"
           go list -m all
+          cat > consumer.go <<'EOF'
+          package main
+
+          import (
+            _ "github.com/portpowered/go-ring/pkg/generatedhttp"
+            _ "github.com/portpowered/go-ring/pkg/generatedsignaling"
+            _ "github.com/portpowered/go-ring/pkg/ringapimodels"
+            "github.com/portpowered/go-ring/pkg/ring"
+          )
+
+          func main() {
+            _, _ = ring.NewClient()
+          }
+          EOF
+          go build .
       - name: Publish release notes
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ github.ref_name }}
-        run: gh release create "$VERSION" --verify-tag --generate-notes
+        run: |
+          notes_file="docs/releases/${VERSION}.md"
+          if [ -f "$notes_file" ]; then
+            gh release create "$VERSION" --verify-tag --notes-file "$notes_file"
+          else
+            gh release create "$VERSION" --verify-tag --generate-notes
+          fi

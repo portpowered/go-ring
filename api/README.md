@@ -1,9 +1,14 @@
 # Schema value conventions
 
-The model boundary is explicit: `openapi.yaml` generates `pkg/generatedhttp`
-for Ring HTTP request and response bodies, and `asyncapi.yaml` generates
-`pkg/generatedsignaling` for signaling frames. REST and signaling adapters
-decode these wire models, then project them into SDK-facing types where needed.
+The model boundary is explicit: `openapi.yaml` generates
+`internal/generatedhttp` for Ring HTTP request and response bodies, and
+`asyncapi.yaml` generates `internal/generatedsignaling` for signaling frames.
+`api/external/fcm.openapi.yaml` generates `internal/generatedfcm` for the
+pinned push receiver's HTTP exchanges and Ring notification payloads. REST,
+signaling, and push adapters decode these private wire models, then project
+them into SDK-facing types where needed. The previously published
+`pkg/generatedhttp` and `pkg/generatedsignaling` import paths remain generated
+compatibility packages; production transports use the internal copies.
 `client-models.openapi.yaml` generates only the public
 types in `pkg/ringapimodels`. Internal transport errors and recording body
 ownership live below the public package, with public aliases for callers.

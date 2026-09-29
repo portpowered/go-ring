@@ -1,0 +1,21 @@
+{
+  "provenance": "synthetic",
+  "request": {
+    "method": "POST",
+    "origin": "https://api.ring.com",
+    "path": "/clients_api/doorbots/1000/motions_subscribe",
+    "query": [],
+    "headers": {
+      "Accept": ["application/json"]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {},
+    "body": null,
+    "json": false
+  }
+}

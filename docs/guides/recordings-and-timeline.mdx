@@ -1,0 +1,19 @@
+---
+title: Recordings and timeline
+description: Browse history, stream a recording, and manage saved events.
+---
+
+`GetDeviceHistory` lists a device's recordings. Use `OlderThan` for the next page. `GetDeviceTimeline` and `GetHistoryDevices` provide other history views; `GetActiveDings` returns current events.
+
+```go
+history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{
+	Auth: auth, DeviceID: deviceID, Limit: 20,
+})
+if err != nil {
+	return err
+}
+```
+
+`GetRecording` opens a video stream for a recording ID; close its body after reading. `GetRecordingShareURL` asks the server for a share link. `FavoriteRecording` and `DeleteRecording` change saved recordings. Confirm deletion with your user before calling `DeleteRecording`.
+
+Wire contracts: [history](/docs/openapi/recordings/getLegacyDeviceHistory), [timeline](/docs/openapi/device-history/getDeviceTimeline), [stream](/docs/openapi/recordings/streamRecording), [share](/docs/openapi/recordings/getLegacyRecordingShareURL), [favorite](/docs/openapi/recordings/favoriteRecording), and [delete](/docs/openapi/recordings/deleteRecording).

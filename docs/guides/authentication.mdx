@@ -1,0 +1,104 @@
+---
+title: Authentication and tokens
+description: Complete Ring's two-factor login flow, then pass account credentials with each request.
+---
+
+`go-ring` does not keep an account's access token or refresh token on the
+shared `Client`. Create an isolated login session for the initial OAuth and
+two-factor exchange, save the returned tokens securely, and pass an
+`AuthContext` to each account operation.
+
+Ring authentication does not support browser CORS. Run this flow in a trusted
+backend, never in browser JavaScript.
+
+## Complete the two-factor flow
+
+Use the same `LoginSession` to request a verification code and submit it. The
+session retains the OAuth state, cookies, and PKCE verifier needed to finish
+that exchange.
+
+```go
+login, err := client.NewLoginSession(ring.LoginSessionRequest{
+	Username: username,
+	Password: password,
+})
+if err != nil {
+	return err
+}
+defer login.Close()
+
+if err := login.Request2FACode(ctx); err != nil {
+	return err
+}
+
+tokens, err := login.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otpCode})
+if err != nil {
+	return err
+}
+auth := ring.AuthContext{
+	AccessToken: tokens.AccessToken,
+	HardwareID:  login.HardwareID(),
+}
+```
+
+Store the complete token response, including the refresh token and the
+hardware ID. Restrict access to the stored secrets and never log credentials,
+verification codes, or tokens.
+
+If you omit `HardwareID` when opening the login session, save the generated
+`login.HardwareID()` with its tokens. Keep one hardware ID per account
+installation. Avoid requesting multiple verification codes: Ring can rate-limit
+their delivery.
+
+## Use and refresh tokens
+
+Pass the account context with each request. A single `Client` can serve more
+than one account because authentication is supplied per operation.
+
+```go
+devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
+if err != nil {
+	return err
+}
+```
+
+Refresh tokens rotate. Replace the stored response after every successful
+refresh:
+
+```go
+tokens, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
+	RefreshToken: stored.RefreshToken,
+	HardwareID:   hardwareID,
+})
+if err != nil {
+	return err
+}
+// Persist the complete tokens response before discarding the old one.
+```
+
+For the full authentication example, see
+[`examples/token-exchange`](https://github.com/portpowered/go-ring/tree/main/examples/token-exchange).
+
+Wire contract: [OAuth token exchange](/docs/openapi/authentication/exchangeOrRefreshOAuthToken).
+
+Authentication, rate-limit, and token failures return typed errors. Check the
+class before choosing whether to retry or ask the user to log in again:
+
+```go
+if err != nil {
+	switch {
+	case ringapimodels.IsRateLimitError(err):
+		// Delay according to your retry policy.
+		return err
+	case ringapimodels.IsTokenError(err):
+		// Renew or replace the caller-owned credentials.
+		return err
+	default:
+		return err
+	}
+}
+```
+
+`ringapimodels` also exposes `IsUnauthorizedError`, `IsNotFoundError`,
+`IsConnectionError`, and `IsHTTPStatusCode`. Avoid logging response bodies that
+may contain account details.

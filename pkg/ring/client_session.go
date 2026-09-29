@@ -9,9 +9,10 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/portpowered/go-ring/internal/generatedhttp"
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
 	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
-	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -19,94 +20,154 @@ import (
 // The captured C1 GET /api/v1/clap/tickets profile is intentionally not substituted for this POST route.
 func (c *Client) OpenSignaling(ctx context.Context, req OpenSignalingRequest) (*SignalingConnection, error) {
 	ctx = c.accountContext(ctx, req.Auth)
-	if err := ctx.Err(); err != nil {
+
+	err := ctx.Err()
+	if err != nil {
 		return nil, ringapimodels.NewConnectionError("signaling open canceled", err)
 	}
-	c.mu.Lock()
-	if c.closed {
-		c.mu.Unlock()
-		return nil, ringapimodels.NewClosedError("client is closed")
-	}
-	c.mu.Unlock()
-	if err := c.ensureSession(ctx); err != nil {
-		return nil, ringapimodels.NewConnectionError("failed to register Ring session", err)
-	}
-	token, err := c.getToken(ctx)
+
+	ticket, err := c.requestSignalingTicket(ctx)
 	if err != nil {
-		return nil, ringapimodels.NewTokenError("failed to get token for signaling", err)
+		return nil, err
 	}
-	if c.endpoints.SolutionsBaseURL == "" {
-		return nil, ringapimodels.NewConnectionError("Solutions bootstrap URL is unverified for selected region; configure WithEndpoints", nil)
-	}
-	h := http.Header{}
-	h.Set("Authorization", "Bearer "+token)
-	h.Set("User-Agent", c.userAgent)
-	h.Set("Content-Type", "application/json")
-	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
-		h.Set("hardware_id", hardwareID)
-	}
-	wire, err := generatedhttp.NewClient(c.endpoints.SolutionsBaseURL, generatedhttp.WithHTTPClient(c.restClient.HTTPClient()))
-	if err != nil {
-		return nil, ringapimodels.NewNetworkError("failed to configure signaling ticket client", err)
-	}
-	resp, err := wire.RequestLegacySignalingTicket(ctx, func(_ context.Context, req *http.Request) error { req.Header = h.Clone(); return nil })
-	if err != nil {
-		return nil, ringapimodels.NewNetworkError("failed to request signaling ticket", err)
-	}
-	var ticket generatedhttp.LegacySignalingTicket
-	b, readErr := io.ReadAll(io.LimitReader(resp.Body, signaling.MaxTicketResponseBytes+1))
-	_ = resp.Body.Close()
-	if readErr != nil {
-		return nil, ringapimodels.NewNetworkError("failed to read signaling ticket response", readErr)
-	}
-	if len(b) > signaling.MaxTicketResponseBytes {
-		return nil, ringapimodels.NewInternalServerError("signaling ticket response exceeds size limit", nil)
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, ringapimodels.ClassifyHTTPError(resp, string(b))
-	}
-	if err = json.Unmarshal(b, &ticket); err != nil {
-		return nil, ringapimodels.NewInternalServerError("invalid signaling ticket response", err)
-	}
-	if ticket.Ticket == "" {
-		return nil, ringapimodels.NewConnectionError("empty signaling ticket", nil)
-	}
+
 	clientID := uuid.NewString()
 	wsURL := strings.Replace(c.signalingWebSocketURL, "{client_id}", clientID, 1)
-	wsURL = strings.Replace(wsURL, "{token}", url.QueryEscape(ticket.Ticket), 1)
-	wsHeaders := http.Header{}
-	wsHeaders.Set("User-Agent", c.userAgent)
-	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
-		wsHeaders.Set("hardware_id", hardwareID)
+
+	wsURL = strings.Replace(wsURL, "{token}", url.QueryEscape(ticket), 1)
+
+	if c.signalingWebSocketURL == protocol.SignalingURL {
+		err = protocol.ValidateWebSocketURL(protocol.SignalingChannel, wsURL)
+	} else {
+		err = protocol.ValidateWebSocketOverride(wsURL)
 	}
-	conn, err := dependencywebsocket.DialSignaling(ctx, wsURL, wsHeaders, c.signalingDialer)
+
+	if err != nil {
+		return nil, ringapimodels.NewBadRequestError("invalid signaling WebSocket URL", err)
+	}
+
+	wsHeaders := http.Header{}
+	wsHeaders.Set(string(generatedhttp.UserAgent), c.userAgent)
+
+	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
+		wsHeaders.Set(string(generatedhttp.HardwareId), hardwareID)
+	}
+
+	conn, err := dependencywebsocket.DialSignaling(ctx, wsURL, wsHeaders, c.websocketDialer)
 	if err != nil {
 		// Dialer errors may contain the ticket-bearing URL.
 		return nil, ringapimodels.NewConnectionError("failed to connect to signaling websocket", nil)
 	}
+
 	connCtx, cancel := context.WithCancel(ctx)
-	s := &SignalingConnection{client: c, conn: conn, ctx: connCtx, cancel: cancel, done: make(chan struct{}), readerDone: make(chan struct{}), pending: make(map[string]chan signaling.Message), sessions: make(map[string]*DeviceSession), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession), pushes: make(map[string]*PushSubscription)}
-	s.writer = dependencywebsocket.NewSignalingWriter(s.done, s.writeFrame, func(err error) { s.fail(ringapimodels.NewConnectionError("signaling write failed", err)) })
-	c.mu.Lock()
-	if c.closed {
-		c.mu.Unlock()
-		cancel()
-		_ = conn.Close()
-		return nil, ringapimodels.NewClosedError("client is closed")
+	signalingConnection := &SignalingConnection{
+		conn:       conn,
+		ctx:        connCtx,
+		cancel:     cancel,
+		done:       make(chan struct{}),
+		readerDone: make(chan struct{}),
+		pending:    make(map[string]chan signaling.Message),
+		sessions:   make(map[string]*DeviceSession),
+		channels:   make(map[string]chan signaling.Message),
+		playbacks:  make(map[string]*PlaybackSession),
+		pushes:     make(map[string]*PushSubscription),
 	}
-	if c.signalingConnections == nil {
-		c.signalingConnections = make(map[*SignalingConnection]struct{})
-	}
-	c.signalingConnections[s] = struct{}{}
-	c.mu.Unlock()
-	go s.readLoop()
-	go s.writer.Run()
+	signalingConnection.writer = dependencywebsocket.NewSignalingWriter(
+		signalingConnection.done,
+		signalingConnection.writeFrame,
+		func(err error) {
+			if ringapimodels.IsConnectionError(err) {
+				signalingConnection.fail(err)
+
+				return
+			}
+
+			signalingConnection.fail(ringapimodels.NewConnectionError("signaling write failed", err))
+		},
+	)
+
+	go signalingConnection.readLoop()
+	go signalingConnection.writer.Run()
 	go func() {
 		select {
 		case <-ctx.Done():
-			s.fail(ctx.Err())
-		case <-s.done:
+			signalingConnection.fail(ctx.Err())
+		case <-signalingConnection.done:
 		}
 	}()
-	return s, nil
+
+	return signalingConnection, nil
+}
+
+func (c *Client) requestSignalingTicket(ctx context.Context) (string, error) {
+	err := c.ensureSession(ctx)
+	if err != nil {
+		return "", ringapimodels.NewConnectionError("failed to register Ring session", err)
+	}
+
+	token, err := c.getToken(ctx)
+	if err != nil {
+		return "", ringapimodels.NewTokenError("failed to get token for signaling", err)
+	}
+
+	if c.endpoints.SolutionsBaseURL == "" {
+		return "", ringapimodels.NewConnectionError(
+			"Solutions bootstrap URL is unverified for selected region; configure WithEndpoints",
+			nil,
+		)
+	}
+
+	headers := http.Header{}
+	headers.Set(string(generatedhttp.Authorization), "Bearer "+token)
+	headers.Set(string(generatedhttp.UserAgent), c.userAgent)
+	headers.Set(string(generatedhttp.ContentType), "application/json")
+
+	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
+		headers.Set(string(generatedhttp.HardwareId), hardwareID)
+	}
+
+	wire, err := generatedhttp.NewClient(
+		c.endpoints.SolutionsBaseURL,
+		generatedhttp.WithHTTPClient(c.restClient.HTTPClient()),
+	)
+	if err != nil {
+		return "", ringapimodels.NewNetworkError("failed to configure signaling ticket client", err)
+	}
+
+	response, err := wire.RequestLegacySignalingTicket(ctx, func(_ context.Context, request *http.Request) error {
+		request.Header = headers.Clone()
+
+		return nil
+	})
+	if err != nil {
+		return "", ringapimodels.NewNetworkError("failed to request signaling ticket", err)
+	}
+
+	responseBytes, readErr := io.ReadAll(io.LimitReader(response.Body, signaling.MaxTicketResponseBytes+1))
+	_ = response.Body.Close()
+
+	if readErr != nil {
+		return "", ringapimodels.NewNetworkError("failed to read signaling ticket response", readErr)
+	}
+
+	if len(responseBytes) > signaling.MaxTicketResponseBytes {
+		return "", ringapimodels.NewInternalServerError("signaling ticket response exceeds size limit", nil)
+	}
+
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return "", ringapimodels.ClassifyHTTPError(response, string(responseBytes))
+	}
+
+	var ticket generatedhttp.LegacySignalingTicket
+
+	err = json.Unmarshal(responseBytes, &ticket)
+	if err != nil {
+		return "", ringapimodels.NewInternalServerError("invalid signaling ticket response", err)
+	}
+
+	if ticket.Ticket == "" {
+		return "", ringapimodels.NewConnectionError("empty signaling ticket", nil)
+	}
+
+	return ticket.Ticket, nil
 }

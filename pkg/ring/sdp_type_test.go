@@ -1,32 +1,47 @@
-package ring
+package ring_test
 
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/portpowered/go-ring/pkg/ring"
 )
 
 func TestSessionDescriptionSDPTypeJSON(t *testing.T) {
+	t.Parallel()
+
 	for _, test := range []struct {
-		typ  SDPType
+		typ  ring.SDPType
 		wire string
 	}{
-		{SDPTypeOffer, `{"type":"offer","sdp":"test"}`},
-		{SDPTypeAnswer, `{"type":"answer","sdp":"test"}`},
+		{ring.SDPTypeOffer, `{"type":"offer","sdp":"test"}`},
+		{ring.SDPTypeAnswer, `{"type":"answer","sdp":"test"}`},
 	} {
-		encoded, err := json.Marshal(SessionDescription{Type: test.typ, SDP: "test"})
+		encoded, err := json.Marshal(ring.SessionDescription{Type: test.typ, SDP: "test"})
 		if err != nil || string(encoded) != test.wire {
 			t.Fatalf("marshal %v: %s, %v", test.typ, encoded, err)
 		}
-		var decoded SessionDescription
-		if err := json.Unmarshal(encoded, &decoded); err != nil || decoded.Type != test.typ {
-			t.Fatalf("unmarshal %s: %+v, %v", encoded, decoded, err)
+
+		var decoded ring.SessionDescription
+		{
+			err := json.Unmarshal(encoded, &decoded)
+			if err != nil || decoded.Type != test.typ {
+				t.Fatalf("unmarshal %s: %+v, %v", encoded, decoded, err)
+			}
 		}
 	}
-	if _, err := json.Marshal(SessionDescription{Type: SDPTypeUnknown}); err == nil {
-		t.Fatal("unknown SDP type was serialized")
+
+	{
+		_, err := json.Marshal(ring.SessionDescription{Type: ring.SDPTypeUnknown})
+		if err == nil {
+			t.Fatal("unknown SDP type was serialized")
+		}
 	}
-	var description SessionDescription
-	if err := json.Unmarshal([]byte(`{"type":"bogus","sdp":"test"}`), &description); err == nil {
+
+	var description ring.SessionDescription
+
+	err := json.Unmarshal([]byte(`{"type":"bogus","sdp":"test"}`), &description)
+	if err == nil {
 		t.Fatal("unknown SDP type was accepted")
 	}
 }

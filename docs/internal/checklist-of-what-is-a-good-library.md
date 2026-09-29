@@ -1,5 +1,9 @@
 # A good golang library for 3P sdks
 
+The [current 15-item migration checklist](../template-checklist.md) tracks
+release signoff against the shared template. This file retains the earlier
+library design notes.
+
 For GOLANG SDK libraries
 
 API best practices:
@@ -76,9 +80,11 @@ Library best practices:
     1. we should show examples of how a library works (auth, basic enumeration, any tooling/functionality we support)
     2. Add customer guide pages to the GitHub Pages site for each supported operation and multi-step flow. Show the client method, required inputs, result shape, and lifecycle or failure handling; link to the generated API reference.
 6. linting
-    1. we enforce linting by golang lint, biome or whateer is appropriate
-        1. constraints on funlen, file len, as well as cyclomatic complexity, etc are covered by liniting, and the CI is covered as parts of tests.
-    2. go fmt is run/enforced
+    1. Enforce Go linting with the pinned `golangci-lint` version and literal `linters.default: all` across the full repository. Keep its CI job blocking, run every Go module, and do not use a new-issues baseline or failure bypass.
+    2. Keep all linters enabled. Fix findings or document a justified exception for one linter on an exact generated path, fixture type, or named file.
+    3. Require an independent reviewer to approve the exact commit SHA after that commit's CI checks pass. Record the SHA and CI run as evidence; until both are available, mark the gate pending. Existing replay signoff remains historical evidence for its original commit.
+    4. Cover function length, file length, cyclomatic complexity, and other stable rules with lint settings.
+    5. Enforce `gofmt` on changed Go files.
 7. code
     1. there is one clear interface, and no duplication
     2. there is a single interface file that declares all the functions of the client that can be used

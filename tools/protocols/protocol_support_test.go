@@ -1,4 +1,4 @@
-package protocols
+package protocols_test
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -17,17 +18,20 @@ import (
 )
 
 type openAPIDocument struct {
-	raw        map[string]any
-	doc        *openapi3.T
-	validators map[string]*jsonschema.Schema
+	raw         map[string]any
+	doc         *openapi3.T
+	validators  map[string]*jsonschema.Schema
+	validatorMu *sync.Mutex
 }
 
 func repositoryRoot(t *testing.T) string {
 	t.Helper()
+
 	root, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return root
 }
 
@@ -38,20 +42,27 @@ func readYAMLObject(t *testing.T, path string) map[string]any {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var result map[string]any
-	if err := yaml.Unmarshal(data, &result); err != nil {
-		t.Fatalf("parse %s: %v", path, err)
+	{
+		err := yaml.Unmarshal(data, &result)
+		if err != nil {
+			t.Fatalf("parse %s: %v", path, err)
+		}
 	}
+
 	return result
 }
 
 func rejectRemoteReferences(t *testing.T, value any, path string) {
 	t.Helper()
+
 	switch current := value.(type) {
 	case map[string]any:
 		if ref, ok := current["$ref"].(string); ok && !strings.HasPrefix(ref, "#/") {
 			t.Errorf("%s has a network or external reference %q", path, ref)
 		}
+
 		for key, child := range current {
 			rejectRemoteReferences(t, child, path+"."+key)
 		}
@@ -78,90 +89,160 @@ func loadOpenAPI(t *testing.T, name string) openAPIDocument {
 
 	normalized := mapValue(cloneJSON(t, raw))
 	normalizeOpenAPISchemaForKin(normalized)
+
 	normalizedBytes, err := yaml.Marshal(normalized)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	loader := openapi3.NewLoader()
 	loader.IsExternalRefsAllowed = false
+
 	doc, err := loader.LoadFromData(normalizedBytes)
 	if err != nil {
 		t.Fatalf("load %s: %v", name, err)
 	}
-	if err := doc.Validate(context.Background()); err != nil {
-		t.Fatalf("validate %s: %v", name, err)
+
+	{
+		err := doc.Validate(context.Background())
+		if err != nil {
+			t.Fatalf("validate %s: %v", name, err)
+		}
 	}
-	return openAPIDocument{raw: raw, doc: doc, validators: map[string]*jsonschema.Schema{}}
+
+	return openAPIDocument{
+		raw:         raw,
+		doc:         doc,
+		validators:  map[string]*jsonschema.Schema{},
+		validatorMu: &sync.Mutex{},
+	}
 }
 
 func (doc openAPIDocument) validate(t *testing.T, schema *openapi3.SchemaRef, value any) error {
 	t.Helper()
+
 	if schema == nil || schema.Value == nil {
 		return missingSchemaError{}
 	}
+
 	keyData, err := json.Marshal(schema)
 	if err != nil {
 		t.Fatalf("encode OpenAPI schema: %v", err)
 	}
+
 	key := string(keyData)
+
+	doc.validatorMu.Lock()
+	defer doc.validatorMu.Unlock()
+
 	compiled := doc.validators[key]
 	if compiled == nil {
 		var schemaValue any
-		if err := json.Unmarshal(keyData, &schemaValue); err != nil {
+
+		err := json.Unmarshal(keyData, &schemaValue)
+		if err != nil {
 			t.Fatalf("decode OpenAPI schema: %v", err)
 		}
+
 		restoreJSONSchemaNullTypes(schemaValue)
 		compiled = compileJSONSchema(t, doc.raw, schemaValue)
 		doc.validators[key] = compiled
 	}
-	return compiled.Validate(value)
+
+	validationErr := compiled.Validate(value)
+	if validationErr != nil {
+		return schemaValidationError{cause: validationErr}
+	}
+
+	return nil
 }
 
 type missingSchemaError struct{}
 
 func (missingSchemaError) Error() string { return "schema is missing or unresolved" }
 
+type schemaValidationError struct {
+	cause error
+}
+
+func (failure schemaValidationError) Error() string {
+	return "validate protocol value against JSON schema: " + failure.cause.Error()
+}
+
+func (failure schemaValidationError) Unwrap() error { return failure.cause }
+
 func normalizeOpenAPISchemaForKin(value any) {
 	switch current := value.(type) {
 	case map[string]any:
-		if constant, exists := current["const"]; exists {
-			if _, ok := current["enum"]; ok {
-				current["allOf"] = append(sliceValue(current["allOf"]), map[string]any{"enum": []any{constant}})
-			} else {
-				current["enum"] = []any{constant}
-			}
-			delete(current, "const")
-		}
-		if current["type"] == "null" {
-			delete(current, "type")
-			if _, ok := current["enum"]; ok {
-				current["allOf"] = append(sliceValue(current["allOf"]), map[string]any{"enum": []any{nil}})
-			} else {
-				current["enum"] = []any{nil}
-			}
-		}
-		if types, ok := current["type"].([]any); ok {
-			nonNull := make([]any, 0, len(types))
-			hasNull := false
-			for _, schemaType := range types {
-				if schemaType == "null" {
-					hasNull = true
-				} else {
-					nonNull = append(nonNull, schemaType)
-				}
-			}
-			if hasNull && len(nonNull) == 1 {
-				current["type"] = nonNull[0]
-				current["nullable"] = true
-			}
-		}
-		for _, child := range current {
-			normalizeOpenAPISchemaForKin(child)
-		}
+		normalizeOpenAPISchemaMap(current)
 	case []any:
 		for _, child := range current {
 			normalizeOpenAPISchemaForKin(child)
 		}
+	}
+}
+
+func normalizeOpenAPISchemaMap(current map[string]any) {
+	normalizeOpenAPIConst(current)
+	normalizeOpenAPINullType(current)
+	normalizeOpenAPINullableTypes(current)
+
+	for _, child := range current {
+		normalizeOpenAPISchemaForKin(child)
+	}
+}
+
+func normalizeOpenAPIConst(current map[string]any) {
+	constant, exists := current["const"]
+	if !exists {
+		return
+	}
+
+	if _, ok := current["enum"]; ok {
+		current["allOf"] = append(sliceValue(current["allOf"]), map[string]any{"enum": []any{constant}})
+	} else {
+		current["enum"] = []any{constant}
+	}
+
+	delete(current, "const")
+}
+
+func normalizeOpenAPINullType(current map[string]any) {
+	if current["type"] != "null" {
+		return
+	}
+
+	delete(current, "type")
+
+	if _, ok := current["enum"]; ok {
+		current["allOf"] = append(sliceValue(current["allOf"]), map[string]any{"enum": []any{nil}})
+	} else {
+		current["enum"] = []any{nil}
+	}
+}
+
+func normalizeOpenAPINullableTypes(current map[string]any) {
+	types, ok := current["type"].([]any)
+	if !ok {
+		return
+	}
+
+	nonNull := make([]any, 0, len(types))
+	hasNull := false
+
+	for _, schemaType := range types {
+		if schemaType == "null" {
+			hasNull = true
+
+			continue
+		}
+
+		nonNull = append(nonNull, schemaType)
+	}
+
+	if hasNull && len(nonNull) == 1 {
+		current["type"] = nonNull[0]
+		current["nullable"] = true
 	}
 }
 
@@ -174,6 +255,7 @@ func restoreJSONSchemaNullTypes(value any) {
 				delete(current, "nullable")
 			}
 		}
+
 		for _, child := range current {
 			restoreJSONSchemaNullTypes(child)
 		}
@@ -186,7 +268,9 @@ func restoreJSONSchemaNullTypes(value any) {
 
 func compileJSONSchema(t *testing.T, root map[string]any, schema any) *jsonschema.Schema {
 	t.Helper()
+
 	resourceURL := "https://go-ring.invalid/protocol-schema.json"
+
 	resource := map[string]any{
 		"$schema": jsonschema.Draft2020.String(),
 		"schema":  schema,
@@ -194,30 +278,40 @@ func compileJSONSchema(t *testing.T, root map[string]any, schema any) *jsonschem
 	for key, value := range root {
 		resource[key] = value
 	}
+
 	compiler := jsonschema.NewCompiler()
 	compiler.DefaultDraft(jsonschema.Draft2020)
-	if err := compiler.AddResource(resourceURL, resource); err != nil {
-		t.Fatalf("add JSON Schema resource: %v", err)
+
+	{
+		err := compiler.AddResource(resourceURL, resource)
+		if err != nil {
+			t.Fatalf("add JSON Schema resource: %v", err)
+		}
 	}
+
 	compiled, err := compiler.Compile(resourceURL + "#/schema")
 	if err != nil {
 		t.Fatalf("compile Draft 2020-12 JSON Schema: %v", err)
 	}
+
 	return compiled
 }
 
 func mapValue(value any) map[string]any {
 	result, _ := value.(map[string]any)
+
 	return result
 }
 
 func sliceValue(value any) []any {
 	result, _ := value.([]any)
+
 	return result
 }
 
 func stringValue(value any) string {
 	result, _ := value.(string)
+
 	return result
 }
 
@@ -226,46 +320,60 @@ func nestedMap(value any, keys ...string) map[string]any {
 	for _, key := range keys {
 		current = mapValue(current)[key]
 	}
+
 	return mapValue(current)
 }
 
 func cloneJSON(t *testing.T, value any) any {
 	t.Helper()
+
 	data, err := json.Marshal(value)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var result any
-	if err := json.Unmarshal(data, &result); err != nil {
-		t.Fatal(err)
+	{
+		err := json.Unmarshal(data, &result)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
+
 	return result
 }
 
 func schemaNamed(t *testing.T, doc openAPIDocument, name string) *openapi3.SchemaRef {
 	t.Helper()
+
 	if doc.doc.Components == nil {
 		t.Fatal("OpenAPI components are missing")
 	}
+
 	schema := doc.doc.Components.Schemas[name]
 	if schema == nil {
 		t.Fatalf("schema %q is missing", name)
 	}
+
 	schemaCopy := *schema
 	schemaCopy.Ref = "#/components/schemas/" + name
+
 	return &schemaCopy
 }
 
 func operationFor(t *testing.T, doc openAPIDocument, path, method string) *openapi3.Operation {
 	t.Helper()
+
 	item := doc.doc.Paths.Value(path)
 	if item == nil {
 		t.Fatalf("OpenAPI path %q is missing", path)
 	}
+
 	operation := item.GetOperation(strings.ToUpper(method))
 	if operation == nil {
 		t.Fatalf("OpenAPI operation %s %s is missing", method, path)
 	}
+
 	return operation
 }
 
@@ -274,19 +382,24 @@ func capturedHTTPFiles(t *testing.T) []string {
 	pattern := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "http", "historical", "**", "*.json")
 	root := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "http", "historical")
 	files := make([]string, 0)
+
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
+
 		if !entry.IsDir() && strings.EqualFold(filepath.Ext(path), ".json") {
 			files = append(files, path)
 		}
+
 		return nil
 	})
 	if err != nil {
 		t.Fatalf("walk HTTP fixture tree (%s): %v", pattern, err)
 	}
+
 	sort.Strings(files)
+
 	return files
 }
 
@@ -321,10 +434,15 @@ func readHTTPExchange(t *testing.T, path string) capturedHTTPExchange {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var row capturedHTTPExchange
-	if err := json.Unmarshal(data, &row); err != nil {
-		t.Fatalf("parse fixture %s: %v", filepath.Base(path), err)
+	{
+		err := json.Unmarshal(data, &row)
+		if err != nil {
+			t.Fatalf("parse fixture %s: %v", filepath.Base(path), err)
+		}
 	}
+
 	return row
 }
 
@@ -332,11 +450,15 @@ func httpRequestSchema(operation *openapi3.Operation) (*openapi3.RequestBody, *o
 	if operation.RequestBody == nil || operation.RequestBody.Value == nil {
 		return nil, nil
 	}
+
 	body := operation.RequestBody.Value
+
 	media := body.Content["application/json"]
+
 	if media == nil {
 		return body, nil
 	}
+
 	return body, media.Schema
 }
 
@@ -344,14 +466,19 @@ func httpResponseSchema(operation *openapi3.Operation, status int) (*openapi3.Re
 	if operation.Responses == nil {
 		return nil, nil
 	}
+
 	responseRef := operation.Responses.Value(strconv.Itoa(status))
 	if responseRef == nil || responseRef.Value == nil {
 		return nil, nil
 	}
+
 	response := responseRef.Value
+
 	media := response.Content["application/json"]
+
 	if media == nil {
 		return response, nil
 	}
+
 	return response, media.Schema
 }

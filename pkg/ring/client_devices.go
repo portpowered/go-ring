@@ -4,17 +4,21 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/portpowered/go-ring/internal/generatedhttp"
 	"github.com/portpowered/go-ring/internal/protocol"
-	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-// ListDevices retrieves all devices associated with the account
+// ListDevices retrieves all devices associated with the account.
 func (c *Client) ListDevices(ctx context.Context, req ListDevicesRequest) (*ringapimodels.DevicesResponse, error) {
 	ctx = c.accountContext(ctx, req.Auth)
-	if err := c.ensureSession(ctx); err != nil {
-		return nil, err
+	{
+		err := c.ensureSession(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	rawResponse, err := c.restClient.GetDevices(ctx)
 	if err != nil {
 		return nil, err
@@ -28,9 +32,10 @@ func (c *Client) ListDevices(ctx context.Context, req ListDevicesRequest) (*ring
 	return response, nil
 }
 
-// GetDevice retrieves a specific device by ID
+// GetDevice retrieves a specific device by ID.
 func (c *Client) GetDevice(ctx context.Context, req GetDeviceRequest) (*ringapimodels.Device, error) {
 	ctx = c.accountContext(ctx, req.Auth)
+
 	devices, err := c.ListDevices(ctx, ListDevicesRequest{Auth: req.Auth})
 	if err != nil {
 		return nil, err
@@ -46,12 +51,17 @@ func (c *Client) GetDevice(ctx context.Context, req GetDeviceRequest) (*ringapim
 }
 
 // UpdateDeviceHealth refreshes health data via the generic device route.
-func (c *Client) UpdateDeviceHealth(ctx context.Context, req UpdateDeviceHealthRequest) (*ringapimodels.DeviceHealth, error) {
+func (c *Client) UpdateDeviceHealth(
+	ctx context.Context,
+	req UpdateDeviceHealthRequest,
+) (*ringapimodels.DeviceHealth, error) {
 	ctx = c.accountContext(ctx, req.Auth)
+
 	deviceIDInt, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return nil, err
 	}
+
 	health, err := c.restClient.GetDeviceHealth(ctx, deviceIDInt)
 	if err != nil {
 		return nil, err
@@ -60,28 +70,30 @@ func (c *Client) UpdateDeviceHealth(ctx context.Context, req UpdateDeviceHealthR
 	return convertToDeviceHealth(health), nil
 }
 
-// getDeviceName returns the device name, using Description if Name is empty
+// getDeviceName returns the device name, using Description if Name is empty.
 func getDeviceName(raw generatedhttp.Device) string {
 	if raw.Name != nil && *raw.Name != "" {
 		return *raw.Name
 	}
+
 	return raw.Description
 }
 
-// getDeviceTimezone returns the device timezone, using TimeZone if Timezone is empty
+// getDeviceTimezone returns the device timezone, using TimeZone if Timezone is empty.
 func getDeviceTimezone(raw generatedhttp.Device) string {
 	if raw.Timezone != nil && *raw.Timezone != "" {
 		return *raw.Timezone
 	}
-	return wireValue(raw.TimeZone)
+
+	return wireString(raw.TimeZone)
 }
 
-func wireValue[T any](value *T) T {
+func wireString(value *string) string {
 	if value != nil {
 		return *value
 	}
-	var zero T
-	return zero
+
+	return ""
 }
 
 func convertDevice(raw generatedhttp.Device) ringapimodels.Device {
@@ -89,8 +101,8 @@ func convertDevice(raw generatedhttp.Device) ringapimodels.Device {
 		ID:                     strconv.FormatInt(raw.Id, 10),
 		Name:                   getDeviceName(raw),
 		Kind:                   raw.Kind,
-		Family:                 wireValue(raw.Family),
-		Address:                wireValue(raw.Address),
+		Family:                 wireString(raw.Family),
+		Address:                wireString(raw.Address),
 		Timezone:               getDeviceTimezone(raw),
 		WifiName:               raw.WifiName,
 		WifiSignalStrength:     raw.WifiSignalStrength,
@@ -98,10 +110,12 @@ func convertDevice(raw generatedhttp.Device) ringapimodels.Device {
 		LightBrightness:        raw.LightBrightness,
 		MotionDetectionEnabled: raw.MotionDetectionEnabled,
 		Capabilities:           deviceCapabilities(raw),
+		Health:                 nil,
 	}
 	if raw.Health != nil {
 		device.Health = convertInventoryHealth(raw.Health)
 	}
+
 	return device
 }
 
@@ -110,21 +124,27 @@ func deviceCapabilities(raw generatedhttp.Device) []ringapimodels.DeviceCapabili
 	if raw.HasLight != nil && *raw.HasLight {
 		capabilities = append(capabilities, ringapimodels.DeviceCapabilityLight)
 	}
+
 	if raw.MotionDetectionEnabled != nil {
 		capabilities = append(capabilities, ringapimodels.DeviceCapabilityMotionDetection)
 	}
+
 	if raw.Health == nil {
 		return capabilities
 	}
+
 	if raw.Health.SirenOn != nil {
 		capabilities = append(capabilities, ringapimodels.DeviceCapabilitySiren)
 	}
+
 	if raw.Health.VodEnabled != nil && *raw.Health.VodEnabled {
 		capabilities = append(capabilities, ringapimodels.DeviceCapabilityLiveView)
 	}
+
 	if raw.Health.SupportedRpcCommands == nil {
 		return capabilities
 	}
+
 	for _, command := range *raw.Health.SupportedRpcCommands {
 		switch command {
 		case protocol.RPCPanStep:
@@ -137,6 +157,7 @@ func deviceCapabilities(raw generatedhttp.Device) []ringapimodels.DeviceCapabili
 			capabilities = append(capabilities, ringapimodels.DeviceCapabilityPtzTiltContinuous)
 		}
 	}
+
 	return capabilities
 }
 

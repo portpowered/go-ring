@@ -9,11 +9,15 @@ import (
 // Authenticate performs an isolated exchange and never binds its token to Client.
 // Use NewLoginSession when a 2FA challenge must be completed in the same flow.
 func (c *Client) Authenticate(ctx context.Context, req AuthenticateRequest) (*ringapimodels.AuthResponse, error) {
-	session, err := c.NewLoginSession(LoginSessionRequest{Username: req.Username, Password: req.Password, HardwareID: req.HardwareID})
+	session, err := c.NewLoginSession(
+		LoginSessionRequest{Username: req.Username, Password: req.Password, HardwareID: req.HardwareID},
+	)
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = session.Close() }()
+
 	return session.Authenticate(ctx, CompleteLoginRequest{OTPCode: req.OTPCode})
 }
 
@@ -24,15 +28,18 @@ func (c *Client) Request2FACode(ctx context.Context, req Request2FACodeRequest) 
 	if err != nil {
 		return err
 	}
+
 	defer func() { _ = session.Close() }()
+
 	return session.Request2FACode(ctx)
 }
 
-// RefreshToken refreshes an access token using a refresh token
+// RefreshToken refreshes an access token using a refresh token.
 func (c *Client) RefreshToken(ctx context.Context, req RefreshTokenRequest) (*ringapimodels.AuthResponse, error) {
 	if req.RefreshToken == "" {
 		return nil, ringapimodels.NewBadRequestError("refresh token is required", nil)
 	}
+
 	tokenResp, err := c.restClient.RefreshAccessTokenFor(ctx, req.RefreshToken, req.HardwareID)
 	if err != nil {
 		return nil, err
@@ -50,6 +57,7 @@ func tokenString(value *string) string {
 	if value != nil {
 		return *value
 	}
+
 	return ""
 }
 
@@ -57,5 +65,6 @@ func tokenInt(value *int) int {
 	if value != nil {
 		return *value
 	}
+
 	return 0
 }

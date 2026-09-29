@@ -17,34 +17,45 @@ import (
 )
 
 func TestListenReturnsContextErrorWhenCancelledWhileWaiting(t *testing.T) {
+	t.Parallel()
+
 	upgraded := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
+
 		close(upgraded)
+
 		defer func() { _ = conn.Close() }()
+
 		_, _, _ = conn.ReadMessage()
 	}))
 	t.Cleanup(server.Close)
 	client, err := ring.NewClient(ring.WithEventWebSocketURL("ws" + strings.TrimPrefix(server.URL, "http")))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = client.Close() })
+
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
+
 	go func() {
 		done <- client.Listen(ctx, func(*ringapimodels.Event) error {
 			t.Error("callback invoked without an event")
+
 			return nil
-		}, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
+		}, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""}})
 	}()
+
 	select {
 	case <-upgraded:
 	case <-time.After(time.Second):
 		t.Fatal("Listen did not establish its event connection")
 	}
+
 	cancel()
+
 	select {
 	case err := <-done:
 		require.ErrorIs(t, err, context.Canceled)
@@ -54,50 +65,75 @@ func TestListenReturnsContextErrorWhenCancelledWhileWaiting(t *testing.T) {
 }
 
 func TestEventStreamSkipsMalformedJSONAndReportsPeerReadFailure(t *testing.T) {
+	t.Parallel()
+
 	upgraded := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
 		if err != nil {
 			return
 		}
+
 		close(upgraded)
+
 		defer func() { _ = conn.Close() }()
+
 		_ = conn.WriteMessage(websocket.TextMessage, []byte("{"))
 		_ = conn.WriteJSON(map[string]any{"kind": "motion", "device_id": 321, "timestamp": "t"})
-		_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "done"))
+		_ = conn.WriteMessage(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseNormalClosure, "done"),
+		)
 	}))
 	t.Cleanup(server.Close)
 	client, err := ring.NewClient(ring.WithEventWebSocketURL("ws" + strings.TrimPrefix(server.URL, "http")))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = client.Close() })
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
+
+	conn, err := client.ConnectEvents(
+		ctx,
+		ring.ConnectEventsRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""}},
+	)
 	require.NoError(t, err)
+
 	defer func() { _ = conn.Close() }()
+
 	select {
 	case <-upgraded:
 	case <-ctx.Done():
 		t.Fatal("event stream did not connect")
 	}
+
 	event, err := conn.Receive()
 	require.NoError(t, err)
 	require.Equal(t, ringapimodels.EventKind("motion"), event.Kind)
+
 	_, err = conn.Receive()
 	require.True(t, ringapimodels.IsConnectionError(err), "peer read failure should be surfaced")
 }
 
 func TestDeviceHistoryEscapesKindQueryValue(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
+
 	mockTransport.SetResponseWithBody("GET", "/clients_api/doorbots/987652/history", 200, []any{})
 
-	_, err := client.GetDeviceHistory(context.Background(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		DeviceID: "987652",
-		Limit:    10,
-		Kind:     "motion&limit=0",
-	})
+	_, err := client.GetDeviceHistory(
+		context.Background(),
+		ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
+			DeviceID: "987652",
+			Limit:    10,
+			Kind:     "motion&limit=0",
+		},
+	)
 	require.NoError(t, err)
+
 	requests := mockTransport.GetRequests()
 	require.Len(t, requests, 1)
 	parsed, err := url.Parse(requests[0].URL)
@@ -108,31 +144,58 @@ func TestDeviceHistoryEscapesKindQueryValue(t *testing.T) {
 }
 
 func TestRecordingHistoryPropagatesHTTPAndDecodeErrors(t *testing.T) {
+	t.Parallel()
+
 	t.Run("HTTP status", func(t *testing.T) {
+		t.Parallel()
+
 		client, mockTransport := newTestClientWithMockTransport()
+
 		defer func() { _ = client.Close() }()
-		mockTransport.SetResponseWithBody("GET", "/clients_api/doorbots/987652/history", 404, map[string]string{"error": "missing"})
-		_, err := client.GetDeviceHistory(context.Background(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652"})
+
+		mockTransport.SetResponseWithBody(
+			"GET",
+			"/clients_api/doorbots/987652/history",
+			404,
+			map[string]string{"error": "missing"},
+		)
+
+		_, err := client.GetDeviceHistory(
+			context.Background(),
+			ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652"},
+		)
 		require.True(t, ringapimodels.IsHTTPError(err))
 		require.True(t, ringapimodels.IsHTTPStatusCode(err, 404))
 	})
 
 	t.Run("malformed response", func(t *testing.T) {
+		t.Parallel()
+
 		client, mockTransport := newTestClientWithMockTransport()
+
 		defer func() { _ = client.Close() }()
+
 		mockTransport.SetResponse("GET", "/clients_api/doorbots/987652/history", &http.Response{
 			StatusCode: http.StatusOK,
 			Header:     make(http.Header),
 			Body:       io.NopCloser(strings.NewReader(`{"recordings":[]}`)),
 		})
-		_, err := client.GetDeviceHistory(context.Background(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652"})
+
+		_, err := client.GetDeviceHistory(
+			context.Background(),
+			ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652"},
+		)
 		require.True(t, ringapimodels.IsInternalServerError(err))
 	})
 }
 
 func TestGetDeviceHistoryMapsDoorbotIdentityAndRecordingFields(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
+
 	mockTransport.SetResponseWithBody("GET", "/clients_api/doorbots/987652/history", 200, []any{
 		map[string]any{
 			"id": 42, "kind": "motion", "answered": true, "created_at": "2026-01-01T00:00:00Z",
@@ -140,7 +203,10 @@ func TestGetDeviceHistoryMapsDoorbotIdentityAndRecordingFields(t *testing.T) {
 		},
 	})
 
-	history, err := client.GetDeviceHistory(context.Background(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652", Limit: 1})
+	history, err := client.GetDeviceHistory(
+		context.Background(),
+		ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652", Limit: 1},
+	)
 	require.NoError(t, err)
 	require.Len(t, history.Recordings, 1)
 	require.Equal(t, int64(42), history.Recordings[0].ID)

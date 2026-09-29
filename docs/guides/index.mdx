@@ -1,0 +1,37 @@
+---
+title: Guides
+description: Practical guides for authentication, devices, live sessions, push, and playback with go-ring.
+---
+
+These guides explain the main customer workflows in `go-ring`. The generated
+API reference describes the HTTP and signaling contracts; the guides show how
+to use the public Go client around those operations.
+
+## Start here
+
+- [Authenticate and manage tokens](/docs/guides/authentication)
+- [Use the diagnostic CLI](/docs/guides/diagnostic-cli)
+- [Configure the client and transports](/docs/guides/client-configuration)
+- [Discover devices and send controls](/docs/guides/device-operations)
+- [Browse locations and inspect status](/docs/guides/locations-and-status)
+- [Fetch snapshots and unlock an intercom](/docs/guides/snapshots-and-intercom)
+- [Browse and manage recordings](/docs/guides/recordings-and-timeline)
+- [Receive account events and request tickets](/docs/guides/account-events-and-tickets)
+- [Open and manage a live session](/docs/guides/live-sessions)
+- [Create an SDP offer and exchange ICE candidates](/docs/guides/sdp-ice)
+- [Receive FCM and signaling push notifications](/docs/guides/push-notifications)
+- [Negotiate cloud playback](/docs/guides/cloud-playback)
+
+The runnable programs in the repository's `examples/` directory provide
+complete versions of several workflows, including token exchange, device
+enumeration, live streaming, PTZ, and signaling push events.
+
+## Evidence and compatibility
+
+Ring's endpoints and message formats are not a stable public protocol. The
+guides describe the library's implemented behavior. The production client
+signaling replays use hand-authored synthetic transcripts. Inherited sanitized
+signaling files lack source provenance and serve only as historical regressions.
+FCM HTTP registration follows source-derived reference contracts; sample FCM
+notifications are synthetic. These checks do not verify every account,
+device, or region.

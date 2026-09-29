@@ -14,17 +14,23 @@ import (
 )
 
 func TestGetDeviceHistory_Success(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	deviceID := "987652"
 
-	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		DeviceID: deviceID,
-		Limit:    10,
-		Kind:     "",
-	})
+	history, err := client.GetDeviceHistory(
+		ctx,
+		ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
+			DeviceID: deviceID,
+			Limit:    10,
+			Kind:     "",
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, history)
 
@@ -38,17 +44,23 @@ func TestGetDeviceHistory_Success(t *testing.T) {
 }
 
 func TestGetDeviceHistory_WithKind(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	deviceID := "987652"
 
-	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		DeviceID: deviceID,
-		Limit:    10,
-		Kind:     "motion",
-	})
+	history, err := client.GetDeviceHistory(
+		ctx,
+		ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
+			DeviceID: deviceID,
+			Limit:    10,
+			Kind:     "motion",
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, history)
 
@@ -62,48 +74,82 @@ func TestGetDeviceHistory_WithKind(t *testing.T) {
 }
 
 func TestGetDeviceHistory_OlderThan(t *testing.T) {
+	t.Parallel()
+
 	client, transport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
+
 	cursor := int64(1720000000)
-	history, err := client.GetDeviceHistory(newTestContext(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652", Limit: 20, Kind: "motion", OlderThan: &cursor})
+	history, err := client.GetDeviceHistory(
+		newTestContext(),
+		ring.GetDeviceHistoryRequest{
+			Auth:      ring.AuthContext{AccessToken: "test_token", HardwareID: ""},
+			DeviceID:  "987652",
+			Limit:     20,
+			Kind:      "motion",
+			OlderThan: &cursor,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, history)
+
 	requests := transport.GetRequests()
 	require.Len(t, requests, 1)
 	assert.Contains(t, requests[0].URL, "older_than=1720000000")
 	assert.Contains(t, requests[0].URL, "kind=motion")
+
 	negative := int64(-1)
-	_, err = client.GetDeviceHistory(newTestContext(), ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"}, DeviceID: "987652", OlderThan: &negative})
+	_, err = client.GetDeviceHistory(
+		newTestContext(),
+		ring.GetDeviceHistoryRequest{
+			Auth:      ring.AuthContext{AccessToken: "test_token"},
+			DeviceID:  "987652",
+			OlderThan: &negative,
+		},
+	)
 	assert.True(t, ringapimodels.IsBadRequestError(err))
 	assert.Len(t, transport.GetRequests(), 1)
 }
 
 func TestGetDeviceHistory_NoDeviceID(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 
-	history, err := client.GetDeviceHistory(ctx, ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		DeviceID: "",
-		Limit:    10,
-		Kind:     "",
-	})
+	history, err := client.GetDeviceHistory(
+		ctx,
+		ring.GetDeviceHistoryRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
+			DeviceID: "",
+			Limit:    10,
+			Kind:     "",
+		},
+	)
 	assert.Nil(t, history)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, ringapimodels.IsBadRequestError(err))
 
 	// Verify no request was made since validation failed before the API call
 	requests := mockTransport.GetRequests()
-	assert.Len(t, requests, 0)
+	assert.Empty(t, requests)
 }
 
 func TestGetActiveDings_Success(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
-	activeDings, err := client.GetActiveDings(ctx, ring.GetActiveDingsRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
+	activeDings, err := client.GetActiveDings(
+		ctx,
+		ring.GetActiveDingsRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""}},
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, activeDings)
@@ -117,11 +163,14 @@ func TestGetActiveDings_Success(t *testing.T) {
 }
 
 func TestGetRecording_Success(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	recordingID := int64(987654321)
-	videoData := "fake video data"
+	videoData := fakeVideoPayload
 
 	// Set up response with video data
 	body := bytes.NewBufferString(videoData)
@@ -136,12 +185,16 @@ func TestGetRecording_Success(t *testing.T) {
 	})
 
 	ctx := newTestContext()
-	stream, err := client.GetRecording(ctx, ring.GetRecordingRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		RecordingID: recordingID,
-	})
+	stream, err := client.GetRecording(
+		ctx,
+		ring.GetRecordingRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""},
+			RecordingID: recordingID,
+		},
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, stream)
+
 	defer func() { _ = stream.Body.Close() }()
 
 	assert.Equal(t, "video/mp4", stream.ContentType)
@@ -158,7 +211,10 @@ func TestGetRecording_Success(t *testing.T) {
 }
 
 func TestGetRecording_NotFound(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	// Set up 404 response
@@ -170,14 +226,18 @@ func TestGetRecording_NotFound(t *testing.T) {
 	})
 
 	ctx := newTestContext()
-	stream, err := client.GetRecording(ctx, ring.GetRecordingRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		RecordingID: 999999,
-	})
+	stream, err := client.GetRecording(
+		ctx,
+		ring.GetRecordingRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""},
+			RecordingID: 999999,
+		},
+	)
 
 	assert.Nil(t, stream)
-	assert.Error(t, err)
+	require.Error(t, err)
 	// The REST client returns HTTPError for 404 status codes
 	assert.True(t, ringapimodels.IsHTTPError(err))
+
 	var httpErr *ringapimodels.HTTPError
 	if assert.ErrorAs(t, err, &httpErr) {
 		assert.Equal(t, 404, httpErr.StatusCode)
@@ -185,25 +245,34 @@ func TestGetRecording_NotFound(t *testing.T) {
 }
 
 func TestGetLastRecordingID_Success(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	ctx := newTestContext()
 	deviceID := "987652"
 
-	recordingID, err := client.GetLastRecordingID(ctx, ring.GetLastRecordingIDRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		DeviceID: deviceID,
-	})
+	recordingID, err := client.GetLastRecordingID(
+		ctx,
+		ring.GetLastRecordingIDRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""},
+			DeviceID: deviceID,
+		},
+	)
 	require.NoError(t, err)
-	assert.Greater(t, recordingID, int64(0))
+	assert.Positive(t, recordingID)
 
 	// Verify request was made
 	requests := mockTransport.GetRequests()
-	require.Greater(t, len(requests), 0)
+	require.NotEmpty(t, requests)
 }
 
 func TestGetLastRecordingID_NoRecordings(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	// Set up empty history response - API returns an array directly, not wrapped
@@ -212,21 +281,27 @@ func TestGetLastRecordingID_NoRecordings(t *testing.T) {
 	ctx := newTestContext()
 	deviceID := "987652"
 
-	recordingID, err := client.GetLastRecordingID(ctx, ring.GetLastRecordingIDRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		DeviceID: deviceID,
-	})
+	recordingID, err := client.GetLastRecordingID(
+		ctx,
+		ring.GetLastRecordingIDRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""},
+			DeviceID: deviceID,
+		},
+	)
 
 	assert.Equal(t, int64(0), recordingID)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, ringapimodels.IsNotFoundError(err))
 }
 
 func TestGetRecording_CanReadBody(t *testing.T) {
+	t.Parallel()
+
 	client, mockTransport := newTestClientWithMockTransport()
+
 	defer func() { _ = client.Close() }()
 
 	recordingID := int64(987654321)
-	videoData := "fake video data"
+	videoData := fakeVideoPayload
 
 	// Set up response with video data
 	mockTransport.SetResponse("GET", "/clients_api/dings/987654321/recording", &http.Response{
@@ -239,11 +314,15 @@ func TestGetRecording_CanReadBody(t *testing.T) {
 	})
 
 	ctx := newTestContext()
-	stream, err := client.GetRecording(ctx, ring.GetRecordingRequest{Auth: ring.AuthContext{AccessToken: "test_token"},
-		RecordingID: recordingID,
-	})
+	stream, err := client.GetRecording(
+		ctx,
+		ring.GetRecordingRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""},
+			RecordingID: recordingID,
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, stream)
+
 	defer func() { _ = stream.Body.Close() }()
 
 	// Read the body to verify it works

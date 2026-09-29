@@ -1,0 +1,67 @@
+---
+title: Device discovery and controls
+description: List devices, inspect capabilities, and send account-scoped device commands.
+---
+
+Most device operations are request-and-response HTTP calls. Include the
+account's `AuthContext` with each request, list devices once, and use the
+returned device IDs with controls and detail lookups.
+
+```go
+devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
+if err != nil {
+	return err
+}
+
+for _, device := range devices.Devices {
+	fmt.Printf("%s: %s (%s)\n", device.ID, device.Name, device.Kind)
+}
+```
+
+The returned device model includes capabilities when the inventory response
+explicitly reports them. An absent capability means support is unknown; the
+device or service remains the final authority for a command.
+
+`Device.Supports` checks only affirmative inventory evidence. A reported
+light, motion setting, siren state, or video-on-demand flag may confirm its
+respective capability even when the current state is off. Reported PTZ RPC
+commands confirm only their specific pan or tilt, step or continuous control.
+Unfamiliar device kinds remain in the list; the client does not classify them
+away. Snapshot, reboot, intercom, and recording support can still be queried
+by ID when the inventory gives no capability evidence.
+
+For callers migrating from family-specific device slices, iterate
+`response.Devices`. `GetDevice` returns a pointer to that same device model;
+device IDs and request authentication stay the same.
+
+## Send a control
+
+Controls take a device ID and the value being changed. For example, to change
+motion detection:
+
+```go
+err := client.SetMotionDetection(ctx, ring.SetMotionDetectionRequest{
+	Auth:     auth,
+	DeviceID: deviceID,
+	Enabled:  true,
+})
+if err != nil {
+	return err
+}
+```
+
+Other supported controls include lights, siren, volume, in-home chime
+settings, reboot, and chime test sounds. Some legacy volume and in-home chime
+routes also require the device description; the request type documents that
+requirement.
+
+A successful control call reports that the request was accepted. It does not
+confirm a physical outcome. For a state-changing request, fetch status or
+settings separately if your workflow needs to check the resulting state.
+
+See the [`enumerate-devices`](https://github.com/portpowered/go-ring/tree/main/examples/enumerate-devices)
+and [`reboot-device`](https://github.com/portpowered/go-ring/tree/main/examples/reboot-device)
+examples for complete programs.
+
+Wire contracts: [list devices](/docs/openapi/devices/listDevices) and
+[device controls](/docs/openapi/device-controls/turnSirenOn).

@@ -23,43 +23,79 @@ func validateEndpoints(e Endpoints) error {
 		{"SolutionsBaseURL", e.SolutionsBaseURL, []string{"http", "https"}, false},
 		{"SignalingURL", e.SignalingURL, []string{"ws", "wss"}, true},
 	} {
-		name, raw := endpoint.name, endpoint.raw
-		if raw == "" {
+		if endpoint.raw == "" {
 			continue
 		}
-		u, err := url.Parse(raw)
-		validScheme := false
-		for _, scheme := range endpoint.schemes {
-			validScheme = validScheme || (u != nil && u.Scheme == scheme)
-		}
-		if err != nil || u == nil || u.Host == "" || u.User != nil || (!endpoint.queryOK && u.RawQuery != "") || u.Fragment != "" || u.Opaque != "" || !validScheme {
-			return ringapimodels.NewBadRequestError(fmt.Sprintf("invalid %s URL %q", name, raw), err)
+
+		err := validateEndpointURL(endpoint)
+		if err != nil {
+			return err
 		}
 	}
+
+	return nil
+}
+
+func validateEventWebSocketURL(raw string) error {
+	return validateEndpointURL(endpointValidation{
+		name: "EventWebSocketURL", raw: raw, schemes: []string{"ws", "wss"}, queryOK: true,
+	})
+}
+
+func validateEndpointURL(endpoint endpointValidation) error {
+	parsedURL, err := url.Parse(endpoint.raw)
+	validScheme := false
+
+	for _, scheme := range endpoint.schemes {
+		validScheme = validScheme || (parsedURL != nil && parsedURL.Scheme == scheme)
+	}
+
+	if err != nil ||
+		parsedURL == nil ||
+		parsedURL.Host == "" ||
+		parsedURL.User != nil ||
+		(!endpoint.queryOK && parsedURL.RawQuery != "") ||
+		parsedURL.Fragment != "" ||
+		parsedURL.Opaque != "" ||
+		!validScheme {
+		return ringapimodels.NewBadRequestError(
+			fmt.Sprintf("invalid %s URL %q", endpoint.name, endpoint.raw),
+			err,
+		)
+	}
+
 	return nil
 }
 
 func (c *Client) applyEndpointConfiguration() error {
 	p := protocol.Profile(string(c.region))
-	e := Endpoints{p.OAuthBaseURL, p.APIBaseURL, p.SolutionsBaseURL, p.SignalingURL}
-	o := c.endpointOverrides
-	if o.OAuthBaseURL != "" {
-		e.OAuthBaseURL = strings.TrimRight(o.OAuthBaseURL, "/")
+	endpoints := Endpoints{p.OAuthBaseURL, p.APIBaseURL, p.SolutionsBaseURL, p.SignalingURL}
+
+	overrides := c.endpointOverrides
+
+	if overrides.OAuthBaseURL != "" {
+		endpoints.OAuthBaseURL = strings.TrimRight(overrides.OAuthBaseURL, "/")
 	}
-	if o.APIBaseURL != "" {
-		e.APIBaseURL = strings.TrimRight(o.APIBaseURL, "/")
+
+	if overrides.APIBaseURL != "" {
+		endpoints.APIBaseURL = strings.TrimRight(overrides.APIBaseURL, "/")
 	}
-	if o.SolutionsBaseURL != "" {
-		e.SolutionsBaseURL = strings.TrimRight(o.SolutionsBaseURL, "/")
+
+	if overrides.SolutionsBaseURL != "" {
+		endpoints.SolutionsBaseURL = strings.TrimRight(overrides.SolutionsBaseURL, "/")
 	}
-	if o.SignalingURL != "" {
-		e.SignalingURL = o.SignalingURL
+
+	if overrides.SignalingURL != "" {
+		endpoints.SignalingURL = overrides.SignalingURL
 	}
+
 	if c.signalingWebSocketOverride != "" {
-		e.SignalingURL = c.signalingWebSocketOverride
+		endpoints.SignalingURL = c.signalingWebSocketOverride
 	}
-	c.endpoints = e
-	c.signalingWebSocketURL = e.SignalingURL
-	c.restClient.Apply(rest.WithEndpointBases(e.APIBaseURL, e.OAuthBaseURL))
+
+	c.endpoints = endpoints
+	c.signalingWebSocketURL = endpoints.SignalingURL
+	c.restClient.Apply(rest.WithEndpointBases(endpoints.APIBaseURL, endpoints.OAuthBaseURL))
+
 	return nil
 }

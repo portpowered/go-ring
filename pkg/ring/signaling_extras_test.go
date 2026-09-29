@@ -16,395 +16,660 @@ import (
 
 func capturedFrame(t *testing.T, method, direction string) signaling.Message {
 	t.Helper()
-	r, err := replay.LoadSessionRecording(filepath.Join("..", "..", "tests", "replay", "fixtures", "signaling", "historical", "flow-21.json"))
+
+	recording, err := replay.LoadSessionRecording(
+		filepath.Join("..", "..", "tests", "replay", "fixtures", "signaling", "historical", "flow-21.json"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, row := range r.Messages {
-		var m signaling.Message
-		if err := json.Unmarshal(row.Payload, &m); err != nil {
+
+	for _, row := range recording.Messages {
+		var message signaling.Message
+
+		err := json.Unmarshal(row.Payload, &message)
+		if err != nil {
 			t.Fatal(err)
 		}
-		if m.Method == method && row.Direction == direction {
-			return m
+
+		if message.Method == method && row.Direction == direction {
+			return message
 		}
 	}
+
 	t.Fatalf("captured %s %s not found", direction, method)
+
 	return signaling.Message{}
 }
 func replayConnection(t *testing.T) (*SignalingConnection, <-chan signaling.Message) {
 	t.Helper()
+
 	writes := make(chan signaling.Message, 256)
 	ctx, cancel := context.WithCancel(context.Background())
-	c := &SignalingConnection{ctx: ctx, cancel: cancel, done: make(chan struct{}), channels: make(map[string]chan signaling.Message), playbacks: make(map[string]*PlaybackSession), sessions: make(map[string]*DeviceSession), pending: make(map[string]chan signaling.Message)}
-	c.writer = dependencywebsocket.NewSignalingWriter(c.done, func(_ context.Context, m signaling.Message) error { writes <- m; return nil }, nil)
-	go c.writer.Run()
-	t.Cleanup(func() { close(c.done); cancel(); <-c.writer.Finished() })
-	return c, writes
+	connection := &SignalingConnection{
+		ctx:       ctx,
+		cancel:    cancel,
+		done:      make(chan struct{}),
+		channels:  make(map[string]chan signaling.Message),
+		playbacks: make(map[string]*PlaybackSession),
+		sessions:  make(map[string]*DeviceSession),
+		pending:   make(map[string]chan signaling.Message),
+	}
+
+	connection.writer = dependencywebsocket.NewSignalingWriter(
+		connection.done,
+		func(_ context.Context, message signaling.Message) error {
+			writes <- message
+
+			return nil
+		},
+		nil,
+	)
+
+	go connection.writer.Run()
+
+	t.Cleanup(func() { close(connection.done); cancel(); <-connection.writer.Finished() })
+
+	return connection, writes
 }
-func replayReply(t *testing.T, c *SignalingConnection, request signaling.Message, method string) {
+func replayReply(t *testing.T, connection *SignalingConnection, request signaling.Message, method string) {
 	t.Helper()
-	m := capturedFrame(t, method, "server_to_client")
-	m.DialogID = request.DialogID
-	c.route(m)
+	message := capturedFrame(t, method, "server_to_client")
+	message.DialogID = request.DialogID
+	connection.route(message)
 }
 func TestCapturedPushSubscriptionAndNotification(t *testing.T) {
-	c, writes := replayConnection(t)
-	filter := PushFilter{FilterIdentifier: "sanitized-text", NotificationScope: "event", NotificationType: "shoulder_tap"}
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
+	filter := PushFilter{
+		FilterIdentifier:  "sanitized-text",
+		NotificationScope: "event",
+		NotificationType:  "shoulder_tap",
+	}
 	filter.Filters.DoorbotIDs = []int64{1000}
 	result := make(chan *PushSubscription, 1)
 	failures := make(chan error, 1)
+
 	go func() {
-		s, e := c.SubscribePush(context.Background(), []PushFilter{filter})
-		result <- s
-		failures <- e
+		subscription, subscribeErr := connection.SubscribePush(context.Background(), []PushFilter{filter})
+		result <- subscription
+
+		failures <- subscribeErr
 	}()
+
 	request := <-writes
 	if request.Method != "push_subscribe" {
 		t.Fatalf("method=%s", request.Method)
 	}
+
 	var body struct {
 		Requested []PushFilter `json:"requested_notifications"`
 	}
-	if json.Unmarshal(request.Body, &body) != nil || len(body.Requested) != 1 || body.Requested[0].Filters.DoorbotIDs[0] != 1000 {
+
+	if json.Unmarshal(request.Body, &body) != nil || len(body.Requested) != 1 ||
+		body.Requested[0].Filters.DoorbotIDs[0] != 1000 {
 		t.Fatalf("unexpected subscription body: %s", request.Body)
 	}
-	replayReply(t, c, request, "push_subscription_ack")
-	s := <-result
-	if err := <-failures; err != nil {
-		t.Fatal(err)
+
+	replayReply(t, connection, request, "push_subscription_ack")
+
+	subscription := <-result
+
+	{
+		err := <-failures
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	replayReply(t, c, request, "push_event")
+
+	replayReply(t, connection, request, "push_event")
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	event, err := s.Receive(ctx)
+
+	event, err := subscription.Receive(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if event.NotificationType != "shoulder_tap" || len(event.Payload) == 0 {
 		t.Fatalf("event=%+v", event)
 	}
-	if err := s.Close(); err != nil {
-		t.Fatal(err)
+
+	{
+		err := subscription.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	if m := <-writes; m.Method != "push_unsubscribe" {
-		t.Fatalf("method=%s", m.Method)
+
+	if message := <-writes; message.Method != "push_unsubscribe" {
+		t.Fatalf("method=%s", message.Method)
 	}
 }
 func TestCapturedPlaybackNegotiationICEAndTermination(t *testing.T) {
-	c, writes := replayConnection(t)
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
 	requestFrame := capturedFrame(t, "playback", "client_to_server")
+
 	var offer struct {
 		SDP string `json:"sdp"`
 	}
-	if err := json.Unmarshal(requestFrame.Body, &offer); err != nil {
-		t.Fatal(err)
+
+	{
+		err := json.Unmarshal(requestFrame.Body, &offer)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
+
 	result := make(chan *PlaybackSession, 1)
 	failures := make(chan error, 1)
+
 	go func() {
-		s, e := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
-		result <- s
-		failures <- e
+		playback, startErr := connection.StartPlayback(
+			context.Background(),
+			StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}},
+		)
+		result <- playback
+
+		failures <- startErr
 	}()
+
 	request := <-writes
 	if request.Method != "playback" {
 		t.Fatalf("method=%s", request.Method)
 	}
+
 	var sent struct {
 		Type  string `json:"type"`
 		Entry string `json:"entry_point"`
 	}
+
 	_ = json.Unmarshal(request.Body, &sent)
+
 	if sent.Type != "cloud" || sent.Entry != "timeline" {
 		t.Fatalf("playback body=%s", request.Body)
 	}
-	replayReply(t, c, request, "sdp")
-	s := <-result
-	if err := <-failures; err != nil {
-		t.Fatal(err)
+
+	replayReply(t, connection, request, "sdp")
+
+	playback := <-result
+
+	{
+		err := <-failures
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	if s.Answer().Type != SDPTypeAnswer || s.Answer().SDP == "" {
+
+	if playback.Answer().Type != SDPTypeAnswer || playback.Answer().SDP == "" {
 		t.Fatal("missing playback answer")
 	}
-	replayReply(t, c, request, "ice")
+
+	replayReply(t, connection, request, "ice")
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	event, err := s.Receive(ctx)
+
+	event, err := playback.Receive(ctx)
 	if err != nil || event.Method != "ice" {
 		t.Fatalf("ICE event=%+v err=%v", event, err)
 	}
-	replayReply(t, c, request, "notification")
-	event, err = s.Receive(ctx)
+
+	replayReply(t, connection, request, "notification")
+
+	event, err = playback.Receive(ctx)
 	if err != nil || event.Method != "notification" {
 		t.Fatalf("playback notification=%+v err=%v", event, err)
 	}
-	if err := s.SendICE(ctx, ICECandidateRequest{Candidate: "candidate:synthetic", MLineIndex: 0}); err != nil {
-		t.Fatal(err)
+
+	{
+		err := playback.SendICE(ctx, ICECandidateRequest{Candidate: "candidate:synthetic", MLineIndex: 0})
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	if m := <-writes; m.Method != "ice" {
-		t.Fatalf("method=%s", m.Method)
+
+	if message := <-writes; message.Method != "ice" {
+		t.Fatalf("method=%s", message.Method)
 	}
-	if err := s.Close(); err != nil {
-		t.Fatal(err)
+
+	{
+		err := playback.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	if m := <-writes; m.Method != "close" {
-		t.Fatalf("method=%s", m.Method)
+
+	if message := <-writes; message.Method != "close" {
+		t.Fatalf("method=%s", message.Method)
 	}
 }
 
 func TestPushReplayFailureAndClosure(t *testing.T) {
-	c, writes := replayConnection(t)
-	if _, err := c.SubscribePush(context.Background(), nil); err == nil {
-		t.Fatal("empty filters accepted")
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
+	{
+		_, err := connection.SubscribePush(context.Background(), nil)
+		if err == nil {
+			t.Fatal("empty filters accepted")
+		}
 	}
+
 	filter := PushFilter{FilterIdentifier: "one", NotificationScope: "event", NotificationType: "shoulder_tap"}
 	result := make(chan error, 1)
-	go func() { _, err := c.SubscribePush(context.Background(), []PushFilter{filter}); result <- err }()
+
+	go func() { _, err := connection.SubscribePush(context.Background(), []PushFilter{filter}); result <- err }()
+
 	request := <-writes
 	bad := capturedFrame(t, "push_subscription_ack", "server_to_client")
 	bad.DialogID = request.DialogID
 	bad.Body = json.RawMessage(`{"status":"denied"}`)
-	c.route(bad)
-	if err := <-result; err == nil {
+	connection.route(bad)
+
+	err := <-result
+	if err == nil {
 		t.Fatal("rejected subscription accepted")
 	}
 }
 
 func TestPlaybackReplayValidation(t *testing.T) {
-	c, writes := replayConnection(t)
-	for _, req := range []StartPlaybackRequest{{DeviceID: "bad"}, {DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeAnswer, SDP: "x"}}, {DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: "bad"}}} {
-		if _, err := c.StartPlayback(context.Background(), req); err == nil {
-			t.Fatalf("accepted %+v", req)
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
+
+	for _, req := range []StartPlaybackRequest{
+		{DeviceID: "bad"},
+		{
+			DeviceID: "1000",
+			Offer:    SessionDescription{Type: SDPTypeAnswer, SDP: "x"},
+		},
+		{
+			DeviceID: "1000",
+			Offer:    SessionDescription{Type: SDPTypeOffer, SDP: "bad"},
+		},
+	} {
+		{
+			_, err := connection.StartPlayback(context.Background(), req)
+			if err == nil {
+				t.Fatalf("accepted %+v", req)
+			}
 		}
 	}
+
 	frame := capturedFrame(t, "playback", "client_to_server")
+
 	var offer struct {
 		SDP string `json:"sdp"`
 	}
+
 	_ = json.Unmarshal(frame.Body, &offer)
 	result := make(chan error, 1)
+
 	go func() {
-		_, err := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
+		_, err := connection.StartPlayback(
+			context.Background(),
+			StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}},
+		)
 		result <- err
 	}()
+
 	request := <-writes
 	bad := capturedFrame(t, "sdp", "server_to_client")
 	bad.DialogID = request.DialogID
 	bad.Body = json.RawMessage(`{"doorbot_id":999,"session_id":"bad","type":"answer","sdp":"x"}`)
-	c.route(bad)
-	if err := <-result; err == nil {
+	connection.route(bad)
+
+	err := <-result
+	if err == nil {
 		t.Fatal("invalid answer accepted")
 	}
 }
 
 func TestPushReplayIdentityAndReceiveCancellation(t *testing.T) {
-	c, writes := replayConnection(t)
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
 	filters := []PushFilter{{FilterIdentifier: "one", NotificationScope: "event", NotificationType: "shoulder_tap"}}
 	ready := make(chan *PushSubscription, 1)
-	go func() { s, _ := c.SubscribePush(context.Background(), filters); ready <- s }()
+
+	go func() {
+		subscription, _ := connection.SubscribePush(context.Background(), filters)
+		ready <- subscription
+	}()
+
 	request := <-writes
-	replayReply(t, c, request, "push_subscription_ack")
-	s := <-ready
+	replayReply(t, connection, request, "push_subscription_ack")
+
+	subscription := <-ready
 	heartbeatDone := make(chan struct{})
-	go func() { s.heartbeatAt(context.Background(), 100*time.Millisecond); close(heartbeatDone) }()
+
+	go func() { subscription.heartbeatAt(context.Background(), 100*time.Millisecond); close(heartbeatDone) }()
+
 	select {
-	case m := <-writes:
-		if m.Method != "push_heartbeat" {
-			t.Fatalf("method=%s", m.Method)
+	case message := <-writes:
+		if message.Method != "push_heartbeat" {
+			t.Fatalf("method=%s", message.Method)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("missing push heartbeat")
 	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := s.Receive(ctx); !errors.Is(err, context.Canceled) {
-		t.Fatalf("receive cancellation=%v", err)
+
+	{
+		_, err := subscription.Receive(ctx)
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("receive cancellation=%v", err)
+		}
 	}
+
 	wrong := capturedFrame(t, "push_event", "server_to_client")
 	wrong.DialogID = request.DialogID
-	wrong.Body = json.RawMessage(`{"subscription_id":"other","payload":{},"notification_scope":"event","notification_type":"shoulder_tap"}`)
-	c.route(wrong)
+	wrong.Body = json.RawMessage(
+		`{"subscription_id":"other","payload":{},"notification_scope":"event","notification_type":"shoulder_tap"}`,
+	)
+	connection.route(wrong)
+
 	ctx2, stop := context.WithTimeout(context.Background(), time.Second)
 	defer stop()
-	if _, err := s.Receive(ctx2); err == nil {
-		t.Fatal("foreign event accepted")
+
+	{
+		_, err := subscription.Receive(ctx2)
+		if err == nil {
+			t.Fatal("foreign event accepted")
+		}
 	}
-	if err := s.Close(); err != nil {
+
+	err := subscription.Close()
+	if err != nil {
 		t.Fatal(err)
 	}
+
 	<-heartbeatDone
 	<-writes
-	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
-		t.Fatalf("closed receive=%v", err)
+
+	{
+		_, err := subscription.Receive(context.Background())
+		if !errors.Is(err, signaling.ErrClosed) {
+			t.Fatalf("closed receive=%v", err)
+		}
 	}
 }
 
 func TestPlaybackReplayReceiveCancellation(t *testing.T) {
-	c, writes := replayConnection(t)
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
 	frame := capturedFrame(t, "playback", "client_to_server")
+
 	var offer struct {
 		SDP string `json:"sdp"`
 	}
+
 	_ = json.Unmarshal(frame.Body, &offer)
 	ready := make(chan *PlaybackSession, 1)
+
 	go func() {
-		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
-		ready <- s
+		playback, _ := connection.StartPlayback(
+			context.Background(),
+			StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}},
+		)
+		ready <- playback
 	}()
+
 	request := <-writes
-	replayReply(t, c, request, "sdp")
-	s := <-ready
+	replayReply(t, connection, request, "sdp")
+
+	playback := <-ready
 	keepaliveDone := make(chan struct{})
-	go func() { s.keepalive(context.Background(), 100*time.Millisecond); close(keepaliveDone) }()
+
+	go func() { playback.keepalive(context.Background(), 100*time.Millisecond); close(keepaliveDone) }()
+
 	select {
-	case m := <-writes:
-		if m.Method != "ping" {
-			t.Fatalf("method=%s", m.Method)
+	case message := <-writes:
+		if message.Method != "ping" {
+			t.Fatalf("method=%s", message.Method)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("missing playback ping")
 	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := s.Receive(ctx); !errors.Is(err, context.Canceled) {
-		t.Fatalf("receive cancellation=%v", err)
+
+	{
+		_, err := playback.Receive(ctx)
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("receive cancellation=%v", err)
+		}
 	}
-	if err := s.Close(); err != nil {
+
+	err := playback.Close()
+	if err != nil {
 		t.Fatal(err)
 	}
+
 	<-keepaliveDone
 	<-writes
-	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
-		t.Fatalf("closed receive=%v", err)
+
+	{
+		_, err := playback.Receive(context.Background())
+		if !errors.Is(err, signaling.ErrClosed) {
+			t.Fatalf("closed receive=%v", err)
+		}
 	}
 }
 
 func TestSignalingExtraValidationBeforeWire(t *testing.T) {
-	c, writes := replayConnection(t)
-	if err := c.sendTyped(context.Background(), protocol.MethodNotification, "dialog", "", make(chan int)); err == nil {
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
+
+	err := connection.sendTyped(context.Background(), protocol.MethodNotification, "dialog", "", make(chan int))
+	if err == nil {
 		t.Fatal("unmarshalable body accepted")
 	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	filter := PushFilter{FilterIdentifier: "one", NotificationScope: "event", NotificationType: "shoulder_tap"}
-	if _, err := c.SubscribePush(ctx, []PushFilter{filter}); !errors.Is(err, context.Canceled) {
-		t.Fatalf("canceled subscribe=%v", err)
+	{
+		_, err := connection.SubscribePush(ctx, []PushFilter{filter})
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("canceled subscribe=%v", err)
+		}
 	}
+
 	frame := capturedFrame(t, "playback", "client_to_server")
+
 	var offer struct {
 		SDP string `json:"sdp"`
 	}
+
 	_ = json.Unmarshal(frame.Body, &offer)
-	if _, err := c.StartPlayback(ctx, StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}}); !errors.Is(err, context.Canceled) {
-		t.Fatalf("canceled playback=%v", err)
+
+	{
+		_, err := connection.StartPlayback(ctx, StartPlaybackRequest{
+			DeviceID: "1000",
+			Offer:    SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP},
+		})
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("canceled playback=%v", err)
+		}
 	}
+
 	select {
-	case m := <-writes:
-		t.Fatalf("unexpected write %s", m.Method)
+	case message := <-writes:
+		t.Fatalf("unexpected write %s", message.Method)
 	default:
 	}
-	c.mu.Lock()
-	c.closed = true
-	c.terminal = signaling.ErrClosed
-	c.mu.Unlock()
-	if _, _, err := c.registerChannel(); !errors.Is(err, signaling.ErrClosed) {
-		t.Fatalf("closed registration=%v", err)
+
+	connection.mu.Lock()
+	connection.closed = true
+	connection.terminal = signaling.ErrClosed
+	connection.mu.Unlock()
+
+	{
+		_, _, err := connection.registerChannel()
+		if !errors.Is(err, signaling.ErrClosed) {
+			t.Fatalf("closed registration=%v", err)
+		}
 	}
 }
 
 func TestPlaybackCapturedPongAndRemoteClose(t *testing.T) {
-	c, writes := replayConnection(t)
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
 	frame := capturedFrame(t, "playback", "client_to_server")
+
 	var offer struct {
 		SDP string `json:"sdp"`
 	}
+
 	_ = json.Unmarshal(frame.Body, &offer)
 	ready := make(chan *PlaybackSession, 1)
+
 	go func() {
-		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
-		ready <- s
+		playback, _ := connection.StartPlayback(
+			context.Background(),
+			StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}},
+		)
+		ready <- playback
 	}()
+
 	request := <-writes
-	replayReply(t, c, request, "sdp")
-	s := <-ready
-	before := s.lastPong.Load()
+	replayReply(t, connection, request, "sdp")
+
+	playback := <-ready
+	before := playback.lastPong.Load()
 	pong := capturedFrame(t, "pong", "server_to_client")
 	pong.DialogID = request.DialogID
 	pong.Body = json.RawMessage(`{"doorbot_id":999,"session_id":"wrong"}`)
-	c.route(pong)
-	if s.lastPong.Load() != before {
+	connection.route(pong)
+
+	if playback.lastPong.Load() != before {
 		t.Fatal("foreign pong refreshed playback")
 	}
-	pong.Body = mustJSON(map[string]any{"doorbot_id": 1000, "session_id": s.id})
-	c.route(pong)
-	if s.lastPong.Load() < before {
+
+	pong.Body = mustJSON(map[string]any{"doorbot_id": 1000, "session_id": playback.id})
+	connection.route(pong)
+
+	if playback.lastPong.Load() < before {
 		t.Fatal("matching pong did not refresh playback")
 	}
+
 	closeFrame := signaling.Message{Method: "close", DialogID: request.DialogID}
-	c.route(closeFrame)
-	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrClosed) {
-		t.Fatalf("remote close=%v", err)
+	connection.route(closeFrame)
+
+	{
+		_, err := playback.Receive(context.Background())
+		if !errors.Is(err, signaling.ErrClosed) {
+			t.Fatalf("remote close=%v", err)
+		}
 	}
 }
 
 func TestPlaybackMissingPongTerminates(t *testing.T) {
-	c, writes := replayConnection(t)
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
 	frame := capturedFrame(t, "playback", "client_to_server")
+
 	var offer struct {
 		SDP string `json:"sdp"`
 	}
+
 	_ = json.Unmarshal(frame.Body, &offer)
 	ready := make(chan *PlaybackSession, 1)
+
 	go func() {
-		s, _ := c.StartPlayback(context.Background(), StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}})
-		ready <- s
+		playback, _ := connection.StartPlayback(
+			context.Background(),
+			StartPlaybackRequest{DeviceID: "1000", Offer: SessionDescription{Type: SDPTypeOffer, SDP: offer.SDP}},
+		)
+		ready <- playback
 	}()
+
 	request := <-writes
-	replayReply(t, c, request, "sdp")
-	s := <-ready
-	s.lastPong.Store(time.Now().Add(-time.Minute).UnixNano())
+	replayReply(t, connection, request, "sdp")
+
+	playback := <-ready
+	playback.lastPong.Store(time.Now().Add(-time.Minute).UnixNano())
+
 	finished := make(chan struct{})
-	go func() { s.keepalive(context.Background(), time.Millisecond); close(finished) }()
+
+	go func() { playback.keepalive(context.Background(), time.Millisecond); close(finished) }()
+
 	select {
 	case <-finished:
 	case <-time.After(time.Second):
 		t.Fatal("missing pong did not terminate")
 	}
-	if _, err := s.Receive(context.Background()); !errors.Is(err, signaling.ErrHeartbeat) {
-		t.Fatalf("timeout receive=%v", err)
+
+	{
+		_, err := playback.Receive(context.Background())
+		if !errors.Is(err, signaling.ErrHeartbeat) {
+			t.Fatalf("timeout receive=%v", err)
+		}
 	}
 }
 
 func TestPushBackpressureIsolatesDialog(t *testing.T) {
-	c, writes := replayConnection(t)
+	t.Parallel()
+
+	connection, writes := replayConnection(t)
 	ready := make(chan *PushSubscription, 1)
+
 	go func() {
-		s, _ := c.SubscribePush(context.Background(), []PushFilter{{FilterIdentifier: "one", NotificationScope: "event", NotificationType: "shoulder_tap"}})
-		ready <- s
+		subscription, _ := connection.SubscribePush(
+			context.Background(),
+			[]PushFilter{{FilterIdentifier: "one", NotificationScope: "event", NotificationType: "shoulder_tap"}},
+		)
+		ready <- subscription
 	}()
+
 	request := <-writes
-	replayReply(t, c, request, "push_subscription_ack")
+	replayReply(t, connection, request, "push_subscription_ack")
+
 	push := <-ready
 	event := capturedFrame(t, "push_event", "server_to_client")
+
 	event.DialogID = request.DialogID
-	for i := 0; i < cap(push.events); i++ {
-		c.route(event)
+
+	for range cap(push.events) {
+		connection.route(event)
 	}
-	c.route(event)
-	if _, err := push.Receive(context.Background()); !errors.Is(err, signaling.ErrBackpressure) {
-		t.Fatalf("full push queue error = %v", err)
+
+	connection.route(event)
+
+	{
+		_, err := push.Receive(context.Background())
+		if !errors.Is(err, signaling.ErrBackpressure) {
+			t.Fatalf("full push queue error = %v", err)
+		}
 	}
+
 	select {
-	case <-c.done:
+	case <-connection.done:
 		t.Fatal("push backpressure closed shared signaling connection")
 	default:
 	}
+
 	other := make(chan signaling.Message, 1)
-	c.mu.Lock()
-	c.channels["unrelated"] = other
-	c.mu.Unlock()
-	c.route(signaling.Message{Method: "notification", DialogID: "unrelated"})
+
+	connection.mu.Lock()
+	connection.channels["unrelated"] = other
+	connection.mu.Unlock()
+	connection.route(signaling.Message{Method: "notification", DialogID: "unrelated"})
+
 	select {
 	case <-other:
 	default:
@@ -413,9 +678,13 @@ func TestPushBackpressureIsolatesDialog(t *testing.T) {
 }
 
 func TestSessionKeepalivesStopWithOwnerCancellation(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	connection := &SignalingConnection{done: make(chan struct{})}
+
 	for _, test := range []struct {
 		name string
 		run  func()
@@ -428,8 +697,12 @@ func TestSessionKeepalivesStopWithOwnerCancellation(t *testing.T) {
 		}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			completed := make(chan struct{})
+
 			go func() { test.run(); close(completed) }()
+
 			select {
 			case <-completed:
 			case <-time.After(time.Second):
@@ -440,21 +713,26 @@ func TestSessionKeepalivesStopWithOwnerCancellation(t *testing.T) {
 }
 
 func TestPlaybackLifetimeExpiresAndSendsClose(t *testing.T) {
+	t.Parallel()
+
 	connection, writes := replayConnection(t)
 	session := &PlaybackSession{
 		connection: connection, dialog: "lifetime", riid: "request", id: "session",
 		deviceID: 1000, done: make(chan struct{}),
 	}
 	finished := make(chan struct{})
+
 	go func() {
 		session.keepaliveFor(context.Background(), time.Hour, time.Millisecond)
 		close(finished)
 	}()
+
 	select {
 	case <-finished:
 	case <-time.After(time.Second):
 		t.Fatal("playback lifetime did not expire")
 	}
+
 	select {
 	case message := <-writes:
 		if message.Method != protocol.MethodClose {
@@ -463,6 +741,7 @@ func TestPlaybackLifetimeExpiresAndSendsClose(t *testing.T) {
 	default:
 		t.Fatal("expired playback did not send close")
 	}
+
 	if !errors.Is(session.terminal, signaling.ErrClosed) {
 		t.Fatalf("terminal error = %v, want closed", session.terminal)
 	}

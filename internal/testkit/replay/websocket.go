@@ -29,6 +29,7 @@ func (e webSocketReplayError) Error() string {
 	if e.cause != nil {
 		return e.message + ": " + e.cause.Error()
 	}
+
 	return e.message
 }
 
@@ -49,11 +50,11 @@ type WSStep struct {
 // Empty Origin means the request must have no Origin header. Empty Host means
 // the server's loopback host, which is assigned after the test server starts.
 type WSHandshake struct {
-	Origin  string
-	Host    string
-	Path    string
-	Query   url.Values
-	Headers http.Header
+	Origin  string      `json:"origin,omitempty"`
+	Host    string      `json:"host,omitempty"`
+	Path    string      `json:"path,omitempty"`
+	Query   url.Values  `json:"query,omitempty"`
+	Headers http.Header `json:"headers,omitempty"`
 }
 
 // WebSocketServer serves one scripted connection on a loopback httptest server.
@@ -74,100 +75,217 @@ func NewWebSocketServer(steps []WSStep, timeout time.Duration, handshakes ...WSH
 	if timeout <= 0 {
 		timeout = 2 * time.Second
 	}
-	w := &WebSocketServer{done: make(chan error, 1), steps: make(chan int, len(steps)), lastStep: -1}
-	want := WSHandshake{Path: "/", Query: url.Values{}}
-	if len(handshakes) > 0 {
-		want = handshakes[0]
-		if want.Query == nil {
-			want.Query = url.Values{}
-		}
-	}
+
+	server := &WebSocketServer{done: make(chan error, 1), steps: make(chan int, len(steps)), lastStep: -1}
+	want := expectedHandshake(handshakes)
+
 	up := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
 		return r.Header.Get("Origin") == want.Origin
 	}}
-	w.Server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if !matchesHandshake(r, want, w.Server.Listener.Addr().String()) {
-			w.finish(webSocketReplayError{message: "websocket replay: upgrade request mismatch"})
-			http.Error(rw, "upgrade request mismatch", http.StatusBadRequest)
-			return
-		}
-		w.mu.Lock()
-		if w.accepted {
-			w.mu.Unlock()
-			http.Error(rw, "script supports one connection", http.StatusConflict)
-			return
-		}
-		w.accepted = true
-		w.mu.Unlock()
-		c, e := up.Upgrade(rw, r, nil)
-		if e != nil {
-			w.finish(e)
-			return
-		}
-		w.mu.Lock()
-		w.active = c
-		w.mu.Unlock()
-		defer func() { _ = c.Close() }()
-		defer func() { w.mu.Lock(); w.active = nil; w.mu.Unlock() }()
-		bindings := make(map[string]string)
-		for i, s := range steps {
-			_ = c.SetReadDeadline(time.Now().Add(timeout))
-			switch s.Kind {
-			case "expect":
-				mt, b, e := c.ReadMessage()
-				if e != nil {
-					w.finish(webSocketReplayError{message: fmt.Sprintf("step %d read", i), cause: e})
-					return
-				}
-				want := messageType(s.Frame)
-				matched := mt == want && frameEqual(want, s.Body, b)
-				if mt == want && s.Template && want == websocket.TextMessage {
-					matched = matchFrameTemplate(s.Body, b, bindings) == nil
-				}
-				if !matched {
-					w.finish(webSocketReplayError{message: fmt.Sprintf("step %d expected %s frame %s, got %s frame %s", i, s.Frame, s.Body, frameName(mt), b)})
-					return
-				}
-			case "send":
-				mt := messageType(s.Frame)
-				if mt == 0 {
-					w.finish(webSocketReplayError{message: fmt.Sprintf("step %d: unsupported frame %q", i, s.Frame)})
-					return
-				}
-				body := []byte(s.Body)
-				if s.Template && mt == websocket.TextMessage {
-					var e error
-					body, e = renderFrameTemplate(s.Body, bindings)
-					if e != nil {
-						w.finish(webSocketReplayError{message: fmt.Sprintf("step %d template", i), cause: e})
-						return
-					}
-				}
-				_ = c.SetWriteDeadline(time.Now().Add(timeout))
-				if e := c.WriteMessage(mt, body); e != nil {
-					w.finish(webSocketReplayError{message: fmt.Sprintf("step %d write", i), cause: e})
-					return
-				}
-			default:
-				w.finish(webSocketReplayError{message: fmt.Sprintf("step %d: invalid kind %q", i, s.Kind)})
-				return
-			}
-			w.mu.Lock()
-			w.lastStep = i
-			w.mu.Unlock()
-			w.steps <- i
-		}
-		grace := timeout
-		if grace > terminalFrameGrace {
-			grace = terminalFrameGrace
-		}
-		if err := checkTerminalFrame(c, grace); err != nil {
-			w.finish(err)
-			return
-		}
-		w.finish(nil)
+	server.Server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, request *http.Request) {
+		handleWebSocketUpgrade(server, rw, request, up, want, steps, timeout)
 	}))
-	return w
+
+	return server
+}
+
+func expectedHandshake(handshakes []WSHandshake) WSHandshake {
+	want := WSHandshake{Path: "/", Query: url.Values{}}
+	if len(handshakes) == 0 {
+		return want
+	}
+
+	want = handshakes[0]
+	if want.Query == nil {
+		want.Query = url.Values{}
+	}
+
+	return want
+}
+
+func handleWebSocketUpgrade(
+	server *WebSocketServer,
+	rw http.ResponseWriter,
+	request *http.Request,
+	upgrader websocket.Upgrader,
+	want WSHandshake,
+	steps []WSStep,
+	timeout time.Duration,
+) {
+	if !matchesHandshake(request, want, server.Server.Listener.Addr().String()) {
+		server.finish(webSocketReplayError{message: "websocket replay: upgrade request mismatch"})
+		http.Error(rw, "upgrade request mismatch", http.StatusBadRequest)
+
+		return
+	}
+
+	if !claimWebSocketConnection(server) {
+		http.Error(rw, "script supports one connection", http.StatusConflict)
+
+		return
+	}
+
+	connection, err := upgrader.Upgrade(rw, request, nil)
+	if err != nil {
+		server.finish(err)
+
+		return
+	}
+
+	server.mu.Lock()
+	server.active = connection
+	server.mu.Unlock()
+
+	defer func() { _ = connection.Close() }()
+	defer func() { server.mu.Lock(); server.active = nil; server.mu.Unlock() }()
+
+	err = runWebSocketSteps(server, connection, steps, timeout)
+	if err != nil {
+		server.finish(err)
+
+		return
+	}
+
+	err = checkTerminalFrame(connection, terminalFrameGraceFor(timeout))
+	if err != nil {
+		server.finish(err)
+
+		return
+	}
+
+	server.finish(nil)
+}
+
+func claimWebSocketConnection(server *WebSocketServer) bool {
+	server.mu.Lock()
+	defer server.mu.Unlock()
+
+	if server.accepted {
+		return false
+	}
+
+	server.accepted = true
+
+	return true
+}
+
+func runWebSocketSteps(
+	server *WebSocketServer,
+	connection *websocket.Conn,
+	steps []WSStep,
+	timeout time.Duration,
+) error {
+	bindings := make(map[string]string)
+
+	for stepIndex, step := range steps {
+		_ = connection.SetReadDeadline(time.Now().Add(timeout))
+
+		err := runWebSocketStep(connection, stepIndex, step, timeout, bindings)
+		if err != nil {
+			return err
+		}
+
+		server.mu.Lock()
+		server.lastStep = stepIndex
+		server.mu.Unlock()
+
+		server.steps <- stepIndex
+	}
+
+	return nil
+}
+
+func runWebSocketStep(
+	connection *websocket.Conn,
+	stepIndex int,
+	step WSStep,
+	timeout time.Duration,
+	bindings map[string]string,
+) error {
+	switch step.Kind {
+	case "expect":
+		return expectWebSocketFrame(connection, stepIndex, step, bindings)
+	case "send":
+		return sendWebSocketFrame(connection, stepIndex, step, timeout, bindings)
+	default:
+		return webSocketReplayError{message: fmt.Sprintf("step %d: invalid kind %q", stepIndex, step.Kind)}
+	}
+}
+
+func expectWebSocketFrame(
+	connection *websocket.Conn,
+	stepIndex int,
+	step WSStep,
+	bindings map[string]string,
+) error {
+	actualType, messageBytes, err := connection.ReadMessage()
+	if err != nil {
+		return webSocketReplayError{message: fmt.Sprintf("step %d read", stepIndex), cause: err}
+	}
+
+	wantType := messageType(step.Frame)
+
+	matched := actualType == wantType && frameEqual(wantType, step.Body, messageBytes)
+
+	if actualType == wantType && step.Template && wantType == websocket.TextMessage {
+		matched = matchFrameTemplate(step.Body, messageBytes, bindings) == nil
+	}
+
+	if matched {
+		return nil
+	}
+
+	return webSocketReplayError{
+		message: fmt.Sprintf(
+			"step %d expected %s frame %s, got %s frame %s",
+			stepIndex,
+			step.Frame,
+			step.Body,
+			frameName(actualType),
+			messageBytes,
+		),
+	}
+}
+
+func sendWebSocketFrame(
+	connection *websocket.Conn,
+	stepIndex int,
+	step WSStep,
+	timeout time.Duration,
+	bindings map[string]string,
+) error {
+	frameType := messageType(step.Frame)
+	if frameType == 0 {
+		return webSocketReplayError{message: fmt.Sprintf("step %d: unsupported frame %q", stepIndex, step.Frame)}
+	}
+
+	body := []byte(step.Body)
+
+	if step.Template && frameType == websocket.TextMessage {
+		var err error
+
+		body, err = renderFrameTemplate(step.Body, bindings)
+		if err != nil {
+			return webSocketReplayError{message: fmt.Sprintf("step %d template", stepIndex), cause: err}
+		}
+	}
+
+	_ = connection.SetWriteDeadline(time.Now().Add(timeout))
+
+	err := connection.WriteMessage(frameType, body)
+	if err != nil {
+		return webSocketReplayError{message: fmt.Sprintf("step %d write", stepIndex), cause: err}
+	}
+
+	return nil
+}
+
+func terminalFrameGraceFor(timeout time.Duration) time.Duration {
+	if timeout > terminalFrameGrace {
+		return terminalFrameGrace
+	}
+
+	return timeout
 }
 
 // WaitStep waits until the strict peer has consumed step index, or reports its
@@ -176,8 +294,10 @@ func (w *WebSocketServer) WaitStep(index int, timeout time.Duration) error {
 	if timeout <= 0 {
 		timeout = defaultWebSocketAssertTimeout
 	}
+
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
+
 	for {
 		select {
 		case done := <-w.steps:
@@ -188,43 +308,61 @@ func (w *WebSocketServer) WaitStep(index int, timeout time.Duration) error {
 			w.mu.Lock()
 			complete := w.lastStep >= index
 			w.mu.Unlock()
+
 			if complete {
 				return nil
 			}
-			if err := w.AssertComplete(timeout); err != nil {
+
+			err := w.AssertComplete(timeout)
+			if err != nil {
 				return err
 			}
+
 			return webSocketReplayError{message: "websocket replay: requested step was not reached"}
 		case <-timer.C:
 			return webSocketReplayError{message: "websocket replay: step did not complete before deadline"}
 		}
 	}
 }
-func matchesHandshake(r *http.Request, want WSHandshake, serverHost string) bool {
+func matchesHandshake(request *http.Request, want WSHandshake, serverHost string) bool {
 	host := want.Host
 	if host == "" {
 		host = serverHost
 	}
-	return r.Method == http.MethodGet && r.Host == host && r.Header.Get("Origin") == want.Origin && r.URL.EscapedPath() == want.Path && reflect.DeepEqual(r.URL.Query(), want.Query) && headersMatch(want.Headers, r.Header, HeadersRequired)
+
+	return request.Method == http.MethodGet && request.Host == host && request.Header.Get("Origin") == want.Origin &&
+		request.URL.EscapedPath() == want.Path &&
+		reflect.DeepEqual(request.URL.Query(), want.Query) &&
+		headersMatch(want.Headers, request.Header, HeadersRequired)
 }
 
 func checkTerminalFrame(c *websocket.Conn, grace time.Duration) error {
 	_ = c.SetReadDeadline(time.Now().Add(grace))
+
 	frame, _, err := c.ReadMessage()
 	if err == nil {
-		return webSocketReplayError{message: fmt.Sprintf("unexpected frame %s after script completion", frameName(frame))}
+		return webSocketReplayError{
+			message: fmt.Sprintf("unexpected frame %s after script completion", frameName(frame)),
+		}
 	}
+
 	var netErr net.Error
 	if errors.As(err, &netErr) && netErr.Timeout() {
 		return nil
 	}
-	if errors.Is(err, io.EOF) || websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
+
+	if errors.Is(err, io.EOF) ||
+		websocket.IsCloseError(
+			err,
+			websocket.CloseNormalClosure,
+			websocket.CloseGoingAway,
+			websocket.CloseNoStatusReceived,
+			websocket.CloseAbnormalClosure,
+		) {
 		return nil
 	}
+
 	return webSocketReplayError{message: "websocket replay: terminal read", cause: err}
-}
-func (w *WebSocketServer) finish(err error) {
-	w.once.Do(func() { w.mu.Lock(); w.result = err; w.mu.Unlock(); close(w.done) })
 }
 func messageType(s string) int {
 	switch s {
@@ -243,12 +381,14 @@ func frameName(t int) string {
 	case websocket.BinaryMessage:
 		return "binary"
 	}
+
 	return "other"
 }
 func frameEqual(t int, want, got []byte) bool {
 	if t == websocket.TextMessage {
 		return semanticJSONEqual(want, got)
 	}
+
 	return bytes.Equal(want, got)
 }
 
@@ -260,10 +400,12 @@ func (w *WebSocketServer) AssertComplete(timeout time.Duration) error {
 	if timeout <= 0 {
 		timeout = defaultWebSocketAssertTimeout
 	}
+
 	select {
 	case <-w.done:
 		w.mu.Lock()
 		defer w.mu.Unlock()
+
 		return w.result
 	case <-time.After(timeout):
 		return webSocketReplayError{message: "websocket replay: script did not complete before deadline"}
@@ -275,10 +417,16 @@ func (w *WebSocketServer) Close() {
 	w.mu.Lock()
 	c := w.active
 	w.mu.Unlock()
+
 	if c != nil {
 		_ = c.Close()
 	}
+
 	w.Server.Close()
+}
+
+func (w *WebSocketServer) finish(err error) {
+	w.once.Do(func() { w.mu.Lock(); w.result = err; w.mu.Unlock(); close(w.done) })
 }
 
 // SemanticEqual compares JSON structure while retaining exact decimal number values.

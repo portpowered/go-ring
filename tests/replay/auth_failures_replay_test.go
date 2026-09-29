@@ -2,7 +2,6 @@ package replay_test
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -36,35 +35,66 @@ type csrfPageReplay struct {
 
 func (p *csrfPageReplay) RoundTrip(request *http.Request) (*http.Response, error) {
 	status, body := http.StatusOK, p.page
-	if request.URL.Path == "/oauth/v2/signin" {
+
+	if request.URL.Path == oauthSignInPath {
 		p.signin = true
+
 		form, err := io.ReadAll(request.Body)
 		if err != nil {
-			return nil, err
+			return nil, wrapReplayTestError("read csrf sign-in form", err)
 		}
+
 		values, err := url.ParseQuery(string(form))
 		if err != nil || values.Get("csrf-token") != p.token {
-			return nil, errors.New("CSRF token differs from portable page fixture")
+			return nil, testReplayError("CSRF token differs from portable page fixture")
 		}
+
 		status, body = http.StatusUnauthorized, `{}`
 	}
-	return &http.Response{StatusCode: status, Status: http.StatusText(status), Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body)), Request: request}, nil
+
+	return &http.Response{
+		StatusCode: status,
+		Status:     http.StatusText(status),
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Request:    request,
+	}, nil
 }
 
 func TestPortableOAuthCSRFPages(t *testing.T) {
-	cases, err := replay.LoadCases[authCSRFCase](filepath.Join("fixtures", "auth", "synthetic", "auth-csrf-variants.json"))
+	t.Parallel()
+
+	cases, err := replay.LoadCases[authCSRFCase](
+		filepath.Join("fixtures", "auth", "synthetic", "auth-csrf-variants.json"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, tc := range cases {
 		t.Run(tc.Case, func(t *testing.T) {
+			t.Parallel()
+
 			transport := &csrfPageReplay{page: tc.HTML, token: tc.Expected}
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}))
+
+			client, err := ring.NewClient(
+				ring.WithHTTPClient(&http.Client{Transport: transport}),
+				ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}),
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			defer func() { _ = client.Close() }()
-			_, err = client.Authenticate(context.Background(), ring.AuthenticateRequest{HardwareID: "fixture-hardware", Username: "fixture-user", Password: "fixture-password"})
+
+			_, err = client.Authenticate(
+				context.Background(),
+				ring.AuthenticateRequest{
+					HardwareID: "fixture-hardware",
+					Username:   "fixture-user",
+					Password:   "fixture-password",
+				},
+			)
 			if !ringapimodels.IsAuthenticationError(err) || transport.signin != (tc.Expected != "") {
 				t.Fatalf("CSRF page behavior: signin=%t error=%v", transport.signin, err)
 			}
@@ -86,17 +116,19 @@ func (a *authStageReplay) RoundTrip(request *http.Request) (*http.Response, erro
 	status, body := http.StatusOK, `{}`
 	header := make(http.Header)
 	stage := ""
+
 	switch {
-	case request.Method == http.MethodGet && request.URL.Path == "/oauth/v2/authorize" && !a.authorized:
+	case request.Method == http.MethodGet && request.URL.Path == oauthAuthorizePath && !a.authorized:
 		a.state = request.URL.Query().Get("state")
 		a.authorized = true
-		body = `<script id="oauth-args">{"csrf-token":"fixture-csrf"}</script>`
-	case strings.HasSuffix(request.URL.Path, "/signin"):
-		stage, status, body = "signin", http.StatusPreconditionFailed, `{"tsv_state":"email"}`
-	case strings.HasSuffix(request.URL.Path, "/2fa/verify"):
+		body = syntheticOAuthArgumentsPage
+	case strings.HasSuffix(request.URL.Path, oauthSignInPath):
+		stage, status, body = "signin", http.StatusPreconditionFailed, syntheticEmailTwoFactorState
+	case strings.HasSuffix(request.URL.Path, oauthTwoFactorPath):
 		stage = "verify"
-	case request.Method == http.MethodGet && request.URL.Path == "/oauth/v2/authorize":
+	case request.Method == http.MethodGet && request.URL.Path == oauthAuthorizePath:
 		stage, status = "authorize", http.StatusFound
+
 		header.Set("Location", "https://oauth.example.test/callback?code=fixture-code&state="+url.QueryEscape(a.state))
 	case strings.HasSuffix(request.URL.Path, "/token"):
 		formBody, _ := io.ReadAll(request.Body)
@@ -105,67 +137,124 @@ func (a *authStageReplay) RoundTrip(request *http.Request) (*http.Response, erro
 		} else {
 			stage = "exchange"
 		}
+
 		body = `{"access_token":"fixture-access","refresh_token":"fixture-refresh","expires_in":3600,"token_type":"Bearer"}`
 	default:
-		return nil, errors.New("unexpected OAuth route in replay")
+		return nil, testReplayError("unexpected OAuth route in replay")
 	}
+
 	if stage == a.stage {
 		a.failed = true
 		if a.status == 0 {
-			return nil, errors.New("fixture transport failure")
+			return nil, testReplayError("fixture transport failure")
 		}
+
 		status, header = a.status, make(http.Header)
+
 		body = `{}`
+
 		if a.stage == "refresh" && status == http.StatusOK {
 			body = `{`
 		}
 	}
-	return &http.Response{StatusCode: status, Status: http.StatusText(status), Header: header, Body: io.NopCloser(strings.NewReader(body)), Request: request}, nil
+
+	return &http.Response{
+		StatusCode: status,
+		Status:     http.StatusText(status),
+		Header:     header,
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Request:    request,
+	}, nil
 }
 
 func TestPortableOAuthFailureStages(t *testing.T) {
-	cases, err := replay.LoadCases[authFailureCase](filepath.Join("fixtures", "auth", "synthetic", "auth-stage-failures.json"))
+	t.Parallel()
+
+	cases, err := replay.LoadCases[authFailureCase](
+		filepath.Join("fixtures", "auth", "synthetic", "auth-stage-failures.json"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, tc := range cases {
 		t.Run(tc.Case, func(t *testing.T) {
-			transport := &authStageReplay{stage: tc.Stage, status: tc.Status}
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}))
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer func() { _ = client.Close() }()
-			var got error
-			if tc.Stage == "refresh" {
-				_, got = client.RefreshToken(context.Background(), ring.RefreshTokenRequest{HardwareID: "fixture-hardware", RefreshToken: "fixture-refresh"})
-			} else {
-				_, got = client.Authenticate(context.Background(), ring.AuthenticateRequest{HardwareID: "fixture-hardware", Username: "fixture-user", Password: "fixture-password", OTPCode: "123456"})
-			}
-			if !transport.failed || got == nil {
-				t.Fatalf("failure stage %s not reached: calls=%d error=%v", tc.Stage, transport.calls, got)
-			}
-			if message := got.Error(); message == "" || strings.Contains(message, "fixture-password") || strings.Contains(message, "fixture-refresh") {
-				t.Fatalf("unsafe OAuth error message: %q", message)
-			}
-			switch tc.Error {
-			case "network":
-				if !ringapimodels.IsNetworkError(got) {
-					t.Fatalf("expected network error, got %v", got)
-				}
-			case "authentication":
-				if !ringapimodels.IsAuthenticationError(got) {
-					t.Fatalf("expected authentication error, got %v", got)
-				}
-			case "rate-limit":
-				if !ringapimodels.IsRateLimitError(got) {
-					t.Fatalf("expected rate limit, got %v", got)
-				}
-			case "server":
-				if !ringapimodels.IsInternalServerError(got) {
-					t.Fatalf("expected response decode error, got %v", got)
-				}
-			}
+			t.Parallel()
+			assertOAuthFailureStage(t, tc)
 		})
+	}
+}
+
+func assertOAuthFailureStage(t *testing.T, tc authFailureCase) {
+	t.Helper()
+
+	transport := &authStageReplay{stage: tc.Stage, status: tc.Status}
+
+	client, err := ring.NewClient(
+		ring.WithHTTPClient(&http.Client{Transport: transport}),
+		ring.WithEndpoints(ring.Endpoints{OAuthBaseURL: "https://oauth.example.test"}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = client.Close() })
+
+	got := invokeOAuthFailureStage(client, tc.Stage)
+	if !transport.failed || got == nil {
+		t.Fatalf("failure stage %s not reached: calls=%d error=%v", tc.Stage, transport.calls, got)
+	}
+
+	if message := got.Error(); message == "" || strings.Contains(message, "fixture-password") ||
+		strings.Contains(message, "fixture-refresh") {
+		t.Fatalf("unsafe OAuth error message: %q", message)
+	}
+
+	assertOAuthFailureKind(t, tc.Error, got)
+}
+
+func invokeOAuthFailureStage(client *ring.Client, stage string) error {
+	if stage == "refresh" {
+		_, err := client.RefreshToken(
+			context.Background(),
+			ring.RefreshTokenRequest{HardwareID: "fixture-hardware", RefreshToken: "fixture-refresh"},
+		)
+
+		return wrapReplayTestError("refresh OAuth token", err)
+	}
+
+	_, err := client.Authenticate(
+		context.Background(),
+		ring.AuthenticateRequest{
+			HardwareID: "fixture-hardware",
+			Username:   "fixture-user",
+			Password:   "fixture-password",
+			OTPCode:    "123456",
+		},
+	)
+
+	return wrapReplayTestError("authenticate with OAuth", err)
+}
+
+func assertOAuthFailureKind(t *testing.T, want string, got error) {
+	t.Helper()
+
+	switch want {
+	case "network":
+		if !ringapimodels.IsNetworkError(got) {
+			t.Fatalf("expected network error, got %v", got)
+		}
+	case "authentication":
+		if !ringapimodels.IsAuthenticationError(got) {
+			t.Fatalf("expected authentication error, got %v", got)
+		}
+	case "rate-limit":
+		if !ringapimodels.IsRateLimitError(got) {
+			t.Fatalf("expected rate limit, got %v", got)
+		}
+	case "server":
+		if !ringapimodels.IsInternalServerError(got) {
+			t.Fatalf("expected response decode error, got %v", got)
+		}
 	}
 }

@@ -18,7 +18,7 @@ import (
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-// Client is the main client for interacting with Ring services
+// Client is the main client for interacting with Ring services.
 type Client struct {
 	restClient                 *rest.Client
 	userAgent                  string
@@ -26,14 +26,12 @@ type Client struct {
 	endpointOverrides          Endpoints
 	endpoints                  Endpoints
 	signalingWebSocketOverride string
-	signalingDialer            WebSocketDialer
+	websocketDialer            WebSocketDialer
+	fcmHTTPTransport           http.RoundTripper
+	fcmDialContext             FCMDialContext
 
 	signalingWebSocketURL string
 	eventWebSocketURL     string
-	mu                    sync.RWMutex
-	closed                bool
-	signalingConnections  map[*SignalingConnection]struct{}
-	pushConnections       map[*PushConnection]struct{}
 	fcmSource             FCMSource
 }
 
@@ -41,64 +39,65 @@ type Client struct {
 // A caller that needs only part of it may define a smaller local interface.
 // OpenSignaling creates a connection that can start live and playback sessions.
 type ClientAPI interface {
+	// Close is retained for source compatibility; returned connections and
+	// sessions have their own Close methods and lifetimes.
 	Close() error
 
 	// Authentication and authorization
-	Authenticate(context.Context, AuthenticateRequest) (*ringapimodels.AuthResponse, error)
-	Request2FACode(context.Context, Request2FACodeRequest) error
-	RefreshToken(context.Context, RefreshTokenRequest) (*ringapimodels.AuthResponse, error)
-	NewLoginSession(LoginSessionRequest) (*LoginSession, error)
+	Authenticate(ctx context.Context, request AuthenticateRequest) (*ringapimodels.AuthResponse, error)
+	Request2FACode(ctx context.Context, request Request2FACodeRequest) error
+	RefreshToken(ctx context.Context, request RefreshTokenRequest) (*ringapimodels.AuthResponse, error)
+	NewLoginSession(request LoginSessionRequest) (*LoginSession, error)
 
 	// APIs for enumerating and getting data
-	ListDevices(context.Context, ListDevicesRequest) (*ringapimodels.DevicesResponse, error)
-	GetDevice(context.Context, GetDeviceRequest) (*ringapimodels.Device, error)
-	GetDeviceSettings(context.Context, GetDeviceSettingsRequest) (DeviceSettings, error)
-	GetDeviceDetail(context.Context, GetDeviceDetailRequest) (*DeviceDetail, error)
-	GetDeviceStatus(context.Context, GetDeviceDetailRequest) (*DeviceStatus, error)
-	ListLocations(context.Context, ListLocationsRequest) (*LocationList, error)
-	GetLocation(context.Context, GetLocationRequest) (*LocationDetail, error)
-	ListLocationGroups(context.Context, LocationRequest) (*LocationGroups, error)
-	ListLocationDevices(context.Context, LocationRequest) (*LocationGroupDevices, error)
-	GetDeviceTimeline(context.Context, GetDeviceTimelineRequest) (*DeviceTimeline, error)
-	GetHistoryDevices(context.Context, GetHistoryDevicesRequest) (*HistoryDevices, error)
-	GetCapturedTickets(context.Context, GetCapturedTicketsRequest) (*CapturedTickets, error)
+	ListDevices(ctx context.Context, request ListDevicesRequest) (*ringapimodels.DevicesResponse, error)
+	GetDevice(ctx context.Context, request GetDeviceRequest) (*ringapimodels.Device, error)
+	GetDeviceSettings(ctx context.Context, request GetDeviceSettingsRequest) (DeviceSettings, error)
+	GetDeviceDetail(ctx context.Context, request GetDeviceDetailRequest) (*DeviceDetail, error)
+	GetDeviceStatus(ctx context.Context, request GetDeviceDetailRequest) (*DeviceStatus, error)
+	ListLocations(ctx context.Context, request ListLocationsRequest) (*LocationList, error)
+	GetLocation(ctx context.Context, request GetLocationRequest) (*LocationDetail, error)
+	ListLocationGroups(ctx context.Context, request LocationRequest) (*LocationGroups, error)
+	ListLocationDevices(ctx context.Context, request LocationRequest) (*LocationGroupDevices, error)
+	GetDeviceTimeline(ctx context.Context, request GetDeviceTimelineRequest) (*DeviceTimeline, error)
+	GetHistoryDevices(ctx context.Context, request GetHistoryDevicesRequest) (*HistoryDevices, error)
+	GetCapturedTickets(ctx context.Context, request GetCapturedTicketsRequest) (*CapturedTickets, error)
 
 	// APIs for modifying or sending requests to a device
-	UpdateDeviceHealth(context.Context, UpdateDeviceHealthRequest) (*ringapimodels.DeviceHealth, error)
-	PatchDeviceSettings(context.Context, PatchDeviceSettingsRequest) error
-	GetSnapshot(context.Context, GetSnapshotRequest) (*Snapshot, error)
-	SetVolume(context.Context, SetVolumeRequest) error
-	SetLights(context.Context, SetLightsRequest) error
-	SetMotionDetection(context.Context, SetMotionDetectionRequest) error
-	SetSiren(context.Context, SetSirenRequest) error
-	TestSound(context.Context, TestSoundRequest) error
-	SetInHomeChime(context.Context, SetInHomeChimeRequest) error
-	RebootDevice(context.Context, DeviceIDRequest) error
-	UnlockIntercom(context.Context, DeviceIDRequest) error
-	SetPersistentLiveViewEnabled(context.Context, SetPersistentLiveViewEnabledRequest) error
+	UpdateDeviceHealth(ctx context.Context, request UpdateDeviceHealthRequest) (*ringapimodels.DeviceHealth, error)
+	PatchDeviceSettings(ctx context.Context, request PatchDeviceSettingsRequest) error
+	GetSnapshot(ctx context.Context, request GetSnapshotRequest) (*Snapshot, error)
+	SetVolume(ctx context.Context, request SetVolumeRequest) error
+	SetLights(ctx context.Context, request SetLightsRequest) error
+	SetMotionDetection(ctx context.Context, request SetMotionDetectionRequest) error
+	SetSiren(ctx context.Context, request SetSirenRequest) error
+	TestSound(ctx context.Context, request TestSoundRequest) error
+	SetInHomeChime(ctx context.Context, request SetInHomeChimeRequest) error
+	RebootDevice(ctx context.Context, request DeviceIDRequest) error
+	UnlockIntercom(ctx context.Context, request DeviceIDRequest) error
+	SetPersistentLiveViewEnabled(ctx context.Context, request SetPersistentLiveViewEnabledRequest) error
 
 	// Various recording APIs
-	GetDeviceHistory(context.Context, GetDeviceHistoryRequest) (*ringapimodels.RecordingHistoryResponse, error)
-	GetActiveDings(context.Context, GetActiveDingsRequest) (*ringapimodels.RecordingHistoryResponse, error)
-	GetRecording(context.Context, GetRecordingRequest) (*ringapimodels.VideoStream, error)
-	GetRecordingShareURL(context.Context, GetRecordingShareURLRequest) (string, error)
-	GetLastRecordingID(context.Context, GetLastRecordingIDRequest) (int64, error)
-	FavoriteRecording(context.Context, RecordingIDRequest) error
-	DeleteRecording(context.Context, DeleteRecordingRequest) error
+	GetDeviceHistory(ctx context.Context, request GetDeviceHistoryRequest) (*ringapimodels.RecordingHistoryResponse, error)
+	GetActiveDings(ctx context.Context, request GetActiveDingsRequest) (*ringapimodels.RecordingHistoryResponse, error)
+	GetRecording(ctx context.Context, request GetRecordingRequest) (*ringapimodels.VideoStream, error)
+	GetRecordingShareURL(ctx context.Context, request GetRecordingShareURLRequest) (string, error)
+	GetLastRecordingID(ctx context.Context, request GetLastRecordingIDRequest) (int64, error)
+	FavoriteRecording(ctx context.Context, request RecordingIDRequest) error
+	DeleteRecording(ctx context.Context, request DeleteRecordingRequest) error
 
 	// Event and signaling connections
-	OpenSignaling(context.Context, OpenSignalingRequest) (*SignalingConnection, error)
-	ConnectEvents(context.Context, ConnectEventsRequest) (*EventConnection, error)
-	ConnectPush(context.Context, ConnectPushRequest) (*PushConnection, error)
-	RegisterPushDevice(context.Context, RegisterPushDeviceRequest) error
-	SubscribeDeviceDing(context.Context, DeviceIDRequest) error
-	SubscribeDeviceMotion(context.Context, DeviceIDRequest) error
-	Listen(context.Context, ringapimodels.EventCallback, ConnectEventsRequest) error
+	OpenSignaling(ctx context.Context, request OpenSignalingRequest) (*SignalingConnection, error)
+	ConnectEvents(ctx context.Context, request ConnectEventsRequest) (*EventConnection, error)
+	ConnectPush(ctx context.Context, request ConnectPushRequest) (*PushConnection, error)
+	RegisterPushDevice(ctx context.Context, request RegisterPushDeviceRequest) error
+	SubscribeDeviceDing(ctx context.Context, request DeviceIDRequest) error
+	SubscribeDeviceMotion(ctx context.Context, request DeviceIDRequest) error
+	Listen(ctx context.Context, callback ringapimodels.EventCallback, request ConnectEventsRequest) error
 }
 
 // SignalingConnection owns one authenticated signaling socket and its child sessions.
 type SignalingConnection struct {
-	client     *Client
 	conn       *websocket.Conn
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -117,9 +116,9 @@ type SignalingConnection struct {
 
 // SignalingConnectionAPI creates sessions and push subscriptions on one socket.
 type SignalingConnectionAPI interface {
-	StartDeviceSession(context.Context, StartDeviceSessionRequest) (*DeviceSession, error)
-	StartPlayback(context.Context, StartPlaybackRequest) (*PlaybackSession, error)
-	SubscribePush(context.Context, []PushFilter) (*PushSubscription, error)
+	StartDeviceSession(ctx context.Context, request StartDeviceSessionRequest) (*DeviceSession, error)
+	StartPlayback(ctx context.Context, request StartPlaybackRequest) (*PlaybackSession, error)
+	SubscribePush(ctx context.Context, filters []PushFilter) (*PushSubscription, error)
 	Err() error
 	Close() error
 }
@@ -151,16 +150,16 @@ type DeviceSession struct {
 type DeviceSessionAPI interface {
 	Answer() SessionDescription
 	State() SessionState
-	Wait(context.Context) error
-	Receive(context.Context) (*SessionEvent, error)
-	SendICE(context.Context, ICECandidateRequest) error
-	PanStep(context.Context, PanStepRequest) (*PTZResult, error)
-	TiltStep(context.Context, TiltStepRequest) (*PTZResult, error)
-	PanContinuous(context.Context, PanContinuousRequest) (*PTZResult, error)
-	TiltContinuous(context.Context, TiltContinuousRequest) (*PTZResult, error)
-	StopPTZ(context.Context, StopPTZRequest) (*PTZResult, error)
-	SetMicrophone(context.Context, SetMicrophoneRequest) error
-	SetStreamOptions(context.Context, SetStreamOptionsRequest) error
+	Wait(ctx context.Context) error
+	Receive(ctx context.Context) (*SessionEvent, error)
+	SendICE(ctx context.Context, request ICECandidateRequest) error
+	PanStep(ctx context.Context, request PanStepRequest) (*PTZResult, error)
+	TiltStep(ctx context.Context, request TiltStepRequest) (*PTZResult, error)
+	PanContinuous(ctx context.Context, request PanContinuousRequest) (*PTZResult, error)
+	TiltContinuous(ctx context.Context, request TiltContinuousRequest) (*PTZResult, error)
+	StopPTZ(ctx context.Context, request StopPTZRequest) (*PTZResult, error)
+	SetMicrophone(ctx context.Context, request SetMicrophoneRequest) error
+	SetStreamOptions(ctx context.Context, request SetStreamOptionsRequest) error
 	Close() error
 }
 
@@ -183,8 +182,8 @@ type PlaybackSession struct {
 // PlaybackSessionAPI is the cloud recording session surface.
 type PlaybackSessionAPI interface {
 	Answer() SessionDescription
-	SendICE(context.Context, ICECandidateRequest) error
-	Receive(context.Context) (SessionEvent, error)
+	SendICE(ctx context.Context, request ICECandidateRequest) error
+	Receive(ctx context.Context) (SessionEvent, error)
 	Close() error
 }
 
@@ -201,7 +200,7 @@ type PushSubscription struct {
 
 // PushSubscriptionAPI receives push notifications until closed.
 type PushSubscriptionAPI interface {
-	Receive(context.Context) (PushEvent, error)
+	Receive(ctx context.Context) (PushEvent, error)
 	Close() error
 }
 
@@ -220,8 +219,8 @@ type EventConnectionAPI interface {
 // LoginSessionAPI is one isolated OAuth/2FA exchange.
 type LoginSessionAPI interface {
 	HardwareID() string
-	Request2FACode(context.Context) error
-	Authenticate(context.Context, CompleteLoginRequest) (*ringapimodels.AuthResponse, error)
+	Request2FACode(ctx context.Context) error
+	Authenticate(ctx context.Context, request CompleteLoginRequest) (*ringapimodels.AuthResponse, error)
 	Close() error
 }
 
@@ -248,13 +247,13 @@ type Request2FACodeRequest struct {
 	HardwareID string
 }
 
-// RefreshTokenRequest contains parameters for RefreshToken
+// RefreshTokenRequest contains parameters for RefreshToken.
 type RefreshTokenRequest struct {
 	RefreshToken string
 	HardwareID   string
 }
 
-// GetDeviceRequest contains parameters for GetDevice
+// GetDeviceRequest contains parameters for GetDevice.
 type GetDeviceRequest struct {
 	Auth     AuthContext
 	DeviceID string
@@ -342,7 +341,7 @@ type SetLightsRequest struct {
 	Enabled  bool
 }
 
-// SetMotionDetectionRequest contains parameters for SetMotionDetection
+// SetMotionDetectionRequest contains parameters for SetMotionDetection.
 type SetMotionDetectionRequest struct {
 	Auth     AuthContext
 	DeviceID string
@@ -364,7 +363,7 @@ type SetInHomeChimeRequest struct {
 	Settings    ringapimodels.InHomeChimeSettings
 }
 
-// GetDeviceHistoryRequest contains parameters for GetDeviceHistory
+// GetDeviceHistoryRequest contains parameters for GetDeviceHistory.
 type GetDeviceHistoryRequest struct {
 	Auth     AuthContext
 	DeviceID string
@@ -375,7 +374,7 @@ type GetDeviceHistoryRequest struct {
 	Kind HistoryKind
 }
 
-// GetRecordingRequest contains parameters for GetRecording
+// GetRecordingRequest contains parameters for GetRecording.
 type GetRecordingRequest struct {
 	Auth        AuthContext
 	RecordingID int64
@@ -386,7 +385,7 @@ type GetRecordingShareURLRequest struct {
 	RecordingID int64
 }
 
-// GetLastRecordingIDRequest contains parameters for GetLastRecordingID
+// GetLastRecordingIDRequest contains parameters for GetLastRecordingID.
 type GetLastRecordingIDRequest struct {
 	Auth     AuthContext
 	DeviceID string
@@ -399,9 +398,9 @@ type Option interface {
 }
 
 // Signaling dialer configuration
-// WebSocketDialer is the small portion of Gorilla's dialer used by a signaling connection.
+// WebSocketDialer is the small portion of Gorilla's dialer used by client WebSocket connections.
 type WebSocketDialer interface {
-	DialContext(context.Context, string, http.Header) (*websocket.Conn, *http.Response, error)
+	DialContext(ctx context.Context, url string, headers http.Header) (*websocket.Conn, *http.Response, error)
 }
 
 // Regional endpoints
@@ -470,10 +469,10 @@ type Snapshot struct {
 	ContentType string
 }
 
-// Signaling connection request
+// Signaling connection request.
 type OpenSignalingRequest struct{ Auth AuthContext }
 
-// Live and playback session values
+// Live and playback session values.
 type SessionState string
 
 var (
@@ -597,7 +596,7 @@ type PushEvent struct {
 	SubscriptionID    string          `json:"subscription_id"`
 }
 
-// Playback request
+// Playback request.
 type StartPlaybackRequest struct {
 	DeviceID   string
 	Offer      SessionDescription

@@ -21,90 +21,218 @@ type capturedPublicCall struct {
 }
 
 func capturedPublicCalls() []capturedPublicCall {
+	return append(capturedLocationCalls(), capturedControlCalls()...)
+}
+
+func capturedLocationCalls() []capturedPublicCall {
 	return []capturedPublicCall{
-		{"device-detail", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
-			_, err := c.GetDeviceDetail(ctx, ring.GetDeviceDetailRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
-			return err
+		{capturedDeviceDetailFixture, func(ctx context.Context, client ring.ClientAPI, _ replay.Exchange) error {
+			_, err := client.GetDeviceDetail(
+				ctx,
+				ring.GetDeviceDetailRequest{
+					Auth:     ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					DeviceID: "1000",
+				},
+			)
+
+			return wrapReplayTestError("get captured device detail", err)
 		}},
-		{"location-list", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
-			_, err := c.ListLocations(ctx, ring.ListLocationsRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
-			return err
+		{"location-list", func(ctx context.Context, client ring.ClientAPI, _ replay.Exchange) error {
+			_, err := client.ListLocations(
+				ctx,
+				ring.ListLocationsRequest{Auth: ring.AuthContext{AccessToken: "captured-token", HardwareID: ""}},
+			)
+
+			return wrapReplayTestError("list captured locations", err)
 		}},
-		{"location-detail", func(ctx context.Context, c ring.ClientAPI, x replay.Exchange) error {
-			_, err := c.GetLocation(ctx, ring.GetLocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, LocationID: "location-1", Params: ring.LocationParams{Include: capturedLocationExpansions(x)}})
-			return err
+		{"location-detail", func(ctx context.Context, client ring.ClientAPI, exchange replay.Exchange) error {
+			_, err := client.GetLocation(
+				ctx,
+				ring.GetLocationRequest{
+					Auth:       ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					LocationID: "location-1",
+					Params:     ring.LocationParams{Include: capturedLocationExpansions(exchange)},
+				},
+			)
+
+			return wrapReplayTestError("get captured location", err)
 		}},
-		{"groups", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
-			_, err := c.ListLocationGroups(ctx, ring.LocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, LocationID: "location-1"})
-			return err
+		{"groups", func(ctx context.Context, client ring.ClientAPI, _ replay.Exchange) error {
+			_, err := client.ListLocationGroups(
+				ctx,
+				ring.LocationRequest{
+					Auth:       ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					LocationID: "location-1",
+				},
+			)
+
+			return wrapReplayTestError("list captured location groups", err)
 		}},
-		{"group-devices", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
-			_, err := c.ListLocationDevices(ctx, ring.LocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, LocationID: "location-1"})
-			return err
+		{"group-devices", func(ctx context.Context, client ring.ClientAPI, _ replay.Exchange) error {
+			_, err := client.ListLocationDevices(
+				ctx,
+				ring.LocationRequest{
+					Auth:       ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					LocationID: "location-1",
+				},
+			)
+
+			return wrapReplayTestError("list captured location devices", err)
 		}},
-		{"device-timeline", func(ctx context.Context, c ring.ClientAPI, x replay.Exchange) error {
-			params, err := capturedTimelineParamsForCall(x)
+		{capturedDeviceTimelineFixture, func(ctx context.Context, client ring.ClientAPI, exchange replay.Exchange) error {
+			params, err := capturedTimelineParamsForCall(exchange)
 			if err != nil {
 				return err
 			}
-			_, err = c.GetDeviceTimeline(ctx, ring.GetDeviceTimelineRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000", Params: params})
-			return err
-		}},
-		{"history-devices", func(ctx context.Context, c ring.ClientAPI, x replay.Exchange) error {
-			sourceIDs := strings.Split(capturedQueryValue(x, "source_ids"), ",")
-			_, err := c.GetHistoryDevices(ctx, ring.GetHistoryDevicesRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, Params: ring.HistoryDevicesParams{SourceIDs: sourceIDs, Capabilities: capturedCapabilities(x)}})
-			return err
-		}},
-		{"device-reboot", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
-			return c.RebootDevice(ctx, ring.DeviceIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
-		}},
-		{"duos-update", func(ctx context.Context, c ring.ClientAPI, x replay.Exchange) error {
-			var body generatedhttp.LiveViewSettingRequest
-			if err := json.Unmarshal(x.Request.Body, &body); err != nil {
-				return err
-			}
-			return c.SetPersistentLiveViewEnabled(ctx, ring.SetPersistentLiveViewEnabledRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000", Enabled: body.Entity.LiveViewEnabled})
-		}},
-		{"recording-favorite", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
-			return c.FavoriteRecording(ctx, ring.RecordingIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, RecordingID: 1000})
-		}},
-		{"recording-delete", func(ctx context.Context, c ring.ClientAPI, _ replay.Exchange) error {
-			confirm := false
-			return c.DeleteRecording(ctx, ring.DeleteRecordingRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, RecordingID: 1000, ConfirmDeleteFavorite: &confirm})
-		}},
-		{"bootstrap-ticket", func(ctx context.Context, c ring.ClientAPI, x replay.Exchange) error {
-			locationID, subscription, transport := capturedQueryValue(x, "locationID"), capturedQueryValue(x, "locationSubscription"), ring.SignalingTransport(capturedQueryValue(x, "requestedTransport"))
-			allow, extended := false, true
-			_, err := c.GetCapturedTickets(ctx, ring.GetCapturedTicketsRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, Params: ring.CapturedTicketsParams{LocationID: &locationID, LocationSubscription: &subscription, RequestedTransport: &transport, AllowUserOnly: &allow, EnableExtendedEmergencyCellUsage: &extended}})
-			return err
+
+			_, err = client.GetDeviceTimeline(
+				ctx,
+				ring.GetDeviceTimelineRequest{
+					Auth:     ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					DeviceID: "1000",
+					Params:   params,
+				},
+			)
+
+			return wrapReplayTestError("get captured device timeline", err)
 		}},
 	}
 }
 
-func capturedTimelineParamsForCall(x replay.Exchange) (ring.TimelineParams, error) {
-	start, err := time.Parse(time.RFC3339, capturedQueryValue(x, "start_time"))
-	if err != nil {
-		return ring.TimelineParams{}, err
+func capturedControlCalls() []capturedPublicCall {
+	return []capturedPublicCall{
+		{"history-devices", func(ctx context.Context, client ring.ClientAPI, exchange replay.Exchange) error {
+			sourceIDs := strings.Split(capturedQueryValue(exchange, "source_ids"), ",")
+			_, err := client.GetHistoryDevices(
+				ctx,
+				ring.GetHistoryDevicesRequest{
+					Auth:   ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					Params: ring.HistoryDevicesParams{SourceIDs: sourceIDs, Capabilities: capturedCapabilities(exchange)},
+				},
+			)
+
+			return wrapReplayTestError("get captured history devices", err)
+		}},
+		{capturedDeviceRebootFixture, func(ctx context.Context, client ring.ClientAPI, _ replay.Exchange) error {
+			return client.RebootDevice(
+				ctx,
+				ring.DeviceIDRequest{
+					Auth:     ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					DeviceID: "1000",
+				},
+			)
+		}},
+		{"duos-update", func(ctx context.Context, client ring.ClientAPI, exchange replay.Exchange) error {
+			var body generatedhttp.LiveViewSettingRequest
+
+			err := json.Unmarshal(exchange.Request.Body, &body)
+			if err != nil {
+				return wrapReplayTestError("decode captured setting request", err)
+			}
+
+			err = client.SetPersistentLiveViewEnabled(
+				ctx,
+				ring.SetPersistentLiveViewEnabledRequest{
+					Auth:     ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					DeviceID: "1000",
+					Enabled:  body.Entity.LiveViewEnabled,
+				},
+			)
+
+			return wrapReplayTestError("set captured persistent live view", err)
+		}},
+		{"recording-favorite", func(ctx context.Context, client ring.ClientAPI, _ replay.Exchange) error {
+			return client.FavoriteRecording(
+				ctx,
+				ring.RecordingIDRequest{
+					Auth:        ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					RecordingID: 1000,
+				},
+			)
+		}},
+		{"recording-delete", func(ctx context.Context, client ring.ClientAPI, _ replay.Exchange) error {
+			confirm := false
+
+			return client.DeleteRecording(
+				ctx,
+				ring.DeleteRecordingRequest{
+					Auth:                  ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					RecordingID:           1000,
+					ConfirmDeleteFavorite: &confirm,
+				},
+			)
+		}},
+		{capturedBootstrapTicketFixture, func(ctx context.Context, client ring.ClientAPI, exchange replay.Exchange) error {
+			locationID, subscription, transport := capturedQueryValue(
+				exchange,
+				"locationID",
+			), capturedQueryValue(
+				exchange,
+				"locationSubscription",
+			), ring.SignalingTransport(
+				capturedQueryValue(exchange, "requestedTransport"),
+			)
+			allow, extended := false, true
+			_, err := client.GetCapturedTickets(
+				ctx,
+				ring.GetCapturedTicketsRequest{
+					Auth: ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+					Params: ring.CapturedTicketsParams{
+						LocationID:                       &locationID,
+						LocationSubscription:             &subscription,
+						RequestedTransport:               &transport,
+						AllowUserOnly:                    &allow,
+						EnableExtendedEmergencyCellUsage: &extended,
+					},
+				},
+			)
+
+			return wrapReplayTestError("get captured signaling tickets", err)
+		}},
 	}
-	end, err := time.Parse(time.RFC3339, capturedQueryValue(x, "end_time"))
+}
+
+func capturedTimelineParamsForCall(exchange replay.Exchange) (ring.TimelineParams, error) {
+	start, err := time.Parse(time.RFC3339, capturedQueryValue(exchange, "start_time"))
 	if err != nil {
-		return ring.TimelineParams{}, err
+		return ring.TimelineParams{}, wrapReplayTestError("parse captured timeline start time", err)
 	}
-	order, limit := ring.TimelineOrder(capturedQueryValue(x, "order")), 20
-	return ring.TimelineParams{StartTime: &start, EndTime: &end, Order: &order, Capabilities: capturedCapabilities(x), Limit: &limit}, nil
+
+	end, err := time.Parse(time.RFC3339, capturedQueryValue(exchange, "end_time"))
+	if err != nil {
+		return ring.TimelineParams{}, wrapReplayTestError("parse captured timeline end time", err)
+	}
+
+	order, limit := ring.TimelineOrder(capturedQueryValue(exchange, "order")), 20
+
+	return ring.TimelineParams{
+		StartTime:    &start,
+		EndTime:      &end,
+		Order:        &order,
+		Capabilities: capturedCapabilities(exchange),
+		Limit:        &limit,
+	}, nil
 }
 
 func TestCapturedPublicHTTPNotFoundForEveryOperation(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range capturedPublicCalls() {
 		t.Run(tc.name, func(t *testing.T) {
-			x := capturedExchange(t, tc.name)
-			x.Response.Status = http.StatusNotFound
-			x.Response.Body = json.RawMessage(`{"error":"missing"}`)
-			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}))
+			t.Parallel()
+
+			exchange := capturedExchange(t, tc.name)
+			exchange.Response.Status = http.StatusNotFound
+			exchange.Response.Body = json.RawMessage(`{"error":"missing"}`)
+			transport := replay.NewTransport(exchange)
+			client, err := ring.NewClient(
+				ring.WithHTTPClient(&http.Client{Transport: transport}),
+				ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}),
+			)
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
-			err = tc.call(context.Background(), client, x)
+
+			err = tc.call(context.Background(), client, exchange)
 			require.True(t, ringapimodels.IsNotFoundError(err), "error = %v", err)
 			require.True(t, ringapimodels.IsHTTPStatusCode(err, http.StatusNotFound))
 			require.NoError(t, transport.AssertConsumed())
@@ -113,80 +241,159 @@ func TestCapturedPublicHTTPNotFoundForEveryOperation(t *testing.T) {
 }
 
 func TestCapturedPublicHTTPValidationNeverSends(t *testing.T) {
-	transport := replay.NewTransport()
-	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = client.Close() })
+	t.Parallel()
+
+	auth := ring.AuthContext{AccessToken: "captured-token", HardwareID: ""}
+
 	for _, tc := range []struct {
 		name string
-		call func() error
+		call func(ring.ClientAPI) error
 	}{
-		{"detail", func() error {
-			_, err := client.GetDeviceDetail(context.Background(), ring.GetDeviceDetailRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
-			return err
+		{"detail", func(client ring.ClientAPI) error {
+			_, err := client.GetDeviceDetail(
+				context.Background(),
+				ring.GetDeviceDetailRequest{Auth: auth},
+			)
+
+			return wrapReplayTestError("validate captured device detail", err)
 		}},
-		{"location", func() error {
-			_, err := client.GetLocation(context.Background(), ring.GetLocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
-			return err
+		{"location", func(client ring.ClientAPI) error {
+			_, err := client.GetLocation(
+				context.Background(),
+				ring.GetLocationRequest{Auth: auth},
+			)
+
+			return wrapReplayTestError("validate captured location detail", err)
 		}},
-		{"groups", func() error {
-			_, err := client.ListLocationGroups(context.Background(), ring.LocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
-			return err
+		{"groups", func(client ring.ClientAPI) error {
+			_, err := client.ListLocationGroups(
+				context.Background(),
+				ring.LocationRequest{Auth: auth},
+			)
+
+			return wrapReplayTestError("validate captured location groups", err)
 		}},
-		{"group-devices", func() error {
-			_, err := client.ListLocationDevices(context.Background(), ring.LocationRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
-			return err
+		{"group-devices", func(client ring.ClientAPI) error {
+			_, err := client.ListLocationDevices(
+				context.Background(),
+				ring.LocationRequest{Auth: auth},
+			)
+
+			return wrapReplayTestError("validate captured location devices", err)
 		}},
-		{"timeline-device", func() error {
-			_, err := client.GetDeviceTimeline(context.Background(), ring.GetDeviceTimelineRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
-			return err
+		{"timeline-device", func(client ring.ClientAPI) error {
+			_, err := client.GetDeviceTimeline(
+				context.Background(),
+				ring.GetDeviceTimelineRequest{Auth: auth},
+			)
+
+			return wrapReplayTestError("validate captured device timeline", err)
 		}},
-		{"timeline-limit", func() error {
-			_, err := client.GetDeviceTimeline(context.Background(), ring.GetDeviceTimelineRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000", Params: ring.TimelineParams{Limit: chimePointer(-1)}})
-			return err
+		{"timeline-limit", func(client ring.ClientAPI) error {
+			_, err := client.GetDeviceTimeline(
+				context.Background(),
+				ring.GetDeviceTimelineRequest{
+					Auth:     auth,
+					DeviceID: "1000",
+					Params:   ring.TimelineParams{Limit: chimePointer(-1)},
+				},
+			)
+
+			return wrapReplayTestError("validate captured device timeline limit", err)
 		}},
-		{"reboot", func() error {
-			return client.RebootDevice(context.Background(), ring.DeviceIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
+		{"reboot", func(client ring.ClientAPI) error {
+			return client.RebootDevice(
+				context.Background(),
+				ring.DeviceIDRequest{Auth: auth},
+			)
 		}},
-		{"live-view-setting", func() error {
-			return client.SetPersistentLiveViewEnabled(context.Background(), ring.SetPersistentLiveViewEnabledRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
+		{"live-view-setting", func(client ring.ClientAPI) error {
+			return client.SetPersistentLiveViewEnabled(
+				context.Background(),
+				ring.SetPersistentLiveViewEnabledRequest{Auth: auth},
+			)
 		}},
-		{"favorite", func() error {
-			return client.FavoriteRecording(context.Background(), ring.RecordingIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
+		{"favorite", func(client ring.ClientAPI) error {
+			return client.FavoriteRecording(
+				context.Background(),
+				ring.RecordingIDRequest{Auth: auth},
+			)
 		}},
-		{"delete", func() error {
-			return client.DeleteRecording(context.Background(), ring.DeleteRecordingRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}})
+		{"delete", func(client ring.ClientAPI) error {
+			return client.DeleteRecording(
+				context.Background(),
+				ring.DeleteRecordingRequest{Auth: auth},
+			)
 		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.call()
+			t.Parallel()
+
+			transport := replay.NewTransport()
+			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = client.Close() })
+
+			err = tc.call(client)
 			require.True(t, ringapimodels.IsBadRequestError(err), "error = %v", err)
+			require.NoError(t, transport.AssertConsumed())
 		})
 	}
-	require.NoError(t, transport.AssertConsumed())
 }
 
 func TestCapturedTicketReplayFailureBoundaries(t *testing.T) {
-	fixture := capturedExchange(t, "bootstrap-ticket")
+	t.Parallel()
+
+	fixture := capturedExchange(t, capturedBootstrapTicketFixture)
+
 	var call func(context.Context, ring.ClientAPI, replay.Exchange) error
+
 	for _, operation := range capturedPublicCalls() {
-		if operation.name == "bootstrap-ticket" {
+		if operation.name == capturedBootstrapTicketFixture {
 			call = operation.call
+
 			break
 		}
 	}
+
 	require.NotNil(t, call)
 	t.Run("missing token", func(t *testing.T) {
+		t.Parallel()
+
 		transport := replay.NewTransport()
-		client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}))
+		client, err := ring.NewClient(
+			ring.WithHTTPClient(&http.Client{Transport: transport}),
+			ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}),
+		)
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = client.Close() })
-		locationID, subscription, requestedTransport := capturedQueryValue(fixture, "locationID"), capturedQueryValue(fixture, "locationSubscription"), ring.SignalingTransport(capturedQueryValue(fixture, "requestedTransport"))
+
+		locationID, subscription, requestedTransport := capturedQueryValue(
+			fixture,
+			"locationID",
+		), capturedQueryValue(
+			fixture,
+			"locationSubscription",
+		), ring.SignalingTransport(
+			capturedQueryValue(fixture, "requestedTransport"),
+		)
 		allow, extended := false, true
-		_, err = client.GetCapturedTickets(context.Background(), ring.GetCapturedTicketsRequest{Params: ring.CapturedTicketsParams{LocationID: &locationID, LocationSubscription: &subscription, RequestedTransport: &requestedTransport, AllowUserOnly: &allow, EnableExtendedEmergencyCellUsage: &extended}})
+		_, err = client.GetCapturedTickets(
+			context.Background(),
+			ring.GetCapturedTicketsRequest{
+				Params: ring.CapturedTicketsParams{
+					LocationID:                       &locationID,
+					LocationSubscription:             &subscription,
+					RequestedTransport:               &requestedTransport,
+					AllowUserOnly:                    &allow,
+					EnableExtendedEmergencyCellUsage: &extended,
+				},
+			},
+		)
 		require.True(t, ringapimodels.IsTokenError(err), "error = %v", err)
 		require.NoError(t, transport.AssertConsumed())
 	})
+
 	for _, tc := range []struct {
 		name string
 		body json.RawMessage
@@ -195,13 +402,19 @@ func TestCapturedTicketReplayFailureBoundaries(t *testing.T) {
 		{"missing-ticket", json.RawMessage(`{}`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			x := fixture
-			x.Response.Body = tc.body
-			transport := replay.NewTransport(x)
-			client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}), ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}))
+			t.Parallel()
+
+			exchange := fixture
+			exchange.Response.Body = tc.body
+			transport := replay.NewTransport(exchange)
+			client, err := ring.NewClient(
+				ring.WithHTTPClient(&http.Client{Transport: transport}),
+				ring.WithEndpoints(ring.Endpoints{SolutionsBaseURL: "https://prd-api-us.prd.rings.solutions"}),
+			)
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
-			err = call(context.Background(), client, x)
+
+			err = call(context.Background(), client, exchange)
 			require.True(t, ringapimodels.IsInternalServerError(err), "error = %v", err)
 			require.NoError(t, transport.AssertConsumed())
 		})
@@ -209,29 +422,49 @@ func TestCapturedTicketReplayFailureBoundaries(t *testing.T) {
 }
 
 func TestCapturedHTTPRetryReadButNeverReboot(t *testing.T) {
+	t.Parallel()
+
 	t.Run("device detail retries transient server failure", func(t *testing.T) {
-		failure := capturedExchange(t, "device-detail")
+		t.Parallel()
+
+		failure := capturedExchange(t, capturedDeviceDetailFixture)
 		failure.Response.Status = http.StatusServiceUnavailable
 		failure.Response.Body = json.RawMessage(`{"error":"temporarily unavailable"}`)
-		success := capturedExchange(t, "device-detail")
+		success := capturedExchange(t, capturedDeviceDetailFixture)
 		transport := replay.NewTransport(failure, success)
 		client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = client.Close() })
-		detail, err := client.GetDeviceDetail(context.Background(), ring.GetDeviceDetailRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
+
+		detail, err := client.GetDeviceDetail(
+			context.Background(),
+			ring.GetDeviceDetailRequest{
+				Auth:     ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+				DeviceID: "1000",
+			},
+		)
 		require.NoError(t, err)
 		require.Equal(t, int64(1000), detail.Device.ID)
 		require.NoError(t, transport.AssertConsumed())
 	})
 	t.Run("reboot is not retried", func(t *testing.T) {
-		failure := capturedExchange(t, "device-reboot")
+		t.Parallel()
+
+		failure := capturedExchange(t, capturedDeviceRebootFixture)
 		failure.Response.Status = http.StatusServiceUnavailable
 		failure.Response.Body = json.RawMessage(`{"error":"temporarily unavailable"}`)
 		transport := replay.NewTransport(failure)
 		client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = client.Close() })
-		err = client.RebootDevice(context.Background(), ring.DeviceIDRequest{Auth: ring.AuthContext{AccessToken: "captured-token"}, DeviceID: "1000"})
+
+		err = client.RebootDevice(
+			context.Background(),
+			ring.DeviceIDRequest{
+				Auth:     ring.AuthContext{AccessToken: "captured-token", HardwareID: ""},
+				DeviceID: "1000",
+			},
+		)
 		require.True(t, ringapimodels.IsInternalServerError(err), "error = %v", err)
 		require.True(t, ringapimodels.IsHTTPStatusCode(err, http.StatusServiceUnavailable))
 		require.NoError(t, transport.AssertConsumed())

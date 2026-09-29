@@ -14,46 +14,62 @@ var ErrSnapshotNotReady = ringapimodels.NewNotFoundError("fresh snapshot not ava
 // app-snaps endpoint, whose response was absent from the capture.
 func (c *Client) GetSnapshot(ctx context.Context, req GetSnapshotRequest) (*Snapshot, error) {
 	ctx = c.accountContext(ctx, req.Auth)
+
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return nil, err
 	}
+
 	if req.MaxAttempts < 0 || req.MaxAttempts > 100 || req.PollInterval < 0 {
 		return nil, ringapimodels.NewBadRequestError("invalid snapshot polling bounds", nil)
 	}
+
 	attempts := req.MaxAttempts
 	if attempts == 0 {
 		attempts = 3
 	}
-	if _, err = c.restClient.RefreshSnapshotTimestamp(ctx, id); err != nil {
-		return nil, err
+
+	{
+		_, err = c.restClient.RefreshSnapshotTimestamp(ctx, id)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	requestedAt := time.Now().UnixMilli()
-	for i := 0; i < attempts; i++ {
+
+	for range attempts {
 		if req.PollInterval > 0 {
 			timer := time.NewTimer(req.PollInterval)
 			select {
 			case <-ctx.Done():
 				timer.Stop()
+
 				return nil, ringapimodels.NewNetworkError("snapshot polling canceled", ctx.Err())
 			case <-timer.C:
 			}
 		}
+
 		timestamp, err := c.restClient.RefreshSnapshotTimestamp(ctx, id)
 		if err != nil {
 			return nil, err
 		}
+
 		if timestamp <= requestedAt {
 			continue
 		}
+
 		data, contentType, err := c.restClient.GetSnapshotImage(ctx, id)
 		if err != nil {
 			return nil, err
 		}
+
 		if len(data) == 0 {
 			return nil, ringapimodels.NewInternalServerError("snapshot image was empty", nil)
 		}
+
 		return &Snapshot{Bytes: data, Timestamp: time.UnixMilli(timestamp), ContentType: contentType}, nil
 	}
+
 	return nil, ErrSnapshotNotReady
 }

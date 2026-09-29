@@ -1,0 +1,73 @@
+---
+title: Diagnostic CLI
+description: Authenticate, inspect devices, watch events, and debug live video from a terminal.
+---
+
+The `go-ring` CLI is a separate Go module. Build it from `cmd/go-ring` with
+`go build .`, or run it there with `go run .`. It uses the public `pkg/ring`
+client and stores credentials in the user's configuration directory.
+
+## Common commands
+
+```text
+go-ring auth login
+go-ring auth status
+go-ring devices list
+go-ring health 12345 --refresh
+go-ring snapshot 12345 --output camera.jpg --timeout 45s
+go-ring siren 12345 on
+go-ring sound 67890 ding
+go-ring reboot 12345
+go-ring events watch 12345 --duration 60s
+go-ring view 12345 --player ffplay
+go-ring view 12345 --player none --continuous --speed 0.5
+go-ring view 12345 --record-rtp camera.rtp --debug
+go-ring replay-video camera.rtp --output camera.h264
+```
+
+Put the global `--token-file path` before the command to select a token file.
+Login prompts for credentials and a verification code when challenged.
+`RING_PASSWORD` and `RING_OTP_CODE` support scripted login. Tokens are never
+printed; `auth logout` removes saved login and push credentials. The CLI
+restricts private files to the current user and replaces token files after
+refresh. See [authentication](/docs/guides/authentication) for token lifecycle
+and the [OAuth exchange](/docs/openapi/authentication/exchangeOrRefreshOAuthToken)
+contract.
+
+## Devices and events
+
+`devices list` supplies IDs for controls. `health --refresh` also queries the
+legacy health route, which may return no populated fields. `sound` requires a
+chime device. A successful `siren` or `reboot` request reports server
+acknowledgement; check the device before retrying a timed-out mutation.
+See [device operations](/docs/guides/device-operations) and the
+[device list contract](/docs/openapi/devices/listDevices).
+
+`events watch` registers an FCM receiver and subscribes to motion events.
+Use `--ding` for ding events or `--motion=false` to disable motion events.
+Push credentials are saved in a separate private `push.json` beside the token
+file. A connected receiver does not prove that an event was delivered; an
+event must occur during the watch window. See
+[push notifications](/docs/guides/push-notifications).
+
+## Live video and offline playback
+
+`view` starts a receive-only WebRTC session. The default preview needs
+`ffplay` from FFmpeg on `PATH`; `--player none` consumes packets without a
+preview. `--debug` reports connection and PTZ state without logging tokens,
+SDP, or raw signaling payloads. `--ice-servers file.json` accepts a JSON
+array of Pion ICE servers. Arrow keys move the camera, Space stops continuous
+movement, and `q` or Ctrl+C closes the session. A disconnected session cannot
+guarantee that physical movement stopped.
+
+`snapshot` captures the first usable live video frame with `ffmpeg`, which
+must be on `PATH`; it does not call the legacy snapshot endpoint. For decoder
+problems, `view --record-rtp camera.rtp` writes incoming packets to a private
+file and refuses to overwrite an existing recording. That file contains
+camera footage. `replay-video camera.rtp --output camera.h264` runs the same
+H264 assembler offline. See [live sessions](/docs/guides/live-sessions) and
+[snapshots](/docs/guides/snapshots-and-intercom).
+
+For local synthetic replay, `--api-base`, `--oauth-base`,
+`--solutions-base`, and `--signaling-url` override service origins. Plain
+HTTP and WS overrides are accepted only for loopback hosts.

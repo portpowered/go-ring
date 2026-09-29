@@ -103,3 +103,273 @@ components:
       required: [recordings]
       properties:
         recordings: {type: array, items: {$ref: '#/components/schemas/Recording'}}
+    DeviceKind:
+      type: string
+      description: Open hardware kind in device detail.
+      x-extensible-enum: [stickup_cam_mini_ptz_v1]
+    DetailDeviceFamily:
+      type: string
+      description: Open device family in detail and inventory responses.
+      x-extensible-enum: [doorbots, chimes, stickup_cams, other]
+    ConnectionState:
+      type: string
+      description: Open connection state.
+      x-extensible-enum: [online, offline]
+    PowerMode:
+      type: string
+      description: Open device power mode.
+      x-extensible-enum: [wired]
+    BatteryReading:
+      description: Battery percentage accepted as a JSON number or numeric text by the SDK adapter.
+      oneOf:
+        - {type: number, minimum: 0, maximum: 100}
+        - {type: string, pattern: '^[0-9]+(\.[0-9]+)?$'}
+    OwnerID:
+      description: Numeric or text vendor owner identifier normalized to text by the SDK adapter.
+      oneOf:
+        - {type: string}
+        - {type: integer, format: int64}
+    DeviceOwner:
+      type: object
+      properties:
+        id: {$ref: '#/components/schemas/OwnerID'}
+        first_name: {type: string}
+        last_name: {type: string}
+        email: {type: string}
+    DeviceLegacySettings:
+      type: object
+      properties:
+        doorbell_volume: {type: integer}
+        live_view_disabled: {type: boolean}
+        motion_detection_enabled: {type: boolean}
+        power_mode: {$ref: '#/components/schemas/PowerMode'}
+    DeviceDetailHealth:
+      type: object
+      properties:
+        battery_level: {type: integer}
+        battery_percentage: {type: number}
+        battery_present: {type: boolean}
+        battery_percentage_category: {type: string}
+        battery_status: {type: string}
+        connected: {type: boolean}
+        firmware_version: {type: string}
+        last_update: {type: string}
+        ptz_connected: {type: string}
+        rssi: {type: number}
+        signal_strength: {type: integer}
+        supported_rpc_commands: {type: array, items: {type: string}}
+    FeatureEligibility:
+      type: object
+      properties:
+        eligible: {type: boolean}
+        ineligibility_reasons: {type: array, items: {type: string}}
+    FeatureEnablement:
+      type: object
+      properties:
+        allowed: {type: boolean}
+        enabled: {type: boolean}
+        disallow_reasons: {type: array, items: {type: string}}
+    FeatureAvailability:
+      type: object
+      properties:
+        eligibility: {$ref: '#/components/schemas/FeatureEligibility'}
+        enablement: {$ref: '#/components/schemas/FeatureEnablement'}
+    VideoRenderingFeature:
+      type: object
+      properties:
+        max_digital_zoom_level: {type: number}
+    DeviceFeatures:
+      type: object
+      properties:
+        auto_track: {$ref: '#/components/schemas/FeatureAvailability'}
+        auto_zoom_track: {$ref: '#/components/schemas/FeatureAvailability'}
+        motions_enabled: {type: boolean}
+        video_rendering: {$ref: '#/components/schemas/VideoRenderingFeature'}
+    DeviceAlerts:
+      type: object
+      properties:
+        connection: {$ref: '#/components/schemas/ConnectionState'}
+    DeviceDetailDevice:
+      type: object
+      required: [id, description, kind]
+      properties:
+        id: {type: integer, format: int64}
+        device_id: {type: string}
+        description: {type: string}
+        kind: {$ref: '#/components/schemas/DeviceKind'}
+        family: {$ref: '#/components/schemas/DetailDeviceFamily'}
+        created_at: {type: string, format: date-time}
+        deactivated_at: {type: string, format: date-time}
+        name: {type: string}
+        address: {type: string}
+        location_id: {type: string}
+        operation_set: {type: string}
+        owner: {$ref: '#/components/schemas/DeviceOwner'}
+        settings: {$ref: '#/components/schemas/DeviceLegacySettings'}
+        features: {$ref: '#/components/schemas/DeviceFeatures'}
+        time_zone: {type: string}
+        timezone: {type: string}
+        wifi_name: {type: string}
+        wifi_signal_strength: {type: integer}
+        owned: {type: boolean}
+        motion_detection_enabled: {type: boolean}
+        has_light: {type: boolean}
+        light_brightness: {type: integer}
+        volume: {type: integer}
+        health: {$ref: '#/components/schemas/DeviceDetailHealth'}
+        alerts: {$ref: '#/components/schemas/DeviceAlerts'}
+        battery_life: {$ref: '#/components/schemas/BatteryReading'}
+        battery_life_2: {$ref: '#/components/schemas/BatteryReading'}
+        external_connection: {type: boolean}
+    DeviceDetail:
+      type: object
+      description: SDK projection of the generated device-detail wire response; operation sets are derived separately.
+      required: [device]
+      properties:
+        device: {$ref: '#/components/schemas/DeviceDetailDevice'}
+    DeviceStatus:
+      type: object
+      description: SDK-derived status from device detail, not an additional wire response.
+      required: [is_offline]
+      properties:
+        battery_percent: {type: number, minimum: 0, maximum: 100}
+        connection: {$ref: '#/components/schemas/ConnectionState'}
+        is_offline: {type: boolean}
+        power_mode: {$ref: '#/components/schemas/PowerMode'}
+    LocationAddress:
+      type: object
+      properties:
+        address1: {type: string}
+        address2: {type: string}
+        city: {type: string}
+        country: {type: string}
+        state: {type: string}
+        timezone: {type: string}
+        zip_code: {type: string}
+    GeoCoordinates:
+      type: object
+      properties:
+        latitude: {type: number}
+        longitude: {type: number}
+    LocationSummary:
+      type: object
+      required: [location_id, name]
+      properties:
+        location_id: {type: string}
+        name: {type: string}
+        location_type: {type: string}
+        is_owner: {type: boolean}
+        owner_id: {type: integer, format: int64}
+        address: {$ref: '#/components/schemas/LocationAddress'}
+        geo_coordinates: {$ref: '#/components/schemas/GeoCoordinates'}
+    LocationList:
+      type: object
+      description: SDK projection; OperationSets is derived outside JSON.
+      required: [user_locations]
+      properties:
+        user_locations: {type: array, items: {$ref: '#/components/schemas/LocationSummary'}}
+    LocationAttributes:
+      type: object
+      properties:
+        name: {type: string}
+        city: {type: string}
+        country: {type: string}
+        state: {type: string}
+        latitude: {type: number}
+        longitude: {type: number}
+        time_zone: {type: string}
+    LocationResourceType:
+      type: string
+      x-extensible-enum: [locations]
+    LocationResource:
+      type: object
+      required: [id, type]
+      properties:
+        id: {type: string}
+        type: {$ref: '#/components/schemas/LocationResourceType'}
+        attributes: {$ref: '#/components/schemas/LocationAttributes'}
+    LocationMeta:
+      type: object
+      properties:
+        time: {type: string, format: date-time}
+    LocationDetail:
+      type: object
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/LocationResource'}
+        included: {type: array, items: {$ref: '#/components/schemas/LocationResource'}}
+        meta: {$ref: '#/components/schemas/LocationMeta'}
+    LocationGroup:
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+    LocationGroups:
+      type: object
+      properties:
+        device_groups: {type: array, items: {$ref: '#/components/schemas/LocationGroup'}}
+        is_owner: {type: boolean}
+    LocationGroupDevices:
+      type: object
+      required: [groups]
+      properties:
+        groups: {type: array, items: {$ref: '#/components/schemas/LocationGroup'}}
+    TimelineEventType:
+      type: string
+      x-extensible-enum: [on_demand, ding, motion]
+    RecordingStatus:
+      type: string
+      x-extensible-enum: [ready]
+    TimelineState:
+      type: string
+      x-extensible-enum: [completed]
+    TimelineDevice:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        description: {type: string}
+        type: {type: string}
+    TimelineEvent:
+      type: object
+      required: [event_id, event_type, start_time]
+      properties:
+        event_id: {type: string}
+        event_type: {$ref: '#/components/schemas/TimelineEventType'}
+        start_time: {type: string, format: date-time}
+        end_time: {type: string, format: date-time}
+        duration_ms: {type: integer, minimum: 0}
+        device: {$ref: '#/components/schemas/TimelineDevice'}
+        source_id: {type: string}
+        is_favorite: {type: boolean}
+        recording_status: {$ref: '#/components/schemas/RecordingStatus'}
+        state: {$ref: '#/components/schemas/TimelineState'}
+        schema: {type: string}
+    DeviceTimeline:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/TimelineEvent'}}
+        pagination_key: {type: string}
+    HistoryFeedType:
+      type: string
+      x-extensible-enum: [EVENT]
+    HistoryFeedItem:
+      type: object
+      properties:
+        id: {type: string}
+        type: {$ref: '#/components/schemas/HistoryFeedType'}
+    HistoryDevices:
+      type: object
+      required: [events]
+      properties:
+        events: {type: array, items: {$ref: '#/components/schemas/TimelineEvent'}}
+        feed: {type: array, items: {$ref: '#/components/schemas/HistoryFeedItem'}}
+        pagination_key: {type: string}
+        schema: {type: string}
+    CapturedTickets:
+      type: object
+      required: [host, ticket]
+      properties:
+        host: {type: string}
+        ticket: {type: string}
+        subscriptionTopics: {type: array, items: {type: string}}

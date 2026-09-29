@@ -14,4 +14,4 @@
 - **GO-12** Keep unit tests beside their source files. Put offline API replay tests in `tests/replay` and live endpoint tests in `tests/integration`.
 - **GO-13** Keep generated files generated. Change their schema or generator input, then regenerate.
 - **GO-14** Run static checks and tests after a change. Do not silence a linter for a whole package to avoid fixing handwritten code.
-- **GO-15** Enforce stable code rules with linters. Fix the cause of each finding.
+- **GO-15** Enforce stable code rules with the pinned `golangci-lint` version in blocking CI. Set `linters.default: all` and run every repository Go module; do not use new-issues baselines or failure bypasses. Keep all linters enabled. Fix each finding, or document a justified exception for one linter on an exact generated path, fixture type, or named file. Require an independent review that approves the exact commit SHA after its CI checks pass.

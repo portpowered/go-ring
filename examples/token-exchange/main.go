@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/portpowered/go-ring/examples/internal/exampleerrors"
 	"github.com/portpowered/go-ring/pkg/ring"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func main() {
-	if err := run(); err != nil {
+	err := run()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -24,10 +26,12 @@ func run() error {
 	username := os.Getenv("RING_USERNAME")
 	password := os.Getenv("RING_PASSWORD")
 	ringOtpCode := os.Getenv("RING_OTP_CODE")
+
 	tokenFile := os.Getenv("RING_TOKEN_FILE")
 	if tokenFile == "" {
 		tokenFile = "tokens.json"
 	}
+
 	if username == "" || password == "" {
 		return ringapimodels.NewBadRequestError("RING_USERNAME and RING_PASSWORD environment variables must be set", nil)
 	}
@@ -35,24 +39,31 @@ func run() error {
 	// Create a new Ring client
 	client, err := ring.NewClient()
 	if err != nil {
-		return err
+		return exampleerrors.Wrap("create Ring client", err)
 	}
-	defer func() { _ = client.Close() }()
-	login, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password})
+
+	login, err := client.NewLoginSession(ring.LoginSessionRequest{
+		Username:   username,
+		Password:   password,
+		HardwareID: "",
+	})
 	if err != nil {
-		return err
+		return exampleerrors.Wrap("start Ring login session", err)
 	}
+
 	defer func() { _ = login.Close() }()
 
 	// Step 1: Authenticate with username/password to get access and refresh tokens
 	fmt.Println("Step 1: Authenticating with username/password...")
+
 	var otpCode string
 
 	if ringOtpCode == "" {
 		err = login.Request2FACode(ctx)
 		if err != nil {
-			return err
+			return exampleerrors.Wrap("request a 2FA code", err)
 		}
+
 		fmt.Println("✓ 2FA code requested. Please check your email or authenticator app for the code.")
 		fmt.Print("Enter 2FA code: ")
 
@@ -69,9 +80,10 @@ func run() error {
 	}
 
 	fmt.Println("Authenticating with 2FA code...")
+
 	authResp, err := login.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otpCode})
 	if err != nil {
-		return err
+		return exampleerrors.Wrap("authenticate Ring login session", err)
 	}
 
 	if authResp == nil {
@@ -92,13 +104,19 @@ func run() error {
 		"token_type":    authResp.TokenType,
 		"expires_in":    authResp.ExpiresIn,
 	}
+
 	encoded, err := json.MarshalIndent(tokenData, "", "  ")
 	if err != nil {
 		return ringapimodels.NewInternalServerError("Failed to encode tokens", err)
 	}
-	if err := os.WriteFile(tokenFile, append(encoded, '\n'), 0o600); err != nil {
-		return ringapimodels.NewInternalServerError("Failed to write tokens", err)
+
+	{
+		err := os.WriteFile(tokenFile, append(encoded, '\n'), 0o600)
+		if err != nil {
+			return ringapimodels.NewInternalServerError("Failed to write tokens", err)
+		}
 	}
+
 	fmt.Printf("✓ Tokens saved to %s (mode 0600)\n\n", tokenFile)
 
 	// // Step 2: Use the refresh token to get a new access token
@@ -129,5 +147,6 @@ func run() error {
 	// fmt.Println()
 
 	fmt.Println("Example completed successfully!")
+
 	return nil
 }

@@ -12,13 +12,15 @@ func WithRegion(region Region) Option { return withRegion(region) }
 
 type withRegion Region
 
-func (w withRegion) apply(c *Client) error {
+func (w withRegion) apply(client *Client) error {
 	region := Region(w)
 	if region != RegionUS && region != RegionEU && region != RegionFE {
 		return ringapimodels.NewBadRequestError(fmt.Sprintf("unsupported region %q", region), nil)
 	}
-	c.region = region
-	return c.applyEndpointConfiguration()
+
+	client.region = region
+
+	return client.applyEndpointConfiguration()
 }
 
 // WithEndpoints overrides endpoint origins for this client. Overrides take
@@ -27,12 +29,15 @@ func WithEndpoints(endpoints Endpoints) Option { return withEndpoints(endpoints)
 
 type withEndpoints Endpoints
 
-func (w withEndpoints) apply(c *Client) error {
-	if err := validateEndpoints(Endpoints(w)); err != nil {
+func (w withEndpoints) apply(client *Client) error {
+	err := validateEndpoints(Endpoints(w))
+	if err != nil {
 		return err
 	}
-	c.endpointOverrides = Endpoints(w)
-	return c.applyEndpointConfiguration()
+
+	client.endpointOverrides = Endpoints(w)
+
+	return client.applyEndpointConfiguration()
 }
 
 // WithHTTPClient sets a custom HTTP client for REST API calls.
@@ -44,18 +49,21 @@ type withHTTPClient struct {
 	httpClient *http.Client
 }
 
-func (w withHTTPClient) apply(c *Client) error {
+func (w withHTTPClient) apply(client *Client) error {
 	if w.httpClient == nil {
 		return ringapimodels.NewBadRequestError("HTTP client must not be nil", nil)
 	}
+
 	if w.httpClient.Jar != nil {
 		return ringapimodels.NewBadRequestError("shared HTTP client must not have a cookie jar", nil)
 	}
-	c.restClient.Apply(rest.WithHTTPClient(w.httpClient))
+
+	client.restClient.Apply(rest.WithHTTPClient(w.httpClient))
+
 	return nil
 }
 
-// WithUserAgent sets a custom user agent
+// WithUserAgent sets a custom user agent.
 func WithUserAgent(userAgent string) Option {
 	return withUserAgent(userAgent)
 }
@@ -68,9 +76,11 @@ func (w withUserAgent) apply(c *Client) error {
 	c.restClient.Apply(
 		rest.WithUserAgent(ua),
 	)
+
 	return nil
 }
 
+// WithWebSocketDialer configures the event and signaling WebSocket transport.
 func WithWebSocketDialer(d WebSocketDialer) Option { return withWebSocketDialer{dialer: d} }
 
 type withWebSocketDialer struct{ dialer WebSocketDialer }
@@ -79,7 +89,9 @@ func (o withWebSocketDialer) apply(c *Client) error {
 	if o.dialer == nil {
 		return ringapimodels.NewBadRequestError("WebSocket dialer must not be nil", nil)
 	}
-	c.signalingDialer = o.dialer
+
+	c.websocketDialer = o.dialer
+
 	return nil
 }
 
@@ -92,12 +104,20 @@ func WithSignalingWebSocketURL(url string) Option {
 
 type withSignalingWebSocketURL string
 
-func (w withSignalingWebSocketURL) apply(c *Client) error {
-	if err := validateEndpoints(Endpoints{SignalingURL: string(w)}); err != nil {
+func (w withSignalingWebSocketURL) apply(client *Client) error {
+	err := validateEndpoints(Endpoints{
+		OAuthBaseURL:     "",
+		APIBaseURL:       "",
+		SolutionsBaseURL: "",
+		SignalingURL:     string(w),
+	})
+	if err != nil {
 		return err
 	}
-	c.signalingWebSocketURL = string(w)
-	c.signalingWebSocketOverride = string(w)
+
+	client.signalingWebSocketURL = string(w)
+	client.signalingWebSocketOverride = string(w)
+
 	return nil
 }
 
@@ -111,7 +131,13 @@ type withEventWebSocketURL string
 
 var _ Option = withEventWebSocketURL("")
 
-func (w withEventWebSocketURL) apply(c *Client) error {
-	c.eventWebSocketURL = string(w)
+func (w withEventWebSocketURL) apply(client *Client) error {
+	err := validateEventWebSocketURL(string(w))
+	if err != nil {
+		return err
+	}
+
+	client.eventWebSocketURL = string(w)
+
 	return nil
 }

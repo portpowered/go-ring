@@ -15,6 +15,8 @@ func (t SDPType) String() string {
 		return protocol.SDPTypeOffer
 	case SDPTypeAnswer:
 		return protocol.SDPTypeAnswer
+	case SDPTypeUnknown:
+		return ""
 	default:
 		return ""
 	}
@@ -24,14 +26,23 @@ func (t SDPType) MarshalJSON() ([]byte, error) {
 	if t.String() == "" {
 		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid SDP type %d", t), nil)
 	}
-	return json.Marshal(t.String())
+
+	encoded, err := json.Marshal(t.String())
+	if err != nil {
+		return nil, ringapimodels.NewInternalServerError("failed to encode SDP type", err)
+	}
+
+	return encoded, nil
 }
 
 func (t *SDPType) UnmarshalJSON(data []byte) error {
 	var value string
-	if err := json.Unmarshal(data, &value); err != nil {
+
+	err := json.Unmarshal(data, &value)
+	if err != nil {
 		return ringapimodels.NewBadRequestError("invalid SDP type encoding", err)
 	}
+
 	switch value {
 	case protocol.SDPTypeOffer:
 		*t = SDPTypeOffer
@@ -40,5 +51,6 @@ func (t *SDPType) UnmarshalJSON(data []byte) error {
 	default:
 		return ringapimodels.NewBadRequestError(fmt.Sprintf("invalid SDP type %q", value), nil)
 	}
+
 	return nil
 }

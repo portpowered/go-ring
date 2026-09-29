@@ -6,7 +6,7 @@ on:
     paths:
       - "api/openapi.yaml"
       - "api/asyncapi.yaml"
-      - "docs/site/**"
+      - "docs/guides/**"
       - ".github/workflows/api-docs.yml"
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
       openapi: api/openapi.yaml
       asyncapi: api/asyncapi.yaml
       discover: false
-      guides-directory: docs/site
+      guides-directory: docs/guides
       base-path: /go-ring
       source-directory: .
       output: api-docs-out

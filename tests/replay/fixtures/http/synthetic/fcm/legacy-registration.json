@@ -1,0 +1,21 @@
+{
+  "request": {
+    "method": "POST",
+    "origin": "https://android.clients.google.com",
+    "path": "/c2dm/register3",
+    "query": [],
+    "headers": {
+      "Content-Type": ["application/x-www-form-urlencoded"],
+      "Authorization": ["AidLogin 12345:67890"],
+      "User-Agent": [""]
+    },
+    "body": "X-subtype=1%3A876313859327%3Aandroid%3Ae10ec6ddb3c81f39&app=org.chromium.linux&device=12345&sender=BDOU99-h67HcA6JeFXHbSNMu7e2yNNu3RzoMj8TM4W88jITfq7ZmPvIM1Iv-4_l2LxQcYwhqby2xGpWwzjfAnG4"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": ["text/plain"]
+    },
+    "body": "token=legacy-registration-token"
+  }
+}

@@ -2,8 +2,9 @@ GO ?= go
 GO_TEST_TIMEOUT ?= 120s
 export GOWORK := off
 .DEFAULT_GOAL := check
-.PHONY: check build build-examples build-cli test test-cli test-race test-stress test-cover test-integration test-contracts fmt vet generate-api lint lint-cli
-check: build build-cli test-contracts test test-cli vet
+.PHONY: check check-cli build build-examples build-cli test test-cli test-race test-stress test-cover test-integration test-contracts fmt vet vet-cli generate-api routegate lint lint-cli
+check: build build-cli test-contracts test test-cli vet vet-cli routegate
+check-cli: build-cli test-cli vet-cli
 build:
 	$(GO) build ./...
 build-examples:
@@ -35,18 +36,26 @@ fmt:
 	cd cmd/go-ring && $(GO) fmt ./...
 vet:
 	$(GO) vet ./...
+vet-cli:
+	cd cmd/go-ring && $(GO) vet ./...
+routegate:
+	$(GO) run ./tools/routegate/cmd
 
 # OpenAPI uses oapi-codegen; AsyncAPI uses Modelina's published Go generator API.
 # oapi-codegen v2.8.0 uses a Go 1.25+ toolchain (GOTOOLCHAIN=auto).
 generate-api:
+	$(GO) run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config internal/generatedhttp/config.yaml api/openapi.yaml
 	$(GO) run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config pkg/generatedhttp/config.yaml api/openapi.yaml
+	$(GO) run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config internal/generatedfcm/config.yaml api/external/fcm.openapi.yaml
 	$(GO) run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0 -config pkg/ringapimodels/config.yaml api/client-models.openapi.yaml
-	cd tools/protocols && npm ci && node generate_signaling.mjs
-	$(GO) fmt ./pkg/generatedhttp ./pkg/generatedsignaling ./pkg/ringapimodels
+	cd tools/protocols && npm ci && node generate_signaling.mjs && node generate_protocol_constants.mjs
+	cd tools/protocols && node generate_mcs.mjs
+	$(GO) fmt ./internal/generatedhttp ./internal/generatedfcm ./internal/generatedsignaling ./internal/protocol ./pkg/generatedhttp ./pkg/generatedsignaling ./pkg/ringapimodels
 
 lint:
 	golangci-lint run ./...
 	$(GO) test ./tools/lint
+	$(GO) run ./tools/routegate/cmd
 	cd cmd/go-ring && golangci-lint run ./...
 lint-cli:
 	cd cmd/go-ring && golangci-lint run ./...

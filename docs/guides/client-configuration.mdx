@@ -1,0 +1,54 @@
+---
+title: Configure the client
+description: Select endpoints and inject HTTP and WebSocket transports.
+---
+
+Create a reusable `Client` with named options. Account credentials belong in
+each request or session, rather than in client configuration.
+
+```go
+client, err := ring.NewClient(
+	ring.WithRegion(ring.RegionUS),
+	ring.WithHTTPClient(httpClient),
+	ring.WithWebSocketDialer(dialer),
+)
+if err != nil {
+	return err
+}
+```
+
+`WithHTTPClient` accepts a caller-owned `*http.Client`. Configure its
+`Transport` for retries, tracing, HTTP/2, or other network policy. The shared
+client cannot have a cookie jar; a `LoginSession` manages its own cookies.
+`WithWebSocketDialer` supplies the dialer for signaling and account events.
+
+The built-in FCM receiver has separate network edges. Configure its HTTP
+registration calls with `WithFCMHTTPTransport` and its framed MCS socket with
+`WithFCMDialContext`:
+
+```go
+fcmTLS := &tls.Dialer{NetDialer: &net.Dialer{Timeout: 10 * time.Second}}
+client, err := ring.NewClient(
+	ring.WithFCMHTTPTransport(http.DefaultTransport),
+	ring.WithFCMDialContext(fcmTLS.DialContext),
+)
+```
+
+The MCS dial hook must return an already secured connection. It also accepts
+an offline connection for paired frame replay. These two options apply to the
+built-in receiver; `WithFCMSource` replaces that receiver entirely. See
+[push notifications](/docs/guides/push-notifications) for its session and
+credential lifecycle.
+
+Use `WithEndpoints` to override regional HTTP origins, or
+`WithSignalingWebSocketURL` and `WithEventWebSocketURL` for socket endpoints.
+`NewClient` validates option values and returns an error for invalid endpoint
+URLs or nil transports. The event socket endpoint remains experimental; check
+its availability for your account before depending on it.
+
+The client retains no account or connection state. Close each returned login,
+event, push, or signaling session through its own `Close` method. `Client.Close`
+is kept for source compatibility and does not close those objects.
+
+See [authentication](/docs/guides/authentication) for caller-owned tokens and
+[live sessions](/docs/guides/live-sessions) for connection lifecycle.

@@ -3,44 +3,34 @@ version: "2"
 run:
   timeout: 5m
 
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
 linters:
-  default: standard
-  enable:
-    - bodyclose
-    - copyloopvar
-    - contextcheck
-    - govet
-    - dupl
-    - durationcheck
-    - errchkjson
-    - errname
-    - errorlint
-    - ineffassign
-    - staticcheck
-    - unused
-    - revive
-    - gocritic
-    - gosec
-    - mnd
-    - goconst
-    - cyclop
-    - forbidigo
-    - makezero
-    - mirror
-    - misspell
-    - nilerr
-    - nilnil
-    - nolintlint
-    - prealloc
-    - predeclared
-    - rowserrcheck
-    - sqlclosecheck
-    - unconvert
-    - unparam
-    - usestdlibvars
-    - wastedassign
-    - whitespace
+  default: all
   settings:
+    # GO-15: Restrict imports to the standard library, this module, and declared module dependencies.
+    depguard:
+      rules:
+        Main:
+          list-mode: strict
+          allow:
+            - $gostd
+            - github.com/portpowered/go-ring
+            - github.com/getkin/kin-openapi
+            - github.com/google/uuid
+            - github.com/gorilla/websocket
+            - github.com/oapi-codegen/runtime
+            - github.com/pion/rtp
+            - github.com/pion/sdp/v3
+            - github.com/pion/webrtc/v3
+            - github.com/santhosh-tekuri/jsonschema/v6
+            - github.com/stretchr/testify
+            - golang.org/x/sys
+            - golang.org/x/term
+            - google.golang.org/protobuf
+            - gopkg.in/yaml.v3
     forbidigo:
       forbid:
         - pattern: '^fmt\.Errorf$'
@@ -55,6 +45,36 @@ linters:
     goconst:
       min-len: 8
       min-occurrences: 2
+    exhaustruct:
+      exclude:
+        # Public lifecycle objects carry unexported synchronization state; callers and external-package tests cannot initialize those fields explicitly (GO-15).
+        - '^github\.com/portpowered/go-ring/internal/signaling\.Session$'
+        - '^github\.com/portpowered/go-ring/pkg/ring\.(Client|DeviceSession|LoginSession|PlaybackSession|PushConnection|PushSubscription|SignalingConnection)$'
+        # Dependency clients and connection workers contain private synchronization and request state that their constructors own (GO-15).
+        - '^github\.com/portpowered/go-ring/pkg/dependencies/rest\.Client$'
+        - '^github\.com/portpowered/go-ring/pkg/dependencies/websocket\.(EventConnection|SignalingWriter)$'
+        # Replay and mock transports intentionally hold private cursor, queue, and lifecycle state (GO-15).
+        - '^github\.com/portpowered/go-ring/internal/testkit/mocks\.(MockTransport|MockWebSocketConn|MockWebSocketDialer)$'
+        - '^github\.com/portpowered/go-ring/internal/testkit/replay\.(Transport|WebSocketServer|webSocketReplayError)$'
+        # Replay records and handshake steps are intentionally sparse protocol fixtures (GO-15).
+        - '^github\.com/portpowered/go-ring/internal/testkit/replay\.(Request|Response|WSHandshake|WSStep)$'
+        # These library configuration structs intentionally inherit omitted Go defaults (GO-15).
+        - '^net/http\.(Client|Response)$'
+        - '^github\.com/gorilla/websocket\.(Dialer|Upgrader)$'
+        - '^github\.com/pion/webrtc/v3\.(Configuration|ICECandidateInit|RTPCodecCapability|RTPTransceiverInit)$'
+        # Synthetic replay cookies specify only the fields relevant to the exchange (GO-15).
+        - '^net/http\.Cookie$'
+    # GO-11 uses the same limits: 120 lines and 200 statements.
+    funlen:
+      lines: 120
+      statements: 200
+    # GO-05 wire and API JSON fields follow the provider's snake_case schemas.
+    tagliatelle:
+      case:
+        rules:
+          json: snake
+    varnamelen:
+      min-name-length: 2
     revive:
       rules:
         - name: nested-structs
@@ -68,15 +88,641 @@ linters:
   exclusions:
     generated: strict
     rules:
-      # Scenario fixtures repeat wire literals, retain synthetic errors, and use handler signatures that contextcheck misreads.
-      - path: '(^|/)[^/]+_test\.go$'
-        linters: [contextcheck, cyclop, forbidigo, goconst]
+      # GO-15: Routegate compares parser-resolved lexical objects to detect shadowing and escapes in scanned source that cannot be type checked as a package.
+      - path: '^tools/routegate/(fcm_generated|fcm_source|fcm_transport|requests|requests_ast|requests_clients|requests_maps|requests_maps_tracking|requests_maps_provenance|requests_transport|scan|scan_clients|scan_network|scan_websocket)\.go$'
+        text: '^SA1019: ast\.Object has been deprecated since Go 1\.22 and an alternative has been available since Go 1\.0:'
+        linters: [staticcheck]
+      # GO-15: The generated-key registry is a process-wide immutable cache of parsed checked-in schemas; it avoids reparsing per audited source file.
+      - path: '^tools/routegate/requests_maps\.go$'
+        text: '^generatedWireRegistryCache is a global variable$'
+        linters: [gochecknoglobals]
+      # GO-15: Provenance records intentionally use zero values to distinguish absent map sources and optional backing literals.
+      - path: '^tools/routegate/requests_maps(_provenance)?\.go$'
+        text: '^routegate\.(wireMapProvenance|generatedWireKeyRegistry) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15/SCHEMA-16: These named source-gate analyzers cover each AST form and fail closed; their detailed case matrices exceed the generic cognitive limit.
+      - path: '^tools/routegate/requests_maps_(tracking|provenance)\.go$'
+        text: '^cognitive complexity .* func `\(\*requestWireMapState\)\.(discoverAssignment|mapInfo)`'
+        linters: [gocognit]
+      - path: '^tools/routegate/requests_maps_provenance\.go$'
+        text: '^cyclomatic complexity .* func `\(\*requestWireMapState\)\.mapInfo`'
+        linters: [gocyclo]
+      - path: '^tools/routegate/requests_maps_provenance\.go$'
+        text: '^calculated cyclomatic complexity for function mapInfo is '
+        linters: [cyclop]
+      - path: '^tools/routegate/requests_maps_tracking\.go$'
+        text: '^`if schemaBacked` has complex nested blocks'
+        linters: [nestif]
+      # GO-15: Schema-key provenance diagnostics include full AST conditions and wire names; permit the long predicates only in these named gate files.
+      - path: '^tools/routegate/(requests_maps|requests_maps_tracking|requests_maps_provenance|fcm_transport_semantics)\.go$'
+        linters: [lll]
+      # GO-15: This table enumerates every adversarial query/header escape as a named independent case.
+      - path: '^tools/routegate/adversarial_test\.go$'
+        text: "^Function 'TestGeneratedQueryAndHeaderKeysAreRequiredAcrossAliasesAndMaps' is too long"
+        linters: [funlen]
+      # GO-15: The adversarial fixture reads only files created under t.TempDir; dynamic fixture paths are required to mutate schemas.
+      - path: '^tools/routegate/adversarial_test\.go$'
+        text: '^G304: Potential file inclusion via variable$'
+        linters: [gosec]
+      # GO-15: Generated builder failure tests pass the original typed error unchanged to the assertion that checks its class.
+      - path: '^pkg/dependencies/rest/generated_builder_errors_test\.go$'
+        linters: [wrapcheck]
+      # GO-15: The offline FCM dial test calls a private default source, uses a sparse generated response, and encodes protobuf frames.
+      - path: '^pkg/ring/client_push_dial_test\.go$'
+        linters: [testpackage]
+      - path: '^pkg/ring/client_push_dial_test\.go$'
+        text: "^import 'google.golang.org/protobuf/proto' is not allowed from list 'main'$"
+        linters: [depguard]
+      - path: '^pkg/ring/client_push_dial_test\.go$'
+        text: '^checkin_proto\.AndroidCheckinResponse is missing fields?'
+        linters: [exhaustruct]
+      # GO-15/SCHEMA-16: The pinned FCM wrapper and offline binary-frame tests must use the protobuf runtime for schema validation.
+      - path: '^pkg/dependencies/push/(http_transport|mcs_dial_test)\.go$'
+        text: "^import 'google.golang.org/protobuf/(proto|reflect/protoreflect|encoding/protowire)' is not allowed from list 'main'$"
+        linters: [depguard]
+      # GO-15: The offline TLS/MCS fixture uses only the fields encoded in its synthetic transcript and Go TLS defaults.
+      - path: '^pkg/dependencies/push/mcs_dial_test\.go$'
+        text: '^(tls\.(Config|Certificate)|x509\.Certificate|checkin_proto\.(LoginResponse|AndroidCheckinResponse)) is missing fields?'
+        linters: [exhaustruct]
+      - path: '^pkg/dependencies/push/mcs_dial_test\.go$'
+        text: '^cognitive complexity .* func `TestFCMDialContextRunsMCSFramesOverOfflineTLS`'
+        linters: [gocognit]
+      - path: '^pkg/dependencies/push/mcs_dial_test\.go$'
+        text: '^calculated cyclomatic complexity for function TestFCMDialContextRunsMCSFramesOverOfflineTLS is '
+        linters: [cyclop]
+      - path: '^pkg/dependencies/push/mcs_dial_test\.go$'
+        text: "^Function 'TestFCMDialContextRunsMCSFramesOverOfflineTLS' is too long"
+        linters: [funlen]
+      - path: '^pkg/dependencies/push/mcs_dial_test\.go$'
+        text: '^nested-structs: no nested structs are allowed$'
+        linters: [revive]
+      - path: '^pkg/dependencies/push/mcs_dial_test\.go$'
+        text: '^error returned from external package is unwrapped: sig: func (io\.ReadFull|google\.golang\.org/protobuf/encoding/protowire\.ParseError)'
+        linters: [wrapcheck]
+      - path: '^pkg/dependencies/push/mcs_dial_test\.go$'
+        linters: [lll]
+      # SCHEMA-16/GO-15: The pinned public VAPID application key is an identifier, not a credential; keep its exact value for FCM registration compatibility.
+      - path: '^internal/protocol/fcm\.go$'
+        text: '^G101: Potential hardcoded credentials$'
+        linters: [gosec]
+      # GO-15: FCM gate mutation tests inspect unexported source-contract helpers without adding test-only exported API.
+      - path: '^tools/routegate/fcm_source_test\.go$'
+        linters: [testpackage]
+      # LIB-18/GO-15: This fork must preserve the provider's pinned HTTP-ECE implementation for encrypted push payloads; permit only its crypto.go import.
+      - path: '^third_party/go-push-receiver/crypto\.go$'
+        text: "^import 'github.com/crow-misia/http-ece' is not allowed from list 'main'$"
+        linters: [depguard]
+      # GO-15: decryptData adds one operation context after either decoder helper returns; keep the helper pass-throughs raw so errors are not wrapped twice.
+      - path: '^third_party/go-push-receiver/crypto\.go$'
+        text: '^error returned from external package is unwrapped: sig: func github\.com/crow-misia/http-ece\.Decrypt\(content \[\]byte, opts \.\.\.github\.com/crow-misia/http-ece\.Option\) \(\[\]byte, error\)$'
+        linters: [wrapcheck]
+      # GO-15: nlreturn requires a blank line before this sentinel error return; that required blank line is reported as unnecessary by wsl_v5, so exempt only that one conflicting finding.
+      - path: '^third_party/go-push-receiver/crypto\.go$'
+        text: '^unnecessary whitespace \(err\)$'
+        linters: [wsl_v5]
+      # LIB-18/GO-15: The pinned MCS protobuf runtime defines the message interface that the tag decoder must return.
+      - path: '^third_party/go-push-receiver/tag\.go$'
+        text: "^import 'google.golang.org/protobuf/proto' is not allowed from list 'main'$"
+        linters: [depguard]
+      # LIB-18/GO-15: The tag-to-message factory must return the protobuf runtime interface used by proto.Unmarshal.
+      - path: '^third_party/go-push-receiver/tag\.go$'
+        text: '^GenerateMessage returns interface \(google\.golang\.org/protobuf/proto\.Message\)$'
+        linters: [ireturn]
+      # LIB-18/GO-15: FCM registration frames use the pinned protobuf runtime's API for binary request and response payloads.
+      - path: '^third_party/go-push-receiver/(fcm|instanceid)\.go$'
+        text: "^import 'google.golang.org/protobuf/proto' is not allowed from list 'main'$"
+        linters: [depguard]
+      - path: '^third_party/go-push-receiver/mcs\.go$'
+        text: "^import 'google.golang.org/protobuf/(encoding/protojson|encoding/protowire|proto)' is not allowed from list 'main'$"
+        linters: [depguard]
+      # GO-05/LIB-18: Firebase's FCM registration protocol requires these exact camelCase JSON property names.
+      - path: '^third_party/go-push-receiver/fcm\.go$'
+        text: "^json\\(snake\\): got '(applicationPubKey|appId|authVersion|sdkVersion|pushSet|refreshToken|authToken|androidId|securityToken|privateKey|publicKey|authSecret)' want '.+'$"
+        linters: [tagliatelle]
+      # LIB-18/GO-15: These sparse protobuf structs encode only the fields present in their corresponding MCS request frames; omitted protobuf fields use their protocol zero values.
+      - path: '^third_party/go-push-receiver/instanceid\.go$'
+        text: '^(checkin_proto\.AndroidCheckinRequest|checkin_proto\.AndroidCheckinProto) is missing fields?'
+        linters: [exhaustruct]
+      - path: '^third_party/go-push-receiver/mcs\.go$'
+        text: '^(checkin_proto\.(LoginRequest|HeartbeatPing|HeartbeatAck)) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: These standard-library transport structs intentionally omit zero-valued options so Go's documented defaults remain in force; only the configured overrides are explicit.
+      - path: '^third_party/go-push-receiver/client\.go$'
+        text: '^(tls\.Config|net\.Dialer|http\.Transport) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: The public push configuration mirrors Firebase's documented camelCase JSON property names exactly.
+      - path: '^third_party/go-push-receiver/config\.go$'
+        text: "^json\\(snake\\): got '(apiKey|projectId|appId|VapidKey)' want '(api_key|project_id|app_id|vapid_key)'$"
+        linters: [tagliatelle]
+      # GO-05/LIB-18: The push receiver event mirrors Firebase's exact persistentId property; changing its spelling would alter the dependency's public JSON shape.
+      - path: '^third_party/go-push-receiver/events\.go$'
+        text: "^json\\(snake\\): got 'persistentId' want 'persistent_id'$"
+        linters: [tagliatelle]
+      # GO-15: The internal POST helper preserves its legacy nil-context fallback, and construction-time logging has no caller context to inherit.
+      - path: '^third_party/go-push-receiver/client\.go$'
+        text: '^Non-inherited new context, use function like .+ instead$'
+        linters: [contextcheck]
+      - path: '^third_party/go-push-receiver/client\.go$'
+        text: '^\(\*log/slog\.Logger\)\.Debug must not be called\. use \(\*log/slog\.Logger\)\.DebugContext$'
+        linters: [noctx]
+      # GO-15: These tests call private backoff timing code so the jitter cap and invalid-bound behavior can be verified without exporting implementation details.
+      - path: '^third_party/go-push-receiver/backoff_test\.go$'
+        linters: [testpackage]
+      # GO-08: These objects own long-lived goroutines and retain their cancellation context until Close or terminal failure ends the workers.
+      - path: '^internal/signaling/session\.go$'
+        linters: [containedctx]
+      # GO-15/LIB-05: These tests use the package's fake clock, terminal state, and RPC envelope to verify deterministic session scheduling and teardown without adding test-only exported APIs.
+      - path: '^internal/signaling/session_test\.go$'
+        linters: [testpackage]
+      - path: '^internal/signaling/session_stress_test\.go$'
+        linters: [testpackage]
+      - path: '^pkg/dependencies/websocket/events\.go$'
+        linters: [containedctx]
+      - path: '^pkg/dependencies/websocket/writer\.go$'
+        linters: [containedctx]
+      - path: '^pkg/ring/client_push\.go$'
+        linters: [containedctx]
+      - path: '^pkg/ring/interface\.go$'
+        linters: [containedctx]
+      # GO-05: These precompiled expressions are immutable route and CSRF matching rules reused by the capture and authentication flows.
+      - path: '^pkg/dependencies/rest/auth\.go$'
+        linters: [gochecknoglobals]
+      - path: '^tools/capture/extract\.go$'
+        linters: [gochecknoglobals]
+      # API-03/API-09: Keep the documented complete client and device-session facade interfaces intact for consumers; callers can define smaller local interfaces when needed.
+      - path: '^pkg/ring/interface\.go$'
+        text: '^the interface has more than 10 methods: (43|13)$'
+        linters: [interfacebloat]
+      # API-03: Option constructors intentionally return the sealed Option interface so its implementations stay private and composable.
+      - path: '^pkg/ring/(client_options|client_push)\.go$'
+        text: '^With(Region|Endpoints|HTTPClient|UserAgent|WebSocketDialer|SignalingWebSocketURL|EventWebSocketURL|FCMSource|FCMHTTPTransport|FCMDialContext) returns interface \(github\.com/portpowered/go-ring/pkg/ring\.Option\)$'
+        linters: [ireturn]
+      # GO-15/API-14: SDPType string and marshal operations remain available on values; JSON unmarshalling must use a pointer to update the receiver.
+      - path: '^pkg/ring/interface\.go$'
+        text: '^the methods of "SDPType" use pointer receiver and non-pointer receiver\.$'
+        linters: [recvcheck]
+      # GO-05/API-14: Preserve the provider's exact legacy camelCase fields in captured JSON payloads.
+      - path: '^(internal/signaling/session|pkg/ring/client_push|pkg/ring/client_read_models|pkg/ring/interface)\.go$'
+        text: '^json\(snake\): got ''(sessionId|gcmData|subscriptionTopics)'' want ''(session_id|gcm_data|subscription_topics)''$'
+        linters: [tagliatelle]
+      # GO-15: This heartbeat transcript uses private heartbeatAt with a 100ms interval to test production framing without waiting the full 30-second interval.
+      - path: '^pkg/ring/signaling_heartbeat_transcript_test\.go$'
+        linters: [testpackage]
+      # GO-15: These account tests call private context/token helpers to verify request-scoped credentials without exposing implementation helpers in the public API.
+      - path: '^pkg/ring/account_auth_test\.go$'
+        linters: [testpackage]
+      # GO-15: These device-session tests construct private session state and completion channels to verify activation, cancellation, and concurrency invariants.
+      - path: '^pkg/ring/device_session_(activation|concurrency|public|stress)_test\.go$'
+        linters: [testpackage]
+      # GO-15: These signaling tests inspect private queues, maps, and worker completion to verify close and failure cleanup that is not part of the public API.
+      - path: '^pkg/ring/signaling_connection_(failure|stress)_test\.go$'
+        linters: [testpackage]
+      - path: '^pkg/ring/signaling_connection_test\.go$'
+        linters: [testpackage]
+      # GO-15: These signaling-extra tests exercise private send and teardown paths using deliberately seeded queue state.
+      - path: '^pkg/ring/signaling_extras_test\.go$'
+        linters: [testpackage]
+      # GO-15: Signaling receive tests call private receiveRecord to verify frame ordering and scheduling without exposing the receive loop.
+      - path: '^pkg/dependencies/websocket/signaling_read_test\.go$'
+        linters: [testpackage]
+      # GO-15: This writer test inspects its private safety and regular queues to prove safety writes overtake work and canceled entries are removed.
+      - path: '^pkg/dependencies/websocket/writer_test\.go$'
+        linters: [testpackage]
+      # GO-15: These REST auth tests call private OAuth handlers to check failure-stage and transport behavior without exporting helpers.
+      - path: '^pkg/dependencies/rest/auth_edge_cases_test\.go$'
+        linters: [testpackage]
+      - path: '^pkg/dependencies/rest/auth_workflow_failures_test\.go$'
+        linters: [testpackage]
+      - path: '^pkg/dependencies/rest/auth_http_test\.go$'
+        linters: [testpackage]
+      # GO-15: This focused OAuth test calls the private redirect resolver to reject unmodeled redirects before network access.
+      - path: '^pkg/dependencies/rest/auth_authorize_test\.go$'
+        linters: [testpackage]
+      # GO-15: These HTTP client tests inspect private retry, decode, and request construction paths through a synthetic transport.
+      - path: '^pkg/dependencies/rest/client_http_test\.go$'
+        linters: [testpackage]
+      # GO-15: Snapshot bounds and transport failure tests use private fixture helpers to test response ownership and size limits.
+      - path: '^pkg/dependencies/rest/snapshot_test\.go$'
+        linters: [testpackage]
+      # GO-15/LIB-05: These replay tests exercise private cassette decoding, exact frame matching, and template binding directly so malformed fixture behavior is verified without exporting testkit internals.
+      - path: '^internal/testkit/replay/replay_test\.go$'
+        linters: [testpackage]
+      - path: '^internal/testkit/replay/websocket_template_test\.go$'
+        linters: [testpackage]
+      # SCHEMA-01/GO-15: Decode-only fields mirror the required snake_case keys in the checked-in external protocol inventory YAML.
+      - path: '^tools/protocols/fcm_contracts_test\.go$'
+        linters: [tagliatelle]
+      # SCHEMA-10: Modelina-generated enum lookup tables must remain package globals.
+      - path: '^pkg/generatedsignaling/.*\.go$'
+        linters: [gochecknoglobals]
+      # SCHEMA-10: Modelina emits the same enum helper implementation for distinct wire enums.
+      - path: '^pkg/generatedsignaling/.*\.go$'
+        linters: [dupl]
+      # SCHEMA-10: Modelina-generated JSON error returns are produced by the pinned generator.
+      - path: '^pkg/generatedsignaling/.*\.go$'
+        linters: [noinlineerr]
+      # SCHEMA-10: Modelina assigns non-pointer receivers to generated enum lookup methods.
+      - path: '^pkg/generatedsignaling/.*\.go$'
+        linters: [recvcheck]
+      # SCHEMA-10: Modelina returns encoding/json errors directly from generated marshal methods.
+      - path: '^pkg/generatedsignaling/.*\.go$'
+        linters: [wrapcheck]
+      # SCHEMA-10: Modelina-generated control flow uses this layout consistently.
+      - path: '^pkg/generatedsignaling/.*\.go$'
+        linters: [nlreturn]
+      # SCHEMA-10: Modelina aligns JSON and binding tags independently in generated structs.
+      - path: '^pkg/generatedsignaling/.*\.go$'
+        linters: [tagalign]
+      # SCHEMA-10: Modelina-generated statements use this whitespace style.
+      - path: '^pkg/generatedsignaling/.*\.go$'
+        linters: [wsl]
+      # SCHEMA-10: Modelina's generated enum and wire helper bodies are pinned output with provider-shaped field names and layout.
+      - path: '^pkg/generatedsignaling/ptz_wire_params\.go$'
+        linters: [tagliatelle]
+      - path: '^pkg/generatedsignaling/ptz_command_method\.go$'
+        linters: [wsl_v5]
+      - path: '^pkg/generatedsignaling/ptz_direction\.go$'
+        linters: [wsl_v5]
+      # GO-15/API-14: These exact public facade files pass through the REST package's typed ringerrors aliases. Preserve concrete API error identity for callers using direct type assertions; the text selector limits this to the listed REST methods.
+      - path: '^pkg/ring/(client|client_auth|client_captured_http|client_control|client_devices|client_push|client_recordings|client_settings|client_snapshot|login_session)\.go$'
+        text: '^error returned from external package is unwrapped: sig: func \(\*github\.com/portpowered/go-ring/pkg/dependencies/rest\.Client\)\.(RegisterSession|RefreshAccessTokenFor|GetDeviceDetail|ListLocations|GetLocation|ListLocationGroups|ListLocationDevices|GetDeviceTimeline|GetHistoryDevices|RebootDevice|UnlockIntercom|SetPersistentLiveViewEnabled|FavoriteRecording|DeleteRecording|SetChimeVolume|SetDoorbellVolume|SetLights|SetMotionDetection|TestSound|SetInHomeChimeType|SetInHomeChimeDuration|SetInHomeChimeEnabled|GetDevices|GetDeviceHealth|RegisterPushDevice|SubscribeDeviceDing|SubscribeDeviceMotion|GetDeviceHistory|GetActiveDings|GetRecording|GetRecordingShareURL|GetMotionDetectionEnabled|PatchMotionDetectionEnabled|SetSiren|RefreshSnapshotTimestamp|GetSnapshotImage|Request2FACode|Authenticate)\('
+        linters: [wrapcheck]
+      # GO-15/API-14: HTTP status classification creates public typed errors such as NotFoundError with HTTPError causes. Return the classified object unchanged so direct type assertions remain compatible.
+      - path: '^pkg/ring/(client_captured_http|client_session)\.go$'
+        text: '^error returned from external package is unwrapped: sig: func github\.com/portpowered/go-ring/pkg/ringapimodels\.ClassifyHTTPError\('
+        linters: [wrapcheck]
+      # GO-15/API-14: ClassifyHTTPError creates typed HTTP status errors; preserve the concrete status classification across the REST boundary.
+      - path: '^pkg/dependencies/rest/(auth|client|recordings|snapshot)\.go$'
+        text: '^error returned from external package is unwrapped: sig: func github\.com/portpowered/go-ring/internal/ringerrors\.ClassifyHTTPError\('
+        linters: [wrapcheck]
+      # GO-15/API-14: This public facade exposes the typed status classifier unchanged so callers retain its concrete error type and HTTP status.
+      - path: '^pkg/ringapimodels/errors\.go$'
+        text: '^error returned from external package is unwrapped: sig: func github\.com/portpowered/go-ring/internal/ringerrors\.ClassifyHTTPError\('
+        linters: [wrapcheck]
+      # GO-15: The synthetic auth transport forwards the caller context sentinel so the REST client can classify cancellation at its boundary.
+      - path: '^pkg/dependencies/rest/auth_edge_cases_test\.go$'
+        text: '^error returned from interface method should be wrapped: sig: func \(context\.Context\)\.Err\(\)'
+        linters: [wrapcheck]
+      # GO-15: trackedBody implements io.Reader and must preserve io.EOF and the underlying reader error unchanged.
+      - path: '^pkg/dependencies/rest/client_http_test\.go$'
+        text: '^error returned from interface method should be wrapped: sig: func \(io\.Reader\)\.Read\(p \[\]byte\) \(n int, err error\)'
+        linters: [wrapcheck]
+      # GO-15/API-14: EventConnection.Receive already returns the typed ConnectionError or ClosedError created by the transport; preserve its concrete type through the public event API.
+      - path: '^pkg/ring/client_events\.go$'
+        text: '^error returned from external package is unwrapped: sig: func \(\*github\.com/portpowered/go-ring/pkg/dependencies/websocket\.EventConnection\)\.Receive\(\)'
+        linters: [wrapcheck]
+      # GO-15/API-14: The default push source preserves an already-typed BadRequestError; untyped saved-credential decode errors are converted at this API boundary.
+      - path: '^pkg/ring/client_push\.go$'
+        text: '^error returned from external package is unwrapped: sig: func github\.com/portpowered/go-ring/pkg/dependencies/push\.Start(WithHTTPTransport)?\('
+        linters: [wrapcheck]
+      # GO-15/API-14: Custom JSON unmarshallers return standard json/strconv decoding errors unchanged so encoding/json retains its structured error types and field context.
+      - path: '^pkg/ring/client_read_models\.go$'
+        text: '^error returned from external package is unwrapped: sig: func (encoding/json\.Unmarshal|strconv\.ParseFloat)\('
+        linters: [wrapcheck]
+      # GO-15/API-14: WriteSignaling returns a typed ConnectionError; writeFrame preserves that concrete classification so the failure callback does not nest wrappers.
+      - path: '^pkg/ring/signaling_connection\.go$'
+        text: '^error returned from external package is unwrapped: sig: func github\.com/portpowered/go-ring/pkg/dependencies/websocket\.WriteSignaling\('
+        linters: [wrapcheck]
+      # GO-15: Keep the timer-driven push heartbeat transcript sequential so parallel test load cannot perturb its recorded frame timing.
+      - path: '^pkg/ring/signaling_heartbeat_transcript_test\.go$'
+        text: 'TestProductionPushHeartbeatTranscript'
+        linters: [paralleltest]
+      # GO-15: This test owns one live PeerConnection and an ordered signaling/ICE/RTP/close exchange; keep the whole scenario serial under race scheduling.
+      - path: '^tests/replay/playback_peer_replay_test\.go$'
+        text: 'TestPlaybackReplayConnectsPeersAndReceivesMedia'
+        linters: [paralleltest]
+      # GO-15: These named endpoint tests set only the override under test; empty values intentionally inherit region defaults.
+      - path: '^pkg/ring/account_auth_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^pkg/ring/endpoints_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^pkg/ring/signaling_connection_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^pkg/ring/signaling_heartbeat_transcript_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^pkg/ring/signaling_open_public_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/account_scope_replay_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/auth_failures_replay_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/auth_redirects_replay_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/captured_http_failures_replay_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/captured_http_public_replay_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/client_endpoints_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/client_public_workflows_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/client_recorded_devices_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/client_recorded_settings_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/legacy_controls_portable_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/media_failure_portable_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/session_failures_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/session_identity_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/session_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/signaling_production_transcript_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/signaling_ticket_failures_replay_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/signaling_ticket_portable_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      - path: '^tests/replay/snapshot_portable_test\.go$'
+        text: '^ring\.Endpoints is missing fields'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^internal/signaling/session_stress_test\.go$'
+        text: '^(signaling\.Message|signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^internal/signaling/session_test\.go$'
+        text: '^(signaling\.fakeClock|signaling\.Message|signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^internal/testkit/replay/replay_test\.go$'
+        text: '^(replay\.<anonymous>) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/dependencies/rest/auth_edge_cases_test\.go$'
+        text: '^(rest\.<anonymous>|rest\.pkceState|rest\.trackedBody) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/dependencies/rest/auth_workflow_failures_test\.go$'
+        text: '^(rest\.pkceState) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/dependencies/rest/client_http_test\.go$'
+        text: '^(rest\.trackedBody) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/dependencies/websocket/writer_test\.go$'
+        text: '^(signaling\.Message|signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/account_auth_test\.go$'
+        text: '^(ring\.CompleteLoginRequest|ring\.LoginSessionRequest|ring\.RefreshTokenRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/device_session_activation_test\.go$'
+        text: '^(ring\.<anonymous>|ring\.StartDeviceSessionRequest|signaling\.Message|signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/device_session_concurrency_test\.go$'
+        text: '^(signaling\.Message|signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/device_session_public_test\.go$'
+        text: '^(ring\.SessionDescription|ring\.SetStreamOptionsRequest|ring\.StartDeviceSessionRequest|signaling\.Message|signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/device_session_stress_test\.go$'
+        text: '^(signaling\.Message|signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/sdp_type_test\.go$'
+        text: '^(ring\.SessionDescription) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/signaling_connection_stress_test\.go$'
+        text: '^(signaling\.Message) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/signaling_connection_test\.go$'
+        text: '^(signaling\.Message) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/signaling_extras_test\.go$'
+        text: '^(ring\.ICECandidateRequest|ring\.PushFilter|ring\.StartPlaybackRequest|signaling\.Message) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ring/signaling_open_public_test\.go$'
+        text: '^(ring\.OpenSignalingRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^pkg/ringapimodels/errors_test\.go$'
+        text: '^(ringerrors\.AuthenticationError|ringerrors\.BadRequestError|ringerrors\.ClosedError|ringerrors\.ConnectionError|ringerrors\.HTTPError|ringerrors\.InternalServerError|ringerrors\.NetworkError|ringerrors\.NotFoundError|ringerrors\.RateLimitError|ringerrors\.Requires2FAError|ringerrors\.TokenError|ringerrors\.UnauthorizedError) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/account_scope_replay_test\.go$'
+        text: '^(ring\.CompleteLoginRequest|ring\.GetCapturedTicketsRequest|ring\.OpenSignalingRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/auth_failures_replay_test\.go$'
+        text: '^(replay_test\.authStageReplay|replay_test\.csrfPageReplay|ring\.AuthenticateRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/auth_redirects_replay_test\.go$'
+        text: '^(replay_test\.oauthRedirectTransport) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/captured_http_failures_replay_test\.go$'
+        text: '^(ring\.DeleteRecordingRequest|ring\.DeviceIDRequest|ring\.GetCapturedTicketsRequest|ring\.GetDeviceDetailRequest|ring\.GetDeviceTimelineRequest|ring\.GetLocationRequest|ring\.LocationRequest|ring\.RecordingIDRequest|ring\.SetPersistentLiveViewEnabledRequest|ring\.TimelineParams) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/captured_http_public_replay_test\.go$'
+        text: '^(ring\.AuthContext|ring\.GetLocationRequest|ring\.RecordingIDRequest|ring\.TimelineParams) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/client_auth_test\.go$'
+        text: '^(replay_test\.pkceMockTransport|ring\.AuthenticateRequest|ring\.LoginSessionRequest|ring\.RefreshTokenRequest|ring\.Request2FACodeRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/client_control_test\.go$'
+        text: '^(ring\.AuthContext|ring\.SetInHomeChimeRequest|ring\.SetVolumeRequest|ring\.UpdateDeviceHealthRequest|ringapimodels\.InHomeChimeSettings) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/client_endpoints_test\.go$'
+        text: '^(replay_test\.endpointTransport) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/client_event_recording_regression_test\.go$'
+        text: '^(ring\.AuthContext|ring\.GetDeviceHistoryRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/client_public_workflows_test\.go$'
+        text: '^(replay_test\.<anonymous>|replay_test\.captureRoundTripper|replay_test\.pkceMockTransport|ring\.GetDeviceHistoryRequest|ring\.GetDeviceSettingsRequest|ring\.GetLastRecordingIDRequest|ring\.ListDevicesRequest|ring\.PatchDeviceSettingsRequest|ring\.SetInHomeChimeRequest|ring\.SetLightsRequest|ring\.SetMotionDetectionRequest|ring\.SetSirenRequest|ring\.SetVolumeRequest|ring\.TestSoundRequest|ring\.UpdateDeviceHealthRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/client_recorded_settings_test\.go$'
+        text: '^(ring\.AuthContext|ring\.PatchDeviceSettingsRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/client_recordings_test\.go$'
+        text: '^(ring\.AuthContext|ring\.GetDeviceHistoryRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/clock_test\.go$'
+        text: '^(replay_test\.recordedClock|signaling\.Message) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/device_capabilities_replay_test\.go$'
+        text: '^(generatedhttp\.Device|generatedhttp\.DeviceList) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This replay case models only recorded health fields; absent generated optional fields stay absent until evidence supports them.
+      - path: '^tests/replay/device_capabilities_replay_test\.go$'
+        text: '^generatedhttp\.DeviceHealth is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/device_family_replay_test\.go$'
+        text: '^(generatedhttp\.Device|generatedhttp\.DeviceList|replay_test\.<anonymous>) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/diagnostic_cli_snapshot_rtc_test\.go$'
+        text: '^(media\.Sample) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/diagnostic_cli_view_test\.go$'
+        text: '^(media\.Sample) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/fcm_adapter_replay_test\.go$'
+        text: '^(pushreceiver\.ConnectedEvent|pushreceiver\.DisconnectedEvent|pushreceiver\.FCMCredentials|pushreceiver\.MessageEvent|pushreceiver\.RetryEvent) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/fcm_session_replay_test\.go$'
+        text: '^(ring\.AuthContext|ring\.ConnectPushRequest|ring\.FCMEvent) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/intercom_replay_test\.go$'
+        text: '^(ring\.DeviceIDRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/legacy_controls_portable_test\.go$'
+        text: '^(ringapimodels\.InHomeChimeSettings) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/media_failure_portable_test\.go$'
+        text: '^(replay_test\.failureTransport) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/missing_operations_paired_test\.go$'
+        text: '^(generatedhttp\.UpdateLegacyDoorbotControlsParams) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/playback_peer_replay_test\.go$'
+        text: '^(media\.Sample|ring\.ICECandidateRequest|ring\.StartPlaybackRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/push_http_replay_test\.go$'
+        text: '^(ring\.DeviceIDRequest|ring\.RegisterPushDeviceRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/session_controls_replay_test\.go$'
+        text: '^(replay_test\.capturedRPCPair|ring\.ICECandidateRequest|ring\.StartDeviceSessionRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/session_failures_test\.go$'
+        text: '^(ring\.StartDeviceSessionRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/session_identity_test\.go$'
+        text: '^(ring\.SetMicrophoneRequest|ring\.StartDeviceSessionRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/session_liveness_replay_test\.go$'
+        text: '^(signaling\.Message|signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/session_negotiation_failures_replay_test\.go$'
+        text: '^(ring\.StartDeviceSessionRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/session_ordering_replay_test\.go$'
+        text: '^(ring\.StartDeviceSessionRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/session_portable_replay_test\.go$'
+        text: '^(ring\.StartDeviceSessionRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/session_test\.go$'
+        text: '^(replay_test\.captureDialer|ring\.StartDeviceSessionRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/signaling_extras_public_replay_test\.go$'
+        text: '^(ring\.ICECandidateRequest|ring\.PushFilter|ring\.StartPlaybackRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/signaling_production_transcript_test\.go$'
+        text: '^(ring\.ICECandidateRequest|ring\.StartDeviceSessionRequest|ring\.StartPlaybackRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/signaling_recording_test\.go$'
+        text: '^(signaling\.SessionConfig) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/signaling_response_variants_replay_test\.go$'
+        text: '^(ring\.PushFilter|ring\.StartPlaybackRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/signaling_ticket_failures_replay_test\.go$'
+        text: '^(replay_test\.ticketFailureTransport) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/signaling_ticket_portable_test\.go$'
+        text: '^(replay_test\.captureDialer) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tests/replay/snapshot_portable_test\.go$'
+        text: '^(replay_test\.signalFirstTransport|ring\.AuthContext|ring\.GetSnapshotRequest) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tools/capture/extract_test\.go$'
+        text: '^(main\.capturedFlow|main\.capturedMessage|main\.capturedResponse) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tools/compatibility/main_test\.go$'
+        text: '^(main\.<anonymous>) is missing fields?'
+        linters: [exhaustruct]
+      # GO-15: This named test uses sparse request, wire-message, and local fixture literals; omitted fields of these exact types intentionally use Go zero values.
+      - path: '^tools/lint/public_control_types_test\.go$'
+        text: '^(ring\.SetInHomeChimeRequest|ring\.SetLightsRequest|ring\.SetVolumeRequest|ring\.TestSoundRequest|ring\.UpdateDeviceHealthRequest) is missing fields?'
+        linters: [exhaustruct]
+      # LIB-02: The separate CLI module resolves the local library during repository and CI checks.
+      # LIB-05: The paired MCS frame test uses private production codec methods to verify complete binary frames.
+      - path: '^third_party/go-push-receiver/mcs_heartbeat_replay_test\.go$'
+        linters: [testpackage]
+      - path: '^cmd/go-ring/go\.mod$'
+        text: '^local replacement are not allowed: github\.com/portpowered/go-ring$'
+        linters: [gomoddirectives]
+      # LIB-04: Synthetic RTP packets specify the protocol fields each scenario exercises; padding and raw buffers retain zero values.
+      - path: '^cmd/go-ring/(h264_writer|player|rtp_recording)_test\.go$'
+        text: '^rtp\.(Packet|Header) is missing fields?'
+        linters: [exhaustruct]
       # These CLI paths own cleanup through context-free Close APIs and use a bounded detached context for PTZ stop during cancellation.
       - path: '^cmd/go-ring/(main|snapshot_rtc|tokens|view)\.go$'
         linters: [contextcheck]
-    paths:
-      - '^pkg/generatedsignaling/'
-
 formatters:
   enable:
     - gofmt

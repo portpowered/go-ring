@@ -75,7 +75,8 @@
           "doorbot_id": 1000,
           "session_id": "synthetic-live"
         }
-      }
+      },
+      "channel": "sessionActivate"
     },
     {
       "kind": "expect",
@@ -90,7 +91,8 @@
           "session_id": "synthetic-live",
           "enabled": false
         }
-      }
+      },
+      "channel": "sessionMicrophone"
     },
     {
       "kind": "expect",
@@ -105,7 +107,8 @@
           "session_id": "synthetic-live",
           "audio_enabled": false
         }
-      }
+      },
+      "channel": "sessionStreamOptions"
     },
     {
       "kind": "send",
@@ -119,7 +122,8 @@
           "doorbot_id": 1000,
           "session_id": "synthetic-live"
         }
-      }
+      },
+      "channel": "serverEnvelope"
     },
     {
       "kind": "expect",
@@ -199,7 +203,8 @@
           "doorbot_id": 1000,
           "session_id": "synthetic-live"
         }
-      }
+      },
+      "channel": "sessionClose"
     }
   ]
 }

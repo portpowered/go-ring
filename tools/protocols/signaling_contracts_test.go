@@ -1,4 +1,4 @@
-package protocols
+package protocols_test
 
 import (
 	"encoding/json"
@@ -8,6 +8,14 @@ import (
 	"sort"
 	"strings"
 	"testing"
+)
+
+const (
+	protocolClientToServerDirection = "client_to_server"
+	protocolServerToClientDirection = "server_to_client"
+	protocolPanContinuousMethod     = "PTZ.Pan.Continuous"
+	serverEnvelopeSchemaName        = "ServerEnvelope"
+	serverEnvelopeSchemaRef         = "#/components/schemas/ServerEnvelope"
 )
 
 type capturedSignalingMessage struct {
@@ -28,87 +36,131 @@ type syntheticSignalingChannelTranscript struct {
 	Steps []syntheticSignalingChannelStep `json:"steps"`
 }
 
+func channelFrameMatches(
+	t *testing.T, components, messages, channel map[string]any, frame map[string]any,
+) bool {
+	t.Helper()
+
+	const prefix = "#/components/messages/"
+
+	for _, raw := range mapValue(channel["messages"]) {
+		reference := stringValue(mapValue(raw)["$ref"])
+		if !strings.HasPrefix(reference, prefix) {
+			t.Fatalf("invalid message reference %q", reference)
+		}
+
+		payload := mapValue(mapValue(messages[strings.TrimPrefix(reference, prefix)])["payload"])
+		validator := compileJSONSchema(t, map[string]any{"components": components}, payload)
+
+		if validator.Validate(schemaExampleValue(frame)) == nil {
+			return true
+		}
+	}
+
+	return false
+}
+
 func TestSyntheticSignalingTranscriptMatchesEachAsyncAPIChannel(t *testing.T) {
-	path := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "signaling", "synthetic", "paired", "full-session.json")
+	t.Parallel()
+
+	path := filepath.Join(
+		repositoryRoot(t),
+		"tests",
+		"replay",
+		"fixtures",
+		"signaling",
+		"synthetic",
+		"paired",
+		"full-session.json",
+	)
+
 	data, err := os.ReadFile(path) // #nosec G304 -- fixed repository-owned synthetic fixture.
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	var transcript syntheticSignalingChannelTranscript
-	if err := json.Unmarshal(data, &transcript); err != nil {
-		t.Fatal(err)
+	{
+		err := json.Unmarshal(data, &transcript)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
+
 	doc := readYAMLObject(t, filepath.Join(repositoryRoot(t), "api", "asyncapi.yaml"))
-	channels := mapValue(doc["channels"])
+	channels := signalingChannels(mapValue(doc["channels"]))
 	components := mapValue(doc["components"])
 	messages := mapValue(components["messages"])
 	seen := map[string]bool{}
+
 	for _, step := range transcript.Steps {
 		channel := mapValue(channels[step.Channel])
 		if channel == nil || seen[step.Channel] {
 			t.Fatalf("unknown or duplicate channel %q", step.Channel)
 		}
+
 		seen[step.Channel] = true
-		var reference string
-		for _, raw := range mapValue(channel["messages"]) {
-			reference = stringValue(mapValue(raw)["$ref"])
-		}
-		const prefix = "#/components/messages/"
-		if len(reference) <= len(prefix) || reference[:len(prefix)] != prefix {
-			t.Fatalf("channel %s has invalid message reference %q", step.Channel, reference)
-		}
-		name := reference[len(prefix):]
-		payload := mapValue(mapValue(messages[name])["payload"])
-		validator := compileJSONSchema(t, map[string]any{"components": components}, payload)
-		if err := validator.Validate(step.Body); err != nil {
-			t.Errorf("%s synthetic frame violates AsyncAPI: %v", step.Channel, err)
+
+		if !channelFrameMatches(t, components, messages, channel, step.Body) {
+			t.Errorf("%s synthetic frame violates every AsyncAPI message variant", step.Channel)
 		}
 	}
+
 	if len(seen) != len(channels) {
 		t.Fatalf("covered %d of %d AsyncAPI channels", len(seen), len(channels))
 	}
 }
 
 func TestProductionSignalingTranscriptsMatchAsyncAPIChannels(t *testing.T) {
+	t.Parallel()
+
 	doc := readYAMLObject(t, filepath.Join(repositoryRoot(t), "api", "asyncapi.yaml"))
-	channels := mapValue(doc["channels"])
+	channels := signalingChannels(mapValue(doc["channels"]))
 	components := mapValue(doc["components"])
 	messages := mapValue(components["messages"])
-	directory := os.DirFS(filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "signaling", "synthetic", "paired"))
+	directory := os.DirFS(
+		filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "signaling", "synthetic", "paired"),
+	)
+
 	seen := map[string]bool{}
-	for _, name := range []string{"push-production.json", "push-heartbeat-production.json", "playback-production.json", "live-production.json"} {
+
+	for _, name := range []string{
+		"push-production.json",
+		"push-heartbeat-production.json",
+		"playback-production.json",
+		"live-production.json",
+	} {
 		data, err := fs.ReadFile(directory, name)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		var transcript syntheticSignalingChannelTranscript
-		if err := json.Unmarshal(data, &transcript); err != nil {
-			t.Fatal(err)
+		{
+			err := json.Unmarshal(data, &transcript)
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
+
 		for _, step := range transcript.Steps {
 			if step.Channel == "" {
 				continue
 			}
+
 			channel := mapValue(channels[step.Channel])
 			if channel == nil {
 				t.Fatalf("unknown channel %q in %s", step.Channel, name)
 			}
+
 			seen[step.Channel] = true
-			var reference string
-			for _, raw := range mapValue(channel["messages"]) {
-				reference = stringValue(mapValue(raw)["$ref"])
-			}
-			const prefix = "#/components/messages/"
-			if !strings.HasPrefix(reference, prefix) {
-				t.Fatalf("invalid message reference %q", reference)
-			}
-			payload := mapValue(mapValue(messages[strings.TrimPrefix(reference, prefix)])["payload"])
-			validator := compileJSONSchema(t, map[string]any{"components": components}, payload)
-			if err := validator.Validate(schemaExampleValue(step.Body)); err != nil {
-				t.Errorf("%s in %s violates AsyncAPI: %v", step.Channel, name, err)
+
+			if !channelFrameMatches(t, components, messages, channel, step.Body) {
+				t.Errorf("%s in %s violates every AsyncAPI message variant", step.Channel, name)
 			}
 		}
 	}
+
 	if len(seen) != len(channels) {
 		t.Fatalf("production transcripts cover %d of %d AsyncAPI channels", len(seen), len(channels))
 	}
@@ -128,97 +180,148 @@ func schemaExampleValue(value any) any {
 		if data == "$epochMillis" {
 			return float64(1700000000000)
 		}
+
 		if strings.HasPrefix(data, "$uuid:") || strings.HasPrefix(data, "$ref:") {
 			return "30f4af1f-b705-42e7-ab2d-baf8bbca9657"
 		}
 	}
+
 	return value
 }
 
 func capturedSignalingMessages(t *testing.T) []capturedSignalingMessage {
 	t.Helper()
 	pattern := filepath.Join(repositoryRoot(t), "tests", "replay", "fixtures", "signaling", "historical", "*.json")
+
 	files, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	sort.Strings(files)
+
 	var messages []capturedSignalingMessage
+
 	for _, path := range files {
 		// #nosec G304 -- files are enumerated from the checked-in capture directory.
 		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		var file capturedSignalingFile
-		if err := json.Unmarshal(data, &file); err != nil {
-			t.Fatalf("parse signaling capture %s: %v", filepath.Base(path), err)
+		{
+			err := json.Unmarshal(data, &file)
+			if err != nil {
+				t.Fatalf("parse signaling capture %s: %v", filepath.Base(path), err)
+			}
 		}
+
 		messages = append(messages, file.Messages...)
 	}
+
 	return messages
 }
 
-func findSignalingMessage(t *testing.T, messages []capturedSignalingMessage, match func(capturedSignalingMessage) bool) map[string]any {
+func findSignalingMessage(
+	t *testing.T,
+	messages []capturedSignalingMessage,
+	match func(capturedSignalingMessage) bool,
+) map[string]any {
 	t.Helper()
+
 	for _, message := range messages {
 		if match(message) {
 			return message.Payload
 		}
 	}
+
 	t.Fatal("matching captured signaling message was not found")
+
 	return nil
 }
 
 func TestRecordedSignalingPayloadsMatchAsyncAPISchemas(t *testing.T) {
+	t.Parallel()
+
 	doc := readYAMLObject(t, filepath.Join(repositoryRoot(t), "api", "asyncapi.yaml"))
 	root := map[string]any{"components": doc["components"]}
 	clientValidator := compileJSONSchema(t, root, map[string]any{"$ref": "#/components/schemas/ClientEnvelope"})
-	serverValidator := compileJSONSchema(t, root, map[string]any{"$ref": "#/components/schemas/ServerEnvelope"})
+	serverValidator := compileJSONSchema(t, root, map[string]any{"$ref": serverEnvelopeSchemaRef})
+
 	messages := capturedSignalingMessages(t)
 	if len(messages) != 497 {
 		t.Fatalf("captured signaling payload count = %d, want 497", len(messages))
 	}
+
 	for index, message := range messages {
 		schemaName := "ClientEnvelope"
-		if message.Direction == "server_to_client" {
-			schemaName = "ServerEnvelope"
-		} else if message.Direction != "client_to_server" {
+		if message.Direction == protocolServerToClientDirection {
+			schemaName = serverEnvelopeSchemaName
+		} else if message.Direction != protocolClientToServerDirection {
 			t.Fatalf("message %d has unknown direction %q", index, message.Direction)
 		}
+
 		method := stringValue(message.Payload["method"])
+
 		validator := clientValidator
-		if schemaName == "ServerEnvelope" {
+		if schemaName == serverEnvelopeSchemaName {
 			validator = serverValidator
 		}
-		if err := validator.Validate(message.Payload); err != nil {
+
+		err := validator.Validate(message.Payload)
+		if err != nil {
 			t.Errorf("message %d (%s, %s) violates %s: %v", index, message.Direction, method, schemaName, err)
 		}
 	}
 }
 
 func TestPTZNegativeVariantsAreRejected(t *testing.T) {
+	t.Parallel()
+
 	doc := readYAMLObject(t, filepath.Join(repositoryRoot(t), "api", "asyncapi.yaml"))
-	validator := compileJSONSchema(t, map[string]any{"components": doc["components"]}, map[string]any{"$ref": "#/components/schemas/ClientEnvelope"})
+	validator := compileJSONSchema(
+		t,
+		map[string]any{"components": doc["components"]},
+		map[string]any{"$ref": "#/components/schemas/ClientEnvelope"},
+	)
 	messages := capturedSignalingMessages(t)
 	continuous := findSignalingMessage(t, messages, func(message capturedSignalingMessage) bool {
-		return message.Direction == "client_to_server" && nestedMap(message.Payload, "body", "command")["method"] == "PTZ.Pan.Continuous"
+		return message.Direction == protocolClientToServerDirection &&
+			nestedMap(message.Payload, "body", "command")["method"] == protocolPanContinuousMethod
 	})
+
 	variants := []struct {
 		name   string
 		mutate func(map[string]any)
 	}{
-		{"missing speed", func(value map[string]any) { delete(nestedMap(value, "body", "command", "params"), "speed") }},
-		{"invalid direction", func(value map[string]any) { nestedMap(value, "body", "command", "params")["direction"] = "UP" }},
-		{"invalid JSON-RPC version", func(value map[string]any) { nestedMap(value, "body", "command")["jsonrpc"] = "1.0" }},
+		{
+			"missing speed",
+			func(value map[string]any) { delete(nestedMap(value, "body", "command", "params"), "speed") },
+		},
+		{
+			"invalid direction",
+			func(value map[string]any) { nestedMap(value, "body", "command", "params")["direction"] = "UP" },
+		},
+		{
+			"invalid JSON-RPC version",
+			func(value map[string]any) { nestedMap(value, "body", "command")["jsonrpc"] = "1.0" },
+		},
 		{"missing session id", func(value map[string]any) { delete(nestedMap(value, "body"), "session_id") }},
-		{"invalid PTZ version", func(value map[string]any) { nestedMap(value, "body", "command", "params")["version"] = "1" }},
+		{
+			"invalid PTZ version",
+			func(value map[string]any) { nestedMap(value, "body", "command", "params")["version"] = "1" },
+		},
 	}
 	for _, variant := range variants {
 		t.Run(variant.name, func(t *testing.T) {
+			t.Parallel()
+
 			value := mapValue(cloneJSON(t, continuous))
 			variant.mutate(value)
-			if err := validator.Validate(value); err == nil {
+
+			err := validator.Validate(value)
+			if err == nil {
 				t.Fatal("invalid PTZ payload was accepted")
 			}
 		})
@@ -226,13 +329,17 @@ func TestPTZNegativeVariantsAreRejected(t *testing.T) {
 }
 
 func TestPTZSpeedBoundsAndExtensibleNotifications(t *testing.T) {
+	t.Parallel()
+
 	doc := readYAMLObject(t, filepath.Join(repositoryRoot(t), "api", "asyncapi.yaml"))
 	root := map[string]any{"components": doc["components"]}
 	clientValidator := compileJSONSchema(t, root, map[string]any{"$ref": "#/components/schemas/ClientEnvelope"})
-	serverValidator := compileJSONSchema(t, root, map[string]any{"$ref": "#/components/schemas/ServerEnvelope"})
+	serverValidator := compileJSONSchema(t, root, map[string]any{"$ref": serverEnvelopeSchemaRef})
 	messages := capturedSignalingMessages(t)
+
 	continuous := findSignalingMessage(t, messages, func(message capturedSignalingMessage) bool {
-		return message.Direction == "client_to_server" && nestedMap(message.Payload, "body", "command")["method"] == "PTZ.Pan.Continuous"
+		return message.Direction == protocolClientToServerDirection &&
+			nestedMap(message.Payload, "body", "command")["method"] == protocolPanContinuousMethod
 	})
 	for _, testCase := range []struct {
 		speed    float64
@@ -242,9 +349,16 @@ func TestPTZSpeedBoundsAndExtensibleNotifications(t *testing.T) {
 	} {
 		value := mapValue(cloneJSON(t, continuous))
 		nestedMap(value, "body", "command", "params")["speed"] = testCase.speed
+
 		err := clientValidator.Validate(value)
 		if (err == nil) != testCase.accepted {
-			t.Errorf("PTZ speed %v: accepted=%t, want %t (error %v)", testCase.speed, err == nil, testCase.accepted, err)
+			t.Errorf(
+				"PTZ speed %v: accepted=%t, want %t (error %v)",
+				testCase.speed,
+				err == nil,
+				testCase.accepted,
+				err,
+			)
 		}
 	}
 
@@ -252,34 +366,51 @@ func TestPTZSpeedBoundsAndExtensibleNotifications(t *testing.T) {
 		return stringValue(message.Payload["method"]) == "push_event"
 	})
 	future := mapValue(cloneJSON(t, event))
+
 	nestedMap(future, "body")["notification_type"] = "future_event"
-	if err := serverValidator.Validate(future); err != nil {
+
+	err := serverValidator.Validate(future)
+	if err != nil {
 		t.Fatalf("future notification type was rejected: %v", err)
 	}
+
 	field := nestedMap(doc, "components", "schemas", "PushEventBody", "properties", "notification_type")
 	if !containsString(sliceValue(field["x-extensible-enum"]), "shoulder_tap") {
 		t.Fatal("known notification type is absent from x-extensible-enum")
 	}
+
 	if _, exists := field["enum"]; exists {
 		t.Fatal("extensible notification type must not use a closed enum")
 	}
 }
 
 func TestRPCResultAndErrorAreExclusive(t *testing.T) {
+	t.Parallel()
+
 	doc := readYAMLObject(t, filepath.Join(repositoryRoot(t), "api", "asyncapi.yaml"))
-	validator := compileJSONSchema(t, map[string]any{"components": doc["components"]}, map[string]any{"$ref": "#/components/schemas/ServerEnvelope"})
+	validator := compileJSONSchema(
+		t,
+		map[string]any{"components": doc["components"]},
+		map[string]any{"$ref": serverEnvelopeSchemaRef},
+	)
 	messages := capturedSignalingMessages(t)
 	result := findSignalingMessage(t, messages, func(message capturedSignalingMessage) bool {
-		return message.Direction == "server_to_client" && mapValue(nestedMap(message.Payload, "body", "command"))["result"] != nil
+		return message.Direction == protocolServerToClientDirection &&
+			mapValue(nestedMap(message.Payload, "body", "command"))["result"] != nil
 	})
 	withError := mapValue(cloneJSON(t, result))
 	command := nestedMap(withError, "body", "command")
 	command["error"] = map[string]any{"code": -32602, "message": "synthetic error"}
-	if err := validator.Validate(withError); err == nil {
+
+	err := validator.Validate(withError)
+	if err == nil {
 		t.Fatal("RPC command with both result and error was accepted")
 	}
+
 	delete(command, "result")
-	if err := validator.Validate(withError); err != nil {
+
+	err = validator.Validate(withError)
+	if err != nil {
 		t.Fatalf("RPC error command was rejected: %v", err)
 	}
 }

@@ -1,33 +1,65 @@
-package webrtc
+package webrtc_test
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/pion/sdp/v3"
+	"github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 )
 
-const sessionHeader = "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE a b\r\n"
+const (
+	sessionHeader           = "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE a b\r\n"
+	sdpSendReceiveDirection = "sendrecv"
+	sdpSendOnlyDirection    = "sendonly"
+	sdpRecvOnlyDirection    = "recvonly"
+	sdpInactiveDirection    = "inactive"
+)
 
 func audio(mid, dir string) string {
-	return "m=audio 9 UDP/TLS/RTP/SAVPF 111\r\na=mid:" + mid + "\r\na=" + dir + "\r\na=rtpmap:111 opus/48000/2\r\na=x-fixture:keep\r\n"
+	return "m=audio 9 UDP/TLS/RTP/SAVPF 111\r\na=mid:" + mid +
+		"\r\na=" + dir +
+		"\r\na=rtpmap:111 opus/48000/2\r\na=x-fixture:keep\r\n"
+}
+
+func mediaDirection(description *sdp.SessionDescription, media *sdp.MediaDescription) string {
+	for _, attributes := range [][]sdp.Attribute{media.Attributes, description.Attributes} {
+		for _, attribute := range attributes {
+			switch attribute.Key {
+			case sdpSendReceiveDirection, sdpSendOnlyDirection, sdpRecvOnlyDirection, sdpInactiveDirection:
+				return attribute.Key
+			}
+		}
+	}
+
+	return sdpSendReceiveDirection
 }
 
 func TestNormalizeAnswerMatchesMIDNotKind(t *testing.T) {
-	offer := sessionHeader + audio("a", "recvonly") + audio("b", "sendrecv")
-	answer := sessionHeader + audio("a", "sendrecv") + audio("b", "sendrecv")
-	got, err := NormalizeAnswer(offer, answer)
+	t.Parallel()
+
+	offer := sessionHeader + audio("a", sdpRecvOnlyDirection) + audio("b", sdpSendReceiveDirection)
+	answer := sessionHeader + audio("a", sdpSendReceiveDirection) + audio("b", sdpSendReceiveDirection)
+
+	got, err := webrtc.NormalizeAnswer(offer, answer)
 	if err != nil {
 		t.Fatal(err)
 	}
-	d, err := ParseSDP(got)
+
+	description, err := webrtc.ParseSDP(got)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if direction(d, d.MediaDescriptions[0]) != "sendonly" || direction(d, d.MediaDescriptions[1]) != "sendrecv" {
+
+	if mediaDirection(description, description.MediaDescriptions[0]) != sdpSendOnlyDirection ||
+		mediaDirection(description, description.MediaDescriptions[1]) != sdpSendReceiveDirection {
 		t.Fatal("corrected wrong media section")
 	}
+
 	if strings.Count(got, "a=x-fixture:keep") != 2 {
 		t.Fatal("lost extension")
 	}
+
 	for _, test := range []struct{ name, value string }{
 		{"duplicate-mid", strings.Replace(offer, "a=mid:b", "a=mid:a", 1)},
 		{"unknown-bundle", strings.Replace(offer, "BUNDLE a b", "BUNDLE a c", 1)},
@@ -36,82 +68,151 @@ func TestNormalizeAnswerMatchesMIDNotKind(t *testing.T) {
 		{"invalid", "secret-value"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := ParseSDP(test.value); err == nil {
-				t.Fatal("accepted invalid SDP")
+			t.Parallel()
+
+			{
+				_, err := webrtc.ParseSDP(test.value)
+				if err == nil {
+					t.Fatal("accepted invalid SDP")
+				}
 			}
 		})
 	}
 }
 
 func TestAnswerOrderRejectionAndICE(t *testing.T) {
-	offer := sessionHeader + audio("a", "recvonly") + audio("b", "sendrecv")
-	if _, err := NormalizeAnswer(offer, sessionHeader+audio("b", "sendrecv")+audio("a", "sendrecv")); err == nil {
-		t.Fatal("accepted reordered media")
+	t.Parallel()
+
+	offer := sessionHeader + audio("a", sdpRecvOnlyDirection) + audio("b", sdpSendReceiveDirection)
+	{
+		_, err := webrtc.NormalizeAnswer(
+			offer,
+			sessionHeader+audio("b", sdpSendReceiveDirection)+audio("a", sdpSendReceiveDirection),
+		)
+		if err == nil {
+			t.Fatal("accepted reordered media")
+		}
 	}
-	answer := sessionHeader + audio("a", "sendonly") + audio("b", "sendrecv")
-	got, err := NormalizeAnswer(offer, answer)
+
+	answer := sessionHeader + audio("a", sdpSendOnlyDirection) + audio("b", sdpSendReceiveDirection)
+
+	got, err := webrtc.NormalizeAnswer(offer, answer)
+
 	if err != nil || got != answer {
 		t.Fatal("changed valid answer", err)
 	}
-	d, _ := ParseSDP(offer)
+
+	direction, _ := webrtc.ParseSDP(offer)
 	for _, tc := range []struct {
 		mid   string
 		index int
 		valid bool
 	}{{"a", 0, true}, {"", 1, true}, {"b", 0, false}, {"a", -1, false}, {"a", 2, false}} {
-		if err := ValidateICE(d, tc.mid, tc.index); (err == nil) != tc.valid {
+		err := webrtc.ValidateICE(direction, tc.mid, tc.index)
+		if (err == nil) != tc.valid {
 			t.Errorf("mid=%q index=%d err=%v", tc.mid, tc.index, err)
 		}
 	}
 }
 
 func TestRejectedAndSessionDirection(t *testing.T) {
-	offer := sessionHeader + audio("a", "recvonly") + audio("b", "recvonly")
-	answer := sessionHeader + "a=sendrecv\r\n" + strings.Replace(audio("a", "sendrecv"), "a=sendrecv\r\n", "", 1) + strings.Replace(audio("b", "sendrecv"), "m=audio 9", "m=audio 0", 1)
-	got, err := NormalizeAnswer(offer, answer)
+	t.Parallel()
+
+	offer := sessionHeader + audio("a", sdpRecvOnlyDirection) + audio("b", sdpRecvOnlyDirection)
+	answer := sessionHeader + "a=sendrecv\r\n" + strings.Replace(
+		audio("a", "sendrecv"),
+		"a=sendrecv\r\n",
+		"",
+		1,
+	) + strings.Replace(
+		audio("b", "sendrecv"),
+		"m=audio 9",
+		"m=audio 0",
+		1,
+	)
+
+	got, err := webrtc.NormalizeAnswer(offer, answer)
 	if err != nil {
 		t.Fatal(err)
 	}
-	d, _ := ParseSDP(got)
-	if direction(d, d.MediaDescriptions[0]) != "sendonly" || direction(d, d.MediaDescriptions[1]) != "sendrecv" {
+
+	d, _ := webrtc.ParseSDP(got)
+	if mediaDirection(d, d.MediaDescriptions[0]) != sdpSendOnlyDirection ||
+		mediaDirection(d, d.MediaDescriptions[1]) != sdpSendReceiveDirection {
 		t.Fatal("wrong inherited/rejected direction")
 	}
 }
 
 func FuzzParseSDP(f *testing.F) {
-	f.Add(sessionHeader + audio("a", "recvonly") + audio("b", "sendrecv"))
+	f.Add(sessionHeader + audio("a", sdpRecvOnlyDirection) + audio("b", sdpSendReceiveDirection))
 	f.Add("not-sdp")
-	f.Fuzz(func(t *testing.T, raw string) { _, _ = ParseSDP(raw) })
+	f.Fuzz(func(t *testing.T, raw string) { _, _ = webrtc.ParseSDP(raw) })
 }
 
 func TestAnswerDirectionMatrix(t *testing.T) {
+	t.Parallel()
+
 	header := strings.Replace(sessionHeader, "BUNDLE a b", "BUNDLE a", 1)
-	for _, offerDirection := range []string{"sendrecv", "sendonly", "recvonly", "inactive"} {
-		for _, answerDirection := range []string{"sendrecv", "sendonly", "recvonly", "inactive"} {
+
+	directions := []string{
+		sdpSendReceiveDirection,
+		sdpSendOnlyDirection,
+		sdpRecvOnlyDirection,
+		sdpInactiveDirection,
+	}
+	for _, offerDirection := range directions {
+		for _, answerDirection := range directions {
 			t.Run(offerDirection+"/"+answerDirection, func(t *testing.T) {
-				allowed := offerDirection == "sendrecv" || answerDirection == "inactive" || offerDirection == "sendonly" && answerDirection == "recvonly" || offerDirection == "recvonly" && (answerDirection == "sendonly" || answerDirection == "sendrecv")
-				_, err := NormalizeAnswer(header+audio("a", offerDirection), header+audio("a", answerDirection))
+				t.Parallel()
+
+				allowed := offerDirection == sdpSendReceiveDirection || answerDirection == sdpInactiveDirection ||
+					offerDirection == sdpSendOnlyDirection && answerDirection == sdpRecvOnlyDirection ||
+					offerDirection == sdpRecvOnlyDirection &&
+						(answerDirection == sdpSendOnlyDirection || answerDirection == sdpSendReceiveDirection)
+
+				_, err := webrtc.NormalizeAnswer(
+					header+audio("a", offerDirection),
+					header+audio("a", answerDirection),
+				)
+
 				if (err == nil) != allowed {
 					t.Fatalf("allowed=%v error=%v", allowed, err)
 				}
 			})
 		}
 	}
-	rejected := strings.Replace(header+audio("a", "sendrecv"), "m=audio 9", "m=audio 0", 1)
-	if _, err := NormalizeAnswer(rejected, header+audio("a", "sendrecv")); err == nil {
-		t.Fatal("answer reactivated a rejected stream")
+
+	rejected := strings.Replace(header+audio("a", sdpSendReceiveDirection), "m=audio 9", "m=audio 0", 1)
+	{
+		_, err := webrtc.NormalizeAnswer(rejected, header+audio("a", sdpSendReceiveDirection))
+		if err == nil {
+			t.Fatal("answer reactivated a rejected stream")
+		}
 	}
-	if _, err := NormalizeAnswer(rejected, rejected); err != nil {
-		t.Fatal(err)
+
+	{
+		_, err := webrtc.NormalizeAnswer(rejected, rejected)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	if _, err := ParseSDP(header + "a=sendonly\r\na=recvonly\r\n" + audio("a", "sendrecv")); err == nil {
-		t.Fatal("accepted conflicting session directions")
+
+	{
+		_, err := webrtc.ParseSDP(header + "a=sendonly\r\na=recvonly\r\n" + audio("a", sdpSendReceiveDirection))
+		if err == nil {
+			t.Fatal("accepted conflicting session directions")
+		}
 	}
 }
 
 func TestSDPRejectsMultipleMIDAttributesInOneSection(t *testing.T) {
-	raw := strings.Replace(sessionHeader, "BUNDLE a b", "BUNDLE a", 1) + audio("a", "recvonly") + "a=mid:b\r\n"
-	if _, err := ParseSDP(raw); err == nil {
-		t.Fatal("accepted ambiguous MID identity")
+	t.Parallel()
+
+	raw := strings.Replace(sessionHeader, "BUNDLE a b", "BUNDLE a", 1) + audio("a", sdpRecvOnlyDirection) + "a=mid:b\r\n"
+	{
+		_, err := webrtc.ParseSDP(raw)
+		if err == nil {
+			t.Fatal("accepted ambiguous MID identity")
+		}
 	}
 }

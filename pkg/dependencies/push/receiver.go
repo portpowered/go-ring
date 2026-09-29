@@ -2,23 +2,20 @@
 package push
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
-	"strings"
-	"sync/atomic"
 
-	pushreceiver "github.com/crow-misia/go-push-receiver"
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/ringerrors"
+	pushreceiver "github.com/portpowered/go-ring/third_party/go-push-receiver"
 )
 
 const (
 	eventBufferSize = 16
-	apiKey          = "AIzaSyCv-hdFBmmdBBJadNy-TFwB-xN_H5m3Bk8" // #nosec G101 -- public Android app API key required by FCM registration.
-	projectID       = "ring-17770"
-	appID           = "1:876313859327:android:e10ec6ddb3c81f39"
+	apiKey          = protocol.FCMAPIKey // #nosec G101 -- public FCM client key.
+	projectID       = protocol.FCMProjectID
+	appID           = protocol.FCMApplicationID
 )
 
 type Kind string
@@ -39,87 +36,83 @@ type Event struct {
 	Err         error
 }
 
-type diagnosticTransport struct {
-	failed atomic.Value
-	next   http.RoundTripper
-}
-
-// NewRegistrationTransport applies the compatibility rules required by Ring's
-// FCM registration before handing a request to the supplied transport.
-func NewRegistrationTransport(next http.RoundTripper) http.RoundTripper {
-	if next == nil {
-		next = http.DefaultTransport
-	}
-	return &diagnosticTransport{next: next}
-}
-
-func (t *diagnosticTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.URL.Host == "fcmregistrations.googleapis.com" {
-		req.Header.Set("x-goog-firebase-installations-auth", strings.TrimPrefix(req.Header.Get("x-goog-firebase-installations-auth"), "FIS "))
-		if err := omitDefaultVAPID(req); err != nil {
-			return nil, err
-		}
-	}
-	response, err := t.next.RoundTrip(req)
-	if response != nil && response.StatusCode >= http.StatusBadRequest {
-		t.failed.Store(req.URL.Host + req.URL.Path)
-	} else if err == nil {
-		t.failed.Store("")
-	}
-	return response, err
-}
-
-// FCM rejects the default Web Push key when it is sent explicitly. The
-// upstream Go receiver always includes it; the reference receiver omits it.
-func omitDefaultVAPID(req *http.Request) error {
-	data, err := io.ReadAll(req.Body)
-	if err != nil {
-		return err
-	}
-	var body struct {
-		Web map[string]json.RawMessage `json:"web"`
-	}
-	if err = json.Unmarshal(data, &body); err != nil {
-		return err
-	}
-	delete(body.Web, "applicationPubKey")
-	data, err = json.Marshal(body)
-	if err != nil {
-		return err
-	}
-	req.Body = io.NopCloser(bytes.NewReader(data))
-	req.ContentLength = int64(len(data))
-	return nil
-}
-
 // Start opens one FCM receiver. Credentials are caller-owned and can be
 // persisted between runs; the receiver itself owns no Ring account state.
 func Start(ctx context.Context, saved json.RawMessage) (<-chan Event, error) {
-	options := make([]pushreceiver.ClientOption, 0, 1)
+	return StartWithHTTPTransport(ctx, saved, nil)
+}
+
+// StartWithHTTPTransport opens one FCM receiver using the supplied HTTP
+// transport. A nil transport uses the standard HTTP transport.
+func StartWithHTTPTransport(
+	ctx context.Context,
+	saved json.RawMessage,
+	transport http.RoundTripper,
+) (<-chan Event, error) {
+	return StartWithTransports(ctx, saved, transport, nil)
+}
+
+// StartWithTransports opens the FCM receiver with injectable HTTP and MCS
+// transports. The dial context function must return a connection ready for
+// MCS frames; nil uses the receiver's TLS dialer.
+func StartWithTransports(
+	ctx context.Context,
+	saved json.RawMessage,
+	transport http.RoundTripper,
+	dialContext DialContextFunc,
+) (<-chan Event, error) {
+	options := make([]pushreceiver.ClientOption, 0, 2)
+
 	if len(saved) > 0 {
 		var credentials pushreceiver.FCMCredentials
-		if err := json.Unmarshal(saved, &credentials); err != nil {
-			return nil, err
+
+		err := json.Unmarshal(saved, &credentials)
+		if err != nil {
+			return nil, ringerrors.NewBadRequestError("decode saved FCM credentials", err)
 		}
+
 		if credentials.Token == "" {
 			return nil, ringerrors.NewBadRequestError("saved FCM credentials have no token", nil)
 		}
+
 		options = append(options, pushreceiver.WithCreds(&credentials))
 	}
-	diagnostics := NewRegistrationTransport(nil).(*diagnosticTransport)
+
+	diagnostics := newDiagnosticTransport(transport)
 	options = append(options, pushreceiver.WithHTTPClient(&http.Client{Transport: diagnostics}))
-	client := pushreceiver.New(&pushreceiver.Config{ApiKey: apiKey, ProjectID: projectID, AppID: appID}, options...)
+
+	if dialContext != nil {
+		options = append(options, pushreceiver.WithMCSDialContext(pushreceiver.MCSDialContext(dialContext)))
+	}
+
+	client := pushreceiver.New(&pushreceiver.Config{
+		ApiKey:    apiKey,
+		ProjectID: projectID,
+		AppID:     appID,
+		VapidKey:  protocol.FCMDefaultVAPIDKey,
+	}, options...)
 	out := make(chan Event, eventBufferSize)
+
 	go client.Subscribe(ctx)
 	go func() {
 		defer close(out)
+
 		if len(saved) > 0 {
 			var credentials pushreceiver.FCMCredentials
+
 			_ = json.Unmarshal(saved, &credentials)
-			if !send(ctx, out, Event{Kind: KindCredentials, Token: credentials.Token, Credentials: saved}) {
+
+			if !send(ctx, out, Event{
+				Kind:        KindCredentials,
+				Token:       credentials.Token,
+				Credentials: saved,
+				Data:        nil,
+				Err:         nil,
+			}) {
 				return
 			}
 		}
+
 		for raw := range client.Events {
 			event, ok := TranslateEvent(raw)
 			if event.Err != nil {
@@ -127,12 +120,21 @@ func Start(ctx context.Context, saved json.RawMessage) (<-chan Event, error) {
 					event.Err = ringerrors.NewConnectionError("FCM "+stage+" failed", event.Err)
 				}
 			}
+
 			if ok && !send(ctx, out, event) {
 				return
 			}
 		}
-		_ = send(ctx, out, Event{Kind: KindClosed})
+
+		_ = send(ctx, out, Event{
+			Kind:        KindClosed,
+			Token:       "",
+			Credentials: nil,
+			Data:        nil,
+			Err:         nil,
+		})
 	}()
+
 	return out, nil
 }
 
@@ -150,18 +152,61 @@ func TranslateEvent(raw pushreceiver.Event) (Event, bool) {
 	switch value := raw.(type) {
 	case *pushreceiver.UpdateCredentialsEvent:
 		data, err := json.Marshal(value.Credentials)
-		return Event{Kind: KindCredentials, Token: value.Credentials.Token, Credentials: data, Err: err}, true
+
+		return Event{
+			Kind:        KindCredentials,
+			Token:       value.Credentials.Token,
+			Credentials: data,
+			Data:        nil,
+			Err:         err,
+		}, true
 	case *pushreceiver.ConnectedEvent:
-		return Event{Kind: KindConnected}, true
+		return Event{
+			Kind:        KindConnected,
+			Token:       "",
+			Credentials: nil,
+			Data:        nil,
+			Err:         nil,
+		}, true
 	case *pushreceiver.MessageEvent:
-		return Event{Kind: KindMessage, Data: value.Data}, true
+		return Event{
+			Kind:        KindMessage,
+			Token:       "",
+			Credentials: nil,
+			Data:        value.Data,
+			Err:         nil,
+		}, true
 	case *pushreceiver.RetryEvent:
-		return Event{Kind: KindRetry, Err: value.ErrorObj}, true
+		return Event{
+			Kind:        KindRetry,
+			Token:       "",
+			Credentials: nil,
+			Data:        nil,
+			Err:         value.ErrorObj,
+		}, true
 	case *pushreceiver.UnauthorizedError:
-		return Event{Kind: KindRetry, Err: value.ErrorObj}, true
+		return Event{
+			Kind:        KindRetry,
+			Token:       "",
+			Credentials: nil,
+			Data:        nil,
+			Err:         value.ErrorObj,
+		}, true
 	case *pushreceiver.DisconnectedEvent:
-		return Event{Kind: KindClosed}, true
+		return Event{
+			Kind:        KindClosed,
+			Token:       "",
+			Credentials: nil,
+			Data:        nil,
+			Err:         nil,
+		}, true
 	default:
-		return Event{}, false
+		return Event{
+			Kind:        "",
+			Token:       "",
+			Credentials: nil,
+			Data:        nil,
+			Err:         nil,
+		}, false
 	}
 }

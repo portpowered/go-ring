@@ -10,11 +10,15 @@ import (
 	"testing"
 
 	"github.com/portpowered/go-ring/internal/requestauth"
+	"github.com/portpowered/go-ring/pkg/generatedhttp"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 func authenticatedContext() context.Context {
-	return requestauth.WithAccount(context.Background(), requestauth.Account{AccessToken: "test-access-token", HardwareID: "test-hardware"})
+	return requestauth.WithAccount(
+		context.Background(),
+		requestauth.Account{AccessToken: "test-access-token", HardwareID: "test-hardware"},
+	)
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -31,9 +35,14 @@ func (b *trackedBody) Read(p []byte) (int, error) {
 	if b.readErr != nil {
 		return 0, b.readErr
 	}
+
 	return b.reader.Read(p)
 }
-func (b *trackedBody) Close() error { b.closed = true; return nil }
+func (b *trackedBody) Close() error {
+	b.closed = true
+
+	return nil
+}
 
 func testResponse(req *http.Request, status int, body io.ReadCloser) *http.Response {
 	return &http.Response{
@@ -45,29 +54,70 @@ func testResponse(req *http.Request, status int, body io.ReadCloser) *http.Respo
 	}
 }
 
-func TestDoRequestRetryRewindsJSONBodyAndClosesDiscardedResponse(t *testing.T) {
-	var calls int
-	var bodies []string
-	var firstResponse *trackedBody
+func listDevicesRequest(t *testing.T, server string) *http.Request {
+	t.Helper()
+
+	request, err := generatedhttp.NewListDevicesRequest(generatedServerBase(server))
+	if err != nil {
+		t.Fatalf("build generated list devices request: %v", err)
+	}
+
+	return request
+}
+
+func rebootRequest(t *testing.T, server string, deviceID int64) *http.Request {
+	t.Helper()
+
+	request, err := generatedhttp.NewSendDeviceCommandRequest(
+		generatedServerBase(server),
+		deviceID,
+		generatedhttp.DeviceCommand{CommandName: generatedhttp.Reboot},
+	)
+	if err != nil {
+		t.Fatalf("build generated reboot request: %v", err)
+	}
+
+	return request
+}
+
+func TestRetryRewindsGeneratedRequestBodyAndClosesDiscardedResponse(t *testing.T) {
+	t.Parallel()
+
+	var (
+		calls         int
+		bodies        []string
+		firstResponse *trackedBody
+	)
+
 	transport := roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		calls++
-		var body []byte
-		var err error
+
+		var (
+			body []byte
+			err  error
+		)
+
 		if req.Body != nil {
 			body, err = io.ReadAll(req.Body)
 			_ = req.Body.Close()
 		}
+
 		if err != nil {
-			return nil, err
+			return nil, ringapimodels.NewNetworkError("test transport could not read outgoing request body", err)
 		}
+
 		bodies = append(bodies, string(body))
-		if req.URL.String() != "https://api.example.test/v3/devices" || req.Method != http.MethodGet {
+
+		if req.URL.String() != "https://api.example.test/device_info/v3/devices" || req.Method != http.MethodGet {
 			t.Errorf("unexpected request target: %s %s", req.Method, req.URL)
 		}
+
 		if calls == 1 {
 			firstResponse = &trackedBody{reader: strings.NewReader("busy")}
+
 			return testResponse(req, http.StatusServiceUnavailable, firstResponse), nil
 		}
+
 		return testResponse(req, http.StatusNoContent, io.NopCloser(strings.NewReader(""))), nil
 	})
 	httpClient := &http.Client{Transport: transport}
@@ -76,193 +126,254 @@ func TestDoRequestRetryRewindsJSONBodyAndClosesDiscardedResponse(t *testing.T) {
 		WithEndpointBases("https://api.example.test", "https://oauth.example.test"),
 		WithUserAgent("coverage-client/1"),
 	)
-	resp, err := client.doRequest(authenticatedContext(), http.MethodGet, "/v3/devices", map[string]any{"enabled": false, "name": "lamp"})
-	if err != nil {
-		t.Fatalf("doRequest() error = %v", err)
+
+	request := listDevicesRequest(t, "https://api.example.test")
+	request.Body = io.NopCloser(strings.NewReader(`{"enabled":false,"name":"lamp"}`))
+	request.ContentLength = int64(len(`{"enabled":false,"name":"lamp"}`))
+	request.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(strings.NewReader(`{"enabled":false,"name":"lamp"}`)), nil
 	}
+
+	resp, err := client.sendWithRetry(authenticatedContext(), request)
+	if err != nil {
+		t.Fatalf("sendWithRetry() error = %v", err)
+	}
+
 	_ = resp.Body.Close()
+
 	if calls != 2 {
 		t.Fatalf("RoundTrip calls = %d; want 2", calls)
 	}
+
 	if len(bodies) != 2 || bodies[0] != bodies[1] || bodies[0] != `{"enabled":false,"name":"lamp"}` {
 		t.Fatalf("retry request bodies = %#v", bodies)
 	}
+
 	if firstResponse == nil || !firstResponse.closed {
 		t.Fatal("discarded 503 response body was not closed before retry")
 	}
+
 	if client.HTTPClient() != httpClient {
 		t.Fatal("custom HTTP client was not retained")
 	}
 }
 
-func TestDoRequestDoesNotRetryMutation(t *testing.T) {
+func TestGeneratedMutationIsNotRetried(t *testing.T) {
+	t.Parallel()
+
 	t.Run("server error", func(t *testing.T) {
+		t.Parallel()
+
 		calls := 0
-		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			calls++
-			return testResponse(req, http.StatusInternalServerError, io.NopCloser(strings.NewReader("busy"))), nil
-		})}))
-		resp, err := client.doRequest(authenticatedContext(), http.MethodPatch, "/device", map[string]bool{"enabled": false})
-		if err != nil {
-			t.Fatalf("doRequest() error = %v", err)
+		client := NewClient(
+			WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				calls++
+
+				return testResponse(req, http.StatusInternalServerError, io.NopCloser(strings.NewReader("busy"))), nil
+			})}),
+		)
+
+		err := client.doGeneratedJSON(authenticatedContext(), rebootRequest(t, "https://api.ring.com", 12345), nil)
+		if err == nil {
+			t.Fatal("expected the generated mutation request to report the server error")
 		}
-		_ = resp.Body.Close()
+
 		if calls != 1 {
 			t.Fatalf("PATCH attempts = %d, want 1", calls)
 		}
 	})
 
 	t.Run("transport failure", func(t *testing.T) {
+		t.Parallel()
+
 		calls := 0
-		transportErr := errors.New("connection lost")
-		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
-			calls++
-			return nil, transportErr
-		})}))
-		resp, err := client.doRequest(authenticatedContext(), http.MethodPost, "/command", map[string]string{"command": "reboot"})
-		if resp != nil && resp.Body != nil {
-			_ = resp.Body.Close()
-		}
+		transportErr := restTestError("connection lost")
+		client := NewClient(
+			WithHTTPClient(&http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				calls++
+
+				return nil, transportErr
+			})}),
+		)
+
+		err := client.doGeneratedJSON(authenticatedContext(), rebootRequest(t, "https://api.ring.com", 12345), nil)
+
 		if !ringapimodels.IsNetworkError(err) || !errors.Is(err, transportErr) || calls != 1 {
-			t.Fatalf("POST error = %v, attempts = %d; want wrapped transport error and one attempt", err, calls)
+			t.Fatalf("PATCH error = %v, attempts = %d; want wrapped transport error and one attempt", err, calls)
 		}
 	})
 }
 
-func TestDoRequestCancellationDuringRetryBackoff(t *testing.T) {
+func TestGeneratedGetRetryCancellationDuringBackoff(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(authenticatedContext())
 	defer cancel()
+
 	calls := 0
 	discarded := &trackedBody{reader: strings.NewReader("busy")}
-	client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		calls++
-		cancel()
-		return testResponse(req, http.StatusInternalServerError, discarded), nil
-	})}))
-	resp, err := client.doRequest(ctx, http.MethodGet, "/retry", nil)
-	if resp != nil && resp.Body != nil {
-		_ = resp.Body.Close()
-	}
+	client := NewClient(
+		WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			calls++
+			cancel()
+
+			return testResponse(req, http.StatusInternalServerError, discarded), nil
+		})}),
+	)
+
+	err := client.doGeneratedJSON(ctx, listDevicesRequest(t, "https://api.ring.com"), nil)
+
 	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("doRequest() error = %v, want context cancellation", err)
+		t.Fatalf("generated GET error = %v, want context cancellation", err)
 	}
+
 	if calls != 1 || !discarded.closed {
 		t.Fatalf("RoundTrip calls = %d, response closed = %v", calls, discarded.closed)
 	}
 }
 
 func TestConfiguredTokenGetterErrorStopsBeforeSendingRequest(t *testing.T) {
+	t.Parallel()
+
 	calls := 0
 	client := NewClient(
 		WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 			calls++
+
 			return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader("{}"))), nil
 		})}),
 	)
-	resp, err := client.doRequest(context.Background(), http.MethodGet, "/requires-auth", nil)
-	if resp != nil && resp.Body != nil {
-		_ = resp.Body.Close()
-	}
+
+	err := client.doGeneratedJSON(context.Background(), listDevicesRequest(t, "https://api.ring.com"), nil)
+
 	if !ringapimodels.IsTokenError(err) || calls != 0 {
-		t.Fatalf("doRequest() error = %v, transport calls = %d", err, calls)
+		t.Fatalf("generated request error = %v, transport calls = %d", err, calls)
 	}
 }
 
 func TestWithBaseURIAndDirectTokenConfigureRequest(t *testing.T) {
+	t.Parallel()
+
 	var observed *http.Request
+
 	httpClient := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		observed = req.Clone(req.Context())
+
 		return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader("{}"))), nil
 	})}
 	client := NewClient(WithHTTPClient(httpClient), WithBaseURI("https://region.example.test/api"))
-	resp, err := client.doRequest(authenticatedContext(), http.MethodGet, "/devices", nil)
+
+	err := client.doGeneratedJSON(authenticatedContext(), listDevicesRequest(t, client.baseURI), nil)
 	if err != nil {
-		t.Fatalf("doRequest() error = %v", err)
+		t.Fatalf("generated request error = %v", err)
 	}
-	_ = resp.Body.Close()
-	if observed == nil || observed.URL.String() != "https://region.example.test/api/devices" || observed.Header.Get("Authorization") != "Bearer test-access-token" {
-		t.Fatalf("observed request = %#v", observed)
+
+	if observed == nil || observed.URL.String() != "https://region.example.test/api/device_info/v3/devices" ||
+		observed.Header.Get("Authorization") != "Bearer test-access-token" {
+		t.Fatalf("observed request URL=%v authorization=%q", observed.URL, observed.Header.Get("Authorization"))
 	}
 }
 
-func TestDoJSONRequestDecodesAndPreservesHTTPFailure(t *testing.T) {
+func TestDoGeneratedJSONDecodesAndPreservesHTTPFailure(t *testing.T) {
+	t.Parallel()
+
 	t.Run("decodes success", func(t *testing.T) {
-		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader(`{"count":3,"items":["a","b"]}`))), nil
-		})}))
+		t.Parallel()
+
+		client := NewClient(
+			WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				return testResponse(
+					req,
+					http.StatusOK,
+					io.NopCloser(strings.NewReader(`{"count":3,"items":["a","b"]}`)),
+				), nil
+			})}),
+		)
+
 		var result struct {
 			Count int      `json:"count"`
 			Items []string `json:"items"`
 		}
-		if err := client.doJSONRequest(authenticatedContext(), http.MethodGet, "/shape", nil, &result); err != nil {
-			t.Fatalf("doJSONRequest() error = %v", err)
+
+		err := client.doGeneratedJSON(authenticatedContext(), listDevicesRequest(t, client.baseURI), &result)
+		if err != nil {
+			t.Fatalf("doGeneratedJSON() error = %v", err)
 		}
+
 		if result.Count != 3 || len(result.Items) != 2 {
 			t.Fatalf("decoded result = %#v", result)
 		}
 	})
 
 	t.Run("keeps status and body for caller inspection", func(t *testing.T) {
+		t.Parallel()
+
 		body := `{"error":"not allowed"}`
-		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			return testResponse(req, http.StatusForbidden, io.NopCloser(strings.NewReader(body))), nil
-		})}))
-		err := client.doJSONRequest(authenticatedContext(), http.MethodGet, "/private", nil, nil)
+		client := NewClient(
+			WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				return testResponse(req, http.StatusForbidden, io.NopCloser(strings.NewReader(body))), nil
+			})}),
+		)
+		err := client.doGeneratedJSON(authenticatedContext(), listDevicesRequest(t, client.baseURI), nil)
+
 		var httpErr *ringapimodels.HTTPError
 		if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusForbidden || httpErr.Body != body {
-			t.Fatalf("doJSONRequest() error = %#v", err)
+			t.Fatalf("doGeneratedJSON() error = %#v", err)
 		}
 	})
 
 	t.Run("reports malformed JSON", func(t *testing.T) {
-		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader("{"))), nil
-		})}))
+		t.Parallel()
+
+		client := NewClient(
+			WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader("{"))), nil
+			})}),
+		)
+
 		var result map[string]any
-		err := client.doJSONRequest(authenticatedContext(), http.MethodGet, "/malformed", nil, &result)
+
+		err := client.doGeneratedJSON(authenticatedContext(), listDevicesRequest(t, client.baseURI), &result)
 		if !ringapimodels.IsInternalServerError(err) {
-			t.Fatalf("doJSONRequest() error = %v, want InternalServerError", err)
+			t.Fatalf("doGeneratedJSON() error = %v, want InternalServerError", err)
 		}
 	})
 
 	t.Run("reports body read failure", func(t *testing.T) {
-		readFailure := errors.New("reader failed")
-		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			return testResponse(req, http.StatusOK, &trackedBody{readErr: readFailure}), nil
-		})}))
+		t.Parallel()
+
+		readFailure := restTestError("reader failed")
+		client := NewClient(
+			WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				return testResponse(req, http.StatusOK, &trackedBody{readErr: readFailure}), nil
+			})}),
+		)
+
 		var result map[string]any
-		err := client.doJSONRequest(authenticatedContext(), http.MethodGet, "/read-failure", nil, &result)
+
+		err := client.doGeneratedJSON(authenticatedContext(), listDevicesRequest(t, client.baseURI), &result)
 		if !ringapimodels.IsNetworkError(err) || !errors.Is(err, readFailure) {
-			t.Fatalf("doJSONRequest() error = %v, want wrapped read failure", err)
+			t.Fatalf("doGeneratedJSON() error = %v, want wrapped read failure", err)
 		}
 	})
 
 	t.Run("accepts empty success when no result is expected", func(t *testing.T) {
-		client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			return testResponse(req, http.StatusNoContent, io.NopCloser(strings.NewReader(""))), nil
-		})}))
-		if err := client.doJSONRequest(authenticatedContext(), http.MethodPut, "/empty-success", map[string]bool{"enabled": false}, nil); err != nil {
-			t.Fatalf("doJSONRequest() empty success error = %v", err)
+		t.Parallel()
+
+		client := NewClient(
+			WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				return testResponse(req, http.StatusNoContent, io.NopCloser(strings.NewReader(""))), nil
+			})}),
+		)
+
+		request, err := generatedhttp.NewTurnFloodlightOnRequest(client.baseURI, 12345)
+		if err != nil {
+			t.Fatalf("build generated floodlight request: %v", err)
+		}
+
+		err = client.doGeneratedJSON(authenticatedContext(), request, nil)
+		if err != nil {
+			t.Fatalf("doGeneratedJSON() empty success error = %v", err)
 		}
 	})
-}
-
-func TestDoRequestRejectsUnmarshalableBodyAndInvalidMethod(t *testing.T) {
-	client := NewClient(WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader("{}"))), nil
-	})}))
-	response, err := client.doRequest(authenticatedContext(), http.MethodPost, "/marshal", map[string]any{"callback": func() {}})
-	if response != nil && response.Body != nil {
-		_ = response.Body.Close()
-	}
-	if !ringapimodels.IsBadRequestError(err) {
-		t.Fatalf("unmarshalable request body error = %v", err)
-	}
-	response, err = client.doRequest(authenticatedContext(), "bad\nmethod", "/invalid", nil)
-	if response != nil && response.Body != nil {
-		_ = response.Body.Close()
-	}
-	if !ringapimodels.IsNetworkError(err) {
-		t.Fatalf("invalid method error = %v", err)
-	}
 }

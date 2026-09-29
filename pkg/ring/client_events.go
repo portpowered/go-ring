@@ -3,51 +3,81 @@ package ring
 import (
 	"context"
 
+	"github.com/portpowered/go-ring/internal/protocol"
 	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
 // ConnectEvents establishes a WebSocket connection for receiving events
-// This is a wrapper that calls the internal ConnectEvents method
+// This is a wrapper that calls the internal ConnectEvents method.
 func (c *Client) ConnectEvents(ctx context.Context, req ConnectEventsRequest) (*EventConnection, error) {
 	ctx = c.accountContext(ctx, req.Auth)
+
 	token, err := c.getToken(ctx)
 	if err != nil {
 		return nil, ringapimodels.NewTokenError("failed to get token for event connection", err)
 	}
-	conn, err := dependencywebsocket.OpenEvents(ctx, c.eventWebSocketURL, token, c.hardwareIDFor(ctx))
+
+	if c.eventWebSocketURL == protocol.ExperimentalEventWebSocketURL {
+		err = protocol.ValidateWebSocketURL(protocol.AccountEventsChannel, c.eventWebSocketURL)
+	} else {
+		err = protocol.ValidateWebSocketOverride(c.eventWebSocketURL)
+	}
+
+	if err != nil {
+		return nil, ringapimodels.NewBadRequestError("invalid account event WebSocket URL", err)
+	}
+
+	conn, err := dependencywebsocket.OpenEventsWithDialer(
+		ctx,
+		c.eventWebSocketURL,
+		token,
+		c.hardwareIDFor(ctx),
+		c.websocketDialer,
+	)
 	if err != nil {
 		return nil, ringapimodels.NewConnectionError("failed to connect to event stream", err)
 	}
+
 	return &EventConnection{transport: conn}, nil
 }
 
 func (c *EventConnection) Receive() (*ringapimodels.Event, error) {
-	raw, err := c.transport.Receive()
+	frame, raw, err := c.transport.ReceiveFrame()
 	if err != nil {
-		return nil, err
+		if ringapimodels.IsClosedError(err) {
+			return nil, ringapimodels.NewClosedError("event connection closed", err)
+		}
+
+		return nil, ringapimodels.NewConnectionError("failed to receive event frame", err)
 	}
-	event := &ringapimodels.Event{Data: raw}
-	if kind, ok := raw["kind"].(string); ok {
-		event.Kind = kind
+
+	event := &ringapimodels.Event{
+		DeviceID:  int64(frame.DeviceId),
+		Kind:      frame.Kind,
+		Timestamp: frame.Timestamp,
+		Data:      raw,
 	}
-	if deviceID, ok := raw["device_id"].(float64); ok {
-		event.DeviceID = int64(deviceID)
-	}
-	if timestamp, ok := raw["timestamp"].(string); ok {
-		event.Timestamp = timestamp
-	}
+
 	return event, nil
 }
 
-func (c *EventConnection) Close() error { return c.transport.Close() }
+func (c *EventConnection) Close() error {
+	err := c.transport.Close()
+	if err != nil {
+		return ringapimodels.NewNetworkError("close event connection", err)
+	}
 
-// Listen listens for events and calls the callback for each event
+	return nil
+}
+
+// Listen listens for events and calls the callback for each event.
 func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallback, req ConnectEventsRequest) error {
 	conn, err := c.ConnectEvents(ctx, req)
 	if err != nil {
 		return err
 	}
+
 	defer func() { _ = conn.Close() }()
 
 	for {
@@ -58,16 +88,20 @@ func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallbac
 			event, err := conn.Receive()
 			if err != nil {
 				if ringapimodels.IsClosedError(err) {
-					if ctxErr := ctx.Err(); ctxErr != nil {
+					ctxErr := ctx.Err()
+					if ctxErr != nil {
 						return ringapimodels.NewConnectionError("event listener canceled", ctxErr)
 					}
+
 					return nil
 				}
+
 				return err
 			}
 
 			if callback != nil {
-				if err := callback(event); err != nil {
+				err := callback(event)
+				if err != nil {
 					return err
 				}
 			}

@@ -9,5 +9,6 @@ func (d Device) Supports(capability DeviceCapability) bool {
 			return true
 		}
 	}
+
 	return false
 }

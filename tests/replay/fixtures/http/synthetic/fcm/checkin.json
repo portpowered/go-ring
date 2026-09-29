@@ -1,0 +1,21 @@
+{
+  "request": {
+    "method": "POST",
+    "origin": "https://android.clients.google.com",
+    "path": "/checkin",
+    "query": [],
+    "headers": {
+      "Content-Type": ["application/x-protobuf"]
+    },
+    "body_encoding": "base64",
+    "body": "EAAiF0gAYANqEQgDEgs2My4wLjMyMzQuMBgBaQAAAAAAAAAAcAOgAQCwAQA="
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": ["application/x-protobuf"]
+    },
+    "body_encoding": "base64",
+    "body": "CAE5OTAAAAAAAABBMgkBAAAAAAA="
+  }
+}

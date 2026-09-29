@@ -59,19 +59,29 @@ func (b *BatteryReading) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		return nil
 	}
+
 	var value json.Number
-	if err := json.Unmarshal(data, &value); err != nil {
-		var text string
-		if err = json.Unmarshal(data, &text); err != nil {
-			return err
+	{
+		err := json.Unmarshal(data, &value)
+		if err != nil {
+			var text string
+
+			err = json.Unmarshal(data, &text)
+			if err != nil {
+				return err
+			}
+
+			value = json.Number(text)
 		}
-		value = json.Number(text)
 	}
+
 	percentage, err := strconv.ParseFloat(value.String(), 64)
 	if err != nil {
 		return err
 	}
+
 	*b = BatteryReading(percentage)
+
 	return nil
 }
 
@@ -101,28 +111,40 @@ type DeviceStatus struct {
 }
 
 func (d DeviceDetailDevice) Status() DeviceStatus {
-	status := DeviceStatus{}
+	status := DeviceStatus{
+		BatteryPercent: nil,
+		Connection:     nil,
+		IsOffline:      false,
+		PowerMode:      nil,
+	}
 	if d.Settings != nil {
 		status.PowerMode = d.Settings.PowerMode
 	}
+
 	if d.Alerts != nil {
 		status.Connection = d.Alerts.Connection
 		status.IsOffline = d.Alerts.Connection != nil && *d.Alerts.Connection == ConnectionOffline
 	}
+
 	if status.Connection == nil && d.Health != nil && d.Health.Connected != nil {
 		state := ConnectionOffline
 		if *d.Health.Connected {
 			state = ConnectionOnline
 		}
+
 		status.Connection = &state
 		status.IsOffline = state == ConnectionOffline
 	}
+
 	if d.Health != nil && d.Health.BatteryPresent != nil && !*d.Health.BatteryPresent {
 		return status
 	}
-	if status.PowerMode != nil && *status.PowerMode == PowerModeWired && (d.Health == nil || d.Health.BatteryPresent == nil || !*d.Health.BatteryPresent) {
+
+	if status.PowerMode != nil && *status.PowerMode == PowerModeWired &&
+		(d.Health == nil || d.Health.BatteryPresent == nil || !*d.Health.BatteryPresent) {
 		return status
 	}
+
 	if d.Health != nil {
 		switch {
 		case d.Health.BatteryPercentage != nil:
@@ -131,11 +153,13 @@ func (d DeviceDetailDevice) Status() DeviceStatus {
 			status.BatteryPercent = validBattery(float64(*d.Health.BatteryLevel))
 		}
 	}
+
 	if status.BatteryPercent == nil && (status.PowerMode == nil || *status.PowerMode != PowerModeWired) {
 		if d.BatteryLife != nil {
 			status.BatteryPercent = validBattery(float64(*d.BatteryLife))
 		}
 	}
+
 	return status
 }
 
@@ -143,6 +167,7 @@ func validBattery(value float64) *float64 {
 	if math.IsNaN(value) || value < 0 || value > 100 {
 		return nil
 	}
+
 	return &value
 }
 
@@ -152,17 +177,25 @@ type OwnerID string
 func (id *OwnerID) UnmarshalJSON(data []byte) error {
 	var text string
 	if len(data) > 0 && data[0] == '"' {
-		if err := json.Unmarshal(data, &text); err != nil {
+		err := json.Unmarshal(data, &text)
+		if err != nil {
 			return err
 		}
+
 		*id = OwnerID(text)
+
 		return nil
 	}
+
 	var number int64
-	if err := json.Unmarshal(data, &number); err != nil {
+
+	err := json.Unmarshal(data, &number)
+	if err != nil {
 		return err
 	}
+
 	*id = OwnerID(strconv.FormatInt(number, 10))
+
 	return nil
 }
 
@@ -369,9 +402,14 @@ func projectCaptured[T any](wire any) (*T, error) {
 	if err != nil {
 		return nil, ringapimodels.NewInternalServerError("failed to project captured response", err)
 	}
+
 	var result T
-	if err := json.Unmarshal(encoded, &result); err != nil {
-		return nil, ringapimodels.NewInternalServerError("failed to project captured response", err)
+	{
+		err := json.Unmarshal(encoded, &result)
+		if err != nil {
+			return nil, ringapimodels.NewInternalServerError("failed to project captured response", err)
+		}
 	}
+
 	return &result, nil
 }

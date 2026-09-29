@@ -10,14 +10,54 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/portpowered/go-ring/internal/ringerrors"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
+func TestResolveOAuthURLClassifiesAndPreservesParseCauses(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		base     string
+		location string
+		classify func(error) bool
+	}{
+		{
+			name:     "invalid base",
+			base:     "https://%",
+			location: "/continue",
+			classify: ringerrors.IsInternalServerError,
+		},
+		{
+			name:     "invalid redirect",
+			base:     "https://auth.example.test/authorize",
+			location: "https://%",
+			classify: ringerrors.IsBadRequestError,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := resolveOAuthURL(tc.base, tc.location)
+
+			var parseErr *url.Error
+			if !tc.classify(err) || !errors.As(err, &parseErr) {
+				t.Fatalf("OAuth URL error lost its typed cause: %v", err)
+			}
+		})
+	}
+}
+
 func TestExtractCSRFHTMLFormsAndNestedState(t *testing.T) {
+	t.Parallel()
+
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	tests := []struct {
 		name string
 		html string
@@ -32,6 +72,8 @@ func TestExtractCSRFHTMLFormsAndNestedState(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if got := extractCSRF(tt.html, jar, "https://oauth.example.test"); got != tt.want {
 				t.Fatalf("extractCSRF() = %q, want %q", got, tt.want)
 			}
@@ -40,91 +82,168 @@ func TestExtractCSRFHTMLFormsAndNestedState(t *testing.T) {
 }
 
 func TestExtractCSRFCookiePrecedesPageAndFindCSRFStopsAtDepthLimit(t *testing.T) {
+	t.Parallel()
+
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	oauthURL, _ := url.Parse("https://oauth.example.test/oauth/v2/signin")
 	jar.SetCookies(oauthURL, []*http.Cookie{{Name: "XSRF-TOKEN", Value: "cookie-token"}})
-	if got := extractCSRF(`<input name="csrf-token" value="page-token">`, jar, "https://oauth.example.test"); got != "cookie-token" {
+
+	if got := extractCSRF(`<input name="csrf-token" value="page-tok`+
+		`en">`, jar, "https://oauth.example.test"); got != "cookie-token" {
 		t.Fatalf("cookie CSRF token = %q", got)
 	}
+
 	deep := map[string]any{"csrf_token": "too-deep"}
 	for range 9 {
 		deep = map[string]any{"child": deep}
 	}
+
 	if got := findCSRF(deep, 0); got != "" {
 		t.Fatalf("findCSRF() beyond depth limit = %q, want empty", got)
 	}
 }
 
 func TestResolveOAuthURL(t *testing.T) {
+	t.Parallel()
+
 	got, err := resolveOAuthURL("https://oauth.example.test/oauth/v2/authorize", "../signin/callback?code=value")
 	if err != nil || got != "https://oauth.example.test/oauth/signin/callback?code=value" {
 		t.Fatalf("resolveOAuthURL() = %q, %v", got, err)
 	}
-	if _, err := resolveOAuthURL(":", "/callback"); err == nil {
-		t.Fatal("resolveOAuthURL() accepted an invalid base URL")
+
+	{
+		_, err := resolveOAuthURL(":", "/callback")
+		if err == nil {
+			t.Fatal("resolveOAuthURL() accepted an invalid base URL")
+		}
 	}
 }
 
 func TestDecodeTokenResponseStatusAndBodyFailures(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name       string
 		status     int
 		body       io.ReadCloser
 		checkError func(error) bool
 	}{
-		{"two factor", http.StatusPreconditionFailed, io.NopCloser(strings.NewReader("{}")), ringapimodels.IsRequires2FAError},
-		{"rate limit", http.StatusTooManyRequests, io.NopCloser(strings.NewReader("{}")), ringapimodels.IsRateLimitError},
-		{"unauthorized", http.StatusUnauthorized, io.NopCloser(strings.NewReader("expired")), ringapimodels.IsAuthenticationError},
-		{"other client error", http.StatusBadRequest, io.NopCloser(strings.NewReader("bad request")), ringapimodels.IsBadRequestError},
+		{
+			"two factor",
+			http.StatusPreconditionFailed,
+			io.NopCloser(strings.NewReader("{}")),
+			ringapimodels.IsRequires2FAError,
+		},
+		{
+			"rate limit",
+			http.StatusTooManyRequests,
+			io.NopCloser(strings.NewReader("{}")),
+			ringapimodels.IsRateLimitError,
+		},
+		{
+			"unauthorized",
+			http.StatusUnauthorized,
+			io.NopCloser(strings.NewReader("expired")),
+			ringapimodels.IsAuthenticationError,
+		},
+		{
+			"other client error",
+			http.StatusBadRequest,
+			io.NopCloser(strings.NewReader("bad request")),
+			ringapimodels.IsBadRequestError,
+		},
 		{"malformed success", http.StatusOK, io.NopCloser(strings.NewReader("{")), ringapimodels.IsInternalServerError},
-		{"read failure", http.StatusOK, &trackedBody{readErr: errors.New("read failed")}, ringapimodels.IsNetworkError},
+		{
+			"read failure",
+			http.StatusOK,
+			&trackedBody{reader: strings.NewReader(""), closed: false, readErr: restTestError("read failed")},
+			ringapimodels.IsNetworkError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			resp := &http.Response{StatusCode: tt.status, Status: http.StatusText(tt.status), Body: tt.body}
+
 			got, err := decodeTokenResponse(resp)
 			if got != nil || !tt.checkError(err) {
 				t.Fatalf("decodeTokenResponse() = %#v, %v", got, err)
 			}
 		})
 	}
-	resp := &http.Response{StatusCode: http.StatusCreated, Body: io.NopCloser(strings.NewReader(`{"access_token":"a","refresh_token":"r","expires_in":30,"token_type":"Bearer"}`))}
+
+	resp := &http.Response{
+		StatusCode: http.StatusCreated,
+		Body: io.NopCloser(
+			strings.NewReader(`{"access_token":"a","refresh_token":"r","expires_in":30,"token_type":"Bearer"}`),
+		),
+	}
+
 	got, err := decodeTokenResponse(resp)
-	if err != nil || got.AccessToken != "a" || got.RefreshToken == nil || *got.RefreshToken != "r" || got.ExpiresIn == nil || *got.ExpiresIn != 30 {
+	if err != nil || got.AccessToken != "a" || got.RefreshToken == nil || *got.RefreshToken != "r" ||
+		got.ExpiresIn == nil ||
+		*got.ExpiresIn != 30 {
 		t.Fatalf("decodeTokenResponse() success = %#v, %v", got, err)
 	}
 }
 
 func TestRefreshAccessTokenUsesConfiguredOAuthEndpointAndRotatesResponse(t *testing.T) {
+	t.Parallel()
+
 	calls := 0
 	transport := roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		calls++
+
 		if req.URL.String() != "https://oauth.example.test/oauth/token" {
 			t.Errorf("refresh URL = %s", req.URL)
 		}
-		if req.Method != http.MethodPost || req.Header.Get("Content-Type") != "application/x-www-form-urlencoded" ||
-			req.Header.Get("hardware_id") != "synthetic-hardware" || req.Header.Get("User-Agent") != "auth-test/1" {
+
+		if req.Method != http.MethodPost || req.Header.Get("Content-Type") != formURLEncodedContentType ||
+			req.Header.Get("Hardware_id") != "synthetic-hardware" || req.Header.Get("User-Agent") != "auth-test/1" {
 			t.Errorf("unexpected refresh request headers/method: %s %#v", req.Method, req.Header)
 		}
+
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		form, err := url.ParseQuery(string(body))
 		if err != nil || form.Get("grant_type") != "refresh_token" || form.Get("refresh_token") != "old-refresh" {
 			t.Errorf("refresh form = %q, parse error = %v", string(body), err)
 		}
-		return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader(`{"access_token":"new-access","refresh_token":"new-refresh","expires_in":1800,"token_type":"Bearer"}`))), nil
+
+		return testResponse(
+			req,
+			http.StatusOK,
+			io.NopCloser(
+				strings.NewReader(
+					`{"access_token":"new-access","refresh_token":"new-refresh","expires_in":1800,"token_type":"Bearer"}`,
+				),
+			),
+		), nil
 	})
-	client := NewClient(WithHTTPClient(&http.Client{Transport: transport}), WithEndpointBases("https://api.example.test", "https://oauth.example.test"), WithHardwareID("synthetic-hardware"), WithUserAgent("auth-test/1"))
+	client := NewClient(
+		WithHTTPClient(&http.Client{Transport: transport}),
+		WithEndpointBases("https://api.example.test", "https://oauth.example.test"),
+		WithHardwareID("synthetic-hardware"),
+		WithUserAgent("auth-test/1"),
+	)
+
 	response, err := client.RefreshAccessToken(context.Background(), "old-refresh")
 	if err != nil {
 		t.Fatalf("RefreshAccessToken() error = %v", err)
 	}
-	if calls != 1 || response.AccessToken != "new-access" || response.RefreshToken == nil || *response.RefreshToken != "new-refresh" || response.ExpiresIn == nil || *response.ExpiresIn != 1800 {
+
+	if calls != 1 || response.AccessToken != "new-access" || response.RefreshToken == nil ||
+		*response.RefreshToken != "new-refresh" ||
+		response.ExpiresIn == nil ||
+		*response.ExpiresIn != 1800 {
 		t.Fatalf("refresh response = %#v, calls = %d", response, calls)
 	}
 }

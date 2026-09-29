@@ -13,9 +13,15 @@ type EndpointSet struct {
 // API and OAuth hosts are established, while only the US Solutions bootstrap
 // origin is evidenced. EU and FE callers must provide SolutionsBaseURL.
 func Profile(region string) EndpointSet {
-	p := EndpointSet{OAuthBaseURL: OAuthBaseURL, APIBaseURL: APIBaseURL, SignalingURL: SignalingURL}
-	if region == "US" {
-		p.SolutionsBaseURL = USSolutionsBaseURL
+	profile := EndpointSet{
+		OAuthBaseURL:     OAuthBaseURL,
+		APIBaseURL:       APIBaseURL,
+		SolutionsBaseURL: "",
+		SignalingURL:     SignalingURL,
 	}
-	return p
+	if region == "US" {
+		profile.SolutionsBaseURL = USSolutionsBaseURL
+	}
+
+	return profile
 }

@@ -2,63 +2,80 @@ package rest
 
 import (
 	"context"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 
-	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/generatedhttp"
 	"github.com/portpowered/go-ring/internal/ringerrors"
 	"github.com/portpowered/go-ring/internal/ringmedia"
-	"github.com/portpowered/go-ring/pkg/generatedhttp"
 )
 
 // GetRecordingShareURL follows the pinned Python legacy share/play profile.
 // The C1 recording does not establish this route's response.
 func (c *Client) GetRecordingShareURL(ctx context.Context, recordingID int64) (string, error) {
-	path := strings.Replace(protocol.RecordingSharePath, "{id}", strconv.FormatInt(recordingID, 10), 1)
 	var response generatedhttp.RecordingShare
-	if err := c.doJSONRequest(ctx, http.MethodGet, path, nil, &response); err != nil {
+
+	req, err := generatedhttp.NewGetLegacyRecordingShareURLRequest(generatedServerBase(c.baseURI), recordingID)
+	if err != nil {
+		return "", ringerrors.NewNetworkError("failed to build recording share request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &response)
+	if err != nil {
 		return "", err
 	}
+
 	if response.Url == "" {
 		return "", ringerrors.NewInternalServerError("recording share response lacks URL", nil)
 	}
+
 	return response.Url, nil
 }
 
-// GetDeviceHistory retrieves the history of recordings for a device
-func (c *Client) GetDeviceHistory(ctx context.Context, deviceID int64, limit int, kind string, olderThan *int64) (generatedhttp.RecordingArray, error) {
-	endpoint := strings.Replace(protocol.DoorbotHistoryPath, "{id}", strconv.FormatInt(deviceID, 10), 1)
-	params := url.Values{}
+// GetDeviceHistory retrieves the history of recordings for a device.
+func (c *Client) GetDeviceHistory(
+	ctx context.Context,
+	deviceID int64,
+	limit int,
+	kind string,
+	olderThan *int64,
+) (generatedhttp.RecordingArray, error) {
+	params := &generatedhttp.GetLegacyDeviceHistoryParams{Limit: nil, Kind: nil, OlderThan: olderThan}
 
 	if limit > 0 {
-		params.Set("limit", strconv.Itoa(limit))
-	}
-	if kind != "" {
-		params.Set("kind", kind)
-	}
-	if olderThan != nil {
-		params.Set("older_than", strconv.FormatInt(*olderThan, 10))
+		params.Limit = &limit
 	}
 
-	if encoded := params.Encode(); encoded != "" {
-		endpoint += "?" + encoded
+	if kind != "" {
+		params.Kind = &kind
 	}
 
 	// The API returns an array directly, not wrapped in an object
 	var recordings generatedhttp.RecordingArray
-	if err := c.doJSONRequest(ctx, http.MethodGet, endpoint, nil, &recordings); err != nil {
+
+	req, err := generatedhttp.NewGetLegacyDeviceHistoryRequest(generatedServerBase(c.baseURI), deviceID, params)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build device history request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &recordings)
+	if err != nil {
 		return nil, err
 	}
+
 	return recordings, nil
 }
 
-// GetActiveDings retrieves currently active dings
+// GetActiveDings retrieves currently active dings.
 func (c *Client) GetActiveDings(ctx context.Context) (generatedhttp.RecordingArray, error) {
 	// The API returns an array directly, not wrapped in an object
 	var recordings generatedhttp.RecordingArray
-	if err := c.doJSONRequest(ctx, http.MethodGet, protocol.DingsActivePath, nil, &recordings); err != nil {
+
+	req, err := generatedhttp.NewGetActiveDingsRequest(generatedServerBase(c.baseURI))
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build active dings request", err)
+	}
+
+	err = c.doGeneratedJSON(ctx, req, &recordings)
+	if err != nil {
 		return nil, err
 	}
 
@@ -66,30 +83,31 @@ func (c *Client) GetActiveDings(ctx context.Context) (generatedhttp.RecordingArr
 }
 
 // GetRecording retrieves a video stream for a recording
-// The endpoint returns video/mp4 directly in the response body
+// The endpoint returns video/mp4 directly in the response body.
 func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringmedia.VideoStream, error) {
-	endpoint := strings.Replace(protocol.RecordingPath, "{id}", strconv.FormatInt(recordingID, 10), 1)
-
-	// Make a raw HTTP request (not JSON) to get the video stream
-	url := c.baseURI + endpoint
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	// Build the streaming request from the OpenAPI operation. Keep the response
+	// body open so callers can stream the media instead of buffering it.
+	req, err := generatedhttp.NewStreamRecordingRequest(generatedServerBase(c.baseURI), recordingID)
 	if err != nil {
 		return nil, ringerrors.NewNetworkError("failed to create request", err)
 	}
+
+	req = req.WithContext(ctx)
 
 	// Get token and set authorization header
 	token, err := c.getToken(ctx)
 	if err != nil {
 		return nil, ringerrors.NewTokenError("failed to get recording token", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
+
+	req.Header.Set(string(generatedhttp.Authorization), "Bearer "+token)
 
 	// Don't set JSON headers for video requests - accept video/mp4
-	req.Header.Set("Accept", "video/mp4,*/*")
-	req.Header.Set("User-Agent", c.userAgent)
+	req.Header.Set(string(generatedhttp.Accept), "video/mp4,*/*")
+	req.Header.Set(string(generatedhttp.UserAgent), c.userAgent)
 
 	if hardwareID := c.hardwareIDFor(ctx); hardwareID != "" {
-		req.Header.Set("hardware_id", hardwareID)
+		req.Header.Set(string(generatedhttp.HardwareId), hardwareID)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -99,6 +117,7 @@ func (c *Client) GetRecording(ctx context.Context, recordingID int64) (*ringmedi
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		_ = resp.Body.Close()
+
 		return nil, ringerrors.ClassifyHTTPError(resp, "")
 	}
 

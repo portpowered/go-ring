@@ -1,0 +1,25 @@
+{
+  "provenance": "synthetic",
+  "request": {
+    "method": "GET",
+    "origin": "https://api.ring.com",
+    "path": "/device_info/v3/devices",
+    "query": [],
+    "headers": {
+      "Accept": ["application/json"]
+    },
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 503,
+    "headers": {
+      "Content-Type": ["application/json"]
+    },
+    "body": {
+      "error": "synthetic unavailable"
+    },
+    "json": true
+  }
+}

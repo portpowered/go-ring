@@ -38,184 +38,282 @@ type recordedSignalingContractMessage struct {
 
 func loadYAML(t *testing.T, path string) map[string]any {
 	t.Helper()
-	b, e := os.ReadFile(path) // #nosec G304 -- the test supplies a repository-owned OpenAPI path.
-	if e != nil {
-		t.Fatal(e)
+
+	documentBytes, readErr := os.ReadFile(path) // #nosec G304 -- the test supplies a repository-owned OpenAPI path.
+	if readErr != nil {
+		t.Fatal(readErr)
 	}
-	var v map[string]any
-	if e = yaml.Unmarshal(b, &v); e != nil {
-		t.Fatal(e)
+
+	var document map[string]any
+
+	yamlErr := yaml.Unmarshal(documentBytes, &document)
+	if yamlErr != nil {
+		t.Fatal(yamlErr)
 	}
-	return v
+
+	return document
 }
-func object(v any) map[string]any { m, _ := v.(map[string]any); return m }
+func object(value any) map[string]any {
+	result, _ := value.(map[string]any)
+
+	return result
+}
 func TestRecordedHTTPMethodsAreInOpenAPI(t *testing.T) {
+	t.Parallel()
+
 	doc := loadYAML(t, filepath.Join("..", "..", "api", "openapi.yaml"))
 	paths := object(doc["paths"])
-	files, e := filepath.Glob(filepath.Join("fixtures", "http", "historical", "*.json"))
-	if e != nil {
-		t.Fatal(e)
+
+	files, globErr := filepath.Glob(filepath.Join("fixtures", "http", "historical", "*.json"))
+	if globErr != nil {
+		t.Fatal(globErr)
 	}
-	variants, e := filepath.Glob(filepath.Join("fixtures", "http", "historical", "variants", "*.json"))
-	if e != nil {
-		t.Fatal(e)
+
+	variants, globErr := filepath.Glob(filepath.Join("fixtures", "http", "historical", "variants", "*.json"))
+	if globErr != nil {
+		t.Fatal(globErr)
 	}
+
 	files = append(files, variants...)
 	if len(files) == 0 {
 		t.Fatal("HTTP recordings missing")
 	}
-	for _, f := range files {
-		t.Run(filepath.Base(f), func(t *testing.T) {
-			b, e := os.ReadFile(f) // #nosec G304 -- f is returned by the fixed captured-fixture glob above.
-			if e != nil {
-				t.Fatal(e)
-			}
-			var x recordedHTTPContractExchange
-			if e = json.Unmarshal(b, &x); e != nil {
-				t.Fatal(e)
-			}
-			p := templatePath(x.Request.Path, paths)
-			if p == nil {
-				t.Fatalf("recorded path %s is absent from OpenAPI", x.Request.Path)
-			}
-			if _, ok := p[strings.ToLower(x.Request.Method)]; !ok {
-				t.Fatalf("recorded %s %s lacks operation", x.Request.Method, x.Request.Path)
-			}
-			operation := object(p[strings.ToLower(x.Request.Method)])
-			if _, ok := object(operation["responses"])[strconv.Itoa(x.Response.Status)]; !ok {
-				t.Fatalf("recorded status %d absent", x.Response.Status)
-			}
-			servers, ok := operation["servers"].([]any)
-			if !ok {
-				servers, _ = doc["servers"].([]any)
-			}
-			found := false
-			for _, server := range servers {
-				if object(server)["url"] == x.Request.Origin {
-					found = true
-				}
-			}
-			if !found {
-				t.Fatal("recorded origin differs from specification")
-			}
+
+	for _, fixturePath := range files {
+		t.Run(filepath.Base(fixturePath), func(t *testing.T) {
+			t.Parallel()
+			checkRecordedHTTPFixture(t, fixturePath, paths, doc)
 		})
 	}
 }
-func templatePath(actual string, paths map[string]any) map[string]any {
-	if exact, ok := paths[actual]; ok {
-		return object(exact)
+
+func checkRecordedHTTPFixture(t *testing.T, fixturePath string, paths, doc map[string]any) {
+	t.Helper()
+
+	// #nosec G304 -- fixturePath comes from the fixed captured-fixture glob above.
+	fixtureBytes, readErr := os.ReadFile(fixturePath)
+	if readErr != nil {
+		t.Fatal(readErr)
 	}
-	for k, v := range paths {
-		if samePath(k, actual) {
-			return object(v)
+
+	var exchange recordedHTTPContractExchange
+
+	readErr = json.Unmarshal(fixtureBytes, &exchange)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+
+	operations := templatePath(exchange.Request.Path, paths)
+	if operations == nil {
+		t.Fatalf("recorded path %s is absent from OpenAPI", exchange.Request.Path)
+	}
+
+	if _, ok := operations[strings.ToLower(exchange.Request.Method)]; !ok {
+		t.Fatalf("recorded %s %s lacks operation", exchange.Request.Method, exchange.Request.Path)
+	}
+
+	operation := object(operations[strings.ToLower(exchange.Request.Method)])
+	if _, ok := object(operation["responses"])[strconv.Itoa(exchange.Response.Status)]; !ok {
+		t.Fatalf("recorded status %d absent", exchange.Response.Status)
+	}
+
+	servers, ok := operation["servers"].([]any)
+	if !ok {
+		servers, _ = doc["servers"].([]any)
+	}
+
+	for _, server := range servers {
+		if object(server)["url"] == exchange.Request.Origin {
+			return
 		}
 	}
+
+	t.Fatal("recorded origin differs from specification")
+}
+func templatePath(actualPath string, paths map[string]any) map[string]any {
+	if exact, ok := paths[actualPath]; ok {
+		return object(exact)
+	}
+
+	for template, operations := range paths {
+		if samePath(template, actualPath) {
+			return object(operations)
+		}
+	}
+
 	return nil
 }
 func samePath(template, actual string) bool {
-	a, b := strings.Split(strings.Trim(template, "/"), "/"), strings.Split(strings.Trim(actual, "/"), "/")
-	if len(a) != len(b) {
+	templateParts := strings.Split(strings.Trim(template, "/"), "/")
+	actualParts := strings.Split(strings.Trim(actual, "/"), "/")
+
+	if len(templateParts) != len(actualParts) {
 		return false
 	}
-	for i := range a {
-		if strings.HasPrefix(a[i], "{") && strings.HasSuffix(a[i], "}") {
+
+	for i := range templateParts {
+		if strings.HasPrefix(templateParts[i], "{") && strings.HasSuffix(templateParts[i], "}") {
 			continue
 		}
-		if a[i] != b[i] {
+
+		if templateParts[i] != actualParts[i] {
 			return false
 		}
 	}
+
 	return true
 }
 
 func TestSessionRecordingsUseAsyncAPIEnvelopeAndPTZMethods(t *testing.T) {
+	t.Parallel()
+
 	doc := loadYAML(t, filepath.Join("..", "..", "api", "asyncapi.yaml"))
 	schemas := object(object(doc["components"])["schemas"])
 	client := enumSet(t, object(schemas["ClientEnvelope"]))
 	server := enumSet(t, object(schemas["ServerEnvelope"]))
 	ptz := enumSet(t, object(schemas["PTZRPC"]))
-	files, e := filepath.Glob(filepath.Join("fixtures", "signaling", "historical", "*.json"))
-	if e != nil {
-		t.Fatal(e)
+
+	files, globErr := filepath.Glob(filepath.Join("fixtures", "signaling", "historical", "*.json"))
+	if globErr != nil {
+		t.Fatal(globErr)
 	}
+
 	if len(files) == 0 {
 		t.Fatal("session recordings missing")
 	}
+
 	found := map[string]bool{}
-	for _, f := range files {
-		b, e := os.ReadFile(f) // #nosec G304 -- f is returned by the fixed signaling-fixture glob above.
-		if e != nil {
-			t.Fatal(e)
-		}
-		var x recordedSignalingContract
-		if e = json.Unmarshal(b, &x); e != nil {
-			t.Fatal(e)
-		}
-		for _, msg := range x.Messages {
-			m, _ := msg.Payload["method"].(string)
-			if m == "" {
-				t.Fatalf("%s has message without method", f)
-			}
-			found[m] = true
-			set := client
-			if msg.Direction == "server_to_client" {
-				set = server
-			} else if msg.Direction != "client_to_server" {
-				t.Fatalf("unknown direction %q", msg.Direction)
-			}
-			if !set[m] {
-				t.Errorf("%s message %q missing from AsyncAPI direction schema", filepath.Base(f), m)
-			}
-			if m == "rpc" {
-				body := object(msg.Payload["body"])
-				command := object(body["command"])
-				method, _ := command["method"].(string)
-				if strings.HasPrefix(method, "PTZ.") && !ptz[method] {
-					t.Errorf("captured RPC method %q missing from PTZ schema", method)
-				}
-			}
+
+	for _, fixturePath := range files {
+		checkRecordedSignalingFixture(t, fixturePath, client, server, ptz, found)
+	}
+
+	for _, method := range []string{
+		"PTZ.Pan.Step",
+		"PTZ.Pan.Continuous",
+		"PTZ.Tilt.Step",
+		"PTZ.Tilt.Continuous",
+		"PTZ.Pan.Halted",
+	} {
+		if !ptz[method] {
+			t.Errorf("recorded PTZ method %q absent", method)
 		}
 	}
-	for _, m := range []string{"PTZ.Pan.Step", "PTZ.Pan.Continuous", "PTZ.Tilt.Step", "PTZ.Tilt.Continuous", "PTZ.Pan.Halted"} {
-		if !ptz[m] {
-			t.Errorf("recorded PTZ method %q absent", m)
-		}
-	}
+
 	if !found["ping"] || !found["pong"] {
 		t.Fatal("captured application ping/pong coverage missing")
 	}
 }
 
+func checkRecordedSignalingFixture(
+	t *testing.T, fixturePath string, client, server, ptz, found map[string]bool,
+) {
+	t.Helper()
+
+	// #nosec G304 -- fixturePath comes from the fixed signaling-fixture glob above.
+	fixtureBytes, readErr := os.ReadFile(fixturePath)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+
+	var recording recordedSignalingContract
+
+	readErr = json.Unmarshal(fixtureBytes, &recording)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+
+	for _, message := range recording.Messages {
+		method, _ := message.Payload["method"].(string)
+		if method == "" {
+			t.Fatalf("%s has message without method", fixturePath)
+		}
+
+		found[method] = true
+
+		set := client
+		if message.Direction == "server_to_client" {
+			set = server
+		} else if message.Direction != "client_to_server" {
+			t.Fatalf("unknown direction %q", message.Direction)
+		}
+
+		if !set[method] {
+			t.Errorf("%s message %q missing from AsyncAPI direction schema", filepath.Base(fixturePath), method)
+		}
+
+		if method == "rpc" {
+			body := object(message.Payload["body"])
+			command := object(body["command"])
+
+			rpcMethod, _ := command["method"].(string)
+			if strings.HasPrefix(rpcMethod, "PTZ.") && !ptz[rpcMethod] {
+				t.Errorf("captured RPC method %q missing from PTZ schema", rpcMethod)
+			}
+		}
+	}
+}
+
 func enumSet(t *testing.T, schema map[string]any) map[string]bool {
 	t.Helper()
+
 	props := object(schema["properties"])
 	method := object(props["method"])
+
 	values, ok := method["enum"].([]any)
 	if !ok {
 		t.Fatal("schema method enum missing")
 	}
+
 	out := map[string]bool{}
-	for _, v := range values {
-		s, ok := v.(string)
+
+	for _, rawValue := range values {
+		methodName, ok := rawValue.(string)
 		if !ok {
-			t.Fatalf("non-string method enum %v", v)
+			t.Fatalf("non-string method enum %v", rawValue)
 		}
-		out[s] = true
+
+		out[methodName] = true
 	}
+
 	return out
 }
 
 func TestRuntimeSignalingRegistryMatchesAsyncAPI(t *testing.T) {
+	t.Parallel()
+
 	doc := loadYAML(t, filepath.Join("..", "..", "api", "asyncapi.yaml"))
 	schemas := object(object(doc["components"])["schemas"])
+
 	client, server := enumSet(t, object(schemas["ClientEnvelope"])), enumSet(t, object(schemas["ServerEnvelope"]))
-	for _, method := range []string{protocol.MethodLiveView, protocol.MethodPlayback, protocol.MethodSDP, protocol.MethodICE, protocol.MethodSessionCreated, protocol.MethodActivateSession, protocol.MethodCameraStarted, protocol.MethodCameraOptions, protocol.MethodMicEnable, protocol.MethodStreamOptions, protocol.MethodClose, protocol.MethodPing, protocol.MethodPong, protocol.MethodRPC} {
+	for _, method := range []string{
+		protocol.MethodLiveView,
+		protocol.MethodPlayback,
+		protocol.MethodSDP,
+		protocol.MethodICE,
+		protocol.MethodSessionCreated,
+		protocol.MethodActivateSession,
+		protocol.MethodCameraStarted,
+		protocol.MethodCameraOptions,
+		protocol.MethodMicEnable,
+		protocol.MethodStreamOptions,
+		protocol.MethodClose,
+		protocol.MethodPing,
+		protocol.MethodPong,
+		protocol.MethodRPC,
+	} {
 		if !client[method] && !server[method] {
 			t.Errorf("runtime wire method %s missing from schema", method)
 		}
 	}
+
 	ptz := enumSet(t, object(schemas["PTZRPC"]))
-	for _, method := range []string{protocol.RPCPanStep, protocol.RPCTiltStep, protocol.RPCPanContinuous, protocol.RPCTiltContinuous} {
+	for _, method := range []string{
+		protocol.RPCPanStep,
+		protocol.RPCTiltStep,
+		protocol.RPCPanContinuous,
+		protocol.RPCTiltContinuous,
+	} {
 		if !ptz[method] {
 			t.Errorf("runtime PTZ method %s missing from schema", method)
 		}

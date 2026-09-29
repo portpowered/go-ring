@@ -3,6 +3,8 @@ package main
 import "testing"
 
 func TestReleaseAllowsBreak(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		base        string
@@ -52,16 +54,21 @@ func TestReleaseAllowsBreak(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			gotAllowed, gotReason, err := releaseAllowsBreak(test.base, test.release)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("releaseAllowsBreak() error = %v, want error %t", err, test.wantErr)
 			}
+
 			if err != nil {
 				return
 			}
+
 			if gotAllowed != test.wantAllowed {
 				t.Errorf("releaseAllowsBreak() allowed = %t, want %t", gotAllowed, test.wantAllowed)
 			}
+
 			if gotReason != test.wantReason {
 				t.Errorf("releaseAllowsBreak() reason = %q, want %q", gotReason, test.wantReason)
 			}
@@ -70,6 +77,8 @@ func TestReleaseAllowsBreak(t *testing.T) {
 }
 
 func TestValidateReleaseOrder(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		base    string
@@ -85,6 +94,8 @@ func TestValidateReleaseOrder(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			err := validateReleaseOrder(test.base, test.release)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("validateReleaseOrder() error = %v, want error %t", err, test.wantErr)

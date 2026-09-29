@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -10,51 +11,71 @@ import (
 )
 
 func TestCaptureCLIExtractsSyntheticHTTPAndWebSocketFlows(t *testing.T) {
+	t.Parallel()
+
 	working := t.TempDir()
 	capturePath := filepath.Join(working, "capture.mitmproxy")
 	outputPath := filepath.Join(working, "fixtures")
-	if err := os.WriteFile(capturePath, syntheticCapture(t), 0o600); err != nil {
-		t.Fatal(err)
+
+	writeErr := os.WriteFile(capturePath, syntheticCapture(t), 0o600)
+	if writeErr != nil {
+		t.Fatal(writeErr)
 	}
-	if err := runCLI([]string{"-out", outputPath, capturePath}); err != nil {
-		t.Fatal(err)
+
+	cliErr := runCLI([]string{"-out", outputPath, capturePath})
+	if cliErr != nil {
+		t.Fatal(cliErr)
 	}
 
 	deviceListPath := filepath.Join(outputPath, "http", "captured", "device-list.json")
 	deviceList := decodeFixtureFile(t, deviceListPath)
+
 	request := testObject(t, testValue(t, deviceList, "request"))
 	if got := testValue(t, request, "path"); got != "/device_info/v3/devices" {
 		t.Fatalf("request path changed: %v", got)
 	}
-	query := testValue(t, request, "query").([]any)
-	if len(query) != 1 || testValue(t, query[0], "name") != "access_token" || testValue(t, query[0], "value") != "opaque-1" {
+
+	query := testValueAs[[]any](t, request, "query").value
+	if len(query) != 1 || testValue(t, query[0], "name") != "access_token" ||
+		testValue(t, query[0], "value") != "opaque-1" {
 		t.Fatalf("request query was not sanitized: %#v", query)
 	}
+
 	response := testObject(t, testValue(t, deviceList, "response"))
+
 	body := testObject(t, testValue(t, response, "body"))
 	if got := testValue(t, body, "device_id"); got != json.Number("1000") {
 		t.Fatalf("device id was not replaced: %v", got)
 	}
+
 	variantPath := filepath.Join(outputPath, "http", "captured", "variants", "device-list-02.json")
-	if _, err := os.Stat(variantPath); err != nil {
-		t.Fatalf("additional response variant was not written: %v", err)
+	{
+		_, err := os.Stat(variantPath)
+		if err != nil {
+			t.Fatalf("additional response variant was not written: %v", err)
+		}
 	}
+
 	for _, flowNumber := range []int{21, 402} {
 		path := filepath.Join(outputPath, "signaling", "captured", "flow-"+strconv.Itoa(flowNumber)+".json")
 		session := decodeFixtureFile(t, path)
-		messages := testValue(t, session, "messages").([]any)
+
+		messages := testValueAs[[]any](t, session, "messages").value
 		if len(messages) != 1 {
 			t.Fatalf("flow %d has %d messages, want 1", flowNumber, len(messages))
 		}
+
 		message := testObject(t, messages[0])
 		if testValue(t, message, "direction") != "client_to_server" || testValue(t, message, "frame") != "text" {
 			t.Fatalf("unexpected WebSocket message shape: %#v", message.values)
 		}
+
 		payload := testObject(t, testValue(t, message, "payload"))
 		if testValue(t, payload, "session_id") != "session-1" {
 			t.Fatalf("session id was not sanitized: %#v", payload.values)
 		}
 	}
+
 	for _, relative := range []string{
 		filepath.Join("http", "captured", "device-list.json"),
 		filepath.Join("http", "captured", "variants", "device-list-02.json"),
@@ -66,6 +87,7 @@ func TestCaptureCLIExtractsSyntheticHTTPAndWebSocketFlows(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		for _, secret := range []string{"private-token", "device-secret", "session-private"} {
 			if strings.Contains(string(contents), secret) {
 				t.Fatalf("generated fixture %s contains private data", relative)
@@ -75,6 +97,8 @@ func TestCaptureCLIExtractsSyntheticHTTPAndWebSocketFlows(t *testing.T) {
 }
 
 func TestSafePathAndEligibleCoverCapturedRoutes(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
 		host   string
 		method string
@@ -106,36 +130,54 @@ func TestSafePathAndEligibleCoverCapturedRoutes(t *testing.T) {
 			t.Errorf("eligible(%s %s %s) = %q, want %q", test.method, test.host, test.path, got, test.want)
 		}
 	}
-	if got := safePath("/clients_api/dings/recording-private/favorite"); got != "/clients_api/dings/{recording_id}/favorite" {
+
+	got := safePath("/clients_api/dings/recording-private/favorite")
+
+	want := "/clients_api/dings/{recording_id}/favorite"
+
+	if got != want {
 		t.Fatalf("recording identifier was not templated: %s", got)
 	}
 }
 
 func syntheticCapture(t *testing.T) []byte {
 	t.Helper()
+
 	flows := make([]byte, 0)
+
 	for flowNumber := 1; flowNumber <= 402; flowNumber++ {
 		state := map[string]any{"version": int64(21), "type": "http"}
+
 		if flowNumber == 1 || flowNumber == 2 {
 			responseBody := `{"device_id":777,"serial":"device-secret"}`
 			if flowNumber == 2 {
 				responseBody = `{"device_id":778,"status":"another-status","extra":true}`
 			}
+
 			state["request"] = map[string]any{
-				"method": []byte("GET"), "host": "api.ring.com", "path": []byte("/device_info/v3/devices?access_token=private-token"),
+				"method": []byte(
+					"GET",
+				), "host": "api.ring.com", "path": []byte("/device_info/v3/devices?access_token=private-token"),
 				"headers": []any{[]any{[]byte("Accept"), []byte("application/json")}}, "content": []byte{},
 			}
 			state["response"] = map[string]any{
-				"status_code": int64(200), "headers": []any{[]any{[]byte("Content-Type"), []byte("application/json")}}, "content": []byte(responseBody),
+				"status_code": int64(
+					200,
+				), "headers": []any{[]any{[]byte("Content-Type"), []byte("application/json")}}, "content": []byte(responseBody),
 			}
 		}
+
 		if flowNumber == 21 || flowNumber == 402 {
 			state["websocket"] = map[string]any{
-				"messages": []any{[]any{int64(1), true, []byte(`{"session_id":"session-private"}`), float64(1), false, false}},
+				"messages": []any{
+					[]any{int64(1), true, []byte(`{"session_id":"session-private"}`), float64(1), false, false},
+				},
 			}
 		}
+
 		flows = append(flows, encodeTestTNetstring(t, state)...)
 	}
+
 	return flows
 }
 
@@ -146,9 +188,23 @@ func decodeFixtureFile(t *testing.T, path string) *orderedObject {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	value, err := decodeJSONOrdered(contents)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return testObject(t, value)
+}
+
+func TestDecodeJSONOrderedPreservesSyntaxError(t *testing.T) {
+	t.Parallel()
+
+	_, err := decodeJSONOrdered([]byte(`{"key":false,"broken":truX}`))
+
+	var syntaxError *json.SyntaxError
+
+	if !errors.As(err, &syntaxError) {
+		t.Fatalf("decode error = %v, want a wrapped JSON syntax error", err)
+	}
 }

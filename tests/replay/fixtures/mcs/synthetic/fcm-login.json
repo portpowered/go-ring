@@ -1,0 +1,48 @@
+{
+  "label": "synthetic",
+  "protocol": "MCS",
+  "behavior": "login",
+  "client": {
+    "version": 41,
+    "tag": 2,
+    "payload": {
+      "account_id": 1000000,
+      "auth_service": 2,
+      "auth_token": "67890",
+      "id": "chrome-63.0.3234.0",
+      "domain": "mcs.android.com",
+      "device_id": "android-3039",
+      "network_type": 1,
+      "last_rmq_id": 1,
+      "resource": "12345",
+      "user": "12345",
+      "use_rmq2": true,
+      "adaptive_heartbeat": false,
+      "received_persistent_id": [],
+      "setting": [{"name": "new_vc", "value": "1"}]
+    }
+  },
+  "server": {
+    "version": 41,
+    "tag": 3,
+    "id": "synthetic-login",
+    "last_stream_id_received": 1,
+    "server_timestamp": 1
+  },
+  "server_ping": {
+    "tag": 0,
+    "payload": {"last_stream_id_received": 9}
+  },
+  "client_ack": {
+    "tag": 1,
+    "payload": {"last_stream_id_received": 9}
+  },
+  "client_ping": {
+    "tag": 0,
+    "payload": {"last_stream_id_received": 0}
+  },
+  "server_ack": {
+    "tag": 1,
+    "payload": {"last_stream_id_received": 7}
+  }
+}

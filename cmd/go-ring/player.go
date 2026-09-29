@@ -13,8 +13,30 @@ import (
 )
 
 type rtpVideoWriter interface {
-	WriteRTP(*rtp.Packet) error
+	WriteRTP(packet *rtp.Packet) error
 	Close() error
+}
+
+type videoWriterHandle struct {
+	writer rtpVideoWriter
+}
+
+func (w videoWriterHandle) WriteRTP(packet *rtp.Packet) error {
+	err := w.writer.WriteRTP(packet)
+	if err != nil {
+		return wrapCommandError("write preview video packet", err)
+	}
+
+	return nil
+}
+
+func (w videoWriterHandle) Close() error {
+	err := w.writer.Close()
+	if err != nil {
+		return wrapCommandError("close preview writer", err)
+	}
+
+	return nil
 }
 
 const (
@@ -22,17 +44,22 @@ const (
 	previewIVF  = "ivf"
 )
 
-func videoWriter(codec string, output io.Writer) (rtpVideoWriter, string, error) {
+func videoWriter(codec string, output io.Writer) (*videoWriterHandle, string, error) {
 	format, err := previewFormat(codec)
 	if err != nil {
 		return nil, "", err
 	}
+
 	switch format {
 	case previewH264:
-		return newH264FrameWriter(output), previewH264, nil
+		return &videoWriterHandle{writer: newH264FrameWriter(output)}, previewH264, nil
 	case previewIVF:
 		writer, err := ivfwriter.NewWith(output, ivfwriter.WithCodec(webrtc.MimeTypeVP8))
-		return writer, previewIVF, err
+		if err != nil {
+			return nil, "", wrapCommandError("create IVF preview writer", err)
+		}
+
+		return &videoWriterHandle{writer: writer}, previewIVF, nil
 	default:
 		return nil, "", commandError("unsupported preview format " + format)
 	}
@@ -51,55 +78,79 @@ func previewFormat(codec string) (string, error) {
 
 func playTrack(ctx context.Context, track *webrtc.TrackRemote, recordPath string) error {
 	var recording *rtpRecording
+
 	if recordPath != "" {
 		var err error
+
 		recording, err = newRTPRecording(recordPath)
 		if err != nil {
-			return err
+			return wrapCommandError("start RTP recording", err)
 		}
+
 		defer func() { _ = recording.Close() }()
 	}
-	if _, err := exec.LookPath(ffplayCommand); err != nil {
-		return commandError("ffplay is required for preview; install FFmpeg or use --player none")
+
+	_, err := exec.LookPath(ffplayCommand)
+	if err != nil {
+		return wrapCommandError("ffplay is required for preview; install FFmpeg or use --player none", err)
 	}
+
 	codec := track.Codec().MimeType
+
 	format, err := previewFormat(codec)
 	if err != nil {
 		return err
 	}
-	command := exec.CommandContext(ctx, ffplayCommand, "-loglevel", "error", "-f", format, "-i", "pipe:0") // #nosec G204 -- ffplayCommand is fixed and format is allowlisted by previewFormat.
+
+	command := exec.CommandContext(
+		ctx, ffplayCommand, "-loglevel", "error", "-f", format, "-i", "pipe:0",
+	) // #nosec G204 -- fixed command and previewFormat allowlist.
 	command.Stderr = os.Stderr
+
 	input, err := command.StdinPipe()
 	if err != nil {
-		return err
+		return wrapCommandError("open ffplay input", err)
 	}
+
 	writer, _, err := videoWriter(codec, input)
 	if err != nil {
-		return err
+		return wrapCommandError("create preview writer", err)
 	}
-	if err := command.Start(); err != nil {
+
+	err = command.Start()
+	if err != nil {
 		_ = input.Close()
-		return err
+
+		return wrapCommandError("start ffplay", err)
 	}
+
 	defer func() {
 		_ = writer.Close()
+
 		_ = input.Close()
+
 		if command.Process != nil {
 			_ = command.Process.Kill()
 		}
+
 		_ = command.Wait()
 	}()
+
 	for {
 		packet, _, err := track.ReadRTP()
 		if err != nil {
-			return err
+			return wrapCommandError("read video RTP packet", err)
 		}
+
 		if recording != nil {
-			if err := recording.WritePacket(packet); err != nil {
-				return err
+			err = recording.WritePacket(packet)
+			if err != nil {
+				return wrapCommandError("record video RTP packet", err)
 			}
 		}
-		if err := writer.WriteRTP(packet); err != nil {
+
+		err = writer.WriteRTP(packet)
+		if err != nil {
 			return err
 		}
 	}

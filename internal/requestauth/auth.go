@@ -17,5 +17,6 @@ func WithAccount(ctx context.Context, account Account) context.Context {
 
 func FromContext(ctx context.Context) (Account, bool) {
 	account, ok := ctx.Value(contextKey{}).(Account)
+
 	return account, ok
 }

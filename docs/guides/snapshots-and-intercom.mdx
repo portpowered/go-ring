@@ -1,0 +1,24 @@
+---
+title: Snapshots and intercom
+description: Fetch a fresh snapshot and send an intercom unlock request.
+---
+
+`GetSnapshot` refreshes the legacy snapshot timestamp, polls for a newer image, then returns buffered bytes. Its request lets you bound attempts and polling interval. Save or process the returned bytes in your application.
+
+```go
+snapshot, err := client.GetSnapshot(ctx, ring.GetSnapshotRequest{
+	Auth: auth, DeviceID: deviceID,
+})
+if err != nil {
+	return err
+}
+_ = snapshot.Bytes
+```
+
+`UnlockIntercom` sends an unlock request for an intercom device. It does not confirm that the physical lock opened. Only call it for a device and account authorized to unlock.
+
+```go
+err = client.UnlockIntercom(ctx, ring.DeviceIDRequest{Auth: auth, DeviceID: deviceID})
+```
+
+Wire contracts: [snapshot refresh](/docs/openapi/snapshots/refreshLegacySnapshotTimestamp), [snapshot image](/docs/openapi/snapshots/getLegacySnapshotImage), and [intercom unlock](/docs/openapi/device-controls/unlockIntercom).

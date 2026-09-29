@@ -1,0 +1,32 @@
+{
+  "request": {
+    "method": "POST",
+    "origin": "https://fcmregistrations.googleapis.com",
+    "path": "/v1/projects/ring-17770/registrations",
+    "query": [],
+    "headers": {
+      "Content-Type": ["application/json"],
+      "X-Goog-Api-Key": ["AIzaSyCv-hdFBmmdBBJadNy-TFwB-xN_H5m3Bk8"],
+      "X-Goog-Firebase-Installations-Auth": ["synthetic-installation-token"]
+    },
+    "json": true,
+    "body": {
+      "web": {
+        "endpoint": "https://fcm.googleapis.com/fcm/send/legacy-registration-token",
+        "p256dh": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "auth": "AAAAAAAAAAAAAAAAAAAAAA=="
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": ["application/json"]
+    },
+    "json": true,
+    "body": {
+      "token": "synthetic-fcm-token",
+      "pushSet": "synthetic-push-set"
+    }
+  }
+}

@@ -11,6 +11,7 @@ func (failure *captureError) Error() string {
 	if failure.cause != nil {
 		return failure.message + ": " + failure.cause.Error()
 	}
+
 	return failure.message
 }
 
@@ -19,7 +20,7 @@ func (failure *captureError) Unwrap() error {
 }
 
 func captureErrorf(format string, arguments ...any) error {
-	return &captureError{message: fmt.Sprintf(format, arguments...)}
+	return &captureError{message: fmt.Sprintf(format, arguments...), cause: nil}
 }
 
 func wrapCaptureError(message string, cause error) error {

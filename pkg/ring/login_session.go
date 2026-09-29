@@ -32,6 +32,7 @@ func (c *Client) NewLoginSession(req LoginSessionRequest) (*LoginSession, error)
 	if req.Username == "" || req.Password == "" {
 		return nil, ringapimodels.NewBadRequestError("username and password are required", nil)
 	}
+
 	hardwareID := req.HardwareID
 	if hardwareID == "" {
 		hardwareID = uuid.NewString()
@@ -39,6 +40,7 @@ func (c *Client) NewLoginSession(req LoginSessionRequest) (*LoginSession, error)
 	// OAuth flow cookies belong to the login, not to the shared HTTP client.
 	httpClient := *c.restClient.HTTPClient()
 	httpClient.Jar = nil
+
 	return &LoginSession{
 		restClient: rest.NewClient(
 			rest.WithHTTPClient(&httpClient),
@@ -55,24 +57,33 @@ func (s *LoginSession) HardwareID() string { return s.hardwareID }
 func (s *LoginSession) Request2FACode(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if s.done {
 		return ringapimodels.NewClosedError("login session is closed")
 	}
+
 	return s.restClient.Request2FACode(ctx, s.username, s.password, s.hardwareID)
 }
 
-func (s *LoginSession) Authenticate(ctx context.Context, req CompleteLoginRequest) (*ringapimodels.AuthResponse, error) {
+func (s *LoginSession) Authenticate(
+	ctx context.Context,
+	req CompleteLoginRequest,
+) (*ringapimodels.AuthResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if s.done {
 		return nil, ringapimodels.NewClosedError("login session is closed")
 	}
+
 	tokens, err := s.restClient.Authenticate(ctx, s.username, s.password, s.hardwareID, req.OTPCode)
 	if err != nil {
 		return nil, err
 	}
+
 	s.done = true
 	s.password = ""
+
 	return &ringapimodels.AuthResponse{
 		AccessToken: tokens.AccessToken, RefreshToken: tokenString(tokens.RefreshToken),
 		ExpiresIn: tokenInt(tokens.ExpiresIn), TokenType: tokens.TokenType,
@@ -82,8 +93,10 @@ func (s *LoginSession) Authenticate(ctx context.Context, req CompleteLoginReques
 func (s *LoginSession) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	s.done = true
 	s.password = ""
 	s.restClient = nil
+
 	return nil
 }

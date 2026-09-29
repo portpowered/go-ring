@@ -15,15 +15,26 @@ type endpointTransport struct{ urls []string }
 
 func (t *endpointTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	t.urls = append(t.urls, req.URL.String())
-	return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{}`)), Request: req}, nil
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+		Request:    req,
+	}, nil
 }
 
 func TestEndpointRegionsAndOverridesArePerClient(t *testing.T) {
+	t.Parallel()
+
 	for _, region := range []ring.Region{ring.RegionUS, ring.RegionEU, ring.RegionFE} {
 		transport := &endpointTransport{}
 		client, err := ring.NewClient(ring.WithRegion(region), ring.WithHTTPClient(&http.Client{Transport: transport}))
 		require.NoError(t, err)
-		_, err = client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
+		_, err = client.ListDevices(
+			context.Background(),
+			ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""}},
+		)
 		require.NoError(t, err)
 		require.Len(t, transport.urls, 1)
 		require.True(t, strings.HasPrefix(transport.urls[0], "https://api.ring.com/"))
@@ -36,22 +47,33 @@ func TestEndpointRegionsAndOverridesArePerClient(t *testing.T) {
 		transport := &endpointTransport{}
 		client, err := ring.NewClient(append(options, ring.WithHTTPClient(&http.Client{Transport: transport}))...)
 		require.NoError(t, err)
-		_, err = client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
+		_, err = client.ListDevices(
+			context.Background(),
+			ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""}},
+		)
 		require.NoError(t, err)
 		require.True(t, strings.HasPrefix(transport.urls[0], "https://override.example/"))
 	}
 
 	defaultTransport := &endpointTransport{}
-	_, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: defaultTransport}), ring.WithEndpoints(ring.Endpoints{APIBaseURL: "http://[bad"}))
+	_, err := ring.NewClient(
+		ring.WithHTTPClient(&http.Client{Transport: defaultTransport}),
+		ring.WithEndpoints(ring.Endpoints{APIBaseURL: "http://[bad"}),
+	)
 	require.Error(t, err)
 	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: defaultTransport}))
 	require.NoError(t, err)
-	_, err = client.ListDevices(context.Background(), ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token"}})
+	_, err = client.ListDevices(
+		context.Background(),
+		ring.ListDevicesRequest{Auth: ring.AuthContext{AccessToken: "test_token", HardwareID: ""}},
+	)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(defaultTransport.urls[0], "https://api.ring.com/"))
 }
 
 func TestEndpointOverridesRejectWrongSchemesAndUserInfo(t *testing.T) {
+	t.Parallel()
+
 	invalid := []ring.Endpoints{
 		{OAuthBaseURL: "wss://oauth.example"},
 		{APIBaseURL: "ws://api.example"},
@@ -69,6 +91,8 @@ func TestEndpointOverridesRejectWrongSchemesAndUserInfo(t *testing.T) {
 }
 
 func TestNilHTTPClientRejected(t *testing.T) {
+	t.Parallel()
+
 	_, err := ring.NewClient(ring.WithHTTPClient(nil))
 	require.Error(t, err)
 }

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/portpowered/go-ring/pkg/generatedhttp"
+	"github.com/portpowered/go-ring/internal/generatedhttp"
 )
 
 // DeviceFamily selects a legacy family endpoint. Only doorbots and chimes
@@ -89,49 +89,73 @@ func joinCapabilities(values []EventCapability) *string {
 	if len(values) == 0 {
 		return nil
 	}
+
 	parts := make([]string, len(values))
 	for i, value := range values {
 		parts[i] = string(value)
 	}
+
 	joined := strings.Join(parts, ",")
+
 	return &joined
 }
 
 func (p LocationParams) wire() generatedhttp.GetLocationParams {
 	if len(p.Include) == 0 {
-		return generatedhttp.GetLocationParams{}
+		return generatedhttp.GetLocationParams{Include: nil}
 	}
+
 	parts := make([]string, len(p.Include))
 	for i, value := range p.Include {
 		parts[i] = string(value)
 	}
+
 	joined := strings.Join(parts, ",")
+
 	return generatedhttp.GetLocationParams{Include: &joined}
 }
 
 func (p TimelineParams) wire() generatedhttp.GetDeviceTimelineParams {
 	var order *string
+
 	if p.Order != nil {
 		value := string(*p.Order)
 		order = &value
 	}
-	return generatedhttp.GetDeviceTimelineParams{StartTime: p.StartTime, EndTime: p.EndTime, Order: order, Limit: p.Limit, Capabilities: joinCapabilities(p.Capabilities)}
+
+	return generatedhttp.GetDeviceTimelineParams{
+		StartTime:    p.StartTime,
+		EndTime:      p.EndTime,
+		Order:        order,
+		Limit:        p.Limit,
+		Capabilities: joinCapabilities(p.Capabilities),
+	}
 }
 
 func (p HistoryDevicesParams) wire() generatedhttp.GetHistoryDevicesParams {
 	var sourceIDs *string
+
 	if len(p.SourceIDs) > 0 {
 		value := strings.Join(p.SourceIDs, ",")
 		sourceIDs = &value
 	}
+
 	return generatedhttp.GetHistoryDevicesParams{SourceIds: sourceIDs, Capabilities: joinCapabilities(p.Capabilities)}
 }
 
 func (p CapturedTicketsParams) wire() generatedhttp.GetCapturedLocationTicketsParams {
 	var transport *string
+
 	if p.RequestedTransport != nil {
 		value := string(*p.RequestedTransport)
 		transport = &value
 	}
-	return generatedhttp.GetCapturedLocationTicketsParams{AllowUserOnly: p.AllowUserOnly, LocationID: p.LocationID, LocationSubscription: p.LocationSubscription, EnableExtendedEmergencyCellUsage: p.EnableExtendedEmergencyCellUsage, RequestedTransport: transport}
+
+	return generatedhttp.GetCapturedLocationTicketsParams{
+		AllowUserOnly:                    p.AllowUserOnly,
+		LocationID:                       p.LocationID,
+		LocationSubscription:             p.LocationSubscription,
+		EnableExtendedEmergencyCellUsage: p.EnableExtendedEmergencyCellUsage,
+		RequestedTransport:               transport,
+	}
 }

@@ -1,0 +1,22 @@
+---
+title: Account events and tickets
+description: Receive account WebSocket events and request location tickets.
+---
+
+`ConnectEvents` opens the account event WebSocket. Call `Receive` until the context ends, then close the connection. `Listen` runs that loop and calls your callback for each event. Pass the account token in `AuthContext`; the client does not refresh it for you.
+
+```go
+conn, err := client.ConnectEvents(ctx, ring.ConnectEventsRequest{Auth: auth})
+if err != nil {
+	return err
+}
+defer conn.Close()
+
+event, err := conn.Receive()
+```
+
+`GetCapturedTickets` fetches the location ticket format seen in sanitized HTTP evidence. Its request takes `CapturedTicketsParams`; use the returned ticket only for the corresponding account and location.
+
+The event frame example is synthetic and follows the current implementation. Unknown event fields remain in `Event.Data`; account-specific frame variants have not been captured for this guide.
+
+Wire contracts: [account event frame](/docs/asyncapi/account-events/receiveAccountEvent) and [location tickets](/docs/openapi/signaling/getCapturedLocationTickets).

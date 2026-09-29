@@ -86,10 +86,12 @@ func repositoryRoot() string {
 	if ok {
 		return filepath.Clean(filepath.Join(filepath.Dir(sourcePath), "..", ".."))
 	}
+
 	workingDirectory, err := os.Getwd()
 	if err != nil {
 		return "."
 	}
+
 	return workingDirectory
 }
 
@@ -99,10 +101,12 @@ func extractCapture(sourcePath, outputDirectory string) error {
 	if err != nil {
 		return wrapCaptureError("read capture", err)
 	}
+
 	flows, err := decodeFlowStream(data)
 	if err != nil {
 		return wrapCaptureError("read mitmproxy capture", err)
 	}
+
 	return extractFlows(flows, outputDirectory)
 }
 
@@ -111,108 +115,153 @@ func extractFlows(flows []*capturedFlow, outputDirectory string) error {
 	if err != nil {
 		return err
 	}
-	if err := writeHTTPRecords(httpRecords, orderedNames, outputDirectory); err != nil {
-		return err
+
+	{
+		err := writeHTTPRecords(httpRecords, orderedNames, outputDirectory)
+		if err != nil {
+			return err
+		}
 	}
+
 	variants, variantNames, err := findHTTPVariants(flows, httpRecords)
 	if err != nil {
 		return err
 	}
-	if err := writeHTTPVariants(variants, variantNames, httpRecords, outputDirectory); err != nil {
-		return err
+
+	{
+		err := writeHTTPVariants(variants, variantNames, httpRecords, outputDirectory)
+		if err != nil {
+			return err
+		}
 	}
+
 	return writeSignalingSessions(flows, outputDirectory)
 }
 
 func firstHTTPRecords(flows []*capturedFlow) (map[string]httpExchange, []string, error) {
 	httpRecords := make(map[string]httpExchange)
 	orderedNames := make([]string, 0)
+
 	for _, flow := range flows {
 		if flow.request == nil || flow.response == nil {
 			continue
 		}
+
 		name := eligible(flow)
 		if name == "" {
 			continue
 		}
+
 		if _, exists := httpRecords[name]; exists {
 			continue
 		}
+
 		record, err := sanitizedExchange(flow)
 		if err != nil {
 			return nil, nil, err
 		}
+
 		httpRecords[name] = record
+
 		orderedNames = append(orderedNames, name)
 	}
+
 	return httpRecords, orderedNames, nil
 }
 
 func writeHTTPRecords(records map[string]httpExchange, names []string, outputDirectory string) error {
 	for _, name := range names {
-		if err := writeJSON(filepath.Join(outputDirectory, "http", "captured", name+".json"), records[name]); err != nil {
+		err := writeJSON(filepath.Join(outputDirectory, "http", "captured", name+".json"), records[name])
+		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
-func findHTTPVariants(flows []*capturedFlow, records map[string]httpExchange) (map[string][]httpExchange, []string, error) {
+func findHTTPVariants(
+	flows []*capturedFlow,
+	records map[string]httpExchange,
+) (map[string][]httpExchange, []string, error) {
 	emitted := make(map[string]map[string]struct{}, len(records))
+
 	for name, record := range records {
 		signature, err := variantSignature(record)
 		if err != nil {
 			return nil, nil, wrapCaptureError("build baseline fixture signature", err)
 		}
+
 		emitted[name] = map[string]struct{}{signature: {}}
 	}
+
 	variants := make(map[string][]httpExchange)
 	variantNames := make([]string, 0)
+
 	for _, flow := range flows {
 		if flow.request == nil || flow.response == nil {
 			continue
 		}
+
 		name := eligible(flow)
 		if name == "" {
 			continue
 		}
+
 		record, err := sanitizedExchange(flow)
 		if err != nil {
 			return nil, nil, err
 		}
+
 		signature, err := variantSignature(record)
 		if err != nil {
 			return nil, nil, wrapCaptureError("build variant fixture signature", err)
 		}
+
 		if emitted[name] == nil {
 			emitted[name] = make(map[string]struct{})
 		}
+
 		if _, exists := emitted[name][signature]; exists {
 			continue
 		}
+
 		emitted[name][signature] = struct{}{}
+
 		if _, exists := variants[name]; !exists {
 			variantNames = append(variantNames, name)
 		}
+
 		variants[name] = append(variants[name], record)
 	}
+
 	sort.Strings(variantNames)
+
 	return variants, variantNames, nil
 }
 
-func writeHTTPVariants(variants map[string][]httpExchange, names []string, records map[string]httpExchange, outputDirectory string) error {
+func writeHTTPVariants(
+	variants map[string][]httpExchange,
+	names []string,
+	records map[string]httpExchange,
+	outputDirectory string,
+) error {
 	for _, name := range names {
 		firstIndex := 1
 		if _, hasBaseline := records[name]; hasBaseline {
 			firstIndex = 2
 		}
+
 		for offset, record := range variants[name] {
 			fileName := fmt.Sprintf("%s-%02d.json", name, firstIndex+offset)
-			if err := writeJSON(filepath.Join(outputDirectory, "http", "captured", "variants", fileName), record); err != nil {
+
+			err := writeJSON(filepath.Join(outputDirectory, "http", "captured", "variants", fileName), record)
+			if err != nil {
 				return err
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -221,33 +270,49 @@ func writeSignalingSessions(flows []*capturedFlow, outputDirectory string) error
 		if flowNumber > len(flows) {
 			return captureErrorf("expected WebSocket flow %d", flowNumber)
 		}
+
 		flow := flows[flowNumber-1]
 		if flow.websocket == nil {
 			return captureErrorf("expected WebSocket flow %d", flowNumber)
 		}
+
 		messages := make([]sessionMessage, 0, len(flow.websocket.messages))
 		cleaner := newSanitizer()
+
 		for _, message := range flow.websocket.messages {
 			if message.opcode != 1 {
 				return captureErrorf("unsupported non-text frame in selected session flow %d", flowNumber)
 			}
+
 			if !utf8.Valid(message.content) {
 				return captureErrorf("unsupported non-JSON text in selected session flow %d", flowNumber)
 			}
+
 			payload, err := decodeJSONOrdered(message.content)
 			if err != nil {
 				return captureErrorf("unsupported non-JSON text in selected session flow %d", flowNumber)
 			}
+
 			direction := serverToClient
 			if message.fromClient {
 				direction = clientToServer
 			}
-			messages = append(messages, sessionMessage{Direction: direction, Frame: "text", Payload: cleaner.value(payload, "")})
+
+			messages = append(
+				messages,
+				sessionMessage{Direction: direction, Frame: "text", Payload: cleaner.value(payload, "")},
+			)
 		}
-		if err := writeJSON(filepath.Join(outputDirectory, "signaling", "captured", fmt.Sprintf("flow-%d.json", flowNumber)), sessionFixture{Messages: messages}); err != nil {
+
+		err := writeJSON(
+			filepath.Join(outputDirectory, "signaling", "captured", fmt.Sprintf("flow-%d.json", flowNumber)),
+			sessionFixture{Messages: messages},
+		)
+		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -256,27 +321,39 @@ func sanitizedExchange(flow *capturedFlow) (httpExchange, error) {
 	if err != nil {
 		return httpExchange{}, err
 	}
+
 	responseBody, responseJSON, err := decodeJSONBody(flow.response.content, flow.response.headers)
 	if err != nil {
 		return httpExchange{}, err
 	}
+
 	cleaner := newSanitizer()
 	query := queryValues(flow.request.path)
+
 	queryFixtureValues := make([]queryFixture, 0, len(query))
+
 	for _, parameter := range query {
-		queryFixtureValues = append(queryFixtureValues, queryFixture{Name: parameter[0], Value: cleaner.value(parameter[1], parameter[0])})
+		queryFixtureValues = append(
+			queryFixtureValues,
+			queryFixture{Name: parameter[0], Value: cleaner.value(parameter[1], parameter[0])},
+		)
 	}
+
 	requestBody = cleaner.value(requestBody, "")
 	responseBody = cleaner.value(responseBody, "")
+
 	accept, foundAccept := lookupHeader(flow.request.headers, "accept")
 	if !foundAccept {
 		accept = "application/json"
 	}
+
 	requestHeaders := map[string][]string{"Accept": {accept}}
+
 	responseHeaders := make(map[string][]string)
 	if responseJSON {
 		responseHeaders["Content-Type"] = []string{"application/json"}
 	}
+
 	return httpExchange{
 		Request: requestFixture{
 			Method:      flow.request.method,
@@ -302,6 +379,7 @@ func safePath(rawPath string) string {
 	for _, replacement := range safePathPatterns {
 		path = replacement.pattern.ReplaceAllString(path, replacement.replacement)
 	}
+
 	return path
 }
 
@@ -309,8 +387,10 @@ func eligible(flow *capturedFlow) string {
 	if flow.request == nil || flow.response == nil {
 		return ""
 	}
+
 	host := flow.request.host
 	path, _ := splitPathAndQuery(flow.request.path)
+
 	if host == "api.ring.com" {
 		switch {
 		case path == deviceListPath:
@@ -343,25 +423,33 @@ func eligible(flow *capturedFlow) string {
 			return "duos-update"
 		}
 	}
+
 	if host == "prd-api-us.prd.rings.solutions" && path == "/api/v1/clap/tickets" {
 		return "bootstrap-ticket"
 	}
+
 	return ""
 }
 
 func splitPathAndQuery(rawPath string) (string, string) {
 	path := rawPath
 	if schemeAt := strings.Index(path, "://"); schemeAt >= 0 {
-		if parsed, err := url.Parse(path); err == nil {
-			return parsed.Path, parsed.RawQuery
+		{
+			parsed, err := url.Parse(path)
+			if err == nil {
+				return parsed.Path, parsed.RawQuery
+			}
 		}
 	}
+
 	if fragmentAt := strings.IndexByte(path, '#'); fragmentAt >= 0 {
 		path = path[:fragmentAt]
 	}
+
 	if queryAt := strings.IndexByte(path, '?'); queryAt >= 0 {
 		return path[:queryAt], path[queryAt+1:]
 	}
+
 	return path, ""
 }
 
@@ -370,19 +458,24 @@ func queryValues(rawPath string) [][2]string {
 	if rawQuery == "" {
 		return nil
 	}
+
 	parameters := make([][2]string, 0)
+
 	for _, field := range strings.Split(rawQuery, "&") {
 		name, value, hasValue := strings.Cut(field, "=")
 		if !hasValue {
 			value = ""
 		}
+
 		parameters = append(parameters, [2]string{queryUnescape(name), queryUnescape(value)})
 	}
+
 	return parameters
 }
 
 func queryUnescape(value string) string {
 	value = strings.ReplaceAll(value, "+", " ")
+
 	decoded, err := url.QueryUnescape(value)
 	if err == nil {
 		return decoded
@@ -401,10 +494,12 @@ func variantSignature(record httpExchange) (string, error) {
 		"response_json":  record.Response.JSON,
 		"response_shape": valueShape(record.Response.Body),
 	}
+
 	encoded, err := json.Marshal(shape)
 	if err != nil {
 		return "", wrapCaptureError("marshal variant signature", err)
 	}
+
 	return string(encoded), nil
 }
 
@@ -415,18 +510,21 @@ func canonicalize(value any) any {
 		for key, child := range value.values {
 			canonical[key] = canonicalize(child)
 		}
+
 		return canonical
 	case map[string]any:
 		canonical := make(map[string]any, len(value))
 		for key, child := range value {
 			canonical[key] = canonicalize(child)
 		}
+
 		return canonical
 	case []any:
 		canonical := make([]any, len(value))
 		for index, child := range value {
 			canonical[index] = canonicalize(child)
 		}
+
 		return canonical
 	default:
 		return value
@@ -434,23 +532,37 @@ func canonicalize(value any) any {
 }
 
 func writeJSON(path string, value any) error {
-	if err := os.MkdirAll(filepath.Dir(path), fixtureDirectoryMode); err != nil {
-		return wrapCaptureError("create fixture directory", err)
+	{
+		err := os.MkdirAll(filepath.Dir(path), fixtureDirectoryMode)
+		if err != nil {
+			return wrapCaptureError("create fixture directory", err)
+		}
 	}
 	// #nosec G304 -- output path is derived from the explicit CLI output directory.
 	file, err := os.Create(path)
 	if err != nil {
 		return wrapCaptureError("create fixture", err)
 	}
+
 	encoder := json.NewEncoder(file)
 	encoder.SetEscapeHTML(false)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(value); err != nil {
-		_ = file.Close()
-		return wrapCaptureError("write fixture", err)
+
+	{
+		err := encoder.Encode(value)
+		if err != nil {
+			_ = file.Close()
+
+			return wrapCaptureError("write fixture", err)
+		}
 	}
-	if err := file.Close(); err != nil {
-		return wrapCaptureError("close fixture", err)
+
+	{
+		err := file.Close()
+		if err != nil {
+			return wrapCaptureError("close fixture", err)
+		}
 	}
+
 	return nil
 }

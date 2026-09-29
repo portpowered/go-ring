@@ -18,6 +18,11 @@
     {"channel":"sessionCreated","kind":"send","frame":"text","body":{"method":"session_created","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
     {"channel":"liveAnswer","kind":"send","frame":"text","body":{"method":"sdp","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","sdp":"synthetic-live-answer","session_info":{"session_id":"synthetic-control"},"type":"answer"}}},
     {"channel":"liveICE","kind":"expect","frame":"text","body":{"method":"ice","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"ice":"candidate:synthetic","mid":"0","mlineindex":0}}},
-    {"channel":"pTZCommand","kind":"expect","frame":"text","body":{"method":"rpc","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","command":{"jsonrpc":"2.0","id":"synthetic-command","method":"PTZ.Pan.Step","params":{"sessionId":"synthetic-control","timestamp":1700000000000,"version":1,"direction":"RIGHT"}}}}}
+    {"channel":"pTZCommand","kind":"expect","frame":"text","body":{"method":"rpc","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","command":{"jsonrpc":"2.0","id":"synthetic-command","method":"PTZ.Pan.Step","params":{"sessionId":"synthetic-control","timestamp":1700000000000,"version":1,"direction":"RIGHT"}}}}},
+    {"channel":"sessionActivate","kind":"expect","frame":"text","body":{"method":"activate_session","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
+    {"channel":"sessionMicrophone","kind":"expect","frame":"text","body":{"method":"mic_enable","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","enabled":false}}},
+    {"channel":"sessionStreamOptions","kind":"expect","frame":"text","body":{"method":"stream_options","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","audio_enabled":false}}},
+    {"channel":"sessionClose","kind":"expect","frame":"text","body":{"method":"close","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
+    {"channel":"serverEnvelope","kind":"send","frame":"text","body":{"method":"camera_started","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}}
   ]
 }

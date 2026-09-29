@@ -13,9 +13,11 @@ func (e cliError) Error() string {
 	if e.cause != nil {
 		message += ": " + e.cause.Error()
 	}
+
 	if e.detail != "" {
 		message += ": " + e.detail
 	}
+
 	return message
 }
 
@@ -24,11 +26,11 @@ func (e cliError) Unwrap() error {
 }
 
 func commandError(message string) error {
-	return cliError{message: message}
+	return cliError{message: message, cause: nil, detail: ""}
 }
 
 func wrapCommandError(message string, cause error) error {
-	return cliError{message: message, cause: cause}
+	return cliError{message: message, cause: cause, detail: ""}
 }
 
 func wrapCommandErrorDetail(message string, cause error, detail string) error {

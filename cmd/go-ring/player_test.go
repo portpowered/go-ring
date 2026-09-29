@@ -9,6 +9,8 @@ import (
 )
 
 func TestPreviewWritersDepacketizeWithoutUDP(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		codec  string
@@ -19,25 +21,34 @@ func TestPreviewWritersDepacketizeWithoutUDP(t *testing.T) {
 		{
 			name: "VP8", codec: webrtc.MimeTypeVP8, format: "ivf",
 			prefix: []byte("DKIF"),
-			packet: &rtp.Packet{Header: rtp.Header{Version: 2, Marker: true, Timestamp: 90000}, Payload: []byte{0x10, 0x00, 0x00, 0x00}},
+			packet: newTestRTPPacket(0, 90000, true, 0x10, 0x00, 0x00, 0x00),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			var output bytes.Buffer
+
 			writer, format, err := videoWriter(tt.codec, &output)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if format != tt.format {
 				t.Fatalf("format %q, want %q", format, tt.format)
 			}
-			if err := writer.WriteRTP(tt.packet); err != nil {
+
+			err = writer.WriteRTP(tt.packet)
+			if err != nil {
 				t.Fatal(err)
 			}
-			if err := writer.Close(); err != nil {
+
+			err = writer.Close()
+			if err != nil {
 				t.Fatal(err)
 			}
+
 			if !bytes.HasPrefix(output.Bytes(), tt.prefix) {
 				t.Fatalf("output does not begin with %q", tt.prefix)
 			}

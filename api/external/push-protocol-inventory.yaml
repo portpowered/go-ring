@@ -1,0 +1,78 @@
+provenance:
+  kind: reference
+  module: github.com/crow-misia/go-push-receiver
+  version: v0.3.0
+  tag_commit: 6d572da2d7ef29efcfebc06227e1cfeb177f41f5
+  module_sum: h1:1AsABaBqvOdOrke/S2kULGiJ7fiqOfbdupC+lNgAU4U=
+  license: third_party/go-push-receiver/LICENSE
+  local_package: third_party/go-push-receiver
+  note: >-
+    The local copy retains the upstream MIT license and the upstream BSD-style
+    Chromium protobuf notices. It adds a context-aware MCS dial function and
+    changes the MCS connection field to net.Conn for deterministic transport tests.
+    The fork is compiled in the go-ring module so downstream consumers use the
+    same implementation without a local module replacement.
+http_schema: api/external/fcm.openapi.yaml
+mcs_socket:
+  host: mtalk.google.com
+  port: 5228
+  network: tcp
+  tls: true
+  domain: mcs.android.com
+  version: 41
+  version_bytes: 1
+  tag_bytes: 1
+  length_encoding: protobuf-varint
+  callsite: third_party/go-push-receiver/fcm.go:tryToConnect
+  tags:
+    HeartbeatPing: 0
+    HeartbeatAck: 1
+    LoginRequest: 2
+    LoginResponse: 3
+    Close: 4
+    MessageStanza: 5
+    PresenceStanza: 6
+    IqStanza: 7
+    DataMessageStanza: 8
+    BatchPresenceStanza: 9
+    StreamErrorStanza: 10
+    HTTPRequest: 11
+    HTTPResponse: 12
+    BindAccountRequest: 13
+    BindAccountResponse: 14
+    TalkMetadata: 15
+    NumProtoTypes: 16
+    Unknown: 255
+protobuf:
+  generator:
+    protoc: 6.31.1
+    protoc_gen_go: v1.36.6
+    runtime: google.golang.org/protobuf v1.36.8
+  source_files:
+    - path: third_party/go-push-receiver/proto/android_checkin.proto
+      sha256: 726370e7e3b8a9390a3795a820504988a53cf821a765cb9e1412c490d1f089bf
+      messages: [AndroidCheckinProto, ChromeBuildProto]
+    - path: third_party/go-push-receiver/proto/checkin.proto
+      sha256: 09b9f58fae364b5f54a1e144aa9ae6f2497ec1f62f2af0593e88c214faebbc85
+      messages: [AndroidCheckinRequest, AndroidCheckinResponse]
+    - path: third_party/go-push-receiver/proto/mcs.proto
+      sha256: 337508e27bb09bd37a6d41fa71268ff4ae438a82178ee6534ed73e3372bf9bb5
+      messages:
+        - HeartbeatPing
+        - HeartbeatAck
+        - LoginRequest
+        - LoginResponse
+        - Close
+        - IqStanza
+        - DataMessageStanza
+        - StreamErrorStanza
+  generated_go_files:
+    - path: third_party/go-push-receiver/pb/checkin/android_checkin.pb.go
+      sha256: 68545400c7dc8b75df18a6b9229c338ffb48ccc555fbcdc5d622dfbad6d3efa4
+      source: android_checkin.proto
+    - path: third_party/go-push-receiver/pb/checkin/checkin.pb.go
+      sha256: 617fa756102fb258803521abc1da90daba4c613b8a8777076691e1604c81625c
+      source: checkin.proto
+    - path: third_party/go-push-receiver/pb/mcs/mcs.pb.go
+      sha256: ec37a0273abe0a1abfc6da74c086359bb800e83652d53d8ff5b4372b990b05e4
+      source: mcs.proto

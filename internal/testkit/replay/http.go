@@ -3,6 +3,7 @@ package replay
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -23,14 +25,15 @@ type Exchange struct {
 	Response Response `json:"response"`
 }
 type Request struct {
-	Method      string          `json:"method"`
-	Origin      string          `json:"origin"`
-	Path        string          `json:"path"`
-	Query       []Pair          `json:"query"`
-	Headers     http.Header     `json:"headers"`
-	HeadersMode HeadersMode     `json:"headers_mode,omitempty"`
-	Body        json.RawMessage `json:"body"`
-	JSON        bool            `json:"json,omitempty"`
+	Method       string          `json:"method"`
+	Origin       string          `json:"origin"`
+	Path         string          `json:"path"`
+	Query        []Pair          `json:"query"`
+	Headers      http.Header     `json:"headers"`
+	HeadersMode  HeadersMode     `json:"headers_mode,omitempty"`
+	Body         json.RawMessage `json:"body"`
+	BodyEncoding string          `json:"body_encoding,omitempty"`
+	JSON         bool            `json:"json,omitempty"`
 }
 
 // HeadersMode controls cassette header matching. Empty mode is exact.
@@ -42,10 +45,11 @@ const (
 )
 
 type Response struct {
-	Status  int             `json:"status"`
-	Headers http.Header     `json:"headers"`
-	Body    json.RawMessage `json:"body"`
-	JSON    bool            `json:"json,omitempty"`
+	Status       int             `json:"status"`
+	Headers      http.Header     `json:"headers"`
+	Body         json.RawMessage `json:"body"`
+	BodyEncoding string          `json:"body_encoding,omitempty"`
+	JSON         bool            `json:"json,omitempty"`
 }
 type Pair struct {
 	Name  string `json:"name"`
@@ -57,8 +61,8 @@ type noMatchingExchangeError struct {
 	url    string
 }
 
-func (e noMatchingExchangeError) Error() string {
-	return fmt.Sprintf("replay: no unused exchange matches %s %s", e.method, e.url)
+func (replayErr noMatchingExchangeError) Error() string {
+	return fmt.Sprintf("replay: no unused exchange matches %s %s", replayErr.method, replayErr.url)
 }
 
 type unconsumedExchangesError struct{ exchanges string }
@@ -71,15 +75,45 @@ type multipleJSONValuesError struct{}
 
 func (multipleJSONValuesError) Error() string { return "multiple JSON values" }
 
+type invalidBodyEncodingError struct {
+	encoding string
+	reason   string
+}
+
+func (failure invalidBodyEncodingError) Error() string {
+	return "replay: body encoding " + strconv.Quote(failure.encoding) + " " + failure.reason
+}
+
+type replayCauseError struct {
+	operation string
+	cause     error
+}
+
+func (failure replayCauseError) Error() string {
+	return failure.operation + ": " + failure.cause.Error()
+}
+
+func (failure replayCauseError) Unwrap() error { return failure.cause }
+
+func wrapReplayError(operation string, cause error) error {
+	return replayCauseError{operation: operation, cause: cause}
+}
+
 // LoadExchange decodes a JSON cassette file. Response bodies are represented as JSON strings.
 func LoadExchange(path string) (Exchange, error) {
-	b, e := os.ReadFile(path) // #nosec G304 -- cassette paths are supplied by the test harness.
-	if e != nil {
-		return Exchange{}, e
+	cassetteBytes, readErr := os.ReadFile(path) // #nosec G304 -- cassette paths are supplied by the test harness.
+	if readErr != nil {
+		return Exchange{}, wrapReplayError("read HTTP replay cassette", readErr)
 	}
-	var x Exchange
-	e = json.Unmarshal(b, &x)
-	return x, e
+
+	var exchange Exchange
+
+	readErr = json.Unmarshal(cassetteBytes, &exchange)
+	if readErr != nil {
+		return Exchange{}, wrapReplayError("decode HTTP replay cassette", readErr)
+	}
+
+	return exchange, nil
 }
 
 // Transport replays each cassette at most once and never dials a network destination.
@@ -100,205 +134,315 @@ func NewTransport(xs ...Exchange) *Transport {
 func NewUnorderedTransport(xs ...Exchange) *Transport {
 	return &Transport{exchanges: append([]Exchange(nil), xs...), used: make([]bool, len(xs))}
 }
-func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
-	if err := r.Context().Err(); err != nil {
-		return nil, err
-	}
-	var b []byte
-	var e error
-	var err error
-	if r.Body != nil {
-		b, e = io.ReadAll(r.Body)
-	}
-	if e != nil {
-		return nil, e
-	}
-	if r.Body != nil {
-		r.Body = io.NopCloser(bytes.NewReader(b))
-	}
-	for i, x := range t.exchanges {
-		if err := r.Context().Err(); err != nil {
-			return nil, err
+func (t *Transport) RoundTrip(request *http.Request) (*http.Response, error) {
+	{
+		err := request.Context().Err()
+		if err != nil {
+			return nil, wrapReplayError("HTTP replay request canceled", err)
 		}
+	}
+
+	var (
+		requestBody []byte
+		bodyReadErr error
+		err         error
+	)
+
+	if request.Body != nil {
+		requestBody, bodyReadErr = io.ReadAll(request.Body)
+	}
+
+	if bodyReadErr != nil {
+		return nil, wrapReplayError("read HTTP replay request body", bodyReadErr)
+	}
+
+	if request.Body != nil {
+		request.Body = io.NopCloser(bytes.NewReader(requestBody))
+	}
+
+	for index, exchange := range t.exchanges {
+		err := request.Context().Err()
+		if err != nil {
+			return nil, wrapReplayError("HTTP replay request canceled", err)
+		}
+
 		t.mu.Lock()
-		if t.used[i] {
+
+		if t.used[index] {
 			t.mu.Unlock()
+
 			continue
 		}
+
 		if t.ordered {
 			first := 0
 			for first < len(t.used) && t.used[first] {
 				first++
 			}
-			if i != first {
+
+			if index != first {
 				t.mu.Unlock()
+
 				break
 			}
 		}
-		ok, _ := matches(x.Request, r, b)
+
+		ok, _ := matches(exchange.Request, request, requestBody)
 		if ok {
-			t.used[i] = true
+			t.used[index] = true
 			t.mu.Unlock()
-			h := x.Response.Headers.Clone()
-			if h == nil {
-				h = make(http.Header)
+
+			responseHeaders := exchange.Response.Headers.Clone()
+			if responseHeaders == nil {
+				responseHeaders = make(http.Header)
 			}
-			body := decodeBody(x.Response.Body, x.Response.JSON)
-			return &http.Response{StatusCode: x.Response.Status, Status: fmt.Sprintf("%d %s", x.Response.Status, http.StatusText(x.Response.Status)), Header: h, Body: io.NopCloser(bytes.NewReader(body)), ContentLength: int64(len(body)), Request: r}, nil
+
+			body, err := decodeBodyWithEncoding(exchange.Response.Body, exchange.Response.JSON, exchange.Response.BodyEncoding)
+			if err != nil {
+				return nil, wrapReplayError("decode HTTP replay response body", err)
+			}
+
+			return &http.Response{
+				StatusCode:    exchange.Response.Status,
+				Status:        fmt.Sprintf("%d %s", exchange.Response.Status, http.StatusText(exchange.Response.Status)),
+				Header:        responseHeaders,
+				Body:          io.NopCloser(bytes.NewReader(body)),
+				ContentLength: int64(len(body)),
+				Request:       request,
+			}, nil
 		}
+
 		t.mu.Unlock()
 	}
-	err = noMatchingExchangeError{method: r.Method, url: r.URL.String()}
+
+	err = noMatchingExchangeError{method: request.Method, url: request.URL.String()}
+
 	t.mu.Lock()
 	t.err = errors.Join(t.err, err)
 	t.mu.Unlock()
+
 	return nil, err
 }
 func (t *Transport) AssertConsumed() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+
 	var left []string
+
 	for i, x := range t.exchanges {
 		if !t.used[i] {
 			left = append(left, x.Request.Method+" "+x.Request.Origin+x.Request.Path)
 		}
 	}
+
 	var errs []error
 	if len(left) > 0 {
 		errs = append(errs, unconsumedExchangesError{exchanges: strings.Join(left, ", ")})
 	}
+
 	if t.err != nil {
 		errs = append(errs, t.err)
 	}
+
 	return errors.Join(errs...)
 }
-func matches(x Request, r *http.Request, b []byte) (bool, string) {
-	u := r.URL
-	origin := u.Scheme + "://" + u.Host
-	if x.Method != r.Method || x.Origin != origin || x.Path != u.EscapedPath() {
+func matches(expected Request, request *http.Request, requestBody []byte) (bool, string) {
+	requestURL := request.URL
+
+	origin := requestURL.Scheme + "://" + requestURL.Host
+	if expected.Method != request.Method || expected.Origin != origin || expected.Path != requestURL.EscapedPath() {
 		return false, "method/origin/path"
 	}
-	if !reflect.DeepEqual(sortedPairs(x.Query), sortedPairs(queryPairs(u.Query()))) {
+
+	if !reflect.DeepEqual(sortedPairs(expected.Query), sortedPairs(queryPairs(requestURL.Query()))) {
 		return false, "query"
 	}
-	if !headersMatch(x.Headers, r.Header, x.HeadersMode) {
+
+	if !headersMatch(expected.Headers, request.Header, expected.HeadersMode) {
 		return false, "headers"
 	}
-	if x.JSON {
-		if !semanticJSONEqual(x.Body, b) {
+
+	if expected.JSON {
+		if expected.BodyEncoding != "" {
+			return false, "json body encoding"
+		}
+
+		if !semanticJSONEqual(expected.Body, requestBody) {
 			return false, "json body"
 		}
-	} else if !bytes.Equal(decodeBody(x.Body, false), b) {
-		return false, "body"
+	} else {
+		expectedBody, err := decodeBodyWithEncoding(expected.Body, false, expected.BodyEncoding)
+		if err != nil || !bytes.Equal(expectedBody, requestBody) {
+			return false, "body"
+		}
 	}
+
 	return true, ""
 }
 func headersMatch(want, got http.Header, mode HeadersMode) bool {
-	w, g := canonicalHeaders(want), canonicalHeaders(got)
+	wantedHeaders, actualHeaders := canonicalHeaders(want), canonicalHeaders(got)
+
 	if mode == "" {
 		mode = HeadersExact
 	}
+
 	if mode == HeadersExact {
-		return reflect.DeepEqual(w, g)
+		return reflect.DeepEqual(wantedHeaders, actualHeaders)
 	}
+
 	if mode != HeadersRequired {
 		return false
 	}
-	for k, values := range w {
-		if !reflect.DeepEqual(values, g[k]) {
+
+	for key, values := range wantedHeaders {
+		if !reflect.DeepEqual(values, actualHeaders[key]) {
 			return false
 		}
 	}
+
 	return true
 }
-func decodeBody(v json.RawMessage, isJSON bool) []byte {
-	if len(v) == 0 {
-		return nil
+func decodeBody(rawBody json.RawMessage, isJSON bool) []byte {
+	body, _ := decodeBodyWithEncoding(rawBody, isJSON, "")
+
+	return body
+}
+
+func decodeBodyWithEncoding(rawBody json.RawMessage, isJSON bool, encoding string) ([]byte, error) {
+	if len(rawBody) == 0 {
+		return nil, nil
 	}
+
 	if isJSON {
-		return append([]byte(nil), v...)
+		if encoding != "" {
+			return nil, invalidBodyEncodingError{encoding: encoding, reason: "cannot be combined with JSON bodies"}
+		}
+
+		return append([]byte(nil), rawBody...), nil
 	}
-	if string(v) == "null" {
-		return nil
+
+	if string(rawBody) == "null" {
+		return nil, nil
 	}
-	var s string
-	if json.Unmarshal(v, &s) == nil {
-		return []byte(s)
+
+	var bodyText string
+	if encoding == "base64" {
+		decodeErr := json.Unmarshal(rawBody, &bodyText)
+		if decodeErr != nil {
+			return nil, wrapReplayError("decode base64 body string", decodeErr)
+		}
+
+		body, err := base64.StdEncoding.DecodeString(bodyText)
+		if err != nil {
+			return nil, wrapReplayError("decode base64 body", err)
+		}
+
+		return body, nil
 	}
-	return append([]byte(nil), v...)
+
+	if encoding != "" {
+		return nil, invalidBodyEncodingError{encoding: encoding, reason: "is unsupported"}
+	}
+
+	if json.Unmarshal(rawBody, &bodyText) == nil {
+		return []byte(bodyText), nil
+	}
+
+	return append([]byte(nil), rawBody...), nil
 }
-func queryPairs(v url.Values) []Pair {
-	var p []Pair
-	for k, vs := range v {
-		for _, v := range vs {
-			p = append(p, Pair{k, v})
+func queryPairs(values url.Values) []Pair {
+	var pairs []Pair
+
+	for key, values := range values {
+		for _, value := range values {
+			pairs = append(pairs, Pair{key, value})
 		}
 	}
-	return p
+
+	return pairs
 }
-func sortedPairs(p []Pair) []Pair {
-	q := append([]Pair(nil), p...)
-	sort.Slice(q, func(i, j int) bool {
-		if q[i].Name == q[j].Name {
-			return q[i].Value < q[j].Value
+func sortedPairs(pairs []Pair) []Pair {
+	sorted := append([]Pair(nil), pairs...)
+	sort.Slice(sorted, func(left, right int) bool {
+		if sorted[left].Name == sorted[right].Name {
+			return sorted[left].Value < sorted[right].Value
 		}
-		return q[i].Name < q[j].Name
+
+		return sorted[left].Name < sorted[right].Name
 	})
-	return q
+
+	return sorted
 }
-func canonicalHeaders(h http.Header) map[string][]string {
-	m := map[string][]string{}
-	for k, v := range h {
-		key := strings.ToLower(k)
-		z := append([]string(nil), v...)
-		m[key] = append(m[key], z...)
+func canonicalHeaders(headers http.Header) map[string][]string {
+	canonical := map[string][]string{}
+
+	for headerName, values := range headers {
+		key := strings.ToLower(headerName)
+
+		copiedValues := append([]string(nil), values...)
+		canonical[key] = append(canonical[key], copiedValues...)
 	}
-	for key := range m {
-		sort.Strings(m[key])
+
+	for key := range canonical {
+		sort.Strings(canonical[key])
 	}
-	return m
+
+	return canonical
 }
-func semanticJSONEqual(a, b []byte) bool {
-	decode := func(v []byte) (any, error) {
-		d := json.NewDecoder(bytes.NewReader(v))
-		d.UseNumber()
-		var x any
-		e := d.Decode(&x)
-		if e != nil {
-			return nil, e
+func semanticJSONEqual(expectedJSON, actualJSON []byte) bool {
+	decode := func(rawJSON []byte) (any, error) {
+		decoder := json.NewDecoder(bytes.NewReader(rawJSON))
+		decoder.UseNumber()
+
+		var decoded any
+
+		decodeErr := decoder.Decode(&decoded)
+		if decodeErr != nil {
+			return nil, wrapReplayError("decode JSON for replay matching", decodeErr)
 		}
+
 		var extra any
-		if e = d.Decode(&extra); e != io.EOF {
-			return nil, multipleJSONValuesError{}
+		{
+			decodeErr = decoder.Decode(&extra)
+			if decodeErr != io.EOF {
+				return nil, multipleJSONValuesError{}
+			}
 		}
-		return normalizeNumbers(x), nil
+
+		return normalizeNumbers(decoded), nil
 	}
-	x, e := decode(a)
-	if e != nil {
+
+	expectedValue, expectedErr := decode(expectedJSON)
+	if expectedErr != nil {
 		return false
 	}
-	y, e := decode(b)
-	return e == nil && reflect.DeepEqual(x, y)
+
+	actualValue, actualErr := decode(actualJSON)
+
+	return actualErr == nil && reflect.DeepEqual(expectedValue, actualValue)
 }
-func normalizeNumbers(v any) any {
-	switch x := v.(type) {
+func normalizeNumbers(value any) any {
+	switch normalizedValue := value.(type) {
 	case json.Number:
-		r, ok := new(big.Rat).SetString(string(x))
+		r, ok := new(big.Rat).SetString(string(normalizedValue))
 		if ok {
 			return struct{ JSONNumber string }{r.RatString()}
 		}
-		return struct{ JSONNumber string }{string(x)}
+
+		return struct{ JSONNumber string }{string(normalizedValue)}
 	case []any:
-		for i := range x {
-			x[i] = normalizeNumbers(x[i])
+		for index := range normalizedValue {
+			normalizedValue[index] = normalizeNumbers(normalizedValue[index])
 		}
-		return x
+
+		return normalizedValue
 	case map[string]any:
-		for k, z := range x {
-			x[k] = normalizeNumbers(z)
+		for key, item := range normalizedValue {
+			normalizedValue[key] = normalizeNumbers(item)
 		}
-		return x
+
+		return normalizedValue
 	default:
-		return v
+		return value
 	}
 }

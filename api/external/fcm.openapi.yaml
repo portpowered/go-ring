@@ -1,0 +1,335 @@
+openapi: 3.1.0
+info:
+  title: External FCM Receiver Protocol
+  version: 0.3.0
+  description: >-
+    HTTP requests made by the pinned go-push-receiver v0.3.0 implementation
+    during FCM setup. The protobuf message definitions and generated Go source
+    inventory are recorded in push-protocol-inventory.yaml. The local adapter
+    removes the default VAPID key and the FIS prefix before forwarding the
+    registration request.
+x-pinned-receiver-adapter:
+  description: >-
+    Input values used by the pinned receiver before the local adapter removes
+    them from the external FCM HTTP request.
+  properties:
+    registration_web_vapid_key:
+      type: string
+      const: applicationPubKey
+    installations_auth_prefix:
+      type: string
+      const: 'FIS '
+paths:
+  /checkin:
+    post:
+      operationId: checkInFCMClient
+      summary: Check in an Android or Chrome client
+      description: Sends an Android check-in protobuf and receives assigned device credentials.
+      servers:
+        - url: https://android.clients.google.com
+      parameters:
+        - $ref: '#/components/parameters/ProtobufContentType'
+      requestBody:
+        required: true
+        content:
+          application/x-protobuf:
+            schema:
+              $ref: '#/components/schemas/AndroidCheckinRequestWire'
+      responses:
+        '200':
+          description: Check-in response with status and optional device credentials.
+          content:
+            application/x-protobuf:
+              schema:
+                $ref: '#/components/schemas/AndroidCheckinResponseWire'
+        '401':
+          description: Saved device credentials were rejected.
+        default:
+          description: Check-in was rejected or unavailable.
+  /c2dm/register3:
+    post:
+      operationId: registerFCMClient
+      summary: Register a client with legacy C2DM
+      description: Exchanges the check-in device ID and security token for a registration token.
+      servers:
+        - url: https://android.clients.google.com
+      parameters:
+        - name: Content-Type
+          in: header
+          required: true
+          schema:
+            type: string
+            const: application/x-www-form-urlencoded
+        - name: Authorization
+          in: header
+          required: true
+          description: Android ID and security token from the check-in response.
+          schema:
+            type: string
+            pattern: '^AidLogin [0-9]+:[0-9]+$'
+        - name: User-Agent
+          in: header
+          required: true
+          description: The pinned receiver sends an empty User-Agent value.
+          schema:
+            type: string
+            maxLength: 0
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LegacyRegistrationRequest'
+      responses:
+        '200':
+          description: Registration token returned as a form-encoded text response.
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/LegacyRegistrationResponse'
+        default:
+          description: Registration was rejected or unavailable.
+  /v1/projects/ring-17770/installations:
+    post:
+      operationId: createFCMInstallation
+      summary: Create a Firebase installation
+      description: Creates an installation identity used to authorize FCM registration.
+      servers:
+        - url: https://firebaseinstallations.googleapis.com
+      parameters:
+        - $ref: '#/components/parameters/JSONAccept'
+        - $ref: '#/components/parameters/JSONContentType'
+        - $ref: '#/components/parameters/GoogleAPIKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstallationRequest'
+      responses:
+        '200':
+          description: Firebase installation created or returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallationResponse'
+        '201':
+          description: Firebase installation created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallationResponse'
+        default:
+          description: Installation creation was rejected or unavailable.
+  /v1/projects/ring-17770/registrations:
+    post:
+      operationId: registerFCMInstallation
+      summary: Register a Firebase installation for FCM
+      description: Registers Web Push encryption material and returns an FCM token.
+      servers:
+        - url: https://fcmregistrations.googleapis.com
+      parameters:
+        - $ref: '#/components/parameters/JSONContentType'
+        - $ref: '#/components/parameters/GoogleAPIKey'
+        - name: X-Goog-Firebase-Installations-Auth
+          in: header
+          required: true
+          description: The local compatibility adapter removes the upstream FIS prefix before forwarding.
+          schema:
+            type: string
+            minLength: 1
+            description: Opaque Firebase installation authorization token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FCMRegistrationRequest'
+      responses:
+        '200':
+          description: FCM registration created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMRegistrationResponse'
+        '201':
+          description: FCM registration created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMRegistrationResponse'
+        default:
+          description: FCM registration was rejected or unavailable.
+components:
+  parameters:
+    ProtobufContentType:
+      name: Content-Type
+      in: header
+      required: true
+      schema:
+        type: string
+        const: application/x-protobuf
+    JSONAccept:
+      name: Accept
+      in: header
+      required: true
+      schema:
+        type: string
+        const: application/json
+    JSONContentType:
+      name: Content-Type
+      in: header
+      required: true
+      schema:
+        type: string
+        const: application/json
+    GoogleAPIKey:
+      name: X-Goog-Api-Key
+      in: header
+      required: true
+      description: Public API key configured by the pinned Ring Android client.
+      schema:
+        type: string
+        const: AIzaSyCv-hdFBmmdBBJadNy-TFwB-xN_H5m3Bk8
+  schemas:
+    AndroidCheckinRequestWire:
+      type: string
+      format: binary
+      description: Protobuf wire encoding of checkin_proto.AndroidCheckinRequest in the pinned checkin.proto files.
+    AndroidCheckinResponseWire:
+      type: string
+      format: binary
+      description: Protobuf wire encoding of checkin_proto.AndroidCheckinResponse in the pinned checkin.proto files.
+    LegacyRegistrationRequest:
+      type: object
+      additionalProperties: false
+      required: [app, X-subtype, device, sender]
+      properties:
+        app:
+          type: string
+          const: org.chromium.linux
+        X-subtype:
+          type: string
+          const: 1:876313859327:android:e10ec6ddb3c81f39
+        device:
+          type: string
+          pattern: '^[0-9]+$'
+        sender:
+          type: string
+          const: BDOU99-h67HcA6JeFXHbSNMu7e2yNNu3RzoMj8TM4W88jITfq7ZmPvIM1Iv-4_l2LxQcYwhqby2xGpWwzjfAnG4
+      description: Form fields are URL encoded as UTF-8.
+    LegacyRegistrationResponse:
+      type: string
+      pattern: '^token=[^&\r\n]+$'
+      description: Form-encoded response containing the registration token.
+    InstallationRequest:
+      type: object
+      additionalProperties: false
+      required: [appId, authVersion, fid, sdkVersion]
+      properties:
+        appId:
+          type: string
+          const: 1:876313859327:android:e10ec6ddb3c81f39
+        authVersion:
+          type: string
+          const: FIS_v2
+        fid:
+          type: string
+          pattern: '^c[A-Za-z0-9+/]{22}=$'
+          description: Base64-encoded 17-byte FID from the pinned receiver implementation.
+        sdkVersion:
+          type: string
+          const: w:0.6.17
+    InstallationResponse:
+      type: object
+      additionalProperties: true
+      required: [name, fid, refreshToken, authToken]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        fid:
+          type: string
+          minLength: 1
+        refreshToken:
+          type: string
+          minLength: 1
+        authToken:
+          $ref: '#/components/schemas/InstallationAuthToken'
+    InstallationAuthToken:
+      type: object
+      additionalProperties: true
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+        expiresIn:
+          type: string
+          pattern: '^[0-9]+s$'
+    FCMRegistrationRequest:
+      type: object
+      additionalProperties: false
+      required: [web]
+      properties:
+        web:
+          $ref: '#/components/schemas/FCMWebRegistration'
+    FCMWebRegistration:
+      type: object
+      additionalProperties: false
+      required: [endpoint, p256dh, auth]
+      properties:
+        endpoint:
+          type: string
+          format: uri
+          pattern: '^https://fcm\.googleapis\.com/fcm/send/.+$'
+        p256dh:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{87}=$'
+          description: URL-safe base64 encoding of a 65-byte uncompressed P-256 public key.
+        auth:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{22}==$'
+          description: URL-safe base64 encoding of a 16-byte Web Push authentication secret.
+    FCMRegistrationResponse:
+      type: object
+      additionalProperties: true
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+        pushSet:
+          type: string
+    RingPushNotificationConfig:
+      type: object
+      description: Optional Ring category in an MCS notification's android_config JSON string.
+      additionalProperties: true
+      properties:
+        category:
+          type: string
+          description: Open Ring action category, such as ding or motion.
+    RingPushNotificationPayload:
+      type: object
+      description: Optional Ring data object carried as a JSON string in an MCS notification.
+      additionalProperties: true
+      properties:
+        device:
+          $ref: '#/components/schemas/RingPushNotificationDevice'
+        gcmData:
+          $ref: '#/components/schemas/RingPushNotificationGCMData'
+    RingPushNotificationDevice:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+    RingPushNotificationGCMData:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+          description: Open Ring action name, including intercom_unlock.

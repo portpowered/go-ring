@@ -1,0 +1,21 @@
+---
+title: Locations and device status
+description: Find locations, groups, and devices, then inspect status and settings.
+---
+
+Use the account token in each request. `ListLocations` finds location IDs; `ListLocationGroups` and `ListLocationDevices` use one of those IDs. `GetLocation` accepts optional query parameters through its request type.
+
+```go
+locations, err := client.ListLocations(ctx, ring.ListLocationsRequest{Auth: auth})
+if err != nil {
+	return err
+}
+
+groups, err := client.ListLocationGroups(ctx, ring.LocationRequest{
+	Auth: auth, LocationID: locationID,
+})
+```
+
+For a device ID, `GetDeviceDetail`, `GetDeviceStatus`, and `GetDeviceSettings` return separate views. `UpdateDeviceHealth` uses a legacy health route. Check the result after changing settings or controls; a successful command only means the server accepted it.
+
+Wire contracts: [locations](/docs/openapi/locations/listLocations), [groups](/docs/openapi/locations/listLocationGroups), [status](/docs/openapi/devices/getLegacyDeviceHealth), and [settings](/docs/openapi/device-settings/getDeviceSettings).
