@@ -57,11 +57,20 @@ func TestPlaybackReplayConnectsPeersAndReceivesMedia(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	t.Cleanup(cancel)
 
+	clientCloseReturned := make(chan struct{})
+
+	var clientCloseReturnedOnce sync.Once
+
+	releaseClientClose := func() {
+		clientCloseReturnedOnce.Do(func() { close(clientCloseReturned) })
+	}
+
 	serverResult := make(chan error, 1)
 	conn := openRecordedPeer(t, func(socket *websocket.Conn) {
-		serverResult <- runPlaybackPeer(t, ctx, socket)
+		serverResult <- runPlaybackPeer(t, ctx, socket, clientCloseReturned)
 	})
 
+	t.Cleanup(releaseClientClose)
 	t.Cleanup(func() { _ = conn.Close() })
 
 	peer, packet, localICE := newPlaybackClientPeer(t)
@@ -140,6 +149,8 @@ func TestPlaybackReplayConnectsPeersAndReceivesMedia(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		releaseClientClose()
 
 		select {
 		case err := <-serverResult:
@@ -264,7 +275,12 @@ func newPlaybackClientPeer(t *testing.T) (*webrtc.PeerConnection, chan struct{},
 	return peer, packet, localICE
 }
 
-func runPlaybackPeer(t *testing.T, ctx context.Context, socket *websocket.Conn) error {
+func runPlaybackPeer(
+	t *testing.T,
+	ctx context.Context,
+	socket *websocket.Conn,
+	clientCloseReturned <-chan struct{},
+) error {
 	t.Helper()
 
 	var request playbackRequestEnvelope
@@ -373,7 +389,21 @@ func runPlaybackPeer(t *testing.T, ctx context.Context, socket *websocket.Conn) 
 		return err
 	}
 
-	return readPlaybackClose(socket, request.Dialog, answerBody["session_id"])
+	err = readPlaybackClose(socket, request.Dialog, answerBody["session_id"])
+	if err != nil {
+		return err
+	}
+
+	return waitForPlaybackCloseSend(ctx, clientCloseReturned)
+}
+
+func waitForPlaybackCloseSend(ctx context.Context, clientCloseReturned <-chan struct{}) error {
+	select {
+	case <-clientCloseReturned:
+		return nil
+	case <-ctx.Done():
+		return wrapReplayTestError("wait for playback close send to complete", ctx.Err())
+	}
 }
 
 func receivePlaybackLocalICE(

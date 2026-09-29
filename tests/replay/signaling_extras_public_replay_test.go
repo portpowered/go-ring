@@ -106,7 +106,10 @@ func TestRecordedPublicPushSubscriptionAndEvent(t *testing.T) {
 
 		writeCapturedSignal(t, connection, "dialog-1", request, "push_subscription_ack")
 		writeCapturedSignal(t, connection, "dialog-1", request, "push_event")
-		_ = readSignalRequest(t, connection, "push_unsubscribe")
+
+		if readSignalRequest(t, connection, "push_unsubscribe") != nil {
+			waitForRecordedClientClose(t, connection)
+		}
 	})
 
 	t.Cleanup(func() { _ = conn.Close() })

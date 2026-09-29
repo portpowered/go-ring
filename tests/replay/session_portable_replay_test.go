@@ -253,7 +253,13 @@ func serveRecordedLiveViewPeer(
 
 	for {
 		var msg map[string]any
-		if connection.ReadJSON(&msg) != nil || msg["method"] == "close" {
+		if connection.ReadJSON(&msg) != nil {
+			return
+		}
+
+		if msg["method"] == "close" {
+			waitForRecordedClientClose(t, connection)
+
 			return
 		}
 	}

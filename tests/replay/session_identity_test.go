@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -266,6 +267,14 @@ func TestMaximumAgeBoundsNegotiationBeforeAnyAnswer(t *testing.T) {
 func TestRemoteCloseTerminatesSessionWithSocketStillOpen(t *testing.T) {
 	t.Parallel()
 
+	remoteCloseReady := make(chan struct{})
+
+	var remoteCloseReadyOnce sync.Once
+
+	releaseRemoteClose := func() {
+		remoteCloseReadyOnce.Do(func() { close(remoteCloseReady) })
+	}
+
 	conn := identityPeer(t, func(connection *websocket.Conn, dialog string) {
 		beginIdentity(connection, dialog, nil, false) // Missing interval uses documented fallback.
 
@@ -275,14 +284,28 @@ func TestRemoteCloseTerminatesSessionWithSocketStillOpen(t *testing.T) {
 
 		_ = writeIdentity(connection, dialog, "camera_started", map[string]any{"doorbot_id": 1001, "session_id": "s"})
 
-		_, _, err := connection.ReadMessage()
-		if err != nil {
+		microphone := readSignalRequest(t, connection, "mic_enable")
+		if microphone == nil {
 			return
-		} // Barrier: caller has the handle.
+		}
+
+		if microphone["dialog_id"] != dialog {
+			t.Errorf("microphone dialog = %v, want %s", microphone["dialog_id"], dialog)
+		}
+
+		body := replayObjectField(t, microphone, "body")
+		if body["doorbot_id"] != float64(1001) || body["session_id"] != "s" || body["enabled"] != false {
+			t.Errorf("microphone request differs from expected frame: %v", body)
+		}
+
+		<-remoteCloseReady
 
 		_ = writeIdentity(connection, dialog, "close", map[string]any{"doorbot_id": 1001, "session_id": "s"})
-		_, _, _ = connection.ReadMessage() // Socket stays open while Wait must resolve.
+		waitForRecordedClientClose(t, connection) // Keep the socket open until Wait resolves.
 	})
+
+	t.Cleanup(releaseRemoteClose)
+	t.Cleanup(func() { _ = conn.Close() })
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -304,6 +327,8 @@ func TestRemoteCloseTerminatesSessionWithSocketStillOpen(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
+	releaseRemoteClose()
 
 	{
 		err = session.Wait(ctx)
