@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -86,6 +87,25 @@ func openRecordedPeer(t *testing.T, script func(*websocket.Conn)) *ring.Signalin
 
 	return conn
 }
+
+func waitForRecordedClientClose(t *testing.T, connection *websocket.Conn) {
+	t.Helper()
+
+	for {
+		messageType, _, err := connection.ReadMessage()
+		if err != nil {
+			var timeoutError net.Error
+			if errors.As(err, &timeoutError) && timeoutError.Timeout() {
+				t.Errorf("client did not close replay websocket before deadline: %v", err)
+			}
+
+			return
+		}
+
+		t.Errorf("unexpected client websocket frame type %d after replay exchange", messageType)
+	}
+}
+
 func writeIdentity(c *websocket.Conn, dialog, method string, body any) error {
 	err := c.WriteJSON(map[string]any{"method": method, "dialog_id": dialog, "body": body})
 	if err != nil {
@@ -128,13 +148,14 @@ func TestNegotiatedHeartbeatRejectsInvalidPresentValues(t *testing.T) {
 	for _, test := range []struct {
 		value         any
 		wantErrorText string
+		wantClose     bool
 	}{
-		{value: 0, wantErrorText: "heartbeat interval"},
-		{value: -1, wantErrorText: "heartbeat interval"},
-		{value: 61, wantErrorText: "heartbeat interval"},
-		{value: 1.5, wantErrorText: "invalid signaling message"},
-		{value: "10", wantErrorText: "invalid signaling message"},
-		{value: nil, wantErrorText: "heartbeat interval"},
+		{value: 0, wantErrorText: "heartbeat interval", wantClose: true},
+		{value: -1, wantErrorText: "heartbeat interval", wantClose: true},
+		{value: 61, wantErrorText: "heartbeat interval", wantClose: true},
+		{value: 1.5, wantErrorText: "invalid signaling message", wantClose: false},
+		{value: "10", wantErrorText: "invalid signaling message", wantClose: false},
+		{value: nil, wantErrorText: "heartbeat interval", wantClose: true},
 	} {
 		value := test.value
 
@@ -146,10 +167,24 @@ func TestNegotiatedHeartbeatRejectsInvalidPresentValues(t *testing.T) {
 		t.Run(string(encoded), func(t *testing.T) {
 			t.Parallel()
 
-			conn := identityPeer(t, func(c *websocket.Conn, dialog string) {
-				beginIdentity(c, dialog, value, true)
-				_, _, _ = c.ReadMessage()
+			conn := identityPeer(t, func(connection *websocket.Conn, dialog string) {
+				beginIdentity(connection, dialog, value, true)
+
+				if test.wantClose {
+					closeRequest := readSignalRequest(t, connection, "close")
+					if closeRequest == nil {
+						return
+					}
+
+					if closeRequest["dialog_id"] != dialog {
+						t.Errorf("close dialog = %v, want %s", closeRequest["dialog_id"], dialog)
+					}
+				}
+
+				waitForRecordedClientClose(t, connection)
 			})
+
+			t.Cleanup(func() { _ = conn.Close() })
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()

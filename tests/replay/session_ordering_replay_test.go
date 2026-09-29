@@ -70,6 +70,8 @@ func serveRecordedFrameOrdering(
 	camera := recordedSessionFrame(t, captured["camera_started"], dialog)
 
 	if serveOutOfOrderInitialFrames(connection, created, answer, camera, scenario) {
+		waitForRecordedClientClose(t, connection)
+
 		return
 	}
 

@@ -386,7 +386,9 @@ func serveRecordedPushIdentityScenario(t *testing.T, connection *websocket.Conn,
 		})
 	}
 
-	_ = readSignalRequest(t, connection, "push_unsubscribe")
+	if readSignalRequest(t, connection, "push_unsubscribe") != nil {
+		waitForRecordedClientClose(t, connection)
+	}
 }
 
 func assertForeignPushEventRejected(t *testing.T, subscription *ring.PushSubscription) {
