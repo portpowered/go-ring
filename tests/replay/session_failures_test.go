@@ -268,13 +268,80 @@ func serveNegotiationFailurePeer(
 		return
 	}
 
-	_, msg, e := connection.ReadMessage()
-	if e != nil {
+	if mode == sessionExpiryMode {
+		serveExpiryClosePeer(t, connection, first.Dialog)
+
 		return
 	}
 
-	if mode == sessionExpiryMode && !strings.Contains(string(msg), `"method":"close"`) {
-		t.Errorf("expiry did not send close: %s", msg)
+	_, _, e := connection.ReadMessage()
+	if e != nil {
+		return
+	}
+}
+
+func serveExpiryClosePeer(t *testing.T, connection *websocket.Conn, dialog string) {
+	t.Helper()
+
+	err := connection.SetReadDeadline(time.Now().Add(4 * time.Second))
+	if err != nil {
+		t.Errorf("set expiry peer read deadline: %v", err)
+
+		return
+	}
+
+	for {
+		_, msg, err := connection.ReadMessage()
+		if err != nil {
+			t.Errorf("expiry peer disconnected before signaling close: %v", err)
+
+			return
+		}
+
+		var envelope struct {
+			Method string `json:"method"`
+			Dialog string `json:"dialog_id"`
+		}
+
+		err = json.Unmarshal(msg, &envelope)
+		if err != nil {
+			t.Errorf("decode expiry client message %s: %v", msg, err)
+
+			continue
+		}
+
+		switch envelope.Method {
+		case "close":
+			if envelope.Dialog != dialog {
+				t.Errorf("expiry close dialog = %q, want %q", envelope.Dialog, dialog)
+			}
+
+			// Keep the peer alive after the application close so the client can
+			// publish ErrSessionExpired before the websocket read loop sees EOF.
+			waitForRecordedClientClose(t, connection)
+
+			return
+		case "ping":
+			if envelope.Dialog != dialog {
+				t.Errorf("expiry heartbeat dialog = %q, want %q", envelope.Dialog, dialog)
+
+				continue
+			}
+
+			err = writeFailureFrame(connection,
+				map[string]any{
+					"method": "pong", "dialog_id": dialog, "riid": "r",
+					"body": map[string]any{"doorbot_id": 1001, "session_id": "s"},
+				},
+			)
+			if err != nil {
+				t.Errorf("reply to expiry heartbeat: %v", err)
+
+				return
+			}
+		default:
+			t.Errorf("expiry sent %q before close: %s", envelope.Method, msg)
+		}
 	}
 }
 

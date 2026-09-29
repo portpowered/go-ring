@@ -143,20 +143,48 @@ func readActivation(connection *websocket.Conn) bool {
 
 	return true
 }
+
+func assertInvalidHeartbeatResult(
+	t *testing.T,
+	conn *ring.SignalingConnection,
+	session *ring.DeviceSession,
+	err error,
+	wantErrorText string,
+	wantConnectionErrorText string,
+) {
+	t.Helper()
+
+	if session != nil || err == nil {
+		t.Fatalf("invalid interval accepted: session=%v err=%v", session != nil, err)
+	}
+
+	if wantErrorText != "" && !strings.Contains(err.Error(), wantErrorText) {
+		t.Fatalf("invalid interval error = %v, want it to contain %q", err, wantErrorText)
+	}
+
+	if wantConnectionErrorText != "" {
+		connectionErr := conn.Err()
+		if connectionErr == nil || !strings.Contains(connectionErr.Error(), wantConnectionErrorText) {
+			t.Fatalf("signaling connection error = %v, want it to contain %q", connectionErr, wantConnectionErrorText)
+		}
+	}
+}
+
 func TestNegotiatedHeartbeatRejectsInvalidPresentValues(t *testing.T) {
 	t.Parallel()
 
 	for _, test := range []struct {
-		value         any
-		wantErrorText string
-		wantClose     bool
+		value                   any
+		wantErrorText           string
+		wantConnectionErrorText string
+		wantClose               bool
 	}{
-		{value: 0, wantErrorText: "heartbeat interval", wantClose: true},
-		{value: -1, wantErrorText: "heartbeat interval", wantClose: true},
-		{value: 61, wantErrorText: "heartbeat interval", wantClose: true},
-		{value: 1.5, wantErrorText: "invalid signaling message", wantClose: false},
-		{value: "10", wantErrorText: "invalid signaling message", wantClose: false},
-		{value: nil, wantErrorText: "heartbeat interval", wantClose: true},
+		{value: 0, wantErrorText: "heartbeat interval", wantConnectionErrorText: "", wantClose: true},
+		{value: -1, wantErrorText: "heartbeat interval", wantConnectionErrorText: "", wantClose: true},
+		{value: 61, wantErrorText: "heartbeat interval", wantConnectionErrorText: "", wantClose: true},
+		{value: 1.5, wantErrorText: "", wantConnectionErrorText: "invalid signaling message", wantClose: false},
+		{value: "10", wantErrorText: "", wantConnectionErrorText: "invalid signaling message", wantClose: false},
+		{value: nil, wantErrorText: "heartbeat interval", wantConnectionErrorText: "", wantClose: true},
 	} {
 		value := test.value
 
@@ -197,9 +225,7 @@ func TestNegotiatedHeartbeatRejectsInvalidPresentValues(t *testing.T) {
 					Offer:    ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP},
 				},
 			)
-			if session != nil || err == nil || !strings.Contains(err.Error(), test.wantErrorText) {
-				t.Fatalf("invalid interval accepted: session=%v err=%v", session != nil, err)
-			}
+			assertInvalidHeartbeatResult(t, conn, session, err, test.wantErrorText, test.wantConnectionErrorText)
 		})
 	}
 }
