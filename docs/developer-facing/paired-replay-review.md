@@ -1,80 +1,85 @@
 # Independent paired-replay review
 
-Reviewed implementation commit: `09d3a563cd251b09e8ef14f73f9a2d6e5a62b45c`.
+Reviewed implementation commit: `c0d4367871935c16621edb9c4d7d547097ea695e`.
 Criteria: **LIB-05** in `docs/standards/library.md` and item 15 of
-`go-third-party-template/docs/library-standards.md`. This review changes no
-replay implementation.
+`go-third-party-template/docs/library-standards.md`. The reviewer did not
+implement the replay changes.
 
 | Criterion | Verdict | Evidence |
 | --- | --- | --- |
-| LIB-05 / template item 15 | **Open** | Ordered HTTP and signaling replay boundaries are stronger, but the stored-pair inventory and captured provenance remain incomplete. |
-| Renewed independent signoff | **Open** | Recheck every library criterion after the remaining findings are repaired. |
+| LIB-05 / template item 15 | **Pass** | All 39 OpenAPI operations have complete synthetic HTTP pairs; all 17 AsyncAPI channels occur in stored transcripts driven by the production client or session. Strict peers check each request or frame before sending the next response and assert consumption. |
+| Independent verification of this item | **Pass** | Local lint, check, affected race tests, npm audit, and CI run `36500816217` passed at the reviewed commit. |
 
-## Verified improvements
+## HTTP pairs
 
-`internal/testkit/replay.NewTransport` now consumes HTTP cassettes in order.
-`NewUnorderedTransport` is an explicit choice for independent requests.
-`RoundTrip` matches method, origin, escaped path, repeated query values,
-headers, and body before serving a fresh response; it rejects an unmatched
-or duplicate call, and `AssertConsumed` reports unused or unexpected calls.
-The testkit checks out-of-order and duplicate cases. `NewWebSocketServer`
-now checks upgrade method, escaped path, query, and configured application
-headers, and reads once after the final scripted step to reject a trailing
-client frame. `AssertComplete` persists the result. The 30 HTTP JSON files
-under `http/captured/` have request and response objects; two signaling
-files contain directed application frames. Historical baseline responses,
-source-derived reference pairs, and authored synthetic inputs remain
-separately described in the fixture guide.
+`TestCompletePairedOperationInventory` derives the 39-operation inventory from
+`api/openapi.yaml` and counts complete request/response pairs only under the
+synthetic fixture roots. It excludes inherited historical and reference files.
+`TestSyntheticPairMetadataMatchesOpenAPI` checks the 38 new pairs' operation
+IDs, routes, origins, and response statuses. The existing signaling-ticket pair
+provides the remaining operation. `TestMissingOperationsPairedReplay` and
+`TestAdditionalOperationsPairedReplay` invoke the generated HTTP client with
+the stored pairs and call `AssertConsumed` for each strict transport. The
+transport matches method, origin, escaped path, repeated query values, relevant
+headers, and body before returning the stored status, headers, and body. Its
+negative tests reject order changes, duplicate or unexpected calls, and
+request mismatches. These pairs are hand-authored synthetic examples, not
+provider captures.
 
-## Open findings
+## Signaling transcripts
 
-1. **No complete operation-to-pair gate.** OpenAPI declares 39 HTTP
-   method/path operations. A recursive inventory of stored JSON objects with
-   both `request` and `response` found 45 pairs across the fixture tree,
-   covering only 26 distinct schema method/path entries. Thirteen have no
-   stored JSON pair: `beginOrContinueOAuthAuthorization`,
-   `submitOAuthCredentials`, `verifyOAuthTwoFactorCode`,
-   `exchangeOrRefreshOAuthToken`, `registerClientSession`,
-   `turnFloodlightOff`, `getLegacyDeviceHealth`,
-   `getLegacyDeviceHistory`, `getActiveDings`, `streamRecording`,
-   `getLegacyRecordingShareURL`, `refreshLegacySnapshotTimestamp`, and
-   `getLegacySnapshotImage`.
-   Some have inline response tests, but those are not a checked stored pair
-   with full outbound expectations. Array-based synthetic cases can also
-   omit origin or headers and acquire them in test code. Add a checked
-   inventory that maps every supported operation to a consumed, complete
-   pair and distinguishes any operation deliberately unsupported.
-2. **Socket handshake and recorded-flow coverage remain partial.** The
-   scripted peer checks path/query/configured headers, but
-   `websocket.Upgrader.CheckOrigin` always returns true and `WSHandshake`
-   has no expected origin/host field. The two captured signaling files hold
-   application frames without a paired upgrade expectation. Tests often
-   select particular messages from `LoadSessionRecording` rather than
-   consuming an entire recorded flow. Record and check the relevant upgrade
-   fields and map each supported socket exchange to an exhaustive ordered
-   transcript. The new trailing-frame check closes the earlier immediate
-   extra-frame gap; it does not supply missing capture steps.
-3. **“Captured” lacks verifiable provenance.** The 30 HTTP files and two
-   signaling files are still labeled `captured`, while
-   `docs/developer-facing/replay-format.md` says they have no capture dates,
-   environment labels, extraction metadata, or provenance digests. The
-   shared verification guide requires a known source and UTC capture date
-   before that label is used. Add those records or reclassify the files as
-   historical/synthetic; do not use them as current provider evidence until
-   provenance is established.
+Four stored production transcripts under
+`tests/replay/fixtures/signaling/synthetic/paired/` cover the 17 AsyncAPI
+channels: push and heartbeat, playback, and live session with PTZ. Tests in
+`tests/replay/signaling_production_transcript_test.go` open a public
+`ring.Client`, consume the stored signaling-ticket HTTP pair, then use
+`SubscribePush`, `StartPlayback`, or `StartDeviceSession` and assert the public
+event, answer, or control result. The push heartbeat test in
+`pkg/ring/signaling_heartbeat_transcript_test.go` drives the production
+subscription timer at a short test interval. Each test calls the scripted
+peer's `AssertComplete` and the ticket transport's `AssertConsumed`.
 
-Fixed synthetic token and identifier values in current cassettes match
-exactly. This is an explicit synthetic matching policy, not provider-format
-validation; any newly variable or redacted field needs its own format or
-decoded-value rule before it counts as replay evidence.
+`TestProductionSignalingChannelInventory` compares the union of those four
+fixtures against every `api/asyncapi.yaml` channel and its send/receive
+direction; `TestProductionSignalingTranscriptsMatchAsyncAPIChannels` validates
+each stored frame against its channel payload schema. These inventories use the
+same named files as the production tests. The separate 17-channel
+`full-session.json` uses a generic scripted client and is explicitly excluded
+from production-client coverage.
 
-`make lint` passed. The first `make check` run failed once in
-`TestRecordedPublicPushSubscriptionAndEvent` with `signaling send failed`;
-ten targeted repeats passed, then a second full `make check` passed. Fresh
-`go test -count=1 -race ./internal/testkit/replay ./tests/replay -timeout 120s`
-also passed. The intermittent failure should be tracked separately from the
-LIB-05 inventory and provenance gaps. The pre-existing untracked executable
-and coverage file were left untouched.
+The WebSocket peer checks the upgrade method, Host, Origin, escaped path,
+query, and configured headers, then checks complete ordered frames. Template
+rules bind outbound UUIDs by format and require exact reuse in later frames;
+the PTZ timestamp rule checks an epoch-millisecond number within one minute.
+Unit tests reject invalid UUIDs, changed bindings, extra JSON keys, upgrade
+mismatches, a trailing frame, and an outbound mismatch before any stored
+response is sent. The peer accepts one connection and reports unused or
+unexpected exchanges.
 
-**Signoff:** LIB-05, template item 15, and renewed independent signoff remain
-open.
+The earlier review at `09d3a56` found three gaps: 13 HTTP operations lacked
+complete pairs; socket handshake and full-flow coverage were partial; and
+inherited files labeled `captured` lacked provenance. The 39-operation pair
+gate resolves the first. Strict upgrade expectations and production-driven
+stored transcripts resolve the second. The inherited files now live under
+`historical/`; the fixture guide states their source and UTC capture dates are
+unknown and excludes them from current-provider evidence. The interim
+`bf78442` review also found that its 17-channel transcript was exercised only
+by a raw scripted client; the four production transcripts resolve that gap.
+
+## Verification
+
+- `make lint`: pass, zero issues.
+- `make check`: pass, including build, fixture/schema contracts, full Go tests,
+  CLI tests, and vet. Protocol dependencies reported zero vulnerabilities.
+- `go test -count=1 -race ./internal/testkit/replay ./tests/replay ./pkg/ring -timeout 120s`:
+  pass.
+- `npm audit --prefix tools/protocols --audit-level=moderate`: pass, zero
+  vulnerabilities.
+- [CI run 36500816217](https://github.com/portpowered/go-ring/actions/runs/36500816217):
+  pass at `c0d4367`, including fixture contracts, schema generation, lint,
+  coverage, compatibility, and Linux/macOS/Windows race jobs.
+
+**Signoff:** LIB-05 and template item 15 pass at the reviewed commit. This is
+synthetic compatibility evidence; it does not assert current provider behavior
+or turn historical files into verified captures. The pre-existing untracked
+executable and coverage file were left untouched.
