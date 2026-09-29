@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -21,33 +24,104 @@ type signalingTestError string
 
 func (failure signalingTestError) Error() string { return string(failure) }
 
-func TestSignalingWriteDeadlineInterruptsBlockedSocketWrite(t *testing.T) {
-	t.Parallel()
+type signalingWriteObserver struct {
+	net.Conn
+
+	trackWrites atomic.Bool
+	started     chan struct{}
+	startOnce   sync.Once
+}
+
+func (conn *signalingWriteObserver) Write(data []byte) (int, error) {
+	if conn.trackWrites.Load() {
+		conn.startOnce.Do(func() { close(conn.started) })
+	}
+
+	written, err := conn.Conn.Write(data)
+	if err != nil {
+		return written, signalingTestTransportError{cause: err}
+	}
+
+	return written, nil
+}
+
+type signalingTestTransportError struct{ cause error }
+
+func (failure signalingTestTransportError) Error() string {
+	return "signaling test transport: " + failure.cause.Error()
+}
+
+func (failure signalingTestTransportError) Unwrap() error { return failure.cause }
+
+func newBlockedSignalingWebSocket(t *testing.T) (*websocket.Conn, *signalingWriteObserver) {
+	t.Helper()
+
+	const socketWriteBufferBytes = 4 << 10
 
 	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
-	serverDone := make(chan struct{})
-
+	allowPeerRead := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			close(serverDone)
-
 			return
 		}
 
 		defer func() { _ = conn.Close() }()
 
-		time.Sleep(250 * time.Millisecond) // Deliberately leave the client's large write undrained.
+		<-allowPeerRead
 
 		_, _, _ = conn.ReadMessage()
-
-		close(serverDone)
 	}))
-	t.Cleanup(server.Close)
 
-	url := "ws" + strings.TrimPrefix(server.URL, "http")
+	observedConn := &signalingWriteObserver{
+		Conn:        nil,
+		started:     make(chan struct{}),
+		trackWrites: atomic.Bool{},
+		startOnce:   sync.Once{},
+	}
 
-	ws, response, err := websocket.DefaultDialer.Dial(url, nil)
+	var ws *websocket.Conn
+
+	t.Cleanup(func() {
+		close(allowPeerRead)
+
+		if ws != nil {
+			_ = ws.Close()
+		}
+
+		serverClosed := make(chan struct{})
+
+		go func() {
+			server.Close()
+			close(serverClosed)
+		}()
+
+		select {
+		case <-serverClosed:
+		case <-time.After(time.Second):
+			t.Error("local peer did not exit during cleanup")
+		}
+	})
+
+	var netDialer net.Dialer
+
+	dialer := &websocket.Dialer{
+		HandshakeTimeout: time.Second,
+		NetDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+			conn, err := netDialer.DialContext(ctx, network, address)
+			if err != nil {
+				return nil, signalingTestTransportError{cause: err}
+			}
+
+			observedConn.Conn = conn
+
+			return observedConn, nil
+		},
+	}
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	ws, response, err := dialer.Dial(wsURL, nil)
+
 	if response != nil && response.Body != nil {
 		_ = response.Body.Close()
 	}
@@ -55,6 +129,26 @@ func TestSignalingWriteDeadlineInterruptsBlockedSocketWrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	tcpConn, ok := observedConn.Conn.(*net.TCPConn)
+	if !ok {
+		t.Fatal("local signaling connection is not TCP")
+	}
+
+	err = tcpConn.SetWriteBuffer(socketWriteBufferBytes)
+	if err != nil {
+		t.Fatalf("set small client socket write buffer: %v", err)
+	}
+
+	observedConn.trackWrites.Store(true)
+
+	return ws, observedConn
+}
+
+func TestSignalingWriteDeadlineInterruptsBlockedSocketWrite(t *testing.T) {
+	t.Parallel()
+
+	ws, observedConn := newBlockedSignalingWebSocket(t)
 
 	done := make(chan struct{})
 	signalingConnection := &SignalingConnection{conn: ws, done: done}
@@ -65,7 +159,7 @@ func TestSignalingWriteDeadlineInterruptsBlockedSocketWrite(t *testing.T) {
 
 	body, err := json.Marshal(generatedsignaling.LiveViewBody{
 		DoorbotId:            1000,
-		Sdp:                  strings.Repeat("x", 8<<20),
+		Sdp:                  strings.Repeat("x", 1<<20),
 		StreamOptions:        nil,
 		ReservedType:         "",
 		AdditionalProperties: nil,
@@ -74,31 +168,46 @@ func TestSignalingWriteDeadlineInterruptsBlockedSocketWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	err = signalingConnection.send(ctx, signaling.Message{
-		Method: protocol.MethodLiveView, DialogID: "synthetic-dialog", Body: body,
-	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sendDone := make(chan error, 1)
+
+	go func() {
+		sendDone <- signalingConnection.send(ctx, signaling.Message{
+			Method: protocol.MethodLiveView, DialogID: "synthetic-dialog", Body: body,
+		})
+	}()
+
+	select {
+	case <-observedConn.started:
+	case <-time.After(time.Second):
+		t.Fatal("writer did not start the WebSocket frame write")
+	}
+
+	select {
+	case err := <-sendDone:
+		t.Fatalf("send completed before cancellation: %v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
 
 	cancel()
 
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("blocked write error = %v", err)
+	select {
+	case err := <-sendDone:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("canceled write error = %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("send remained blocked after cancellation")
 	}
 
 	close(done)
-
-	_ = ws.Close()
 
 	select {
 	case <-signalingConnection.writer.Finished():
 	case <-time.After(time.Second):
 		t.Fatal("writer remained blocked after canceled socket write")
-	}
-
-	select {
-	case <-serverDone:
-	case <-time.After(time.Second):
-		t.Fatal("local peer did not observe closed socket")
 	}
 }
 
