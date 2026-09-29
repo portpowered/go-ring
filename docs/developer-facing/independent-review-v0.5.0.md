@@ -1,8 +1,10 @@
 # Independent review: go-ring v0.5.0
 
-**Reviewed implementation commit:** `1d4974750aad2d5c07a4b934a230fa1c88505423`  
-**Exact-SHA CI:** [run 36635837736](https://github.com/portpowered/go-ring/actions/runs/36635837736) — **SUCCESS, all 13 jobs passed**.  
-**Review date:** 2026-09-29  
+**Reviewed implementation commit:** `1d4974750aad2d5c07a4b934a230fa1c88505423`
+
+**Exact-SHA CI:** [run 36635837736](https://github.com/portpowered/go-ring/actions/runs/36635837736) — **SUCCESS, all 13 jobs passed**.
+
+**Review date:** 2026-09-29
 **Overall verdict:** **PASS.** All 15 checklist items are supported by the evidence below; findings F-1 and F-2 are resolved. The implementation SHA above is the reviewed code. The report, checklist link, and refreshed coverage note are documentation-only sign-off changes made after that SHA.
 
 I independently reviewed all 15 entries in [`docs/template-checklist.md`](../template-checklist.md) and the rules in [`go.md`](../standards/go.md), [`schemas.md`](../standards/schemas.md), [`client-api.md`](../standards/client-api.md), and [`library.md`](../standards/library.md). I did not implement the reviewed code. Exact-SHA CI is green, and local `make check` and `make lint` pass. The independent report, checklist link, and refreshed coverage note are documentation-only sign-off changes; the implementation SHA above is unchanged.
