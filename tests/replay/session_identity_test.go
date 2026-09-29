@@ -108,27 +108,83 @@ func waitForRecordedClientClose(t *testing.T, connection *websocket.Conn) {
 }
 
 func writeIdentity(c *websocket.Conn, dialog, method string, body any) error {
-	err := c.WriteJSON(map[string]any{"method": method, "dialog_id": dialog, "body": body})
+	return writeIdentityWithRIID(c, dialog, method, "", body)
+}
+
+func writeIdentityWithRIID(connection *websocket.Conn, dialog, method, riid string, body any) error {
+	frame := map[string]any{"method": method, "dialog_id": dialog, "body": body}
+	if riid != "" {
+		frame["riid"] = riid
+	}
+
+	err := connection.WriteJSON(frame)
 	if err != nil {
 		return wrapReplayTestError("write signaling identity frame", err)
 	}
 
 	return nil
 }
-func beginIdentity(connection *websocket.Conn, dialog string, interval any, include bool) {
-	_ = writeIdentity(connection, dialog, "session_created", map[string]any{"doorbot_id": 1001, "session_id": "s"})
+func beginIdentity(connection *websocket.Conn, dialog, riid string, interval any, include bool) {
+	_ = writeIdentityWithRIID(
+		connection,
+		dialog,
+		"session_created",
+		riid,
+		map[string]any{"doorbot_id": 1001, "session_id": "s"},
+	)
 
 	info := map[string]any{"session_id": "c"}
 	if include {
 		info["ping_interval"] = interval
 	}
 
-	_ = writeIdentity(
+	_ = writeIdentityWithRIID(
 		connection,
 		dialog,
 		"sdp",
+		riid,
 		map[string]any{"doorbot_id": 1001, "session_id": "s", "type": "answer", "sdp": answerSDP, "session_info": info},
 	)
+}
+
+func assertIdentityCloseFrame(t *testing.T, frame map[string]any, dialog, riid string) {
+	t.Helper()
+	assertExactIdentityMapKeys(t, frame, "close frame", "method", "dialog_id", "riid", "body")
+
+	if frame["dialog_id"] != dialog {
+		t.Errorf("close dialog = %v, want %s", frame["dialog_id"], dialog)
+	}
+
+	if frame["riid"] != riid {
+		t.Errorf("close riid = %v, want %s", frame["riid"], riid)
+	}
+
+	body, ok := frame["body"].(map[string]any)
+	if !ok {
+		t.Errorf("close body = %T, want object", frame["body"])
+
+		return
+	}
+
+	assertExactIdentityMapKeys(t, body, "close body", "doorbot_id", "session_id")
+
+	if body["doorbot_id"] != float64(1001) || body["session_id"] != "s" {
+		t.Errorf("close body identity = %v, want doorbot_id 1001 and session_id s", body)
+	}
+}
+
+func assertExactIdentityMapKeys(t *testing.T, value map[string]any, label string, expected ...string) {
+	t.Helper()
+
+	if len(value) != len(expected) {
+		t.Errorf("%s has %d fields, want exactly %v", label, len(value), expected)
+	}
+
+	for _, key := range expected {
+		if _, ok := value[key]; !ok {
+			t.Errorf("%s is missing %q", label, key)
+		}
+	}
 }
 func readActivation(connection *websocket.Conn) bool {
 	for _, method := range []string{"activate_session", "mic_enable", "stream_options"} {
@@ -197,7 +253,9 @@ func TestNegotiatedHeartbeatRejectsInvalidPresentValues(t *testing.T) {
 			t.Parallel()
 
 			conn := identityPeer(t, func(connection *websocket.Conn, dialog string) {
-				beginIdentity(connection, dialog, value, true)
+				const routeID = "heartbeat-route"
+
+				beginIdentity(connection, dialog, routeID, value, true)
 
 				if test.wantClose {
 					closeRequest := readSignalRequest(t, connection, "close")
@@ -205,9 +263,7 @@ func TestNegotiatedHeartbeatRejectsInvalidPresentValues(t *testing.T) {
 						return
 					}
 
-					if closeRequest["dialog_id"] != dialog {
-						t.Errorf("close dialog = %v, want %s", closeRequest["dialog_id"], dialog)
-					}
+					assertIdentityCloseFrame(t, closeRequest, dialog, routeID)
 				}
 
 				waitForRecordedClientClose(t, connection)
@@ -237,7 +293,7 @@ func TestWrongIdentityCannotDeclareSessionReady(t *testing.T) {
 			t.Parallel()
 
 			conn := identityPeer(t, func(connection *websocket.Conn, dialog string) {
-				beginIdentity(connection, dialog, 10, true)
+				beginIdentity(connection, dialog, "", 10, true)
 
 				if !readActivation(connection) {
 					return
@@ -302,7 +358,7 @@ func TestRemoteCloseTerminatesSessionWithSocketStillOpen(t *testing.T) {
 	}
 
 	conn := identityPeer(t, func(connection *websocket.Conn, dialog string) {
-		beginIdentity(connection, dialog, nil, false) // Missing interval uses documented fallback.
+		beginIdentity(connection, dialog, "", nil, false) // Missing interval uses documented fallback.
 
 		if !readActivation(connection) {
 			return

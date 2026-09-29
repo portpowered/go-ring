@@ -1,6 +1,7 @@
 package replay_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -48,6 +50,8 @@ type viewRPCCommand struct {
 type viewRPCParams struct {
 	Direction string `json:"direction"`
 }
+
+const viewReplayOutputTimeout = 15 * time.Second
 
 //nolint:paralleltest // LIB-05: this timed CLI-to-WebSocket transcript runs serially.
 func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
@@ -119,27 +123,120 @@ func TestDiagnosticCLIViewAndArrowReplay(t *testing.T) {
 	) // #nosec G204 -- executes the CLI binary built in this test with local servers and temporary token.
 	keys, keyWriter := io.Pipe()
 	command.Stdin = keys
+	cliOutput := newViewCLIOutput()
+	command.Stdout = cliOutput
+	command.Stderr = cliOutput
 
-	go func() {
-		_, _ = keyWriter.Write([]byte("\x1b[C\x1b[D\x1b[A\x1b[B"))
+	runDiagnosticViewInput(t, command, keyWriter, cliOutput)
 
-		time.Sleep(time.Second)
+	waitForViewServer(t, serverErr)
+}
 
-		_, _ = keyWriter.Write([]byte("q"))
+func runDiagnosticViewInput(t *testing.T, command *exec.Cmd, keyWriter *io.PipeWriter, output *viewCLIOutput) {
+	t.Helper()
+
+	err := command.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	waited := false
+
+	defer func() {
 		_ = keyWriter.Close()
+		if !waited {
+			_ = command.Process.Kill()
+			_ = command.Wait()
+		}
 	}()
 
-	output, err := command.CombinedOutput()
-	if err != nil {
-		t.Fatalf("CLI view: %v\n%s", err, output)
+	waitForViewOutput(t, output, "Remote SDP answer applied")
+	waitForViewOutput(t, output, "Session active.")
+	waitForViewOutput(t, output, "First video packet received")
+
+	for _, key := range []struct{ input, direction string }{
+		{"\x1b[C", "right"},
+		{"\x1b[D", "left"},
+		{"\x1b[A", "up"},
+		{"\x1b[B", "down"},
+	} {
+		_, err = io.WriteString(keyWriter, key.input)
+		if err != nil {
+			t.Fatalf("send %s arrow: %v\n%s", key.direction, err, output.String())
+		}
+
+		waitForViewOutput(t, output, "PTZ command acknowledged: "+key.direction)
 	}
 
-	if !strings.Contains(string(output), "Session active") ||
-		!strings.Contains(string(output), "First video packet received") ||
-		!strings.Contains(string(output), "PTZ command acknowledged") ||
-		!strings.Contains(string(output), "Remote SDP answer applied") {
-		t.Fatalf("view output: %s", output)
+	_, err = io.WriteString(keyWriter, "q")
+	if err != nil {
+		t.Fatalf("quit view: %v\n%s", err, output.String())
 	}
+
+	err = keyWriter.Close()
+	if err != nil {
+		t.Fatalf("close view input: %v", err)
+	}
+
+	err = command.Wait()
+	waited = true
+
+	if err != nil {
+		t.Fatalf("CLI view: %v\n%s", err, output.String())
+	}
+}
+
+type viewCLIOutput struct {
+	mu      sync.Mutex
+	buffer  bytes.Buffer
+	updated chan struct{}
+}
+
+func newViewCLIOutput() *viewCLIOutput {
+	return &viewCLIOutput{mu: sync.Mutex{}, buffer: bytes.Buffer{}, updated: make(chan struct{}, 1)}
+}
+
+func (output *viewCLIOutput) Write(data []byte) (int, error) {
+	output.mu.Lock()
+	written, _ := output.buffer.Write(data)
+	output.mu.Unlock()
+
+	select {
+	case output.updated <- struct{}{}:
+	default:
+	}
+
+	return written, nil
+}
+
+func (output *viewCLIOutput) String() string {
+	output.mu.Lock()
+	defer output.mu.Unlock()
+
+	return output.buffer.String()
+}
+
+func waitForViewOutput(t *testing.T, output *viewCLIOutput, expected string) {
+	t.Helper()
+
+	timer := time.NewTimer(viewReplayOutputTimeout)
+	defer timer.Stop()
+
+	for {
+		if strings.Contains(output.String(), expected) {
+			return
+		}
+
+		select {
+		case <-output.updated:
+		case <-timer.C:
+			t.Fatalf("timed out waiting for CLI output %q: %s", expected, output.String())
+		}
+	}
+}
+
+func waitForViewServer(t *testing.T, serverErr <-chan error) {
+	t.Helper()
 
 	select {
 	case err := <-serverErr:

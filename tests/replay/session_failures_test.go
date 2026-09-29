@@ -1,9 +1,11 @@
 package replay_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +14,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/portpowered/go-ring/internal/generatedsignaling"
+	"github.com/portpowered/go-ring/internal/protocol"
+	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/ring"
 )
 
@@ -23,6 +28,20 @@ const (
 	malformedRPCEnvelopeMode = "malformed_rpc_envelope"
 	malformedCloseMode       = "malformed_close"
 )
+
+const (
+	syntheticFailureDeviceID  = 1001
+	syntheticFailureSessionID = "s"
+	syntheticFailureRIID      = "r"
+	expiryPeerReadTimeout     = 4 * time.Second
+	heartbeatPeerReadTimeout  = 6 * time.Second
+)
+
+type multipleFailureFrameValuesError struct{}
+
+func (multipleFailureFrameValuesError) Error() string {
+	return "multiple JSON values in signaling frame"
+}
 
 func TestStartSessionRejectsInvalidOfferBeforeOpeningSession(t *testing.T) {
 	t.Parallel()
@@ -201,7 +220,7 @@ func serveNegotiationFailurePeer(
 	}
 
 	jsonErr := json.Unmarshal(messageBytes, &first)
-	if jsonErr != nil || first.Method != liveViewMethod {
+	if jsonErr != nil || first.Method != protocol.MethodLiveView {
 		return
 	}
 
@@ -241,7 +260,7 @@ func serveNegotiationFailurePeer(
 	}
 
 	if mode == heartbeatTimeoutMode {
-		consumeHeartbeatUntilClose(t, connection)
+		consumeHeartbeatUntilClose(t, connection, first.Dialog)
 
 		return
 	}
@@ -283,106 +302,212 @@ func serveNegotiationFailurePeer(
 func serveExpiryClosePeer(t *testing.T, connection *websocket.Conn, dialog string) {
 	t.Helper()
 
-	err := connection.SetReadDeadline(time.Now().Add(4 * time.Second))
+	consumeFailureSessionUntilClose(t, connection, dialog, "expiry", expiryPeerReadTimeout, 0, true)
+}
+
+func consumeHeartbeatUntilClose(t *testing.T, connection *websocket.Conn, dialog string) {
+	t.Helper()
+
+	consumeFailureSessionUntilClose(t, connection, dialog, "heartbeat", heartbeatPeerReadTimeout, 2, false)
+}
+
+func consumeFailureSessionUntilClose(
+	t *testing.T,
+	connection *websocket.Conn,
+	dialog, peerKind string,
+	readTimeout time.Duration,
+	minimumPings int,
+	replyToPing bool,
+) {
+	t.Helper()
+
+	err := connection.SetReadDeadline(time.Now().Add(readTimeout))
 	if err != nil {
-		t.Errorf("set expiry peer read deadline: %v", err)
+		t.Errorf("set %s peer read deadline: %v", peerKind, err)
 
 		return
 	}
 
+	pings := 0
+
 	for {
 		_, msg, err := connection.ReadMessage()
 		if err != nil {
-			t.Errorf("expiry peer disconnected before signaling close: %v", err)
+			t.Errorf("%s peer disconnected before signaling close: %v", peerKind, err)
 
 			return
 		}
 
-		var envelope struct {
-			Method string `json:"method"`
-			Dialog string `json:"dialog_id"`
-		}
+		var envelope signaling.Message
 
-		err = json.Unmarshal(msg, &envelope)
-		if err != nil {
-			t.Errorf("decode expiry client message %s: %v", msg, err)
+		decodeErr := decodeFailureFrame(msg, &envelope)
+		if decodeErr != nil {
+			t.Errorf("decode %s client message %s: %v", peerKind, msg, decodeErr)
 
 			continue
 		}
 
 		switch envelope.Method {
-		case "close":
-			if envelope.Dialog != dialog {
-				t.Errorf("expiry close dialog = %q, want %q", envelope.Dialog, dialog)
-			}
+		case protocol.MethodPing:
+			var frame generatedsignaling.SessionPingFrame
 
-			// Keep the peer alive after the application close so the client can
-			// publish ErrSessionExpired before the websocket read loop sees EOF.
-			waitForRecordedClientClose(t, connection)
-
-			return
-		case "ping":
-			if envelope.Dialog != dialog {
-				t.Errorf("expiry heartbeat dialog = %q, want %q", envelope.Dialog, dialog)
+			decodeErr := decodeFailureFrame(msg, &frame)
+			if decodeErr != nil {
+				t.Errorf("decode %s ping frame: %v", peerKind, decodeErr)
 
 				continue
 			}
 
-			err = writeFailureFrame(connection,
-				map[string]any{
-					"method": "pong", "dialog_id": dialog, "riid": "r",
-					"body": map[string]any{"doorbot_id": 1001, "session_id": "s"},
-				},
-			)
-			if err != nil {
-				t.Errorf("reply to expiry heartbeat: %v", err)
+			if assertSyntheticFailureSessionFrame(
+				t,
+				frame.Method, frame.DialogId, frame.Riid, frame.AdditionalProperties, frame.Body,
+				protocol.MethodPing, dialog,
+			) {
+				pings++
 
-				return
+				if replyToPing {
+					writeErr := writeFailureFrame(connection,
+						generatedsignaling.SessionPongFrame{
+							Method:   protocol.MethodPong,
+							DialogId: dialog,
+							Riid:     syntheticFailureRIID,
+							Body: &generatedsignaling.SessionBody{
+								DoorbotId:            syntheticFailureDeviceID,
+								SessionId:            syntheticFailureSessionID,
+								AdditionalProperties: nil,
+							},
+							AdditionalProperties: nil,
+						},
+					)
+					if writeErr != nil {
+						t.Errorf("reply to %s heartbeat: %v", peerKind, writeErr)
+
+						return
+					}
+				}
 			}
+		case protocol.MethodClose:
+			var frame generatedsignaling.SessionCloseFrame
+
+			decodeErr := decodeFailureFrame(msg, &frame)
+			if decodeErr != nil {
+				t.Errorf("decode %s close frame: %v", peerKind, decodeErr)
+			} else {
+				assertSyntheticFailureSessionFrame(
+					t,
+					frame.Method, frame.DialogId, frame.Riid, frame.AdditionalProperties, frame.Body,
+					protocol.MethodClose, dialog,
+				)
+			}
+
+			if pings < minimumPings {
+				t.Errorf("%s closed after only %d pings", peerKind, pings)
+			}
+
+			// Keep the peer alive until the client has published the session error.
+			waitForRecordedClientClose(t, connection)
+
+			return
 		default:
-			t.Errorf("expiry sent %q before close: %s", envelope.Method, msg)
+			t.Errorf("%s sent unexpected %q before close: %s", peerKind, envelope.Method, msg)
 		}
 	}
 }
 
-func consumeHeartbeatUntilClose(t *testing.T, connection *websocket.Conn) {
+func decodeFailureFrame(message []byte, destination any) error {
+	decoder := json.NewDecoder(bytes.NewReader(message))
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(destination)
+	if err != nil {
+		return wrapReplayTestError("decode signaling frame", err)
+	}
+
+	var trailing any
+
+	err = decoder.Decode(&trailing)
+	if err == nil {
+		return multipleFailureFrameValuesError{}
+	}
+
+	if !errors.Is(err, io.EOF) {
+		return wrapReplayTestError("decode trailing signaling frame data", err)
+	}
+
+	return nil
+}
+
+func assertSyntheticFailureSessionFrame(
+	t *testing.T,
+	gotMethod, gotDialog, gotRIID string,
+	additionalProperties map[string]interface{},
+	body *generatedsignaling.SessionBody,
+	wantMethod, wantDialog string,
+) bool {
 	t.Helper()
 
-	pings := 0
+	valid := true
 
-	for range 4 {
-		_, msg, err := connection.ReadMessage()
-		if err != nil {
-			return
-		}
+	if gotMethod != wantMethod {
+		t.Errorf("session frame method = %q, want %q", gotMethod, wantMethod)
 
-		var envelope struct {
-			Method string `json:"method"`
-		}
-
-		_ = json.Unmarshal(msg, &envelope)
-
-		if envelope.Method == "ping" {
-			pings++
-		}
-
-		if envelope.Method == "close" {
-			if pings < 2 {
-				t.Errorf("heartbeat closed after only %d pings", pings)
-			}
-
-			return
-		}
+		valid = false
 	}
+
+	if gotDialog != wantDialog {
+		t.Errorf("session frame dialog = %q, want %q", gotDialog, wantDialog)
+
+		valid = false
+	}
+
+	if gotRIID != syntheticFailureRIID {
+		t.Errorf("session frame riid = %q, want %q", gotRIID, syntheticFailureRIID)
+
+		valid = false
+	}
+
+	if len(additionalProperties) != 0 {
+		t.Errorf("session frame has unexpected top-level properties: %v", additionalProperties)
+
+		valid = false
+	}
+
+	if body == nil {
+		t.Error("session frame body is missing")
+
+		return false
+	}
+
+	if len(body.AdditionalProperties) != 0 {
+		t.Errorf("session frame body has unexpected properties: %v", body.AdditionalProperties)
+
+		valid = false
+	}
+
+	if body.DoorbotId != syntheticFailureDeviceID {
+		t.Errorf("session frame doorbot_id = %d, want %d", body.DoorbotId, syntheticFailureDeviceID)
+
+		valid = false
+	}
+
+	if body.SessionId != syntheticFailureSessionID {
+		t.Errorf("session frame session_id = %q, want %q", body.SessionId, syntheticFailureSessionID)
+
+		valid = false
+	}
+
+	return valid
 }
 
 func sendInitialFailureFrames(connection *websocket.Conn, mode, dialog string) bool {
 	_ = writeFailureFrame(connection,
 		map[string]any{
-			"method":    "session_created",
+			"method":    protocol.MethodSessionCreated,
 			"dialog_id": dialog,
-			"riid":      "r",
-			"body":      map[string]any{"doorbot_id": 1001, "session_id": "s"},
+			"riid":      syntheticFailureRIID,
+			"body": map[string]any{
+				"doorbot_id": syntheticFailureDeviceID, "session_id": syntheticFailureSessionID,
+			},
 		},
 	)
 
@@ -393,15 +518,17 @@ func sendInitialFailureFrames(connection *websocket.Conn, mode, dialog string) b
 
 	_ = writeFailureFrame(connection,
 		map[string]any{
-			"method":    "sdp",
+			"method":    protocol.MethodSDP,
 			"dialog_id": dialog,
-			"riid":      "r",
+			"riid":      syntheticFailureRIID,
 			"body": map[string]any{
-				"doorbot_id":   1001,
-				"session_id":   "s",
-				"type":         "answer",
-				"sdp":          answerSDP,
-				"session_info": map[string]any{"session_id": "c", "ping_interval": pingInterval},
+				"doorbot_id": syntheticFailureDeviceID,
+				"session_id": syntheticFailureSessionID,
+				"type":       protocol.SDPTypeAnswer,
+				"sdp":        answerSDP,
+				"session_info": map[string]any{
+					"session_id": "c", "ping_interval": pingInterval,
+				},
 			},
 		},
 	)
@@ -414,10 +541,12 @@ func sendInitialFailureFrames(connection *websocket.Conn, mode, dialog string) b
 
 	_ = writeFailureFrame(connection,
 		map[string]any{
-			"method":    "camera_started",
+			"method":    protocol.MethodCameraStarted,
 			"dialog_id": dialog,
-			"riid":      "r",
-			"body":      map[string]any{"doorbot_id": 1001, "session_id": "s"},
+			"riid":      syntheticFailureRIID,
+			"body": map[string]any{
+				"doorbot_id": syntheticFailureDeviceID, "session_id": syntheticFailureSessionID,
+			},
 		},
 	)
 
