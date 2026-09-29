@@ -71,7 +71,7 @@ func (c *EventConnection) Close() error {
 	return nil
 }
 
-// Listen listens for events and calls the callback for each event.
+// Listen listens for events, calls the callback for each event, and returns a context error when canceled.
 func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallback, req ConnectEventsRequest) error {
 	conn, err := c.ConnectEvents(ctx, req)
 	if err != nil {
@@ -87,12 +87,12 @@ func (c *Client) Listen(ctx context.Context, callback ringapimodels.EventCallbac
 		default:
 			event, err := conn.Receive()
 			if err != nil {
-				if ringapimodels.IsClosedError(err) {
-					ctxErr := ctx.Err()
-					if ctxErr != nil {
-						return ringapimodels.NewConnectionError("event listener canceled", ctxErr)
-					}
+				ctxErr := ctx.Err()
+				if ctxErr != nil {
+					return ringapimodels.NewConnectionError("event listener canceled", ctxErr)
+				}
 
+				if ringapimodels.IsClosedError(err) {
 					return nil
 				}
 
