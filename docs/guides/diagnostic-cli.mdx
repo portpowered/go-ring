@@ -36,7 +36,8 @@ contract.
 
 ## Devices and events
 
-`devices list` supplies IDs for controls. `health --refresh` also queries the
+`devices list` prints ID, name, normalized type, and raw hardware kind as four
+tab-separated columns. It supplies IDs for controls. `health --refresh` also queries the
 legacy health route, which may return no populated fields. `sound` requires a
 chime device. A successful `siren` or `reboot` request reports server
 acknowledgement; check the device before retrying a timed-out mutation.

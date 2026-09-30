@@ -46,14 +46,20 @@ components:
       type: string
       description: A supported operation confirmed by an explicit inventory field. Unknown server capabilities remain representable.
       x-extensible-enum: [light, motion_detection, siren, live_view, ptz_pan_step, ptz_tilt_step, ptz_pan_continuous, ptz_tilt_continuous]
+    DeviceType:
+      type: string
+      description: Normalized device class derived from a known hardware kind or explicit family. Unknown kinds remain OTHER; live-view support alone does not classify hardware.
+      enum: [CAMERA, DOORBELL, CHIME, OTHER]
+      x-enum-varnames: [DeviceTypeCamera, DeviceTypeDoorbell, DeviceTypeChime, DeviceTypeOther]
     Device:
       type: object
       description: One account device. An absent capability means support was not confirmed by inventory; it does not prove the operation is unsupported.
-      required: [id, name, kind, family, address, timezone, capabilities]
+      required: [id, name, kind, family, type, address, timezone, capabilities]
       properties:
         id: {type: string, x-go-name: ID}
         name: {type: string}
         kind: {type: string, description: Open hardware kind from the server, x-extensible-enum: [stickup_cam_mini_ptz_v1, lpd_v1, chime, intercom_handset_audio]}
+        type: {$ref: '#/components/schemas/DeviceType'}
         family: {type: string, description: Open server family; absent on some v3 responses, x-extensible-enum: [doorbots, chimes, stickup_cams, other]}
         address: {type: string}
         timezone: {type: string}

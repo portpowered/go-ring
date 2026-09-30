@@ -283,7 +283,7 @@ func listDevices(ctx context.Context, client *ring.Client, auth ring.AuthContext
 	}
 
 	for _, device := range devices.Devices {
-		_, _ = fmt.Fprintf(out, "%s\t%s\t%s\n", device.ID, device.Name, device.Family)
+		_, _ = fmt.Fprintf(out, "%s\t%s\t%s\t%s\n", device.ID, device.Name, device.Type, device.Kind)
 	}
 
 	return nil

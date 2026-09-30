@@ -10,6 +10,30 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for DeviceType.
+const (
+	DeviceTypeCamera   DeviceType = "CAMERA"
+	DeviceTypeChime    DeviceType = "CHIME"
+	DeviceTypeDoorbell DeviceType = "DOORBELL"
+	DeviceTypeOther    DeviceType = "OTHER"
+)
+
+// Valid indicates whether the value is a known member of the DeviceType enum.
+func (e DeviceType) Valid() bool {
+	switch e {
+	case DeviceTypeCamera:
+		return true
+	case DeviceTypeChime:
+		return true
+	case DeviceTypeDoorbell:
+		return true
+	case DeviceTypeOther:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LightState.
 const (
 	LightStateOff LightState = "off"
@@ -109,14 +133,17 @@ type Device struct {
 	ID     string        `json:"id"`
 
 	// Kind Open hardware kind from the server
-	Kind                   string  `json:"kind"`
-	LightBrightness        *int    `json:"light_brightness,omitempty"`
-	MotionDetectionEnabled *bool   `json:"motion_detection_enabled,omitempty"`
-	Name                   string  `json:"name"`
-	Timezone               string  `json:"timezone"`
-	Volume                 *int    `json:"volume,omitempty"`
-	WifiName               *string `json:"wifi_name,omitempty"`
-	WifiSignalStrength     *int    `json:"wifi_signal_strength,omitempty"`
+	Kind                   string `json:"kind"`
+	LightBrightness        *int   `json:"light_brightness,omitempty"`
+	MotionDetectionEnabled *bool  `json:"motion_detection_enabled,omitempty"`
+	Name                   string `json:"name"`
+	Timezone               string `json:"timezone"`
+
+	// Type Normalized device class derived from a known hardware kind or explicit family. Unknown kinds remain OTHER; live-view support alone does not classify hardware.
+	Type               DeviceType `json:"type"`
+	Volume             *int       `json:"volume,omitempty"`
+	WifiName           *string    `json:"wifi_name,omitempty"`
+	WifiSignalStrength *int       `json:"wifi_signal_strength,omitempty"`
 }
 
 // DeviceAlerts defines model for DeviceAlerts.
@@ -246,6 +273,9 @@ type DeviceTimeline struct {
 	Items         []TimelineEvent `json:"items"`
 	PaginationKey *string         `json:"pagination_key,omitempty"`
 }
+
+// DeviceType Normalized device class derived from a known hardware kind or explicit family. Unknown kinds remain OTHER; live-view support alone does not classify hardware.
+type DeviceType string
 
 // DevicesResponse defines model for DevicesResponse.
 type DevicesResponse struct {
