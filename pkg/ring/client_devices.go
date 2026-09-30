@@ -101,6 +101,7 @@ func convertDevice(raw generatedhttp.Device) ringapimodels.Device {
 		ID:                     strconv.FormatInt(raw.Id, 10),
 		Name:                   getDeviceName(raw),
 		Kind:                   raw.Kind,
+		Type:                   deviceType(raw),
 		Family:                 wireString(raw.Family),
 		Address:                wireString(raw.Address),
 		Timezone:               getDeviceTimezone(raw),
@@ -117,6 +118,34 @@ func convertDevice(raw generatedhttp.Device) ringapimodels.Device {
 	}
 
 	return device
+}
+
+// deviceType uses the schema's known hardware catalogs. Capabilities describe
+// supported operations independently and cannot establish a hardware class.
+func deviceType(raw generatedhttp.Device) ringapimodels.DeviceType {
+	switch wireString(raw.Family) {
+	case string(generatedhttp.Doorbots):
+		return ringapimodels.DeviceTypeDoorbell
+	case string(generatedhttp.Chimes):
+		return ringapimodels.DeviceTypeChime
+	case string(generatedhttp.StickupCams):
+		return ringapimodels.DeviceTypeCamera
+	case "", string(generatedhttp.Other):
+		// Missing and generic families may still have a known hardware kind.
+	default:
+		return ringapimodels.DeviceTypeOther
+	}
+
+	switch {
+	case generatedhttp.CameraDeviceKind(raw.Kind).Valid():
+		return ringapimodels.DeviceTypeCamera
+	case generatedhttp.DoorbellDeviceKind(raw.Kind).Valid():
+		return ringapimodels.DeviceTypeDoorbell
+	case generatedhttp.ChimeDeviceKind(raw.Kind).Valid():
+		return ringapimodels.DeviceTypeChime
+	default:
+		return ringapimodels.DeviceTypeOther
+	}
 }
 
 func deviceCapabilities(raw generatedhttp.Device) []ringapimodels.DeviceCapability {

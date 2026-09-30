@@ -22,6 +22,13 @@ The returned device model includes capabilities when the inventory response
 explicitly reports them. An absent capability means support is unknown; the
 device or service remains the final authority for a command.
 
+`Device.Type` is the normalized hardware class: `CAMERA`, `DOORBELL`, `CHIME`,
+or `OTHER`. It uses a recognized explicit family, otherwise a known hardware
+kind from the schema catalog when family is absent or `other`. In particular,
+`stickup_cam_mini_ptz_v1` maps to `CAMERA` without a family field. Unknown
+families and unknown kinds remain `OTHER`; live-view support does not establish
+hardware type. `Kind` and `Family` retain their original server values.
+
 `Device.Supports` checks only affirmative inventory evidence. A reported
 light, motion setting, siren state, or video-on-demand flag may confirm its
 respective capability even when the current state is off. Reported PTZ RPC
