@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 	"github.com/portpowered/go-ring/pkg/ring"
 	"github.com/stretchr/testify/require"
@@ -48,4 +50,54 @@ func TestLiveSessionPreservesEarlyRemoteICE(t *testing.T) {
 	require.NoError(t, session.Close())
 	require.NoError(t, peer.AssertComplete(3*time.Second))
 	require.NoError(t, transport.AssertConsumed())
+}
+
+// This synthetic mutation overfills the pre-answer queue through the actual
+// public WebSocket client. No candidate is silently dropped to admit a session.
+func TestLiveSessionEarlyICEOverflow(t *testing.T) {
+	t.Parallel()
+
+	offer, captured := recordedLiveView(t)
+	conn := identityPeer(t, func(connection *websocket.Conn, dialog string) {
+		created := recordedSessionFrame(t, captured["session_created"], dialog)
+		if !writeFrameIfConnected(connection, created) {
+			return
+		}
+
+		body := replayObjectField(t, created, "body")
+		body["ice"], body["mlineindex"] = "candidate:synthetic", 0
+
+		for range signaling.EventQueueCapacity + 1 {
+			if !writeFrameIfConnected(connection, map[string]any{"method": "ice", "dialog_id": dialog, "body": body}) {
+				return
+			}
+		}
+
+		var closeFrame map[string]any
+
+		if connection.ReadJSON(&closeFrame) != nil || closeFrame["method"] != "close" {
+			t.Error("SDK did not close the overflowed negotiation")
+
+			return
+		}
+
+		closedBody := replayObjectField(t, closeFrame, "body")
+		if closedBody["session_id"] != body["session_id"] || closedBody["doorbot_id"] != body["doorbot_id"] {
+			t.Error("overflow cleanup closed the wrong device session")
+		}
+
+		waitForRecordedClientClose(t, connection)
+	})
+
+	t.Cleanup(func() { _ = conn.Close() })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	t.Cleanup(cancel)
+
+	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{
+		DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer},
+		AudioEnabled: false, VideoEnabled: true, MaxAge: 0, ICEMode: ring.ICENonTrickle,
+	})
+	require.ErrorIs(t, err, ring.ErrSessionBackpressure)
+	require.Nil(t, session)
 }
