@@ -90,7 +90,10 @@ func TestLiveSessionRejectsMalformedEarlyICE(t *testing.T) {
 		DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer},
 		AudioEnabled: false, VideoEnabled: true, MaxAge: 0, ICEMode: ring.ICENonTrickle,
 	})
-	require.True(t, ringapimodels.IsConnectionError(err))
+	// The reader can close the socket before the initial offer's writer
+	// acknowledgement is consumed. Both entry-point errors describe failure;
+	// the terminal connection cause must still identify the malformed input.
+	require.True(t, ringapimodels.IsConnectionError(err) || ringapimodels.IsClosedError(err), "%v", err)
 	require.Nil(t, session)
 
 	select {
@@ -99,6 +102,13 @@ func TestLiveSessionRejectsMalformedEarlyICE(t *testing.T) {
 		t.Fatal("malformed ICE peer did not observe socket close")
 	}
 
+	terminalErr := conn.Err()
+	require.True(t, ringapimodels.IsConnectionError(terminalErr), "%v", terminalErr)
+
+	var malformed *json.UnmarshalTypeError
+
+	require.ErrorAs(t, terminalErr, &malformed)
+	require.Contains(t, malformed.Field, "doorbot_id")
 	require.NoError(t, conn.Close())
 }
 
