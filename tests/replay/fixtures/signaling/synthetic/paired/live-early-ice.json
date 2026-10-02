@@ -1,0 +1,263 @@
+{
+  "provenance": "hand-authored synthetic ordered remote ICE before session_created, answer, activation and after camera_started; includes a foreign-session candidate; derived from live-production envelope shapes, no provider capture; wrong device and dialog candidates also excluded",
+  "handshake": {
+    "path": "/ws",
+    "query": {
+      "token": [
+        "synthetic-legacy-ticket"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "live_view",
+        "dialog_id": "$uuid:dialog",
+        "body": {
+          "doorbot_id": 1000,
+          "sdp": "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\nc=IN IP4 0.0.0.0\r\na=mid:0\r\na=recvonly\r\n",
+          "stream_options": {
+            "video_enabled": true
+          },
+          "type": "offer"
+        }
+      },
+      "channel": "liveView"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "ice",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "ice": "candidate:1",
+          "mlineindex": 0
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "ice",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1002,
+          "session_id": "synthetic-live",
+          "ice": "candidate:foreign-device",
+          "mlineindex": 0
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "ice",
+        "dialog_id": "foreign-dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "ice": "candidate:foreign-dialog",
+          "mlineindex": 0
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "session_created",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live"
+        }
+      },
+      "channel": "sessionCreated"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "ice",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "other-session",
+          "ice": "candidate:foreign",
+          "mlineindex": 0
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "ice",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "ice": "candidate:2",
+          "mlineindex": 0
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "sdp",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "type": "answer",
+          "sdp": "v=0\r\no=- 2 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\nc=IN IP4 0.0.0.0\r\na=mid:0\r\na=sendonly\r\n",
+          "session_info": {
+            "session_id": "synthetic-control",
+            "ping_interval": 10
+          }
+        }
+      },
+      "channel": "liveAnswer"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "ice",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "ice": "candidate:3",
+          "mlineindex": 0
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "activate_session",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live"
+        }
+      },
+      "channel": "sessionActivate"
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "mic_enable",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "enabled": false
+        }
+      },
+      "channel": "sessionMicrophone"
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "stream_options",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "audio_enabled": false
+        }
+      },
+      "channel": "sessionStreamOptions"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "camera_started",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live"
+        }
+      },
+      "channel": "serverEnvelope"
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "ice",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live",
+          "ice": "candidate:4",
+          "mlineindex": 0
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "close",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-live"
+        }
+      },
+      "channel": "sessionClose"
+    }
+  ]
+}

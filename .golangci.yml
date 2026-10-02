@@ -274,6 +274,9 @@ linters:
       # GO-15: These device-session tests construct private session state and completion channels to verify activation, cancellation, and concurrency invariants.
       - path: '^pkg/ring/device_session_(activation|concurrency|public|stress)_test\.go$'
         linters: [testpackage]
+      # GO-15: This handoff test seeds private routing queues and registers the private activated session; the paired WebSocket replay separately verifies the public client surface.
+      - path: '^pkg/ring/device_session_handoff_test\.go$'
+        linters: [testpackage]
       # GO-15: These signaling tests inspect private queues, maps, and worker completion to verify close and failure cleanup that is not part of the public API.
       - path: '^pkg/ring/signaling_connection_(failure|stress)_test\.go$'
         linters: [testpackage]

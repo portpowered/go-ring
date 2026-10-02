@@ -44,7 +44,13 @@ offerSDP := peer.LocalDescription().SDP
 ```
 
 Pass `offerSDP` in `StartDeviceSession`, then set `session.Answer().SDP` as the
-peer's remote answer. This is the simpler flow and is shown by the
+peer's remote answer. Non-trickle mode describes the local offer; it does not
+guarantee that Ring bundles all remote candidates in the answer. Consume
+`session.Receive(ctx)` and apply remote `ice` events in either mode. The SDK
+retains ICE received during negotiation, then validates it against the activated
+session's device, dialog and signaling session IDs. Its bounded event queue fails
+explicitly on overflow. It does not synthesize an end-of-candidates marker.
+This flow is shown by the
 [`rtc_stream` example](https://github.com/portpowered/go-ring/tree/main/examples/rtc_stream).
 
 ## Trickle ICE

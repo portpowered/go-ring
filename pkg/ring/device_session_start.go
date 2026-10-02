@@ -240,6 +240,15 @@ func (c *SignalingConnection) createNegotiatedDeviceSession(
 
 	go created.watch(ctx)
 
+	for _, message := range negotiated.EarlyICE {
+		err := created.core.Handle(message)
+		if err != nil {
+			created.terminate(err)
+
+			return nil, sessionError("early ICE message rejected", err)
+		}
+	}
+
 	return created, nil
 }
 
@@ -265,8 +274,17 @@ func (c *SignalingConnection) startAndRegisterDeviceSession(
 		return sessionError("device session did not become ready", err)
 	}
 
+	return c.registerActivatedDeviceSession(negotiation, created)
+}
+
+// registerActivatedDeviceSession replays the bounded pending tail before
+// exposing direct routing. Handle performs only local validation/queueing here;
+// signaling writes and termination cleanup run outside this routing lock.
+func (c *SignalingConnection) registerActivatedDeviceSession(
+	negotiation *deviceSessionNegotiation,
+	created *DeviceSession,
+) error {
 	c.mu.Lock()
-	delete(c.pending, negotiation.dialog)
 
 	if c.closed {
 		c.mu.Unlock()
@@ -274,14 +292,21 @@ func (c *SignalingConnection) startAndRegisterDeviceSession(
 		return c.Err()
 	}
 
-	c.sessions[negotiation.dialog] = created
-	c.mu.Unlock()
-
 	for {
 		select {
 		case message := <-negotiation.events:
 			created.handle(message)
+
+			if created.State() != SessionActive {
+				c.mu.Unlock()
+
+				return created.terminalError()
+			}
 		default:
+			delete(c.pending, negotiation.dialog)
+			c.sessions[negotiation.dialog] = created
+			c.mu.Unlock()
+
 			return nil
 		}
 	}
