@@ -10,6 +10,7 @@ import (
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/generatedsignaling"
 	"github.com/portpowered/go-ring/pkg/ring"
+	"github.com/portpowered/go-ring/pkg/ringapimodels"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,6 +51,55 @@ func TestLiveSessionPreservesEarlyRemoteICE(t *testing.T) {
 	require.NoError(t, session.Close())
 	require.NoError(t, peer.AssertComplete(3*time.Second))
 	require.NoError(t, transport.AssertConsumed())
+}
+
+func TestLiveSessionRejectsMalformedEarlyICE(t *testing.T) {
+	t.Parallel()
+
+	offer, captured := recordedLiveView(t)
+	peerDone := make(chan struct{})
+	conn := identityPeer(t, func(connection *websocket.Conn, dialog string) {
+		defer close(peerDone)
+
+		created := recordedSessionFrame(t, captured["session_created"], dialog)
+		if !writeFrameIfConnected(connection, created) {
+			return
+		}
+
+		body := replayObjectField(t, created, "body")
+		badICE := map[string]any{
+			"doorbot_id": "invalid", "session_id": body["session_id"], "ice": "candidate:synthetic", "mlineindex": 0,
+		}
+
+		if !writeFrameIfConnected(connection, map[string]any{"method": "ice", "dialog_id": dialog, "body": badICE}) ||
+			!writeFrameIfConnected(connection, recordedSessionFrame(t, captured["sdp"], dialog)) {
+			return
+		}
+
+		// Wire validation rejects this identity before session creation and
+		// closes the socket; it cannot safely send a device-session close.
+		waitForRecordedClientClose(t, connection)
+	})
+
+	t.Cleanup(func() { _ = conn.Close() })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	t.Cleanup(cancel)
+
+	session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{
+		DeviceID: "1001", Offer: ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer},
+		AudioEnabled: false, VideoEnabled: true, MaxAge: 0, ICEMode: ring.ICENonTrickle,
+	})
+	require.True(t, ringapimodels.IsConnectionError(err))
+	require.Nil(t, session)
+
+	select {
+	case <-peerDone:
+	case <-ctx.Done():
+		t.Fatal("malformed ICE peer did not observe socket close")
+	}
+
+	require.NoError(t, conn.Close())
 }
 
 // This synthetic mutation overfills the pre-answer queue through the actual
