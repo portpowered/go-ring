@@ -1,7 +1,7 @@
 # go-ring checklist
 
 Requirements copied from the shared template at
-`8fd452025259f9ad724498e15787948edbd06784`.
+`987b9c34a6b927472c21604617b6842a4238746b`.
 
 The [review record](independent-review.md) verifies the earlier documentation
 cleanup for items 2, 3, 12, and 13. It does not verify the complete model
@@ -34,6 +34,9 @@ Historical signoffs remain in Git history.
    as well as JSON objects. Negative controls must reject a novel unregistered fixed value or
    key in a generated wire object, later field mutations, local aliases, and forged generated
    markers; a denylist of already-known literal values alone is insufficient.
+   Check all intermediate keys in indexed receiver paths and aliases, including slices,
+   pointer dereferences, and type assertions. Test inferred nested composites and retain
+   positive cases for explicitly caller-defined open keys.
    Build a complete model inventory as well as an endpoint inventory. For every production
    struct encoded, decoded, or embedded in a wire exchange, record its schema component,
    generated Go type, generator command, and conversion call site. Include exported dependency
@@ -115,6 +118,11 @@ Historical signoffs remain in Git history.
     or absence of redundant internal documents. Missing inventory entries or unexamined files
     keep the corresponding verdict open.
 - [ ] **15.** Store and replay each wire exchange as a paired request and response (or an ordered bidirectional message transcript). Include method, origin, escaped path, repeated query values, relevant headers, and body or frame payload in the request expectation; include response status, relevant headers, and body. Match the outbound request before returning its response, reject unexpected or duplicate calls, and assert that every expected exchange was consumed in order where order matters. Never fall back to a response when request matching fails. Represent volatile IDs, timestamps, signatures, and redacted credentials with explicit match rules that still validate their format or decoded meaning. Apply this to every supported transport and classify each pair as captured or synthetic; a response-only fixture does not satisfy replay verification.
+    Match authentication forms and headers in full, including CSRF, OTP, and token exchange fields.
+    Bind OAuth state to the callback, validate PKCE challenge/verifier relationships, and bind the
+    hardware identity across requests. Validate volatile field formats before normalization.
+    Match every signaling envelope and handshake. Check lifecycle completion after the expected
+    close or teardown; a startup notification or terminal read timeout is not cleanup proof.
 
 - [ ] **16.** Provide an installable standalone CLI that consumes the public SDK so customers can test the library without a consuming application. Use a separate module under `cmd/go-<provider>`; keep CLI concerns out of the SDK. Cover authentication and explicit token exchange, device or endpoint discovery, important read/control workflows, and event/session lifecycles where supported. Include useful help, machine-readable output, nonzero failures, cancellation, and session cleanup. Accept credentials through documented environment, stdin, or explicit file inputs; keep secrets out of arguments and ordinary output, and make credential export an explicit action. Require explicit commands for device changes. Document installation and customer examples in an MDX guide. Test CLI commands offline through injected paired request/response transports, including authentication errors and lifecycle cleanup, and run blocking pinned all-linter, build, test, and module checks for the CLI in CI. Verify a separate consumer installation from the published CLI module and release its module tags with the SDK.
 
