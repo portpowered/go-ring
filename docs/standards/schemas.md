@@ -16,3 +16,4 @@
 - **SCHEMA-14** Describe every OpenAPI path and operation in customer-facing terms.
 - **SCHEMA-15** Describe the allowed shape of open strings. Add a pattern when one is known.
 - **SCHEMA-16** Generate internal wire request, response, and event models from their checked-in schemas, including active dependency exchanges. Keep handwritten code for behavior and adaptation, and check regenerated output for drift in CI. A transport wrapper must reject dependency routes absent from the external schema.
+- **SCHEMA-17** Group schemas and generated model files by API responsibility. Keep related request, response, and nested feature definitions together. Put generated provider wire definitions in `pkg/dependencymodels` for new or migrated components; do not add a parallel catch-all internal model bucket. Preserve public semantic projections and compatibility aliases where appropriate. Handwritten decoding companions must consume generated fields rather than redefine them.

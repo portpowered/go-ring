@@ -34,9 +34,9 @@ client, err := ring.NewClient(
 )
 ```
 
-The MCS dial hook must return an already secured connection. It also accepts
-an offline connection for paired frame replay. These two options apply to the
-built-in receiver; `WithFCMSource` replaces that receiver entirely. See
+The MCS dial hook must return an already secured connection. Use it to provide
+a connection that fits your network environment. These two options apply to
+the built-in receiver; `WithFCMSource` replaces that receiver entirely. See
 [push notifications](/docs/guides/push-notifications) for its session and
 credential lifecycle.
 

@@ -9,280 +9,127 @@
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://portpowered.github.io/go-ring/)
 
 A Go client for Ring authentication, device discovery and controls, recordings,
-and persistent signaling sessions.
-
-The [customer guides](https://portpowered.github.io/go-ring/docs/guides/) walk
-through authentication, device operations, live sessions, SDP and ICE,
-push notifications, and cloud playback alongside the generated API reference.
-
-The client supports PTZ over signaling WebSockets. Paired replays are labeled
-synthetic; inherited sanitized captures without source provenance are kept as
-historical regressions, not current provider evidence.
-
-## Install
+notifications, and live sessions. Ring behavior can vary by account, device,
+and region.
 
 Requires Go 1.24 or later.
 
 ```sh
-go get github.com/portpowered/go-ring@v0.5.0
+go get github.com/portpowered/go-ring@latest
 ```
 
-## Examples
-
-The examples below cover authentication, device discovery, controls, and a
-live WebRTC session.
-
-### 1. Authenticate
+## Authenticate
 
 Create a login session, request a verification code, and complete the exchange.
+The caller supplies the current access token with each account request.
 
 ```go
 client, err := ring.NewClient()
-if err != nil { return err }
-login, err := client.NewLoginSession(ring.LoginSessionRequest{Username: username, Password: password})
-if err != nil { return err }
-defer login.Close()
-
-// Request a verification code for the user.
-if err := login.Request2FACode(ctx); err != nil { return err }
-
-// Read the code from the user's verification channel.
-otpCode := os.Getenv("RING_OTP_CODE")
-tokens, err := login.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: otpCode})
-if err != nil { return err }
-accessToken := tokens.AccessToken
-auth := ring.AuthContext{AccessToken: accessToken, HardwareID: login.HardwareID()}
-```
-
-[Token exchange example](examples/token-exchange/main.go).
-
-### 2. List devices
-
-Pass the resulting authentication context to each request.
-
-```go
-client, err := ring.NewClient()
-if err != nil { return err }
-
-devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
-if err != nil { return err }
-for _, device := range devices.Devices {
-    fmt.Printf("%s: %s (%s)\n", device.ID, device.Name, device.Kind)
-    if device.Supports(ringapimodels.DeviceCapabilityPtzPanStep) {
-        fmt.Println("  supports step pan control")
-    }
-}
-```
-
-Each device reports capabilities confirmed by its inventory response. An absent
-capability means support is unknown, so the server remains the final authority
-for a control request. See the [device operations guide](https://portpowered.github.io/go-ring/docs/guides/device-operations/).
-
-[enumerate-devices example](examples/enumerate-devices/main.go).
-
-### 3. Reboot a device
-
-```go
-client, err := ring.NewClient()
-if err != nil { return err }
-
-if err := client.RebootDevice(ctx, ring.DeviceIDRequest{Auth: auth, DeviceID: deviceID}); err != nil {
+if err != nil {
     return err
 }
+login, err := client.NewLoginSession(ring.LoginSessionRequest{
+    Username: username,
+    Password: password,
+})
+if err != nil {
+    return err
+}
+defer login.Close()
+
+if err := login.Request2FACode(ctx); err != nil {
+    return err
+}
+tokens, err := login.Authenticate(ctx, ring.CompleteLoginRequest{
+    OTPCode: os.Getenv("RING_OTP_CODE"),
+})
+if err != nil {
+    return err
+}
+auth := ring.AuthContext{
+    AccessToken: tokens.AccessToken,
+    HardwareID:  login.HardwareID(),
+}
 ```
 
-[reboot-device example](examples/reboot-device/main.go).
+See the [authentication guide](https://portpowered.github.io/go-ring/docs/guides/authentication/)
+for token refresh and secure token storage.
 
-### 4. Play a chime test sound
+## List devices
 
-This command requires a chime device.
+Use the same authentication context for device requests.
 
 ```go
-client, err := ring.NewClient()
-if err != nil { return err }
+devices, err := client.ListDevices(ctx, ring.ListDevicesRequest{Auth: auth})
+if err != nil {
+    return err
+}
+for _, device := range devices.Devices {
+    fmt.Printf("%s: %s (%s)\n", device.ID, device.Name, device.Kind)
+}
+```
 
-if err := client.TestSound(ctx, ring.TestSoundRequest{
-    Auth:     auth,
-    DeviceID: chimeID,
-    Sound:    ringapimodels.SoundKindDing,
+The [device operations guide](https://portpowered.github.io/go-ring/docs/guides/device-operations/)
+covers controls, capabilities, and device-specific behavior.
+
+## Open a live session
+
+Create a WebRTC offer with your peer connection, then pass it to the client.
+The returned answer belongs to that same peer. Close the session and signaling
+connection when finished.
+
+```go
+conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
+if err != nil {
+    return err
+}
+defer conn.Close()
+
+session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{
+    DeviceID:     deviceID,
+    Offer:        ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offer.SDP},
+    VideoEnabled: true,
+    ICEMode:      ring.ICENonTrickle,
+})
+if err != nil {
+    return err
+}
+defer session.Close()
+
+answer := session.Answer()
+if err := peer.SetRemoteDescription(webrtc.SessionDescription{
+    Type: webrtc.SDPTypeAnswer,
+    SDP:  answer.SDP,
 }); err != nil {
     return err
 }
 ```
 
-[Chime sound example](examples/chime-sound/main.go).
-
-### 5. Establish a live WebRTC session
-
-Create a local WebRTC offer, start a device session with it, then apply the
-answer to the same peer connection.
-
-```go
-// create new peer connection
-pc, err := webrtc.NewPeerConnection(webrtc.Configuration{})
-if err != nil { return err }
-defer pc.Close()
-if _, err := pc.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo,
-    webrtc.RtpTransceiverInit{Direction: webrtc.RTPTransceiverDirectionRecvonly}); err != nil {
-    return err
-}
-pc.OnTrack(func(track *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
-    for {
-        if _, _, err := track.ReadRTP(); err != nil { return }
-    }
-})
-offer, err := pc.CreateOffer(nil)
-if err != nil { return err }
-gathered := webrtc.GatheringCompletePromise(pc)
-if err := pc.SetLocalDescription(offer); err != nil { return err }
-select {
-case <-gathered:
-case <-ctx.Done(): return ctx.Err()
-}
-
-
-client, err := ring.NewClient()
-if err != nil { return err }
-
-// establish persistent connection session
-conn, err := client.OpenSignaling(ctx, ring.OpenSignalingRequest{Auth: auth})
-if err != nil { return err }
-defer conn.Close()
-
-// establish device session
-session, err := conn.StartDeviceSession(ctx, ring.StartDeviceSessionRequest{
-    DeviceID:     deviceID,
-    Offer:        ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: pc.LocalDescription().SDP},
-    VideoEnabled: true,
-    ICEMode:      ring.ICENonTrickle,
-})
-
-if err != nil { return err }
-defer session.Close()
-if err := pc.SetRemoteDescription(webrtc.SessionDescription{
-    Type: webrtc.SDPTypeAnswer,
-    SDP:  session.Answer().SDP,
-}); err != nil { return err }
-```
-
-
-This uses non-trickle ICE; the full
-[rtc_stream example](examples/rtc_stream/rtc_stream.go) also shows trickle ICE,
-remote candidates, and session events. The library handles signaling, while
-your application owns the Pion peer and media rendering.
-
-### 6. Move the camera and stop
-
-Once `StartDeviceSession` returns you can move the camera around if your camera supports it.
-
-```go
-// move around
-_, err := session.PanContinuous(ctx, ring.PanContinuousRequest{
-    Direction: ring.PanRight,
-    Speed:     0.5, // normalized range: 0 to 1
-})
-if err != nil { return err }
-select {
-case <-time.After(time.Second):
-case <-ctx.Done():
-}
-stopCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-defer cancel()
-// stop the move.
-_, err = session.StopPTZ(stopCtx, ring.StopPTZRequest{Axis: ring.PanAxis})
-return err
-```
-
-For `TiltContinuous`, stop with `ring.TiltAxis`. See the
-[pan and tilt example](examples/rtc_ptz/rtc_ptz.go).
-
+See the [live sessions guide](https://portpowered.github.io/go-ring/docs/guides/live-sessions/)
+for complete WebRTC and ICE setup, and the [PTZ example](examples/rtc_ptz/rtc_ptz.go)
+for camera movement and stop commands.
 
 ## More examples
 
-| Task | Runnable source | Run | Additional input |
-| --- | --- | --- | --- |
-| Authenticate and save tokens | [token-exchange](examples/token-exchange/main.go) | `go run ./examples/token-exchange` | `RING_USERNAME`, `RING_PASSWORD`; optional `RING_OTP_CODE` |
-| List devices and IDs | [enumerate-devices](examples/enumerate-devices/main.go) | `go run ./examples/enumerate-devices` | None |
-| Reboot one device | [reboot-device](examples/reboot-device/main.go) | `go run ./examples/reboot-device` | `RING_DEVICE_ID` |
-| Play a chime test sound | [chime-sound](examples/chime-sound/main.go) | `go run ./examples/chime-sound` | `RING_CHIME_ID` |
-| Establish a WebRTC live session | [rtc_stream](examples/rtc_stream/rtc_stream.go) | `go run ./examples/rtc_stream` | `RING_DEVICE_ID`; optional `RING_ICE_SERVERS_JSON` |
-| Pan after session establishment, then stop | [rtc_ptz](examples/rtc_ptz/rtc_ptz.go) | `go run ./examples/rtc_ptz` | `RING_DEVICE_ID`; optional `RING_ICE_SERVERS_JSON` |
-| Receive push events | [session_push_events](examples/session_push_events/session_push_events.go) | `go run ./examples/session_push_events` | `RING_DEVICE_ID` |
-| Download recordings | [download-recordings](examples/download-recordings/main.go) | `go run ./examples/download-recordings` | See example source |
+| Workflow | Runnable example |
+| --- | --- |
+| Authenticate and save tokens | [token-exchange](examples/token-exchange/main.go) |
+| List devices | [enumerate-devices](examples/enumerate-devices/main.go) |
+| Reboot a device | [reboot-device](examples/reboot-device/main.go) |
+| Play a chime test sound | [chime-sound](examples/chime-sound/main.go) |
+| Stream live video | [rtc_stream](examples/rtc_stream/rtc_stream.go) |
+| Control PTZ | [rtc_ptz](examples/rtc_ptz/rtc_ptz.go) |
+| Receive push events | [session_push_events](examples/session_push_events/session_push_events.go) |
+| Download recordings | [download-recordings](examples/download-recordings/main.go) |
 
-## API reference
+## Documentation
 
-Browse the [generated Ring API reference](https://portpowered.github.io/go-ring/).
+- [Customer guides](https://portpowered.github.io/go-ring/docs/guides/) cover authentication, configuration, devices, recordings, notifications, live sessions, and playback.
+- [Generated API reference](https://portpowered.github.io/go-ring/) documents the client and its request and result types.
+- [Diagnostic CLI guide](https://portpowered.github.io/go-ring/docs/guides/diagnostic-cli/) introduces the optional `go-ring` command-line tool.
 
-## CLI quick start
-The diagnostic CLI exercises common workflows:
-
-```sh
-git clone https://github.com/portpowered/go-ring.git
-cd go-ring/cmd/go-ring
-go build -o go-ring .
-./go-ring auth login
-./go-ring devices list
-./go-ring siren <device-id> on
-./go-ring snapshot <device-id> --output camera.jpg
-./go-ring view <device-id> --continuous
-./go-ring events watch <device-id> --duration 60s
-```
-See the [diagnostic CLI guide](https://portpowered.github.io/go-ring/docs/guides/diagnostic-cli/) for commands and troubleshooting.
-## Supported operations
-
-`Client` handles authentication and HTTP requests and can be reused across
-accounts. Each returned connection owns its own lifetime. `SignalingConnection`
-owns the persistent signaling socket; it can start live device sessions,
-playback sessions, and push subscriptions. Close the returned connection or
-session when its work ends. `Client.Close` remains for source compatibility and
-does not close those objects.
-
-| Feature | Object and Go calls | Notes |
-| --- | --- | --- |
-| Client setup and reuse | `ring.NewClient` | Configuration is fixed at construction; one stateless client can serve multiple accounts. `Client.Close` remains a no-op compatibility method. |
-| Login and tokens | `Client.NewLoginSession`, `LoginSession.Request2FACode`, `LoginSession.Authenticate`, `Client.RefreshToken` | Login state stays in one session; refresh tokens are passed per request. See [token exchange](examples/token-exchange/main.go). |
-| Device inventory and lookup | `Client.ListDevices`, `Client.GetDevice`, `Client.GetDeviceDetail`, `Device.Supports` | One list of devices; capabilities come from explicit inventory fields. `GetDeviceDetail` returns the typed captured v3 detail. |
-| Device status, health, and settings | `Client.GetDeviceStatus`, `DeviceDetailDevice.Status`, `Client.UpdateDeviceHealth`, `Client.GetDeviceSettings`, `Client.PatchDeviceSettings` | Battery is unknown on wired devices unless battery presence is explicit; missing connection state is not treated as offline. |
-| Locations and groups | `Client.ListLocations`, `Client.GetLocation`, `Client.ListLocationGroups`, `Client.ListLocationDevices` | Requests and results use client-owned types; the generated HTTP models stay inside the transport. |
-| Motion and device controls | `Client.SetMotionDetection`, `Client.SetLights`, `Client.SetSiren`, `Client.SetVolume`, `Client.SetInHomeChime` | Volume and in-home chime updates require the current device description for their legacy routes. |
-| Chime sound and reboot | `Client.TestSound`, `Client.RebootDevice` | See the inline code below. |
-| Intercom unlock | `Client.UnlockIntercom` | Source-derived request replay; requires live intercom confirmation. |
-| Snapshot | `Client.GetSnapshot` | Returns image bytes and metadata. |
-| Recording history | `Client.GetDeviceHistory`, `Client.GetHistoryDevices`, `Client.GetDeviceTimeline`, `Client.GetActiveDings`, `Client.GetLastRecordingID` | Legacy history and captured EVM history/timeline are separate APIs. |
-| Recording media and changes | `Client.GetRecording`, `Client.GetRecordingShareURL`, `Client.FavoriteRecording`, `Client.DeleteRecording` | Close the body returned by `GetRecording`. |
-| Persistent live-view setting | `Client.SetPersistentLiveViewEnabled` | Changes a device setting; it does not start a live session. |
-| Account event stream | `Client.ConnectEvents`, `EventConnection.Receive`, `EventConnection.Close`, or `Client.Listen` | Separate from signaling push subscriptions. |
-| Signaling connection | `Client.OpenSignaling`, `SignalingConnection.Close`, `SignalingConnection.Err` | One socket can own multiple conversations. |
-| Live session setup | `SignalingConnection.StartDeviceSession`, `DeviceSession.Answer`, `DeviceSession.SendICE` | The application creates and owns the WebRTC peer. |
-| Live PTZ | `DeviceSession.PanStep`, `DeviceSession.TiltStep`, `DeviceSession.PanContinuous`, `DeviceSession.TiltContinuous`, `DeviceSession.StopPTZ` | Continuous movement should be followed by `StopPTZ`. |
-| Live audio and options | `DeviceSession.SetMicrophone`, `DeviceSession.SetStreamOptions` | Commands on an active device session. |
-| Live events and lifecycle | `DeviceSession.Receive`, `DeviceSession.State`, `DeviceSession.Wait`, `DeviceSession.Close` | `Wait` reports termination; sessions have a 60-minute maximum. |
-| Cloud playback | `SignalingConnection.StartPlayback`, `PlaybackSession.Answer`, `PlaybackSession.SendICE`, `PlaybackSession.Receive`, `PlaybackSession.Close` | Playback negotiates its own SDP/ICE conversation. |
-| Signaling push | `SignalingConnection.SubscribePush`, `PushSubscription.Receive`, `PushSubscription.Close` | Requires an active signaling connection; captured replay covers shoulder taps. |
-| FCM notifications | `Client.ConnectPush`, `PushConnection.Events`, `PushConnection.Close`, `Client.RegisterPushDevice`, `Client.SubscribeDeviceDing`, `Client.SubscribeDeviceMotion` | Optional long-lived account connection; live registration and connection verified on a camera, event delivery pending a triggered notification. |
-| Captured GET ticket | `Client.GetCapturedTickets` | Separate from the POST ticket used by `OpenSignaling`. |
-## References
-
-### Reverse engineering resources
-
-- [Ring API and customer guides](https://portpowered.github.io/go-ring/docs/guides/)
-- [Reverse engineering process](docs/internal/process-of-reverse-engineering.md)
-- [Ring OpenAPI HTTP contracts](api/openapi.yaml) and [Ring AsyncAPI signaling/JSON-RPC contracts](api/asyncapi.yaml)
-
-### Internal development resources
-
-- [Architecture and ownership](docs/developer-facing/library-architecture.md)
-- [Public model schema](api/client-models.openapi.yaml)
-- [Recording formats and verification order](docs/developer-facing/replay-format.md)
-- [Replay, unit, and live integration coverage](docs/developer-facing/coverage.md)
-- [API replay recordings](tests/replay/fixtures/README.md)
-- [Contributing](CONTRIBUTING.md)
-
-## Issues
+## Issues and license
 
 Please [open an issue](https://github.com/portpowered/go-ring/issues) for a
-reproducible bug or unsupported device behavior.
-
-## Compatibility and license
-Go implementation: Apache-2.0, see [LICENSE](LICENSE).
+reproducible bug or unsupported device behavior. go-ring is licensed under
+Apache-2.0; see [LICENSE](LICENSE).

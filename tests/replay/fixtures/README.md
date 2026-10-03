@@ -48,3 +48,60 @@ and UTC capture date before it can use a `captured/` directory. The extractor
 can produce candidate files with `go run ./tools/capture <capture-file>`;
 review provenance and sanitization before committing them. Never commit the source dump
 or unredacted credentials, video, account details, or network addresses.
+
+## Fixture format
+
+An HTTP pair contains a `request` and a `response`. Requests record `method`,
+`origin`, escaped `path`, `query`, `headers`, `body`, and whether `body` is
+JSON. Query is a list of name/value entries so repeated keys remain distinct.
+JSON bodies are stored as JSON values; raw bodies are strings. `null` with
+`json: false` means no body, while `null` with `json: true` is the JSON value
+`null`. Responses record status, headers, body, and the JSON flag. Replays
+always return a local response and never dial the recorded origin.
+
+```json
+{
+  "request": {
+    "method": "GET",
+    "origin": "https://api.ring.com",
+    "path": "/device_info/v3/devices",
+    "query": [],
+    "headers": {"Accept": ["application/json"]},
+    "headers_mode": "required",
+    "body": null,
+    "json": false
+  },
+  "response": {
+    "status": 200,
+    "headers": {"Content-Type": ["application/json"]},
+    "body": {"devices": []},
+    "json": true
+  }
+}
+```
+
+`headers_mode` defaults to `exact`; `required` checks each recorded header and
+value while allowing additional headers. Header names are case-insensitive.
+Method, origin, escaped path, query values, and body match strictly. JSON
+object key order is ignored, array order is preserved, numbers are compared
+without float precision loss, and trailing JSON values are rejected. Ordered
+transports consume exchanges in fixture order. Use an unordered transport only
+when the requests are independent and order does not matter. Both reject
+unexpected or duplicate requests; tests must assert that every exchange was
+consumed. Variable fields need explicit format or decoded-value match rules.
+
+Signaling session files contain an ordered `messages` array with `direction`,
+`frame`, and structured `payload`. Text frames compare as semantic JSON and
+binary frames compare byte-for-byte. The local script server checks the
+WebSocket upgrade and configured headers, applies bounded deadlines, rejects
+unexpected frames, and exposes completion and cleanup checks. A
+`client_to_server` message is an expected client frame; a `server_to_client`
+message is sent to the client. Synthetic tests that use a separate handshake
+must keep that handshake expectation next to the transcript.
+
+The replay behavior rules live in the
+[library standard](../../../docs/standards/library.md); operation-specific
+schema and evidence limits are in [API notes](../../../api/README.md). Run
+`make test-contracts` to validate fixture and schema contracts. Run
+`make test-race` for race-detected behavior; see [contributing](../../../CONTRIBUTING.md)
+for the complete check list.
