@@ -1,22 +1,43 @@
 # go-ring checklist
 
-Check each item only after its evidence and independent final-commit review pass.
-Items 2, 3, 12, and 13 passed the scoped review of documentation commit
-`58d914a44cb8bc4f5df23dfb290615c0279d0cbe`, merged at
-`ab20a9680ebe876f22f06ab161f7b60929402b1b`. Item 14 remains open pending a
-full checklist review. See the
-[`independent review record`](independent-review.md) for scope and evidence.
+Requirements copied from the shared template at
+`437cada668cf10bc9ee13689b7e83e75dc111cf1`.
 
-- [x] **1.** Keep the public client, examples, README, and site independent of any consuming application. Put application adapters and rollout plans in the consuming repository.
-- [x] **2.** Keep the README focused on supported capabilities, authentication, caller configuration and lifecycle, and links to customer guides. Put operation details in MDX guides and the generated reference. Keep behavior evidence and fixture classifications in contributor docs and fixture notes. Confirm all examples use the current public API.
-- [x] **3.** Show Go version, CI, coverage, release, Go Reference, license, and documentation badges in the README. Replace every example repository value and point badges to live reports.
-- [x] **4.** Generate the API reference in CI with the shared Fumadocs action and publish it to GitHub Pages.
+The [review record](independent-review.md) verifies the earlier documentation
+cleanup for items 2, 3, 12, and 13. It does not verify the complete model
+population or these expanded requirements. The checklist is reopened until two
+independent reviewers audit every item at the final implementation commit.
+Historical signoffs remain in Git history.
+
+- [ ] **1.** Keep the public client, examples, README, and site independent of any consuming application. Put application adapters and rollout plans in the consuming repository.
+- [ ] **2.** Document supported operations, authentication, errors, and transport injection with examples that match the exported API. Add customer-facing operation guides for important workflows, and distinguish verified behavior from synthetic examples and historical references.
+- [ ] **3.** Show Go version, CI, coverage, release, Go Reference, license, and documentation badges in the README. Replace every example repository value and point badges to live reports.
+- [ ] **4.** Generate the API reference in CI with the shared Fumadocs action and publish it to GitHub Pages.
    Inventory **ALL** outbound wire endpoints and exchanges, including private, encrypted, event, and
    signaling routes. Every endpoint must be represented in a checked-in protocol schema. Generate
    **ALL** endpoint definitions, method/path pairs, parameter and header names, channel names, and
    wire request/response types from those schemas. Include nested event properties and payloads
    serialized inside strings or encrypted wrappers; use generated artifacts at every wire boundary,
    and do not sign off while a handwritten wire definition or model remains.
+   Inventory concrete payload variants and library-defined map keys, operation values, and skill
+   or message identifiers as well as structs. Generate known nested payloads and their wire
+   constants from schema; a generated outer envelope around a handwritten map does not satisfy
+   this requirement. Keep genuinely caller-defined open fields explicit in the schema and
+   distinguish them from payload shapes constructed by the library. Add a negative gate test
+   for an unregistered nested payload or library-defined wire key.
+   Build a complete model inventory as well as an endpoint inventory. For every production
+   struct encoded, decoded, or embedded in a wire exchange, record its schema component,
+   generated Go type, generator command, and conversion call site. Include exported dependency
+   structs, primitive enums and constants, unused legacy exports, anonymous objects, nested
+   feature payloads, and custom decoders. A generated file marker or passing route gate is not proof that the remaining
+   structs are generated. Remove unused wire definitions; generate active ones. Test the
+   model gate with an unreferenced exported handwritten JSON struct and an anonymous nested wire
+   object; unused compatibility exports must not escape the scan.
+   For GraphQL, trace generated models to SDL components and actual emitted operation selections.
+   Validate generator-added discriminators and exact generated decoder branches against schema
+   possible types. Label type-only implementations with no selected subtype fields explicitly;
+   comments naming implementations do not prove the decoder or the outbound selection. Test
+   missing, extra, and mismatched decoder cases, possible-type drift, and a missing discriminator.
    Include active network calls made by pinned third-party dependencies, even when the library only
    supplies a transport wrapper. Keep their contracts in separate checked-in external schemas and
    source-matched protocol files; inventory the exact dependency version, host, method, path, framed
@@ -65,20 +86,27 @@ full checklist review. See the
    request and URL aliases, mutations after construction, aggregate fields and indexed storage, and
    values escaping to helpers; each uncovered route, channel, or network edge must fail. Distinguish
    provider-verified contracts from implementation-derived contracts and never present the latter as
-   official behavior.
-- [x] **5.** Run offline build, lint, race, and replay checks before release. Configure golangci-lint v2 with the literal `linters.default: all`, pin its version in CI, and make the full-repository lint run a blocking gate. Do not set `--issues-exit-code=0`, continue after lint failures, or limit CI to new issues. Keep all linters enabled; any exception must name the narrow rule and affected path, give its reason in a config exclusion or beside a source annotation, and receive independent review. Style fixes must preserve persisted example/config JSON keys; lock them with a regression test or document an intentional key migration. A reviewer who did not implement the migration must confirm passing blocking CI on the exact commit before checking item 5. Keep real captures sanitized and separate from synthetic fixtures.
-- [x] **6.** Add deterministic synthetic request, response, error, and session fixtures for supported behavior. Measure coverage of non-generated production code by public and transport package and in combination; enforce at least 80% combined coverage in CI and target 90%. Report generated-code exclusions and remaining uncovered behavior rather than adding tests solely to raise a number.
-- [x] **7.** Put the reusable public provider package under `pkg/<provider>` and its private wire types under an appropriate `internal` package. Keep examples, generated models, and transport packages in clear, separate locations. Verify public import paths from a separate consumer module.
-- [x] **8.** Initialize clients through explicit functional options (for example `NewClient(WithBaseURL(...), WithHTTPClient(...))`) with sensible defaults and validation. Keep account credentials out of reusable client configuration when the client serves multiple accounts.
-- [x] **9.** Keep the reusable client stateless with respect to accounts and connections. Return explicit session objects for login, event streams, sockets, RTC, or other stateful lifecycles; make ownership, close, errors, and token state visible to callers.
-- [x] **10.** Allow callers to inject the transport at every network edge the library uses, including HTTP, HTTP/2, WebSocket, MQTT, RTC signaling, and sockets opened by dependencies as applicable. A configurable concrete dialer is insufficient when it cannot substitute an offline connection; provide a connection-producing dial hook or equivalent seam and test the actual framed request and response through it without real credentials or network access.
-- [x] **11.** Expose token exchange and refresh as explicit operations that return the current credentials to the caller. Do not silently refresh or retain updated tokens inside a reusable client; document caller storage and renewal responsibilities.
-- [x] **12.** Publish all customer-facing guides as MDX files under `docs/guides/` in the GitHub Pages site. Link guides to the matching generated reference pages. Keep schema, fixture, and contributor maintenance notes outside customer navigation. Check internal links from **all** rendered pages, including the site root and generated references, and review external destinations and release-note links after a docs migration.
-- [x] **13.** Before release, edit every published page for concise copy: remove repeated caveats, stale claims, and links to duplicate repository documents; keep each page's purpose, caller choices, and next action clear. Maintain behavior evidence status in contributor and fixture notes. Review the rendered Pages site, not just the source files. Check release-note copy and URLs against the published guide locations.
-- [ ] **14.** Before signing off a library migration or release, have an independent reviewer who did not implement the change audit the library against every item in this checklist and the linked standards. Have that reviewer write a repository document with a separate verdict and concrete evidence for every numbered item, the reviewed commit, discrepancies, and the disposition of every finding; link it from the library's checklist. Keep this item unchecked while any finding or other checklist item remains open; recording or tracking a finding does not resolve it. Re-run affected checks and have the reviewer verify every fix at the final commit before checking this item. Do not accept an implementer's own checklist sign-off as independent verification.
-- [x] **15.** Store and replay each wire exchange as a paired request and response (or an ordered bidirectional message transcript). Include method, origin, escaped path, repeated query values, relevant headers, and body or frame payload in the request expectation; include response status, relevant headers, and body. Match the outbound request before returning its response, reject unexpected or duplicate calls, and assert that every expected exchange was consumed in order where order matters. Never fall back to a response when request matching fails. Represent volatile IDs, timestamps, signatures, and redacted credentials with explicit match rules that still validate their format or decoded meaning. Apply this to every supported transport and classify each pair as captured or synthetic; a response-only fixture does not satisfy replay verification.
+   official behavior. Replace the template's clearly synthetic widget schema before presenting a
+   provider API as supported behavior.
+- [ ] **5.** Run offline build, lint, race, and replay checks before release. Configure golangci-lint v2 with the literal `linters.default: all`, pin its version in CI, and make the full-repository lint run a blocking gate. Do not set `--issues-exit-code=0`, continue after lint failures, or limit CI to new issues. Keep all linters enabled; any exception must name the narrow rule and affected path, give its reason in a config exclusion or beside a source annotation, and receive independent review. Style fixes must preserve persisted example/config JSON keys; lock them with a regression test or document an intentional key migration. A reviewer who did not implement the migration must confirm passing blocking CI on the exact commit before checking item 5. Keep real captures sanitized and separate from synthetic fixtures.
+- [ ] **6.** Add deterministic synthetic request, response, error, and session fixtures for supported behavior. Measure coverage of non-generated production code by public and transport package and in combination; enforce at least 80% combined coverage in CI and target 90%. Report generated-code exclusions and remaining uncovered behavior rather than adding tests solely to raise a number.
+- [ ] **7.** Put the reusable public provider package under `pkg/<provider>`, generated provider wire models under `pkg/dependencymodels`, and transport behavior under `pkg/dependencies/<transport>`. Use distinct schema and generated Go files for each API responsibility, such as authentication, behaviors, devices, and feature payloads; a compatible shared Go package is allowed. Keep related request, response, and nested component definitions together rather than a monolithic model file or a second catch-all `internal/models` or `internal/wire` model bucket. Keep public semantic projections separate from provider wire contracts. Handwritten model companions may supply conversion or decoding behavior but must not redefine wire fields. Use compatibility aliases when moving existing exported types; when old field shapes differ, generate their compatibility definitions from a separate projection schema. Verify public import paths from a separate consumer module.
+- [ ] **8.** Initialize clients through explicit functional options (for example `NewClient(WithBaseURL(...), WithHTTPClient(...))`) with sensible defaults and validation. Keep account credentials out of reusable client configuration when the client serves multiple accounts.
+- [ ] **9.** Keep the reusable client stateless with respect to accounts and connections. Return explicit session objects for login, event streams, sockets, RTC, or other stateful lifecycles; make ownership, close, errors, and token state visible to callers.
+- [ ] **10.** Allow callers to inject the transport at every network edge the library uses, including HTTP, HTTP/2, WebSocket, MQTT, RTC signaling, and sockets opened by dependencies as applicable. A configurable concrete dialer is insufficient when it cannot substitute an offline connection; provide a connection-producing dial hook or equivalent seam and test the actual framed request and response through it without real credentials or network access.
+- [ ] **11.** Expose token exchange and refresh as explicit operations that return the current credentials to the caller. Do not silently refresh or retain updated tokens inside a reusable client; document caller storage and renewal responsibilities.
+- [ ] **12.** Publish all customer-facing guides as MDX files under `docs/guides/` in the GitHub Pages site. Link guides to the matching generated reference pages. Keep separate repository Markdown only for contributor and release process notes; check internal links from **all** rendered pages, including the site root and generated references, and review external destinations and release-note links after a docs migration.
+- [ ] **13.** Before release, edit every published page for concise copy: remove repeated caveats, stale claims, and links to duplicate repository documents; keep each page's purpose, evidence status, and next action clear. Keep the README focused on installation, a short authenticated example, supported capabilities, caller configuration and lifecycle obligations, and links to user guides. Put wire inventories, generation details, fixture provenance audits, coverage mechanics, migration history, and reviewer evidence in contributor material, not the README or customer guide navigation. Delete obsolete internal reports and duplicate process documents; keep one current checklist and independent review record plus contributor instructions needed to maintain the library. Review every tracked documentation file for audience, purpose, duplication, and incoming links, then review the rendered Pages site. Check release-note copy and URLs against the published guide locations.
+- [ ] **14.** Before signing off a library migration or release, have two independent reviewers who did not implement the change audit the library against every item in this checklist and the linked standards. Have both reviewers write their separate verdicts and concrete evidence for every numbered item in one current repository review document, including the reviewed commit, discrepancies, and the disposition of every finding; link it from the library's checklist. Keep this item unchecked while any finding or other checklist item remains open; recording or tracking a finding does not resolve it. Re-run affected checks and have both reviewers verify every fix at the final commit before checking this item. Do not accept an implementer's own checklist sign-off as independent verification.
+    For items 4 and 7, attach the complete wire-model inventory and verify every entry against
+    its generated definition and actual use. Search independently for types missing from the
+    inventory; do not accept the implementer's generated-file list as the full population.
+    For items 12 and 13, inspect the README and every tracked documentation file as well as
+    rendered pages. A successful build or link check does not establish appropriate audience
+    or absence of redundant internal documents. Missing inventory entries or unexamined files
+    keep the corresponding verdict open.
+- [ ] **15.** Store and replay each wire exchange as a paired request and response (or an ordered bidirectional message transcript). Include method, origin, escaped path, repeated query values, relevant headers, and body or frame payload in the request expectation; include response status, relevant headers, and body. Match the outbound request before returning its response, reject unexpected or duplicate calls, and assert that every expected exchange was consumed in order where order matters. Never fall back to a response when request matching fails. Represent volatile IDs, timestamps, signatures, and redacted credentials with explicit match rules that still validate their format or decoded meaning. Apply this to every supported transport and classify each pair as captured or synthetic; a response-only fixture does not satisfy replay verification.
 
-For this library's implementation rules, see [Go](standards/go.md),
+See the repository standards for [Go](standards/go.md),
 [schemas](standards/schemas.md), [client API](standards/client-api.md), and
-[library verification](standards/library.md). No independent review pass is
-recorded for the current documentation changes.
+[library verification](standards/library.md).
