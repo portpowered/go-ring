@@ -46,6 +46,9 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code -- go.mod go.sum
+          cd cmd/go-ring
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
   api-compatibility:
     runs-on: ubuntu-latest
     env:

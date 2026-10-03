@@ -14,7 +14,7 @@ build-cli:
 test:
 	$(GO) test ./... -timeout $(GO_TEST_TIMEOUT)
 test-cli:
-	cd cmd/go-ring && $(GO) test ./...
+	cd cmd/go-ring && $(GO) test -race ./...
 test-contracts:
 	npm ci --prefix tools/protocols --ignore-scripts
 	$(GO) test ./tools/protocols ./tools/capture

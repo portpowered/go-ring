@@ -1,5 +1,17 @@
 # Independent documentation review
 
+Current status: the expanded sixteen-item checklist is open. The scoped
+documentation verdict below predates the complete-model and standalone-CLI
+requirements. Two independent reviews of the final implementation are pending.
+
+CLI work adds explicit refresh/export, JSON discovery/status, successful help,
+signal cancellation, a public SDK dependency, and nested-module release checks.
+Its synthetic refresh test matches the request before returning its response.
+The older diagnostic CLI HTTP server checks selected paths and credentials;
+its authentication and read/control cases still need complete paired request
+expectations before item 16 can close. The first public CLI tag and clean proxy
+installation also remain pending.
+
 **Scoped verdict:** PASS for checklist items 2, 3, 12, and 13. Checklist item 14 remains open.
 
 **Reviewer:** `independent_gap_audit`; not an implementation author.

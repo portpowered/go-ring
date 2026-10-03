@@ -103,8 +103,8 @@ func TestDiagnosticCLIHTTPReplay(t *testing.T) {
 		server.URL,
 		"--oauth-base",
 		authServer.URL,
-		"devices",
-		"list",
+		"auth",
+		"refresh",
 	) // #nosec G204 -- executes the CLI binary built in this test with local server URLs and a temporary token file.
 	{
 		output, err := refresh.CombinedOutput()
@@ -203,7 +203,8 @@ func assertDiagnosticCLICommands(t *testing.T, exe, tokenFile, apiBase string) {
 		return string(output)
 	}
 
-	if got := runCLI("devices", "list"); !strings.Contains(got, "12345\tReplay camera") {
+	if got := runCLI("devices", "list"); !json.Valid([]byte(got)) ||
+		!strings.Contains(got, `"id":"12345"`) || !strings.Contains(got, `"name":"Replay camera"`) {
 		t.Fatalf("devices output: %q", got)
 	}
 
@@ -215,7 +216,8 @@ func assertDiagnosticCLICommands(t *testing.T, exe, tokenFile, apiBase string) {
 		t.Fatalf("siren off: %q", got)
 	}
 
-	if got := runCLI("auth", "status"); !strings.Contains(got, "Saved login") || strings.Contains(got, "replay-token") {
+	if got := runCLI("auth", "status"); !json.Valid([]byte(got)) ||
+		!strings.Contains(got, `"expires_at"`) || strings.Contains(got, "replay-token") {
 		t.Fatalf("auth status: %q", got)
 	}
 

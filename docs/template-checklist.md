@@ -1,7 +1,7 @@
 # go-ring checklist
 
 Requirements copied from the shared template at
-`437cada668cf10bc9ee13689b7e83e75dc111cf1`.
+`843ec3f2ef2d28920c39ddbfef63d6a857c6fe05`.
 
 The [review record](independent-review.md) verifies the earlier documentation
 cleanup for items 2, 3, 12, and 13. It does not verify the complete model
@@ -106,6 +106,8 @@ Historical signoffs remain in Git history.
     or absence of redundant internal documents. Missing inventory entries or unexamined files
     keep the corresponding verdict open.
 - [ ] **15.** Store and replay each wire exchange as a paired request and response (or an ordered bidirectional message transcript). Include method, origin, escaped path, repeated query values, relevant headers, and body or frame payload in the request expectation; include response status, relevant headers, and body. Match the outbound request before returning its response, reject unexpected or duplicate calls, and assert that every expected exchange was consumed in order where order matters. Never fall back to a response when request matching fails. Represent volatile IDs, timestamps, signatures, and redacted credentials with explicit match rules that still validate their format or decoded meaning. Apply this to every supported transport and classify each pair as captured or synthetic; a response-only fixture does not satisfy replay verification.
+
+- [ ] **16.** Provide an installable standalone CLI that consumes the public SDK so customers can test the library without a consuming application. Use a separate module under `cmd/go-<provider>`; keep CLI concerns out of the SDK. Cover authentication and explicit token exchange, device or endpoint discovery, important read/control workflows, and event/session lifecycles where supported. Include useful help, machine-readable output, nonzero failures, cancellation, and session cleanup. Accept credentials through documented environment, stdin, or explicit file inputs; keep secrets out of arguments and ordinary output, and make credential export an explicit action. Require explicit commands for device changes. Document installation and customer examples in an MDX guide. Test CLI commands offline through injected paired request/response transports, including authentication errors and lifecycle cleanup, and run blocking pinned all-linter, build, test, and module checks for the CLI in CI. Verify a separate consumer installation from the published CLI module and release its module tags with the SDK.
 
 See the repository standards for [Go](standards/go.md),
 [schemas](standards/schemas.md), [client API](standards/client-api.md), and
