@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/portpowered/go-ring/internal/generatedsignaling"
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/ring"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 	"github.com/stretchr/testify/require"
@@ -83,7 +85,13 @@ func serveRecordedFrameOrdering(
 		return
 	}
 
-	if !writeFrameIfConnected(connection, answer) || scenario == conflictingCreatedScenario {
+	if !writeFrameIfConnected(connection, answer) {
+		return
+	}
+
+	if scenario == conflictingCreatedScenario {
+		waitForConflictingCreatedCleanup(t, connection, dialog)
+
 		return
 	}
 
@@ -146,6 +154,30 @@ func writeFrameOrderingDuplicate(
 
 func writeFrameIfConnected(connection *websocket.Conn, frame map[string]any) bool {
 	return connection.WriteJSON(frame) == nil
+}
+
+func waitForConflictingCreatedCleanup(t *testing.T, connection *websocket.Conn, dialog string) {
+	t.Helper()
+
+	var closeFrame generatedsignaling.SessionCloseFrame
+
+	err := connection.ReadJSON(&closeFrame)
+	if err != nil {
+		t.Errorf("read cleanup frame after conflicting session_created: %v", err)
+
+		return
+	}
+
+	if closeFrame.Method != protocol.MethodClose || closeFrame.DialogId != dialog {
+		t.Errorf(
+			"cleanup frame = method %q dialog %q, want method %q dialog %q",
+			closeFrame.Method, closeFrame.DialogId, protocol.MethodClose, dialog,
+		)
+
+		return
+	}
+
+	waitForRecordedClientClose(t, connection)
 }
 
 func assertRecordedFrameOrderingResult(
