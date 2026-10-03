@@ -1,4 +1,6 @@
 GO ?= go
+GOLANGCI_LINT_VERSION := v2.3.0
+GOLANGCI_LINT ?= $(GO) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 GO_TEST_TIMEOUT ?= 120s
 export GOWORK := off
 .DEFAULT_GOAL := check
@@ -53,9 +55,9 @@ generate-api:
 	$(GO) fmt ./internal/generatedhttp ./internal/generatedfcm ./internal/generatedsignaling ./internal/protocol ./pkg/generatedhttp ./pkg/generatedsignaling ./pkg/ringapimodels
 
 lint:
-	golangci-lint run ./...
+	$(GOLANGCI_LINT) run ./...
 	$(GO) test ./tools/lint
 	$(GO) run ./tools/routegate/cmd
-	cd cmd/go-ring && golangci-lint run ./...
+	cd cmd/go-ring && $(GOLANGCI_LINT) run ./...
 lint-cli:
-	cd cmd/go-ring && golangci-lint run ./...
+	cd cmd/go-ring && $(GOLANGCI_LINT) run ./...
