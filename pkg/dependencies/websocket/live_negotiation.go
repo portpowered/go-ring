@@ -18,6 +18,8 @@ type LiveNegotiation struct {
 	AnswerSDP string
 	ControlID string
 	Heartbeat time.Duration
+	// EarlyICE retains negotiation events until the session can validate their identities.
+	EarlyICE []signaling.Message
 }
 
 // AwaitLiveAnswer pairs session_created with the SDP answer and validates their identities.
@@ -35,6 +37,7 @@ func AwaitLiveAnswer(
 		AnswerSDP: "",
 		ControlID: "",
 		Heartbeat: signaling.DefaultHeartbeatInterval,
+		EarlyICE:  nil,
 	}
 	created := false
 
@@ -76,6 +79,14 @@ func acceptLiveNegotiationMessage(
 		return state, created, err
 	case protocol.MethodClose:
 		return state, created, ringerrors.NewClosedError("signaling peer closed during negotiation")
+	case protocol.MethodICE:
+		if len(state.EarlyICE) >= signaling.EventQueueCapacity {
+			return state, created, ringerrors.NewConnectionError("early ICE queue full", signaling.ErrBackpressure)
+		}
+
+		state.EarlyICE = append(state.EarlyICE, message)
+
+		return state, created, nil
 	default:
 		return state, created, nil
 	}

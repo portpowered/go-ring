@@ -42,17 +42,28 @@ func (c *SignalingConnection) route(message signaling.Message) {
 	channel := c.channels[message.DialogID]
 	playback := c.playbacks[message.DialogID]
 	push := c.pushes[message.DialogID]
-	c.mu.Unlock()
 
 	if pending != nil {
+		// Enqueue under the routing lock so the activation handoff cannot drain
+		// the old channel before a reader holding its previous route publishes.
+		queued := false
+
 		select {
 		case pending <- message:
+			queued = true
 		default:
+		}
+
+		c.mu.Unlock()
+
+		if !queued {
 			c.fail(ringapimodels.NewConnectionError("signaling negotiation queue full", nil))
 		}
 
 		return
 	}
+
+	c.mu.Unlock()
 
 	if session != nil {
 		session.handle(message)
