@@ -26,12 +26,8 @@ The runnable programs in the repository's `examples/` directory provide
 complete versions of several workflows, including token exchange, device
 enumeration, live streaming, PTZ, and signaling push events.
 
-## Evidence and compatibility
+## Compatibility
 
-Ring's endpoints and message formats are not a stable public protocol. The
-guides describe the library's implemented behavior. The production client
-signaling replays use hand-authored synthetic transcripts. Inherited sanitized
-signaling files lack source provenance and serve only as historical regressions.
-FCM HTTP registration follows source-derived reference contracts; sample FCM
-notifications are synthetic. These checks do not verify every account,
-device, or region.
+Ring's endpoints and message formats can change, and behavior may vary by
+account, device, and region. Handle unavailable operations and errors in your
+application.

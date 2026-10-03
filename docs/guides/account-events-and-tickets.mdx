@@ -15,8 +15,10 @@ defer conn.Close()
 event, err := conn.Receive()
 ```
 
-`GetCapturedTickets` fetches the location ticket format seen in sanitized HTTP evidence. Its request takes `CapturedTicketsParams`; use the returned ticket only for the corresponding account and location.
+`GetCapturedTickets` returns tickets associated with a location. Use the
+returned ticket only with its account and location. This request is separate
+from the ticket exchange performed by `OpenSignaling`.
 
-The event frame example is synthetic and follows the current implementation. Unknown event fields remain in `Event.Data`; account-specific frame variants have not been captured for this guide.
+Unknown event fields remain available in `Event.Data`.
 
 Wire contracts: [account event frame](/docs/asyncapi/account-events/receiveAccountEvent) and [location tickets](/docs/openapi/signaling/getCapturedLocationTickets).

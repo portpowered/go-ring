@@ -41,6 +41,5 @@ by that method after consuming the media.
 
 The signaling playback message shapes are described in the
 [generated playback operation](/docs/asyncapi/playback/sendPlaybackOffer).
-The playback replay uses a hand-authored synthetic signaling transcript.
-Inherited sanitized signaling files lack source provenance and are historical
-regressions. Neither verifies playback for every account, recording, or region.
+Playback availability can vary by account and recording, so handle errors
+returned when a recording cannot be opened.

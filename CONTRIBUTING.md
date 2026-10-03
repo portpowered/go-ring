@@ -1,7 +1,32 @@
 # Contributing
 
-Use Go 1.24 or newer. Follow the [repository standards](docs/standards/) and the checks in [AGENTS.md](AGENTS.md). Run `make check`, `make lint`, `make test-race`, and `make build-examples` before submitting a pull request. CI runs without a parent workspace or vendor credentials.
+Use Go 1.24 or newer. Follow the repository instructions in [AGENTS.md](AGENTS.md)
+and the standards in [docs/standards/](docs/standards/). Use the
+[release checklist](docs/template-checklist.md) and maintain its
+[independent review record](docs/independent-review.md).
 
-Test at the transport seam with explicit synthetic fixtures or local HTTP/WebSocket servers. Live tests must use the `integration` build tag. Do not include account credentials, private captures, device addresses, or recordings in contributions. Document the origin and redaction of any new fixture.
+Before submitting a pull request, run:
 
-Keep public changes compatible where practical, update examples, and describe behavior changes and verification in the pull request. New public APIs need Go documentation and focused behavioral tests. Review the [public Go API compatibility report and release policy](docs/developer-facing/public-api-compatibility.md) when changing exported APIs.
+```sh
+make check
+make lint
+make test-race
+make build-examples
+```
+
+Test transport behavior with paired replay fixtures or local HTTP and WebSocket
+servers. Keep captured, source-derived, synthetic, and historical examples
+clearly labeled; do not add private captures, credentials, device addresses,
+account details, or recordings. See the
+[fixture guide](tests/replay/fixtures/README.md) for the fixture format and
+evidence labels. Live tests must use the `integration` build tag and remain
+optional; `make test-integration` requires `RING_ACCESS_TOKEN`. Use
+`make test-cover` to report replay, unit, and combined coverage separately.
+
+Keep public changes compatible where practical. Add Go documentation and
+focused behavioral tests for new public APIs, update runnable examples and the
+relevant [customer guides](docs/guides/), and review the [client API
+standard](docs/standards/client-api.md) before changing exported types or
+methods. Before an intentional API break or release, review the compatibility
+output from CI and use a semver version that allows the change. Describe
+behavior changes and verification in the pull request.

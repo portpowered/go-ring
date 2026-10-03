@@ -90,13 +90,7 @@ subscription. See
 [`examples/session_push_events`](https://github.com/portpowered/go-ring/tree/main/examples/session_push_events)
 for a complete receiver.
 
-## Evidence notes
-
-The signaling push filter, acknowledgement, event, and message order are
-exercised by hand-authored synthetic paired replays. The HTTP FCM token
-registration and ding/motion subscription requests are source-derived
-reference contracts. FCM notification payload samples are synthetic; unknown
-notification fields remain available in `FCMEvent.Data`.
+Unknown notification fields remain available in `FCMEvent.Data`.
 
 Wire contracts: [register a push device](/docs/openapi/notifications/registerPushDevice)
 and [send a signaling subscription](/docs/asyncapi/push-notifications/sendPushSubscribe).
