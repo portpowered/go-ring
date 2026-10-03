@@ -2,14 +2,11 @@ package replay_test
 
 import (
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -23,19 +20,13 @@ func TestDiagnosticCLIHTTPReplay(t *testing.T) {
 
 	exe := buildReplayCLI(t)
 
-	var (
-		mu    sync.Mutex
-		paths []string
-	)
-
-	server := newDiagnosticCLIAPIServer(&mu, &paths)
-	defer server.Close()
+	server := newDiagnosticCLIHTTPPairs(t, "cli-devices-siren.json")
 
 	tokenFile := seedDiagnosticTokenFile(t)
 
 	assertDiagnosticCLICommands(t, exe, tokenFile, server.URL)
 
-	authServer := newDiagnosticCLIAuthServer()
+	authServer := newDiagnosticCLIAuthPairs(t)
 	defer authServer.Close()
 
 	login := exec.CommandContext(
@@ -125,19 +116,6 @@ func TestDiagnosticCLIHTTPReplay(t *testing.T) {
 	}
 
 	assertDiagnosticTokenFileKeys(t, refreshed)
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	for _, expected := range []string{
-		"GET /device_info/v3/devices",
-		"PUT /clients_api/doorbots/12345/siren_on",
-		"PUT /clients_api/doorbots/12345/siren_off",
-	} {
-		if !containsString(paths, expected) {
-			t.Errorf("missing %s in %v", expected, paths)
-		}
-	}
 }
 
 func assertDiagnosticTokenFileKeys(t *testing.T, data []byte) {
@@ -229,91 +207,4 @@ func assertDiagnosticCLICommands(t *testing.T, exe, tokenFile, apiBase string) {
 	if !os.IsNotExist(err) {
 		t.Fatalf("token file not removed: %v", err)
 	}
-}
-
-func containsString(values []string, needle string) bool {
-	for _, value := range values {
-		if value == needle {
-			return true
-		}
-	}
-
-	return false
-}
-
-func newDiagnosticCLIAPIServer(mu *sync.Mutex, paths *[]string) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-		mu.Lock()
-
-		*paths = append(*paths, request.Method+" "+request.URL.Path)
-
-		mu.Unlock()
-
-		if (request.Header.Get("Authorization") != "Bearer replay-token" &&
-			request.Header.Get("Authorization") != "Bearer second-access") ||
-			request.Header.Get("Hardware_id") == "" {
-			http.Error(responseWriter, "wrong credentials", http.StatusUnauthorized)
-
-			return
-		}
-
-		switch request.URL.Path {
-		case legacyClientSessionPath:
-			_, _ = responseWriter.Write([]byte(`{}`))
-		case legacyDeviceListPath:
-			_, _ = responseWriter.Write(
-				[]byte(
-					`{"devices":[{"id":12345,"name":"Replay camera","family":"stickup_cams","kind":"stickup_cam"}]}`,
-				),
-			)
-		case "/clients_api/doorbots/12345/siren_on", "/clients_api/doorbots/12345/siren_off":
-			_, _ = responseWriter.Write([]byte(`{}`))
-		default:
-			http.Error(responseWriter, "unexpected request", http.StatusNotFound)
-		}
-	}))
-}
-
-func newDiagnosticCLIAuthServer() *httptest.Server {
-	var oauthState string
-
-	return httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-		switch {
-		case request.Method == http.MethodGet &&
-			request.URL.Path == oauthAuthorizePath &&
-			request.URL.Query().Get("response_type") == "code":
-			oauthState = request.URL.Query().Get("state")
-			_, _ = responseWriter.Write([]byte(`<script id="oauth-args">{"csrf-token":"csrf-value"}</script>`))
-		case request.Method == http.MethodPost && request.URL.Path == oauthSignInPath:
-			responseWriter.WriteHeader(http.StatusPreconditionFailed)
-			_, _ = responseWriter.Write([]byte(syntheticEmailTwoFactorState))
-		case request.Method == http.MethodPost && request.URL.Path == oauthTwoFactorPath:
-			_, _ = responseWriter.Write([]byte(`{}`))
-		case request.Method == http.MethodGet && request.URL.Path == oauthAuthorizePath:
-			responseWriter.Header().Set("Location", "https://ring.com/signin/callback?code=auth-code&state="+oauthState)
-			responseWriter.WriteHeader(http.StatusFound)
-		case request.Method == http.MethodPost && request.URL.Path == oauthTokenPath:
-			_ = request.ParseForm()
-
-			if request.Form.Get("grant_type") == "refresh_token" {
-				if request.Form.Get("refresh_token") == "rotated-refresh" {
-					_, _ = responseWriter.Write(
-						[]byte(
-							`{"access_token":"second-access","refresh_token":"second-refresh","expires_in":3600,"token_type":"Bearer"}`,
-						),
-					)
-				} else {
-					_, _ = responseWriter.Write([]byte(`{"access_token":"rotated-access","refres` +
-						`h_token":"rotated-refresh","expires_in":` +
-						`3600,"token_type":"Bearer"}`))
-				}
-			} else {
-				_, _ = responseWriter.Write([]byte(`{"access_token":"initial-access","refres` +
-					`h_token":"initial-refresh","expires_in":` +
-					`3600,"token_type":"Bearer"}`))
-			}
-		default:
-			http.Error(responseWriter, "unexpected auth request", http.StatusNotFound)
-		}
-	}))
 }

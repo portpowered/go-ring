@@ -52,6 +52,14 @@ func loadDiagnosticHTTPPairs(t *testing.T, name string) []replay.Exchange {
 
 func newDiagnosticCLIHTTPPairs(t *testing.T, name string) *httptest.Server {
 	t.Helper()
+
+	return newDiagnosticCLIHTTPPairsWithRules(t, name, nil, nil)
+}
+
+func newDiagnosticCLIHTTPPairsWithRules(
+	t *testing.T, name string, normalize func(*http.Request) error, restore func(*http.Response),
+) *httptest.Server {
+	t.Helper()
 	transport := replay.NewTransport(loadDiagnosticHTTPPairs(t, name)...)
 	server := httptest.NewUnstartedServer(nil)
 	server.Config.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -65,6 +73,16 @@ func newDiagnosticCLIHTTPPairs(t *testing.T, name string) *httptest.Server {
 		clone := request.Clone(request.Context())
 		clone.URL.Scheme = "http"
 		clone.URL.Host = "cli.synthetic.test"
+
+		if normalize != nil {
+			err := normalize(clone)
+			if err != nil {
+				t.Errorf("CLI volatile request rule: %v", err)
+				http.Error(writer, "volatile field mismatch", http.StatusBadRequest)
+
+				return
+			}
+		}
 
 		response, err := transport.RoundTrip(clone)
 		if err != nil {
@@ -80,6 +98,10 @@ func newDiagnosticCLIHTTPPairs(t *testing.T, name string) *httptest.Server {
 				t.Errorf("close paired response: %v", err)
 			}
 		}()
+
+		if restore != nil {
+			restore(response)
+		}
 
 		writeDiagnosticPairResponse(t, writer, response)
 	})
