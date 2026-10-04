@@ -8,10 +8,6 @@ import (
 	"testing"
 )
 
-type cliReplayError string
-
-func (e cliReplayError) Error() string { return string(e) }
-
 func buildReplayCLI(t *testing.T) string {
 	t.Helper()
 
