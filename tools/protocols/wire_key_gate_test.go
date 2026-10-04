@@ -17,13 +17,7 @@ func TestSignalingTransportDoesNotDefineHandwrittenWireStructsOrLiteralKeys(t *t
 	t.Parallel()
 
 	root := repositoryRoot(t)
-	for _, relative := range []string{
-		"pkg/dependencies/websocket/wire.go",
-		"pkg/dependencies/websocket/wire_close_union.go",
-		"pkg/dependencies/websocket/writer.go",
-		"pkg/dependencies/websocket/live_negotiation.go",
-		"internal/signaling/session.go",
-	} {
+	for _, relative := range signalingProductionSources(t, root) {
 		path := filepath.Join(root, relative)
 
 		source, err := os.ReadFile(path) // #nosec G304 -- fixed production source paths in this test.
@@ -44,6 +38,31 @@ func TestSignalingTransportDoesNotDefineHandwrittenWireStructsOrLiteralKeys(t *t
 			t.Errorf("%s contains signaling wire-key literals %v; use generated protocol.Field constants", relative, literals)
 		}
 	}
+}
+
+func signalingProductionSources(t *testing.T, root string) []string {
+	t.Helper()
+
+	var sources []string
+
+	for _, directory := range []string{"pkg/dependencies/websocket", "internal/signaling"} {
+		entries, err := os.ReadDir(filepath.Join(root, directory))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+				continue
+			}
+
+			sources = append(sources, filepath.Join(directory, entry.Name()))
+		}
+	}
+
+	slices.Sort(sources)
+
+	return sources
 }
 
 func TestSignalingModelGateRejectsHandwrittenWireStructFixture(t *testing.T) {

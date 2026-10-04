@@ -275,15 +275,11 @@ func TestKnownSignalingValuesUseGeneratedProtocolConstants(t *testing.T) {
 	knownValues := make(map[string]bool)
 	collectSchemaKnownValues(nestedMap(async, "components", "schemas"), knownValues)
 
-	for _, relative := range []string{
-		"pkg/dependencies/websocket/wire.go",
-		"pkg/dependencies/websocket/wire_close_union.go",
-		"pkg/dependencies/websocket/writer.go",
-		"pkg/dependencies/websocket/live_negotiation.go",
-		"internal/signaling/session.go",
+	sources := append(signalingProductionSources(t, root),
 		"pkg/ring/device_session.go",
 		"pkg/ring/signaling_extras.go",
-	} {
+	)
+	for _, relative := range sources {
 		path := filepath.Join(root, relative)
 
 		file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)

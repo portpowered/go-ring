@@ -54,7 +54,7 @@ func Audit(root string) ([]Finding, error) {
 			return nil, wrapRouteGateError(err, "read %s", path)
 		}
 
-		if isGeneratedGo(raw) {
+		if isGeneratedGo(raw) && !signalingSourcePackage(path) {
 			continue
 		}
 
@@ -69,6 +69,8 @@ func Audit(root string) ([]Finding, error) {
 		parsed = append(parsed, item)
 		byDirectory[filepath.Dir(path)] = append(byDirectory[filepath.Dir(path)], item)
 	}
+
+	findings = append(findings, auditSignalingSourceModels(root, parsed)...)
 
 	verifiedFCMCalls, fcmFindings := auditExternalFCM(root, parsed)
 	findings = append(findings, fcmFindings...)
