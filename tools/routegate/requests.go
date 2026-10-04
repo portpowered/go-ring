@@ -235,7 +235,7 @@ func auditGeneratedRequestAssignment(
 			context.add(
 				assignment,
 				"generated-request-route-mutation",
-				"schema-generated request method, URL path, authority, or query is changed after route generation",
+				"schema-generated request method, URL, body, authority, or framing is changed after generation",
 			)
 		}
 	}
@@ -517,16 +517,16 @@ func requestMutationObject(expression ast.Expr, requests map[*ast.Object]HTTPRou
 		return nil
 	}
 
-	if selectors[0] == "Method" || selectors[0] == "URL" && (len(selectors) == 1 || pathSelector(selectors[1])) {
+	if requestWireField(selectors[0]) || selectors[0] == "URL" {
 		return object
 	}
 
 	return nil
 }
 
-func pathSelector(name string) bool {
+func requestWireField(name string) bool {
 	switch name {
-	case "Path", "RawPath", rawQueryFieldName, "ForceQuery", "Host", "Scheme", "Opaque":
+	case "Method", "Body", "GetBody", "Host", "ContentLength", "TransferEncoding", "Trailer":
 		return true
 	default:
 		return false
