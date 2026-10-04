@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/portpowered/go-ring/internal/generatedhttp"
+	"github.com/portpowered/go-ring/pkg/ringtypes"
 )
 
 // DeviceFamily selects a legacy family endpoint. Only doorbots and chimes
 // currently have a captured family-specific health operation.
-type DeviceFamily string
+type DeviceFamily = ringtypes.DeviceFamily
 
 const (
 	DeviceFamilyDoorbells DeviceFamily = "doorbots"

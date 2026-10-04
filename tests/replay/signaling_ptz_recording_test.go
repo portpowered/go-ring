@@ -9,6 +9,7 @@ import (
 
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/internal/testkit/replay"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 // PTZ has no Python sender at the pinned revision. Replay its recorded requests,
@@ -108,10 +109,11 @@ func (state *recordedPTZConversation) replayCall(t *testing.T, message signaling
 	done := make(chan error, 1)
 	state.pending[body.Command.ID] = done
 
-	go func(method string, arguments map[string]any) {
-		_, err := session.Call(context.Background(), method, arguments)
+	direction, speed := typedPTZArguments(t, body.Command.Method, params)
+	go func(method string, direction generatedsignaling.PtzDirection, speed *float64) {
+		_, err := session.Call(context.Background(), method, direction, speed)
 		done <- err
-	}(body.Command.Method, params)
+	}(body.Command.Method, direction, speed)
 
 	actual := recordedNextMessage(t, state.out)
 	sent := decodeReplayObject(t, actual.Body)
@@ -175,6 +177,31 @@ func recordedPTZParams(captured map[string]any) map[string]any {
 	}
 
 	return params
+}
+
+func typedPTZArguments(t *testing.T, method string, params map[string]any) (generatedsignaling.PtzDirection, *float64) {
+	t.Helper()
+
+	directionValue, ok := params["direction"].(string)
+	if !ok {
+		t.Fatalf("recorded PTZ direction has type %T", params["direction"])
+	}
+
+	direction, ok := generatedsignaling.ValuesToPtzDirection[directionValue]
+	if !ok {
+		t.Fatalf("recorded PTZ direction %q is absent from the schema", directionValue)
+	}
+
+	if method != "PTZ.Pan.Continuous" && method != "PTZ.Tilt.Continuous" {
+		return direction, nil
+	}
+
+	speedValue, ok := params["speed"].(float64)
+	if !ok {
+		t.Fatalf("recorded PTZ speed has type %T", params["speed"])
+	}
+
+	return direction, &speedValue
 }
 
 func (state *recordedPTZConversation) replayResult(
@@ -342,10 +369,11 @@ func replayRecordedPTZCommand(
 		Command:   recordedRPCCommand{ID: "", Method: "", Params: nil},
 	}, request.DialogID, control, out)
 	params := recordedPTZParams(body.Command.Params)
+	direction, speed := typedPTZArguments(t, body.Command.Method, params)
 	done := make(chan error, 1)
 
 	go func() {
-		_, err := session.Call(context.Background(), body.Command.Method, params)
+		_, err := session.Call(context.Background(), body.Command.Method, direction, speed)
 		done <- err
 	}()
 

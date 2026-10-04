@@ -30,17 +30,19 @@ type mcsInventory struct {
 }
 
 type mcsSocketInventory struct {
-	Host           string         `yaml:"host"`
-	Port           int            `yaml:"port"`
-	Network        string         `yaml:"network"`
-	TLS            bool           `yaml:"tls"`
-	Domain         string         `yaml:"domain"`
-	Version        int            `yaml:"version"`
-	VersionBytes   int            `yaml:"version_bytes"`   //nolint:tagliatelle // External schema key.
-	TagBytes       int            `yaml:"tag_bytes"`       //nolint:tagliatelle // External schema key.
-	LengthEncoding string         `yaml:"length_encoding"` //nolint:tagliatelle // External schema key.
-	Callsite       string         `yaml:"callsite"`
-	Tags           map[string]int `yaml:"tags"`
+	Host           string            `yaml:"host"`
+	Port           int               `yaml:"port"`
+	Network        string            `yaml:"network"`
+	TLS            bool              `yaml:"tls"`
+	Domain         string            `yaml:"domain"`
+	Version        int               `yaml:"version"`
+	VersionBytes   int               `yaml:"version_bytes"`   //nolint:tagliatelle // External schema key.
+	TagBytes       int               `yaml:"tag_bytes"`       //nolint:tagliatelle // External schema key.
+	LengthEncoding string            `yaml:"length_encoding"` //nolint:tagliatelle // External schema key.
+	Callsite       string            `yaml:"callsite"`
+	AppDataKeys    map[string]string `yaml:"app_data_keys"`   //nolint:tagliatelle // External schema key.
+	AppDataValues  map[string]string `yaml:"app_data_values"` //nolint:tagliatelle // External schema key.
+	Tags           map[string]int    `yaml:"tags"`
 }
 
 type mcsProtobufInventory struct {
@@ -72,6 +74,22 @@ func expectedMCSTags() map[string]int {
 		"TalkMetadata":        15,
 		"NumProtoTypes":       16,
 		"Unknown":             255,
+	}
+}
+
+func expectedMCSAppDataKeys() map[string]string {
+	return map[string]string{
+		"ContentEncoding": "content-encoding",
+		"CryptoKey":       "crypto-key",
+		"Encryption":      "encryption",
+	}
+}
+
+func expectedMCSAppDataValues() map[string]string {
+	return map[string]string{
+		"ContentEncodingAES128GCM": "aes128gcm",
+		"CryptoKeyDHPrefix":        "dh=",
+		"EncryptionSaltPrefix":     "salt=",
 	}
 }
 
@@ -162,7 +180,9 @@ func loadMCSInventory(root string) (mcsInventory, bool) {
 	if socket.Host != "mtalk.google.com" || socket.Port != 5228 || socket.Network != "tcp" || !socket.TLS ||
 		socket.Domain != "mcs.android.com" || socket.Version != 41 || socket.VersionBytes != 1 ||
 		socket.TagBytes != 1 || socket.LengthEncoding != mcsLengthEncodingVarint ||
-		socket.Callsite != mcsExpectedCallsite || !sameMCSTags(socket.Tags) {
+		socket.Callsite != mcsExpectedCallsite || !sameMCSTags(socket.Tags) ||
+		!sameMCSStringMap(socket.AppDataKeys, expectedMCSAppDataKeys()) ||
+		!sameMCSStringMap(socket.AppDataValues, expectedMCSAppDataValues()) {
 		return inventory, false
 	}
 
@@ -201,6 +221,7 @@ func mcsInventorySocketKeysMatch(raw []byte) bool {
 		"host": true, "port": true, "network": true, "tls": true, "domain": true,
 		"version": true, "version_bytes": true, "tag_bytes": true,
 		"length_encoding": true, "callsite": true, "tags": true,
+		"app_data_keys": true, "app_data_values": true,
 	}
 	if len(socket.Content) != 2*len(wanted) {
 		return false
@@ -225,6 +246,20 @@ func sameMCSTags(actual map[string]int) bool {
 	}
 
 	for name, value := range wanted {
+		if actual[name] != value {
+			return false
+		}
+	}
+
+	return true
+}
+
+func sameMCSStringMap(actual, expected map[string]string) bool {
+	if len(actual) != len(expected) {
+		return false
+	}
+
+	for name, value := range expected {
 		if actual[name] != value {
 			return false
 		}
@@ -321,15 +356,33 @@ func verifyMCSGeneratedConstants(root string, socket mcsSocketInventory) bool {
 		}
 	}
 
+	for name, value := range socket.AppDataKeys {
+		if !mcsStringConstantEquals(constants["MCSAppData"+name+"Key"], value) {
+			return false
+		}
+	}
+
+	for name, value := range socket.AppDataValues {
+		if !mcsStringConstantEquals(constants["MCSAppData"+name], value) {
+			return false
+		}
+	}
+
 	generatedTags := 0
+	generatedAppDataConstants := 0
 
 	for name := range constants {
 		if strings.HasPrefix(name, "MCS") && strings.HasSuffix(name, "Tag") {
 			generatedTags++
 		}
+
+		if strings.HasPrefix(name, "MCSAppData") {
+			generatedAppDataConstants++
+		}
 	}
 
-	return generatedTags == len(socket.Tags)
+	return generatedTags == len(socket.Tags) &&
+		generatedAppDataConstants == len(socket.AppDataKeys)+len(socket.AppDataValues)
 }
 
 func goConstants(path string) (map[string]ast.Expr, bool) {

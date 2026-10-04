@@ -47,14 +47,19 @@ func TestDeviceIdentityReplay(t *testing.T) {
 			var health generatedhttp.DeviceHealth
 
 			health.VodEnabled = &liveView
-			body, err := json.Marshal(
-				generatedhttp.DeviceList{
-					Devices: []generatedhttp.Device{{
-						Id: 42, Kind: tc.kind, Family: tc.family, Description: tc.kind,
-						Health: &health,
-					}},
-				},
-			)
+
+			var device generatedhttp.Device
+
+			device.Id = 42
+			device.Kind = tc.kind
+			device.Family = tc.family
+			device.Description = tc.kind
+			device.Health = &health
+
+			var list generatedhttp.DeviceList
+
+			list.Devices = []generatedhttp.Device{device}
+			body, err := json.Marshal(list)
 			require.NoError(t, err)
 
 			exchange.Response.Body = body

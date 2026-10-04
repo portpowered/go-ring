@@ -526,7 +526,10 @@ components:
       properties:
         doorbot_id: {type: integer}
         session_id: {type: string}
-        command: {$ref: '#/components/schemas/ServerRPCCommand'}
+        command:
+          oneOf:
+            - {$ref: '#/components/schemas/ServerRPCCommand'}
+            - {$ref: '#/components/schemas/RPCCommandWrapper'}
       additionalProperties: true
     ServerRPCCommand:
       type: object
@@ -538,6 +541,13 @@ components:
         error: {$ref: '#/components/schemas/RPCErrorValue'}
         method: {type: string}
         params: {type: object, additionalProperties: true}
+      additionalProperties: true
+    RPCCommandWrapper:
+      description: Historical JSON-RPC response wrapper observed by the session compatibility path.
+      type: object
+      required: [message]
+      properties:
+        message: {type: object, additionalProperties: true}
       additionalProperties: true
     RPCResultValue:
       type: object
@@ -559,7 +569,7 @@ components:
       properties:
         method:
           type: string
-          enum: [camera_started, close, ice, notification, pong, push_event, push_subscription_ack, rpc, sdp, session_created]
+          enum: [activate_session, camera_options, camera_started, close, ice, live_view, mic_enable, notification, ping, playback, pong, push_event, push_heartbeat, push_subscribe, push_subscription_ack, push_unsubscribe, rpc, sdp, session_created, stream_options]
         dialog_id: {type: string}
         riid: {type: string}
         body: {type: object, additionalProperties: true}
@@ -985,7 +995,7 @@ components:
       required: [code, text]
       properties:
         code: {type: integer, description: Historical client close uses zero.}
-        text: {type: string, description: Historical client close uses client_closed.}
+        text: {type: string, const: client_closed, description: Historical client close uses client_closed.}
     ClientEnvelope:
       type: object
       required: [method, dialog_id, body]
@@ -1129,7 +1139,7 @@ components:
     PushFilters:
       type: object
       properties:
-        doorbot_ids: {type: array, items: {type: integer}}
+        doorbot_ids: {type: array, items: {type: integer, format: int64}}
     PTZRPC:
       type: object
       required: [jsonrpc, id, method, params]

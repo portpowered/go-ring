@@ -71,9 +71,15 @@ func TestAccountEventTransportReplaysFrameBeforePeerClose(t *testing.T) {
 	require.Equal(t, fixture.Handshake.Request.EscapedPath, handshake.URL.EscapedPath())
 	require.Equal(t, "Bearer test_token", handshake.Header.Get("Authorization"))
 
-	event, err := connection.Receive()
+	frame, raw, err := connection.ReceiveFrame()
 	require.NoError(t, err)
-	require.Equal(t, fixture.Frames[0].Payload.Kind, event["kind"])
+	require.Equal(t, fixture.Frames[0].Payload.Kind, frame.Kind)
+	require.Equal(t, fixture.Frames[0].Payload.DeviceID, int64(frame.DeviceId))
+	require.Equal(t, fixture.Frames[0].Payload.Timestamp, frame.Timestamp)
+
+	var event map[string]interface{}
+
+	require.NoError(t, json.Unmarshal(raw, &event))
 	require.InDelta(t, float64(fixture.Frames[0].Payload.DeviceID), event["device_id"], 0)
 	require.Equal(t, fixture.Frames[0].Payload.Source, event["source"])
 

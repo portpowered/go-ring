@@ -33,6 +33,11 @@ type generatedWireKeyRegistry struct {
 	err           error
 }
 
+type generatedConstSource struct {
+	packagePath string
+	file        *ast.File
+}
+
 type wireMapProvenance struct {
 	kind           wireMapKind
 	valid          bool
@@ -104,6 +109,9 @@ func loadGeneratedWireKeyRegistry(root string, contracts Contracts) *generatedWi
 		return registry
 	}
 
+	modelPackagePath := modulePath + "/pkg/dependencymodels/rest"
+	sources := make([]generatedConstSource, 0)
+
 	for _, path := range files {
 		packagePath, pathErr := importPath(root, modulePath, filepath.Dir(path))
 		if pathErr != nil {
@@ -112,7 +120,7 @@ func loadGeneratedWireKeyRegistry(root string, contracts Contracts) *generatedWi
 			return registry
 		}
 
-		if !hasGeneratedHTTPPath(contracts, packagePath) {
+		if !hasGeneratedHTTPPath(contracts, packagePath) && packagePath != modelPackagePath {
 			continue
 		}
 
@@ -130,7 +138,18 @@ func loadGeneratedWireKeyRegistry(root string, contracts Contracts) *generatedWi
 			return registry
 		}
 
-		registry.addGeneratedConstants(packagePath, file)
+		sources = append(sources, generatedConstSource{packagePath: packagePath, file: file})
+	}
+
+	// Model-only OpenAPI packages own literal values; generated HTTP packages
+	// re-export those values as selector aliases for API compatibility. Register
+	// literals first, then resolve the aliases against the same inventory.
+	for _, source := range sources {
+		registry.addGeneratedConstants(source.packagePath, source.file, false)
+	}
+
+	for _, source := range sources {
+		registry.addGeneratedConstants(source.packagePath, source.file, true)
 	}
 
 	return registry
@@ -244,10 +263,23 @@ func mergeWireParameters(destination wireOperationKeys, parameters []map[string]
 	}
 }
 
-func (registry *generatedWireKeyRegistry) addGeneratedConstants(packagePath string, file *ast.File) {
+func (registry *generatedWireKeyRegistry) addGeneratedConstants(packagePath string, file *ast.File, aliases bool) {
 	if registry.constants[packagePath] == nil {
 		registry.constants[packagePath] = make(map[string]string)
 	}
+
+	specifications := generatedConstantSpecifications(file)
+	if aliases {
+		registry.addConstantAliases(packagePath, specifications, importAliases(file))
+
+		return
+	}
+
+	registry.addConstantStrings(packagePath, specifications)
+}
+
+func generatedConstantSpecifications(file *ast.File) []*ast.ValueSpec {
+	specifications := make([]*ast.ValueSpec, 0)
 
 	for _, declaration := range file.Decls {
 		group, ok := declaration.(*ast.GenDecl)
@@ -256,28 +288,74 @@ func (registry *generatedWireKeyRegistry) addGeneratedConstants(packagePath stri
 		}
 
 		for _, specification := range group.Specs {
-			value, ok := specification.(*ast.ValueSpec)
-			if !ok {
-				continue
-			}
-
-			for index, name := range value.Names {
-				if index >= len(value.Values) {
-					continue
-				}
-
-				literal, ok := value.Values[index].(*ast.BasicLit)
-				if !ok || literal.Kind != token.STRING {
-					continue
-				}
-
-				text, err := strconv.Unquote(literal.Value)
-				if err == nil {
-					registry.constants[packagePath][name.Name] = text
-				}
+			value, isValue := specification.(*ast.ValueSpec)
+			if isValue {
+				specifications = append(specifications, value)
 			}
 		}
 	}
+
+	return specifications
+}
+
+func (registry *generatedWireKeyRegistry) addConstantStrings(packagePath string, specifications []*ast.ValueSpec) {
+	for _, specification := range specifications {
+		for index, name := range specification.Names {
+			if index >= len(specification.Values) {
+				continue
+			}
+
+			literal, ok := specification.Values[index].(*ast.BasicLit)
+			if !ok || literal.Kind != token.STRING {
+				continue
+			}
+
+			text, err := strconv.Unquote(literal.Value)
+			if err == nil {
+				registry.constants[packagePath][name.Name] = text
+			}
+		}
+	}
+}
+
+func (registry *generatedWireKeyRegistry) addConstantAliases(
+	packagePath string,
+	specifications []*ast.ValueSpec,
+	imports map[string]string,
+) {
+	for _, specification := range specifications {
+		for index, name := range specification.Names {
+			if index >= len(specification.Values) {
+				continue
+			}
+
+			value, exists := registry.constantAliasValue(specification.Values[index], imports)
+			if exists {
+				registry.constants[packagePath][name.Name] = value
+			}
+		}
+	}
+}
+
+func (registry *generatedWireKeyRegistry) constantAliasValue(expression ast.Expr, imports map[string]string) (string, bool) {
+	selector, ok := expression.(*ast.SelectorExpr)
+	if !ok {
+		return "", false
+	}
+
+	qualifier, ok := selector.X.(*ast.Ident)
+	if !ok {
+		return "", false
+	}
+
+	packagePath := imports[qualifier.Name]
+	if packagePath == "" {
+		return "", false
+	}
+
+	value, exists := registry.constants[packagePath][selector.Sel.Name]
+
+	return value, exists
 }
 
 func newRequestWireMapState(

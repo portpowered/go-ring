@@ -602,7 +602,9 @@ func TestSameSessionSafetyWritesBypassQueuedControls(t *testing.T) {
 
 	results := make(chan error, 4)
 
-	go func() { results <- session.Send(context.Background(), "mic_enable", map[string]any{"enabled": true}) }()
+	go func() {
+		results <- session.Send(context.Background(), "mic_enable", mustJSON(map[string]any{"enabled": true}))
+	}()
 
 	select {
 	case <-activeStarted:

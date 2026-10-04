@@ -49,4 +49,12 @@ const (
 	FCMRegistrationVAPIDKey         = "applicationPubKey"
 	FCMRegistrationTokenKey         = "token"
 	FCMRegistrationPushSetKey       = "pushSet"
+	FCMPushAndroidConfigKey         = "android_config"
+	FCMPushDataKey                  = "data"
+	FCMPushDoorbotIDKey             = "doorbot_id"
+	FCMPushCategoryKey              = "category"
+	FCMPushPayloadDeviceKey         = "device"
+	FCMPushPayloadGCMDataKey        = "gcmData"
+	FCMPushDeviceIDKey              = "id"
+	FCMPushGCMActionKey             = "action"
 )

@@ -1,6 +1,6 @@
 package: generatedfcm
 generate:
-  models: true
+  models: false
   client: true
 output: internal/generatedfcm/client.gen.go
 output-options:

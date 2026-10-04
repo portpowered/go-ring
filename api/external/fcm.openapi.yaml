@@ -333,3 +333,23 @@ components:
         action:
           type: string
           description: Open Ring action name, including intercom_unlock.
+    RingPushNotificationEnvelope:
+      description: >-
+        Synthetic decoded notification envelope used by the public push adapter.
+        The captured encrypted MCS replay carries android_config and data as
+        JSON-encoded strings; the adapter also accepts already-decoded objects.
+      type: object
+      additionalProperties: true
+      properties:
+        android_config:
+          oneOf:
+            - type: string
+            - {$ref: '#/components/schemas/RingPushNotificationConfig'}
+        data:
+          oneOf:
+            - type: string
+            - {$ref: '#/components/schemas/RingPushNotificationPayload'}
+        doorbot_id:
+          type: integer
+          format: int64
+          description: Synthetic compatibility fallback when a nested device ID is absent.

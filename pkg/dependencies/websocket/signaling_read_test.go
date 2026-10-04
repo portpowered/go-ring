@@ -253,7 +253,7 @@ func TestReceivePreservesEventBeforeTerminalReadError(t *testing.T) {
 					Timestamp:            "",
 					AdditionalProperties: nil,
 				},
-				raw: expected,
+				raw: json.RawMessage(`{"kind":"motion"}`),
 			}
 		},
 	}
@@ -290,12 +290,12 @@ func TestReceiveDrainsEventsBeforePendingTerminalError(t *testing.T) {
 
 	connection.messageChan <- accountEventRecord{
 		frame: generatedsignaling.AccountEventFrame{Kind: "", DeviceId: 0, Timestamp: "", AdditionalProperties: nil},
-		raw:   map[string]interface{}{"sequence": float64(1)},
+		raw:   json.RawMessage(`{"sequence":1}`),
 	}
 
 	connection.messageChan <- accountEventRecord{
 		frame: generatedsignaling.AccountEventFrame{Kind: "", DeviceId: 0, Timestamp: "", AdditionalProperties: nil},
-		raw:   map[string]interface{}{"sequence": float64(2)},
+		raw:   json.RawMessage(`{"sequence":2}`),
 	}
 
 	for sequence := float64(1); sequence <= 2; sequence++ {
@@ -425,12 +425,15 @@ func TestPrioritizePendingEventDefersErrorUntilQueuedEventIsReturned(t *testing.
 			Timestamp:            "2026-09-29T12:00:00Z",
 			AdditionalProperties: nil,
 		},
-		raw: expected,
+		raw: json.RawMessage(`{"sequence":1}`),
 	}
 
 	event, err := connection.prioritizePendingEvent(terminalErr)
 	require.NoError(t, err)
-	require.Equal(t, expected, event.raw)
+
+	actual, decodeErr := decodeAccountEventPayload(event.raw)
+	require.NoError(t, decodeErr)
+	require.Equal(t, expected, actual)
 	require.Same(t, terminalErr, connection.pendingErr)
 
 	_, err = connection.Receive()

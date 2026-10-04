@@ -54,7 +54,7 @@ paths:
         - {name: scope, in: query, required: false, description: The implemented client requests the client scope., schema: {type: string, x-extensible-enum: [client]}}
         - {name: code_challenge, in: query, required: false, schema: {type: string}}
         - {name: code_challenge_method, in: query, required: false, schema: {type: string, enum: [S256]}}
-        - {name: device_model, in: query, required: false, schema: {type: string}}
+        - {name: device_model, in: query, required: false, schema: {$ref: '#/components/schemas/ClientDeviceModel'}}
         - {name: app_version, in: query, required: false, schema: {type: string}}
         - {name: dark_mode, in: query, required: false, description: Boolean serialized as a query string., schema: {type: boolean}}
         - {name: device_brand, in: query, required: false, schema: {type: string}}
@@ -689,7 +689,10 @@ components:
         pn_dict_version: {type: string, enum: ['2.0.0']}
         pn_service: {type: string, enum: [fcm]}
         api_version: {type: integer}
-        device_model: {type: string}
+        device_model: {$ref: '#/components/schemas/ClientDeviceModel'}
+    ClientDeviceModel:
+      type: string
+      const: go-ring
     LiveViewSettingRequest:
       type: object
       required: [entity]
@@ -760,7 +763,7 @@ components:
               required: [api_version, device_model]
               properties:
                 api_version: {type: integer, const: 11}
-                device_model: {type: string}
+                device_model: {$ref: '#/components/schemas/ClientDeviceModel'}
               additionalProperties: true
             os: {type: string, const: android}
           additionalProperties: true

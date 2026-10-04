@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/portpowered/go-ring/internal/generatedsignaling"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/dependencies/webrtc"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -137,16 +137,21 @@ func (c *SignalingConnection) activateDeviceSession(
 		return sessionError("failed to activate device session", err)
 	}
 
-	err = session.core.Send(ctx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: req.AudioEnabled})
+	err = session.core.Send(ctx, protocol.MethodMicEnable, mustJSON(generatedsignaling.SessionMicrophoneBody{
+		DoorbotId:            int(deviceID),
+		SessionId:            signalID,
+		Enabled:              req.AudioEnabled,
+		AdditionalProperties: nil,
+	}))
 	if err != nil {
 		return sessionError("failed to set microphone state", err)
 	}
 
-	err = session.core.Send(
-		ctx,
-		protocol.MethodStreamOptions,
-		map[string]any{protocol.FieldAudioEnabled: req.AudioEnabled},
-	)
+	err = session.core.Send(ctx, protocol.MethodStreamOptions, mustJSON(generatedsignaling.SessionStreamAudioOptionsBody{
+		DoorbotId:    int(deviceID),
+		SessionId:    signalID,
+		AudioEnabled: req.AudioEnabled,
+	}))
 	if err != nil {
 		return sessionError("failed to set stream options", err)
 	}
@@ -314,8 +319,13 @@ func (s *DeviceSession) SendICE(ctx context.Context, req ICECandidateRequest) er
 	)
 }
 
-func (s *DeviceSession) call(ctx context.Context, method string, params map[string]any) (*PTZResult, error) {
-	resultBytes, e := s.core.Call(ctx, method, params)
+func (s *DeviceSession) call(ctx context.Context, method string, direction string, speed *float64) (*PTZResult, error) {
+	wireDirection, ok := generatedsignaling.ValuesToPtzDirection[direction]
+	if !ok {
+		return nil, ringapimodels.NewBadRequestError("invalid PTZ direction", nil)
+	}
+
+	resultBytes, e := s.core.Call(ctx, method, wireDirection, speed)
 	if e != nil {
 		return nil, sessionError("PTZ command failed", e)
 	}
@@ -336,14 +346,14 @@ func (s *DeviceSession) PanStep(ctx context.Context, r PanStepRequest) (*PTZResu
 		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid pan direction %q", r.Direction), nil)
 	}
 
-	return s.call(ctx, protocol.RPCPanStep, map[string]any{protocol.FieldDirection: r.Direction})
+	return s.call(ctx, protocol.RPCPanStep, string(r.Direction), nil)
 }
 func (s *DeviceSession) TiltStep(ctx context.Context, r TiltStepRequest) (*PTZResult, error) {
 	if r.Direction != TiltUp && r.Direction != TiltDown {
 		return nil, ringapimodels.NewBadRequestError(fmt.Sprintf("invalid tilt direction %q", r.Direction), nil)
 	}
 
-	return s.call(ctx, protocol.RPCTiltStep, map[string]any{protocol.FieldDirection: r.Direction})
+	return s.call(ctx, protocol.RPCTiltStep, string(r.Direction), nil)
 }
 func (s *DeviceSession) PanContinuous(ctx context.Context, r PanContinuousRequest) (*PTZResult, error) {
 	if r.Direction != PanLeft && r.Direction != PanRight {
@@ -391,7 +401,7 @@ func (s *DeviceSession) continuous(
 	s.movement[axis] = direction
 	s.mu.Unlock()
 
-	result, err := s.call(ctx, method, map[string]any{protocol.FieldDirection: direction, protocol.FieldSpeed: speed})
+	result, err := s.call(ctx, method, direction, &speed)
 	if err != nil {
 		s.mu.Lock()
 
@@ -444,7 +454,9 @@ func (s *DeviceSession) StopPTZ(ctx context.Context, request StopPTZRequest) (*P
 		method = protocol.RPCTiltContinuous
 	}
 
-	result, callErr := s.call(ctx, method, map[string]any{protocol.FieldDirection: direction, protocol.FieldSpeed: 0.0})
+	stopSpeed := 0.0
+
+	result, callErr := s.call(ctx, method, direction, &stopSpeed)
 	if callErr == nil {
 		s.mu.Lock()
 		delete(s.movement, request.Axis)
@@ -453,24 +465,44 @@ func (s *DeviceSession) StopPTZ(ctx context.Context, request StopPTZRequest) (*P
 
 	return result, callErr
 }
+
 func (s *DeviceSession) SetMicrophone(ctx context.Context, r SetMicrophoneRequest) error {
-	return sessionError(
-		"microphone command failed",
-		s.core.Send(ctx, protocol.MethodMicEnable, map[string]any{protocol.FieldEnabled: r.Enabled}),
-	)
+	body := generatedsignaling.SessionMicrophoneBody{
+		DoorbotId:            int(s.deviceID),
+		SessionId:            s.signalID,
+		Enabled:              r.Enabled,
+		AdditionalProperties: nil,
+	}
+
+	return sessionError("microphone command failed", s.core.Send(ctx, protocol.MethodMicEnable, mustJSON(body)))
 }
 func (s *DeviceSession) SetStreamOptions(ctx context.Context, request SetStreamOptionsRequest) error {
-	body := map[string]any{}
-	if request.AudioEnabled != nil {
-		body[protocol.FieldAudioEnabled] = *request.AudioEnabled
-	}
-
-	if request.VideoEnabled != nil {
-		body[protocol.FieldVideoEnabled] = *request.VideoEnabled
-	}
-
-	if len(body) == 0 {
+	if request.AudioEnabled == nil && request.VideoEnabled == nil {
 		return ringapimodels.NewBadRequestError("at least one stream option is required", nil)
+	}
+
+	var body json.RawMessage
+
+	switch {
+	case request.AudioEnabled != nil && request.VideoEnabled != nil:
+		body = mustJSON(generatedsignaling.SessionStreamAudioVideoOptionsBody{
+			DoorbotId:    int(s.deviceID),
+			SessionId:    s.signalID,
+			AudioEnabled: *request.AudioEnabled,
+			VideoEnabled: *request.VideoEnabled,
+		})
+	case request.AudioEnabled != nil:
+		body = mustJSON(generatedsignaling.SessionStreamAudioOptionsBody{
+			DoorbotId:    int(s.deviceID),
+			SessionId:    s.signalID,
+			AudioEnabled: *request.AudioEnabled,
+		})
+	case request.VideoEnabled != nil:
+		body = mustJSON(generatedsignaling.SessionStreamVideoOptionsBody{
+			DoorbotId:    int(s.deviceID),
+			SessionId:    s.signalID,
+			VideoEnabled: *request.VideoEnabled,
+		})
 	}
 
 	return sessionError("stream-options command failed", s.core.Send(ctx, protocol.MethodStreamOptions, body))
@@ -520,7 +552,8 @@ func (s *DeviceSession) closeWithContext(ctx context.Context, sendClose bool) {
 				method = protocol.RPCTiltContinuous
 			}
 
-			_, _ = s.call(ctx, method, map[string]any{protocol.FieldDirection: direction, protocol.FieldSpeed: 0.0})
+			stopSpeed := 0.0
+			_, _ = s.call(ctx, method, direction, &stopSpeed)
 		}
 
 		_ = s.core.Send(ctx, protocol.MethodClose, nil)

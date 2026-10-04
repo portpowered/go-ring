@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/portpowered/go-ring/internal/generatedsignaling"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/dependencies/webrtc"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
-const defaultPlaybackEntryPoint = "timeline"
+const defaultPlaybackEntryPoint = protocol.PlaybackEntryPointTimeline
 
 func (c *SignalingConnection) registerChannel() (string, chan signaling.Message, error) {
 	name := uuid.NewString()
@@ -281,7 +281,7 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 			DoorbotId:            int(id),
 			EntryPoint:           entry,
 			Sdp:                  req.Offer.SDP,
-			ReservedType:         "cloud",
+			ReservedType:         protocol.PlaybackOfferTypeCloud,
 			AdditionalProperties: nil,
 		})
 		if err != nil {
@@ -502,7 +502,7 @@ func (s *PlaybackSession) closeWithContext(ctx context.Context) error {
 				SessionId: s.id,
 				Reason: &generatedsignaling.PlaybackCloseReason{
 					Code:                 0,
-					Text:                 "client_closed",
+					Text:                 protocol.PlaybackCloseReasonClientClosed,
 					AdditionalProperties: nil,
 				},
 				AdditionalProperties: nil,

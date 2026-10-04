@@ -387,9 +387,11 @@ func discoverGeneratedHTTP(
 			continue
 		}
 
-		contracts.GeneratedHTTPPaths[packagePath] = struct{}{}
-
 		collectGeneratedHTTPFunctions(root, path, file, fset, packagePath, schemaRoutes, contracts, seenOperation)
+
+		if len(contracts.GeneratedHTTP[packagePath]) > 0 {
+			contracts.GeneratedHTTPPaths[packagePath] = struct{}{}
+		}
 	}
 
 	for _, route := range schemaRoutes {
@@ -627,7 +629,7 @@ func bindGeneratedFrame(
 	contracts *Contracts,
 ) {
 	matches, goName := matchingDeclaredTypes(typeName, declaredTypes)
-	canonicalPackage := modulePath + "/internal/generatedsignaling"
+	canonicalPackage := modulePath + "/pkg/dependencymodels/signaling"
 
 	if _, exists := declaredTypes[goName][canonicalPackage]; exists {
 		contracts.GeneratedFrames[typeName] = canonicalPackage

@@ -9,6 +9,7 @@ import (
 
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/ringerrors"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 type terminalError string
@@ -52,15 +53,86 @@ func (RealClock) Now() time.Time                         { return time.Now() }
 func (RealClock) After(d time.Duration) <-chan time.Time { return time.After(d) }
 
 type Message struct {
-	Method   string          `json:"method"`
-	DialogID string          `json:"dialog_id"`
-	RIID     string          `json:"riid,omitempty"`
-	Body     json.RawMessage `json:"body"`
+	Method   string
+	DialogID string
+	RIID     string
+	Body     json.RawMessage
+}
+
+func (message Message) MarshalJSON() ([]byte, error) {
+	method, exists := generatedsignaling.ValuesToAnonymousSchema_1[message.Method]
+	if !exists {
+		return nil, ringerrors.NewBadRequestError("unknown signaling method", nil)
+	}
+
+	var body map[string]interface{}
+	if len(message.Body) > 0 {
+		err := json.Unmarshal(message.Body, &body)
+		if err != nil {
+			return nil, ringerrors.NewBadRequestError("invalid signaling message body", err)
+		}
+	}
+
+	envelope := generatedsignaling.SignalingInboundDiscriminator{
+		Method:               &method,
+		DialogId:             message.DialogID,
+		Riid:                 message.RIID,
+		Body:                 body,
+		AdditionalProperties: nil,
+	}
+
+	encoded, err := json.Marshal(envelope)
+	if err != nil {
+		return nil, ringerrors.NewInternalServerError("encode signaling message", err)
+	}
+
+	return encoded, nil
+}
+
+func (message *Message) UnmarshalJSON(encoded []byte) error {
+	var envelope generatedsignaling.SignalingInboundDiscriminator
+
+	err := json.Unmarshal(encoded, &envelope)
+	if err != nil {
+		return ringerrors.NewConnectionError("invalid signaling envelope", err)
+	}
+
+	if envelope.Method == nil {
+		return ringerrors.NewConnectionError("signaling envelope has no method", nil)
+	}
+
+	var fields map[string]json.RawMessage
+
+	err = json.Unmarshal(encoded, &fields)
+	if err != nil {
+		return ringerrors.NewConnectionError("invalid signaling envelope fields", err)
+	}
+
+	var method string
+
+	err = json.Unmarshal(fields[protocol.FieldMethod], &method)
+	if err != nil {
+		return ringerrors.NewConnectionError("invalid signaling method", err)
+	}
+
+	body, exists := fields[protocol.FieldBody]
+	if !exists {
+		return ringerrors.NewConnectionError("signaling envelope has no body", nil)
+	}
+
+	*message = Message{
+		Method:   method,
+		DialogID: envelope.DialogId,
+		RIID:     envelope.Riid,
+		Body:     append(json.RawMessage(nil), body...),
+	}
+
+	return nil
 }
 
 type RPCError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code    int
+	Message string
 }
 
 func (e *RPCError) Error() string { return fmt.Sprintf("session RPC error %d", e.Code) }
@@ -68,35 +140,6 @@ func (e *RPCError) Error() string { return fmt.Sprintf("session RPC error %d", e
 type rpcReply struct {
 	result json.RawMessage
 	err    error
-}
-
-type sessionMessageBody struct {
-	DeviceID int64           `json:"doorbot_id"`
-	SignalID string          `json:"session_id"`
-	Command  json.RawMessage `json:"command"`
-}
-
-type rpcCommandReply struct {
-	ID      string          `json:"id"`
-	Version string          `json:"jsonrpc"`
-	Method  string          `json:"method"`
-	Result  json.RawMessage `json:"result"`
-	Error   *RPCError       `json:"error"`
-}
-
-type rpcCommandWrapper struct {
-	Message json.RawMessage `json:"message"`
-}
-
-type rpcResultIdentity struct {
-	SessionID string `json:"sessionId"`
-}
-
-type rpcCommandRequest struct {
-	Version string         `json:"jsonrpc"`
-	ID      string         `json:"id"`
-	Method  string         `json:"method"`
-	Params  map[string]any `json:"params"`
 }
 
 // Session owns an activated device's routing and RPC state. Negotiation and the
@@ -257,7 +300,7 @@ func (s *Session) Pending() int {
 	return len(s.pending)
 }
 
-func (s *Session) Send(ctx context.Context, method string, fields map[string]any) error {
+func (s *Session) Send(ctx context.Context, method string, body json.RawMessage) error {
 	{
 		err := ctx.Err()
 		if err != nil {
@@ -280,17 +323,17 @@ func (s *Session) Send(ctx context.Context, method string, fields map[string]any
 		return ErrExpired
 	}
 
-	body := make(map[string]any, len(fields)+2)
-	for k, v := range fields {
-		body[k] = v
-	}
-	// Routing fields cannot be overridden by command payloads.
-	body[protocol.FieldDeviceID] = s.deviceID
-	body[protocol.FieldSessionID] = s.signalID
+	if len(body) == 0 {
+		encoded, err := json.Marshal(generatedsignaling.SessionBody{
+			DoorbotId:            int(s.deviceID),
+			SessionId:            s.signalID,
+			AdditionalProperties: nil,
+		})
+		if err != nil {
+			return ringerrors.NewInternalServerError("invalid session payload", err)
+		}
 
-	encoded, err := json.Marshal(body)
-	if err != nil {
-		return ringerrors.NewInternalServerError("invalid session payload", err)
+		body = encoded
 	}
 
 	writeCtx, cancel := context.WithCancel(ctx)
@@ -304,19 +347,28 @@ func (s *Session) Send(ctx context.Context, method string, fields map[string]any
 		Method:   method,
 		DialogID: s.dialogID,
 		RIID:     "",
-		Body:     encoded,
+		Body:     body,
 	})
 }
 
 // Call registers correlation before sending. A result acknowledges the command;
 // it does not claim physical motion completed. Calls are never retried.
-func (s *Session) Call(ctx context.Context, method string, params map[string]any) (json.RawMessage, error) {
-	{
-		err := ctx.Err()
-		if err != nil {
-			return nil, wrapSessionContextError("start signaling RPC", err)
-		}
+func (s *Session) Call(
+	ctx context.Context,
+	method string,
+	direction generatedsignaling.PtzDirection,
+	speed *float64,
+) (json.RawMessage, error) {
+	err := ctx.Err()
+	if err != nil {
+		return nil, wrapSessionContextError("start signaling RPC", err)
 	}
+
+	commandMethod, continuousWireMethod, continuousMethod, err := validatePTZCommand(method, direction, speed)
+	if err != nil {
+		return nil, err
+	}
+
 	// Every RPC has a bounded result wait even when the caller provides no
 	// deadline. The injected clock also cancels a queued or blocked write.
 	callCtx, cancel := context.WithCancelCause(ctx)
@@ -357,29 +409,23 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 
 	defer func() { s.mu.Lock(); delete(s.pending, id); s.mu.Unlock() }()
 
-	const rpcIdentityFields = 3
-
-	rpcParams := make(map[string]any, len(params)+rpcIdentityFields)
-	for k, v := range params {
-		rpcParams[k] = v
+	encodedBody, err := marshalPTZPayload(
+		commandMethod,
+		continuousWireMethod,
+		continuousMethod,
+		direction,
+		speed,
+		int(s.deviceID),
+		s.signalID,
+		s.controlID,
+		id,
+		int(s.clock.Now().UnixMilli()),
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	rpcParams[protocol.FieldSessionIDRPC] = s.controlID
-	rpcParams[protocol.FieldTimestamp] = s.clock.Now().UnixMilli()
-	rpcParams[protocol.FieldVersion] = protocol.PTZVersion
-
-	err := s.Send(
-		ctx,
-		protocol.MethodRPC,
-		map[string]any{
-			protocol.FieldCommand: rpcCommandRequest{
-				Version: protocol.JSONRPCVersion,
-				ID:      id,
-				Method:  method,
-				Params:  rpcParams,
-			},
-		},
-	)
+	err = s.Send(ctx, protocol.MethodRPC, encodedBody)
 	if err != nil {
 		cause := context.Cause(callCtx)
 		if cause != nil {
@@ -407,6 +453,98 @@ func (s *Session) Call(ctx context.Context, method string, params map[string]any
 	}
 }
 
+func validatePTZCommand(
+	method string,
+	direction generatedsignaling.PtzDirection,
+	speed *float64,
+) (generatedsignaling.PtzCommandMethod, generatedsignaling.AnonymousSchema_199, bool, error) {
+	commandMethod, exists := generatedsignaling.ValuesToPtzCommandMethod[method]
+	if !exists || direction.Value() == nil {
+		return 0, 0, false, ringerrors.NewBadRequestError("invalid PTZ command method or direction", nil)
+	}
+
+	continuous := commandMethod == generatedsignaling.PtzCommandMethodPtzDotPanDotContinuous ||
+		commandMethod == generatedsignaling.PtzCommandMethodPtzDotTiltDotContinuous
+	if continuous != (speed != nil) {
+		return 0, 0, false, ringerrors.NewBadRequestError("PTZ speed must be supplied only for continuous commands", nil)
+	}
+
+	continuousMethod, exists := generatedsignaling.ValuesToAnonymousSchema_199[method]
+	if continuous && !exists {
+		return 0, 0, false, ringerrors.NewBadRequestError("invalid continuous PTZ command method", nil)
+	}
+
+	return commandMethod, continuousMethod, continuous, nil
+}
+
+func marshalPTZPayload(
+	commandMethod generatedsignaling.PtzCommandMethod,
+	continuousMethod generatedsignaling.AnonymousSchema_199,
+	continuous bool,
+	direction generatedsignaling.PtzDirection,
+	speed *float64,
+	deviceID int,
+	signalID, controlID, id string,
+	timestamp int,
+) (json.RawMessage, error) {
+	var payload any
+
+	if continuous {
+		params := generatedsignaling.PtzContinuousParams{
+			SessionId:            controlID,
+			Timestamp:            timestamp,
+			Version:              protocol.PTZVersion,
+			Direction:            &direction,
+			Speed:                *speed,
+			Reason:               "",
+			AdditionalProperties: nil,
+		}
+		command := generatedsignaling.PtzContinuousWireCommand{
+			Jsonrpc:              protocol.JSONRPCVersion,
+			Id:                   id,
+			Method:               &continuousMethod,
+			Params:               &params,
+			AdditionalProperties: nil,
+		}
+		payload = generatedsignaling.PtzContinuousCommandBody{
+			DoorbotId:            deviceID,
+			SessionId:            signalID,
+			Command:              &command,
+			AdditionalProperties: nil,
+		}
+	} else {
+		params := generatedsignaling.PtzWireParams{
+			SessionId:            controlID,
+			Timestamp:            timestamp,
+			Version:              protocol.PTZVersion,
+			Direction:            &direction,
+			Speed:                0,
+			Reason:               "",
+			AdditionalProperties: nil,
+		}
+		command := generatedsignaling.PtzWireCommand{
+			Jsonrpc:              protocol.JSONRPCVersion,
+			Id:                   id,
+			Method:               &commandMethod,
+			Params:               &params,
+			AdditionalProperties: nil,
+		}
+		payload = generatedsignaling.PtzCommandBody{
+			DoorbotId:            deviceID,
+			SessionId:            signalID,
+			Command:              &command,
+			AdditionalProperties: nil,
+		}
+	}
+
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return nil, ringerrors.NewInternalServerError("invalid PTZ payload", err)
+	}
+
+	return encoded, nil
+}
+
 // Handle is called by the connection's sole reader. Wrong-session messages are
 // ignored; they must not satisfy a pending request or renew its heartbeat.
 func (s *Session) Handle(message Message) error {
@@ -414,14 +552,14 @@ func (s *Session) Handle(message Message) error {
 		return nil
 	}
 
-	var body sessionMessageBody
+	var identity generatedsignaling.SessionBody
 
-	err := json.Unmarshal(message.Body, &body)
+	err := json.Unmarshal(message.Body, &identity)
 	if err != nil {
 		return ringerrors.NewConnectionError("invalid session body", err)
 	}
 
-	if body.DeviceID != s.deviceID || body.SignalID != s.signalID {
+	if int64(identity.DoorbotId) != s.deviceID || identity.SessionId != s.signalID {
 		return nil
 	}
 
@@ -439,7 +577,7 @@ func (s *Session) Handle(message Message) error {
 	}
 
 	if message.Method == protocol.MethodRPC {
-		handled, err := s.handleRPC(body.Command)
+		handled, err := s.handleRPCFrame(message.Body)
 		if err != nil {
 			return err
 		}
@@ -466,6 +604,29 @@ func (s *Session) Receive(ctx context.Context) (Message, error) {
 	case <-ctx.Done():
 		return Message{}, wrapSessionContextError("receive signaling event", ctx.Err())
 	}
+}
+
+func (s *Session) handleRPCFrame(body json.RawMessage) (bool, error) {
+	var rpcBody generatedsignaling.ServerRpcBody
+
+	err := json.Unmarshal(body, &rpcBody)
+	if err != nil {
+		return false, ringerrors.NewConnectionError("invalid RPC body", err)
+	}
+
+	var rpcFields map[string]json.RawMessage
+
+	err = json.Unmarshal(body, &rpcFields)
+	if err != nil {
+		return false, ringerrors.NewConnectionError("invalid RPC body", err)
+	}
+
+	commandBody := rpcFields[protocol.FieldCommand]
+	if rpcBody.Command == nil || len(commandBody) == 0 {
+		return false, ringerrors.NewConnectionError("invalid RPC body", nil)
+	}
+
+	return s.handleRPC(commandBody)
 }
 
 func (s *Session) finish(err error) {
@@ -505,26 +666,33 @@ func (s *Session) terminalCause() error {
 }
 
 func (s *Session) handleRPC(body json.RawMessage) (bool, error) {
-	var command rpcCommandReply
+	var command generatedsignaling.ServerRpcCommand
 
 	err := json.Unmarshal(body, &command)
 	if err != nil {
 		return false, ringerrors.NewConnectionError("invalid RPC envelope (command cannot be decoded)", err)
 	}
 
-	if command.Version == "" {
-		var wrapper rpcCommandWrapper
+	if command.Jsonrpc == "" {
+		var wrapper generatedsignaling.RpcCommandWrapper
 
-		err := json.Unmarshal(body, &wrapper)
-		if err == nil && len(wrapper.Message) > 0 {
-			err := json.Unmarshal(wrapper.Message, &command)
-			if err != nil {
-				return false, ringerrors.NewConnectionError("invalid wrapped RPC envelope", err)
-			}
+		err = json.Unmarshal(body, &wrapper)
+		if err != nil || wrapper.Message == nil {
+			return false, ringerrors.NewConnectionError("invalid RPC wrapper", err)
+		}
+
+		body, err = json.Marshal(wrapper.Message)
+		if err != nil {
+			return false, ringerrors.NewConnectionError("invalid RPC wrapper message", err)
+		}
+
+		err = json.Unmarshal(body, &command)
+		if err != nil {
+			return false, ringerrors.NewConnectionError("invalid wrapped RPC envelope", err)
 		}
 	}
 
-	if command.Version != protocol.JSONRPCVersion {
+	if command.Jsonrpc != protocol.JSONRPCVersion {
 		return false, ringerrors.NewConnectionError(
 			"invalid RPC envelope (unsupported or missing jsonrpc version)",
 			nil,
@@ -535,36 +703,54 @@ func (s *Session) handleRPC(body json.RawMessage) (bool, error) {
 		return false, nil
 	}
 
-	if (len(command.Result) == 0) == (command.Error == nil) {
+	if (command.Result == nil) == (command.Error == nil) {
 		return false, ringerrors.NewConnectionError("RPC reply must have exactly one result or error", nil)
 	}
 
 	if command.Error == nil {
-		var result rpcResultIdentity
+		var resultFields map[string]json.RawMessage
 
-		err := json.Unmarshal(command.Result, &result)
+		err := json.Unmarshal(body, &resultFields)
+		if err != nil {
+			return false, ringerrors.NewConnectionError("invalid RPC result", err)
+		}
+
+		var result generatedsignaling.RpcResultValue
+
+		err = json.Unmarshal(resultFields[protocol.FieldResult], &result)
 		if err != nil {
 			return false, ringerrors.NewConnectionError("invalid RPC result identity", err)
 		}
 
-		if result.SessionID == "" {
+		if result.SessionId == "" {
 			return false, ringerrors.NewConnectionError("invalid RPC result identity", nil)
 		}
 
-		if result.SessionID != s.controlID {
+		if result.SessionId != s.controlID {
 			return true, nil
 		}
 	}
 
-	if ch, ok := s.pending[command.ID]; ok {
-		reply := rpcReply{result: command.Result, err: nil}
+	if ch, ok := s.pending[command.Id]; ok {
+		var result json.RawMessage
+
+		if command.Error == nil {
+			var resultFields map[string]json.RawMessage
+
+			err = json.Unmarshal(body, &resultFields)
+			if err == nil {
+				result = append(json.RawMessage(nil), resultFields[protocol.FieldResult]...)
+			}
+		}
+
+		reply := rpcReply{result: result, err: nil}
 		if command.Error != nil {
-			reply.err = command.Error
+			reply.err = &RPCError{Code: command.Error.Code, Message: command.Error.Message}
 		}
 
 		ch <- reply
 
-		delete(s.pending, command.ID)
+		delete(s.pending, command.Id)
 	}
 
 	return true, nil
