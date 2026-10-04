@@ -82,6 +82,14 @@ func (c *Client) sendOAuthAuthorize(
 		darkMode = &parsed
 	}
 
+	var model *generatedhttp.ClientDeviceModel
+	if raw := value("device_model"); raw != nil {
+		model, err = parseClientDeviceModel(*raw)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	params := &generatedhttp.BeginOrContinueOAuthAuthorizationParams{
 		RedirectUri:         value("redirect_uri"),
 		ClientId:            value("client_id"),
@@ -91,7 +99,7 @@ func (c *Client) sendOAuthAuthorize(
 		Scope:               value("scope"),
 		CodeChallenge:       value("code_challenge"),
 		CodeChallengeMethod: challengeMethod,
-		DeviceModel:         value("device_model"),
+		DeviceModel:         model,
 		AppVersion:          value("app_version"),
 		DarkMode:            darkMode,
 		DeviceBrand:         value("device_brand"),
@@ -114,6 +122,16 @@ func (c *Client) sendOAuthAuthorize(
 	}
 
 	return resp, nil
+}
+
+func parseClientDeviceModel(value string) (*generatedhttp.ClientDeviceModel, error) {
+	if value != string(deviceModel) {
+		return nil, ringerrors.NewBadRequestError("unsupported OAuth device model", nil)
+	}
+
+	model := deviceModel
+
+	return &model, nil
 }
 
 func oauthAuthorizeParameter(name string) bool {

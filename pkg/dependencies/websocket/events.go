@@ -10,14 +10,14 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/portpowered/go-ring/internal/generatedhttp"
-	"github.com/portpowered/go-ring/internal/generatedsignaling"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/ringerrors"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 type accountEventRecord struct {
 	frame generatedsignaling.AccountEventFrame
-	raw   map[string]interface{}
+	raw   json.RawMessage
 }
 
 // EventConnection owns the transport, read loop, and event queue.
@@ -115,17 +115,32 @@ func (ec *EventConnection) Receive() (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	return event.raw, nil
+	return decodeAccountEventPayload(event.raw)
 }
 
 // ReceiveFrame returns the schema-generated event projection and its full raw payload.
-func (ec *EventConnection) ReceiveFrame() (generatedsignaling.AccountEventFrame, map[string]interface{}, error) {
+func (ec *EventConnection) ReceiveFrame() (generatedsignaling.AccountEventFrame, json.RawMessage, error) {
 	event, err := ec.receiveRecord()
 	if err != nil {
 		return generatedsignaling.AccountEventFrame{}, nil, err
 	}
 
-	return event.frame, event.raw, nil
+	return event.frame, append(json.RawMessage(nil), event.raw...), nil
+}
+
+func decodeAccountEventPayload(raw json.RawMessage) (map[string]interface{}, error) {
+	var payload map[string]interface{}
+
+	err := json.Unmarshal(raw, &payload)
+	if err != nil {
+		return nil, ringerrors.NewConnectionError("invalid account event payload", err)
+	}
+
+	if payload == nil {
+		return nil, ringerrors.NewConnectionError("account event payload must be an object", nil)
+	}
+
+	return payload, nil
 }
 
 // Close closes the event connection.
@@ -279,17 +294,11 @@ func (ec *EventConnection) processMessages() {
 				continue
 			}
 
-			// Keep unknown fields for callers alongside the generated known fields.
-			var eventData map[string]interface{}
-			{
-				err := json.Unmarshal(message, &eventData)
-				if err != nil {
-					continue
-				}
-			}
-
 			select {
-			case ec.messageChan <- accountEventRecord{frame: frame, raw: eventData}:
+			case ec.messageChan <- accountEventRecord{
+				frame: frame,
+				raw:   append(json.RawMessage(nil), message...),
+			}:
 			case <-ec.ctx.Done():
 				return
 			}

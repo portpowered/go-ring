@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/portpowered/go-ring/internal/signaling"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 const (
@@ -179,7 +180,7 @@ func runRecordedPTZReplyScenario(
 	result := make(chan error, 1)
 
 	go func() {
-		_, err := session.Call(ctx, "PTZ.Tilt.Step", map[string]any{"direction": "UP"})
+		_, err := session.Call(ctx, "PTZ.Tilt.Step", generatedsignaling.PtzDirectionUp, nil)
 		result <- err
 	}()
 

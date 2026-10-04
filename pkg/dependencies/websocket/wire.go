@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/portpowered/go-ring/internal/generatedsignaling"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/ringerrors"
 	"github.com/portpowered/go-ring/internal/signaling"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 func unmarshalSignalingFrame(encoded []byte) (signaling.Message, error) {
@@ -72,9 +72,9 @@ func decodeEnvelopeFields(encoded []byte) (signalingEnvelopeFields, error) {
 	var result signalingEnvelopeFields
 
 	fields := map[string]*string{
-		"method":    &result.method,
-		"dialog_id": &result.dialogID,
-		"riid":      &result.riid,
+		protocol.FieldMethod:   &result.method,
+		protocol.FieldDialogID: &result.dialogID,
+		protocol.FieldRIID:     &result.riid,
 	}
 	for name, destination := range fields {
 		if raw, exists := values[name]; exists {
@@ -85,7 +85,7 @@ func decodeEnvelopeFields(encoded []byte) (signalingEnvelopeFields, error) {
 		}
 	}
 
-	result.body = values["body"]
+	result.body = values[protocol.FieldBody]
 
 	return result, nil
 }
@@ -111,66 +111,77 @@ func validateInboundFrame(encoded []byte, envelope signalingEnvelopeFields, body
 		return validateTypedInbound[generatedsignaling.ServerCameraStartedFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.ServerCameraStartedFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "doorbot_id", "session_id")
+			}, protocol.FieldDeviceID, protocol.FieldSessionID)
 	case protocol.MethodClose:
 		return validateTypedInbound[generatedsignaling.ServerCloseFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.ServerCloseFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
 			})
 	case protocol.MethodICE:
-		if _, hasMID := body["mid"]; hasMID {
+		if _, hasMID := body[protocol.FieldMID]; hasMID {
 			return validateTypedInbound[generatedsignaling.LiveIceFrame](encoded, envelope, body,
 				func(frame *generatedsignaling.LiveIceFrame) (string, string, bool) {
 					return frame.Method, frame.DialogId, frame.Body != nil
-				}, "doorbot_id", "ice", "mid", "mlineindex")
+				}, protocol.FieldDeviceID, protocol.FieldIce, protocol.FieldMID, protocol.FieldMLineIndex)
 		}
 
 		return validateTypedInbound[generatedsignaling.ServerIceFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.ServerIceFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "ice", "mlineindex")
+			}, protocol.FieldIce, protocol.FieldMLineIndex)
 	case protocol.MethodNotification:
 		return validateTypedInbound[generatedsignaling.SessionNotificationFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.SessionNotificationFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "doorbot_id", "session_id", "is_ok", "text")
+			}, protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldIsOK, protocol.FieldText)
 	case protocol.MethodPong:
 		return validateTypedInbound[generatedsignaling.SessionPongFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.SessionPongFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "doorbot_id", "session_id")
+			}, protocol.FieldDeviceID, protocol.FieldSessionID)
 	case protocol.MethodPushEvent:
 		return validateTypedInbound[generatedsignaling.PushEventFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.PushEventFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "notification_scope", "notification_type", "payload", "subscription_id")
+			},
+			protocol.FieldNotificationScope,
+			protocol.FieldNotificationType,
+			protocol.FieldPayload,
+			protocol.FieldSubscriptionID,
+		)
 	case protocol.MethodPushSubscriptionAck:
 		return validateTypedInbound[generatedsignaling.PushSubscriptionAckFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.PushSubscriptionAckFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "status", "subscription_id")
+			}, protocol.FieldStatus, protocol.FieldSubscriptionID)
 	case protocol.MethodRPC:
 		return validateTypedInbound[generatedsignaling.ServerRpcFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.ServerRpcFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "command")
+			}, protocol.FieldCommand)
 	case protocol.MethodSDP:
-		if hasSessionIdentifier(body["session_info"]) {
+		if hasSessionIdentifier(body[protocol.FieldSessionInfo]) {
 			return validateTypedInbound[generatedsignaling.LiveAnswerFrame](encoded, envelope, body,
 				func(frame *generatedsignaling.LiveAnswerFrame) (string, string, bool) {
 					return frame.Method, frame.DialogId, frame.Body != nil
-				}, "doorbot_id", "session_id", "sdp", "session_info", "type")
+				},
+				protocol.FieldDeviceID,
+				protocol.FieldSessionID,
+				protocol.FieldSDP,
+				protocol.FieldSessionInfo,
+				protocol.FieldType,
+			)
 		}
 
 		return validateTypedInbound[generatedsignaling.PlaybackAnswerFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.PlaybackAnswerFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "doorbot_id", "session_id", "sdp", "type")
+			}, protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldSDP, protocol.FieldType)
 	case protocol.MethodSessionCreated:
 		return validateTypedInbound[generatedsignaling.SessionCreatedFrame](encoded, envelope, body,
 			func(frame *generatedsignaling.SessionCreatedFrame) (string, string, bool) {
 				return frame.Method, frame.DialogId, frame.Body != nil
-			}, "doorbot_id", "session_id")
+			}, protocol.FieldDeviceID, protocol.FieldSessionID)
 	default:
 		return signalingWireError("unsupported inbound signaling method %q", envelope.method)
 	}
@@ -225,7 +236,7 @@ func hasSessionIdentifier(encoded json.RawMessage) bool {
 		return false
 	}
 
-	_, exists := fields["session_id"]
+	_, exists := fields[protocol.FieldSessionID]
 
 	return exists
 }
@@ -265,7 +276,7 @@ func marshalActivateSessionFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodActivateSession,
-		[]string{"doorbot_id", "session_id"},
+		[]string{protocol.FieldDeviceID, protocol.FieldSessionID},
 		func(body *generatedsignaling.SessionBody) any {
 			return generatedsignaling.SessionActivateFrame{
 				Method: protocol.MethodActivateSession, DialogId: message.DialogID,
@@ -276,11 +287,11 @@ func marshalActivateSessionFrame(message signaling.Message) ([]byte, error) {
 }
 
 func marshalCloseFrame(message signaling.Message) ([]byte, error) {
-	if bodyHasProperty(message.Body, "reason") {
+	if bodyHasProperty(message.Body, protocol.FieldReason) {
 		return marshalGeneratedFrame(
 			message,
 			protocol.MethodClose,
-			[]string{"doorbot_id", "session_id", "reason"},
+			[]string{protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldReason},
 			func(body *generatedsignaling.PlaybackCloseBody) any {
 				return generatedsignaling.PlaybackCloseFrame{
 					Method: protocol.MethodClose, DialogId: message.DialogID,
@@ -293,7 +304,7 @@ func marshalCloseFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodClose,
-		[]string{"doorbot_id", "session_id"},
+		[]string{protocol.FieldDeviceID, protocol.FieldSessionID},
 		func(body *generatedsignaling.SessionBody) any {
 			return generatedsignaling.SessionCloseFrame{
 				Method: protocol.MethodClose, DialogId: message.DialogID,
@@ -304,11 +315,11 @@ func marshalCloseFrame(message signaling.Message) ([]byte, error) {
 }
 
 func marshalICEFrame(message signaling.Message) ([]byte, error) {
-	if bodyHasProperty(message.Body, "mid") {
+	if bodyHasProperty(message.Body, protocol.FieldMID) {
 		return marshalGeneratedFrame(
 			message,
 			protocol.MethodICE,
-			[]string{"doorbot_id", "ice", "mid", "mlineindex"},
+			[]string{protocol.FieldDeviceID, protocol.FieldIce, protocol.FieldMID, protocol.FieldMLineIndex},
 			func(body *generatedsignaling.LiveIceBody) any {
 				return generatedsignaling.LiveIceFrame{
 					Method: protocol.MethodICE, DialogId: message.DialogID,
@@ -321,7 +332,7 @@ func marshalICEFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodICE,
-		[]string{"doorbot_id", "session_id", "ice", "mlineindex"},
+		[]string{protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldIce, protocol.FieldMLineIndex},
 		func(body *generatedsignaling.IceCandidateBody) any {
 			return generatedsignaling.IceCandidateFrame{
 				Method: protocol.MethodICE, DialogId: message.DialogID,
@@ -335,7 +346,7 @@ func marshalLiveViewFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodLiveView,
-		[]string{"doorbot_id", "sdp", "stream_options", "type"},
+		[]string{protocol.FieldDeviceID, protocol.FieldSDP, protocol.FieldStreamOptions, protocol.FieldType},
 		func(body *generatedsignaling.LiveViewBody) any {
 			return generatedsignaling.LiveViewFrame{
 				Method: protocol.MethodLiveView, DialogId: message.DialogID,
@@ -349,7 +360,7 @@ func marshalMicEnableFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodMicEnable,
-		[]string{"doorbot_id", "session_id", "enabled"},
+		[]string{protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldEnabled},
 		func(body *generatedsignaling.SessionMicrophoneBody) any {
 			return generatedsignaling.SessionMicrophoneFrame{
 				Method: protocol.MethodMicEnable, DialogId: message.DialogID,
@@ -363,7 +374,7 @@ func marshalPingFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodPing,
-		[]string{"doorbot_id", "session_id"},
+		[]string{protocol.FieldDeviceID, protocol.FieldSessionID},
 		func(body *generatedsignaling.SessionBody) any {
 			return generatedsignaling.SessionPingFrame{
 				Method: protocol.MethodPing, DialogId: message.DialogID,
@@ -377,7 +388,7 @@ func marshalPlaybackFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodPlayback,
-		[]string{"doorbot_id", "entry_point", "sdp", "type"},
+		[]string{protocol.FieldDeviceID, protocol.FieldEntryPoint, protocol.FieldSDP, protocol.FieldType},
 		func(body *generatedsignaling.PlaybackOfferBody) any {
 			return generatedsignaling.PlaybackOfferFrame{
 				Method: protocol.MethodPlayback, DialogId: message.DialogID,
@@ -391,7 +402,7 @@ func marshalPushHeartbeatFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodPushHeartbeat,
-		[]string{"subscription_id"},
+		[]string{protocol.FieldSubscriptionID},
 		func(body *generatedsignaling.PushSubscriptionBody) any {
 			return generatedsignaling.PushHeartbeatFrame{
 				Method: protocol.MethodPushHeartbeat, DialogId: message.DialogID,
@@ -405,7 +416,7 @@ func marshalPushSubscribeFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodPushSubscribe,
-		[]string{"requested_notifications"},
+		[]string{protocol.FieldRequestedNotifications},
 		func(body *generatedsignaling.PushSubscribeBody) any {
 			return generatedsignaling.PushSubscribeFrame{
 				Method: protocol.MethodPushSubscribe, DialogId: message.DialogID,
@@ -419,7 +430,7 @@ func marshalPushUnsubscribeFrame(message signaling.Message) ([]byte, error) {
 	return marshalGeneratedFrame(
 		message,
 		protocol.MethodPushUnsubscribe,
-		[]string{"subscription_id"},
+		[]string{protocol.FieldSubscriptionID},
 		func(body *generatedsignaling.PushSubscriptionBody) any {
 			return generatedsignaling.PushUnsubscribeFrame{
 				Method: protocol.MethodPushUnsubscribe, DialogId: message.DialogID,
@@ -439,8 +450,14 @@ func marshalRPCFrame(message signaling.Message) ([]byte, error) {
 	case protocol.RPCPanContinuous, protocol.RPCTiltContinuous:
 		err = validateRPCFields(
 			message.Body,
-			[]string{"jsonrpc", "id", "method", "params"},
-			[]string{"sessionId", "timestamp", "version", "direction", "speed"},
+			[]string{protocol.FieldJSONRPC, protocol.FieldRPCID, protocol.FieldMethod, protocol.FieldParams},
+			[]string{
+				protocol.FieldSessionIDRPC,
+				protocol.FieldTimestamp,
+				protocol.FieldVersion,
+				protocol.FieldDirection,
+				protocol.FieldSpeed,
+			},
 		)
 		if err != nil {
 			return nil, err
@@ -449,7 +466,7 @@ func marshalRPCFrame(message signaling.Message) ([]byte, error) {
 		return marshalGeneratedFrame(
 			message,
 			protocol.MethodRPC,
-			[]string{"doorbot_id", "session_id", "command"},
+			[]string{protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldCommand},
 			func(body *generatedsignaling.PtzContinuousCommandBody) any {
 				return generatedsignaling.PtzContinuousCommandFrame{
 					Method: protocol.MethodRPC, DialogId: message.DialogID,
@@ -460,8 +477,8 @@ func marshalRPCFrame(message signaling.Message) ([]byte, error) {
 	case protocol.RPCPanStep, protocol.RPCTiltStep:
 		err = validateRPCFields(
 			message.Body,
-			[]string{"jsonrpc", "id", "method", "params"},
-			[]string{"sessionId", "timestamp", "version", "direction"},
+			[]string{protocol.FieldJSONRPC, protocol.FieldRPCID, protocol.FieldMethod, protocol.FieldParams},
+			[]string{protocol.FieldSessionIDRPC, protocol.FieldTimestamp, protocol.FieldVersion, protocol.FieldDirection},
 		)
 		if err != nil {
 			return nil, err
@@ -470,7 +487,7 @@ func marshalRPCFrame(message signaling.Message) ([]byte, error) {
 		return marshalGeneratedFrame(
 			message,
 			protocol.MethodRPC,
-			[]string{"doorbot_id", "session_id", "command"},
+			[]string{protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldCommand},
 			func(body *generatedsignaling.PtzCommandBody) any {
 				return generatedsignaling.PtzCommandFrame{
 					Method: protocol.MethodRPC, DialogId: message.DialogID,
@@ -489,7 +506,7 @@ func rpcCommandMethod(body json.RawMessage) (string, error) {
 		return "", err
 	}
 
-	commandRaw, exists := fields["command"]
+	commandRaw, exists := fields[protocol.FieldCommand]
 	if !exists {
 		return "", signalingWireError("PTZ RPC body is missing command")
 	}
@@ -499,7 +516,7 @@ func rpcCommandMethod(body json.RawMessage) (string, error) {
 		return "", err
 	}
 
-	methodRaw, exists := command["method"]
+	methodRaw, exists := command[protocol.FieldMethod]
 	if !exists {
 		return "", signalingWireError("PTZ RPC command is missing method")
 	}
@@ -520,7 +537,7 @@ func validateRPCFields(body json.RawMessage, commandRequired, paramsRequired []s
 		return err
 	}
 
-	command, err := decodeBodyProperty(fields, "command")
+	command, err := decodeBodyProperty(fields, protocol.FieldCommand)
 	if err != nil {
 		return err
 	}
@@ -530,7 +547,7 @@ func validateRPCFields(body json.RawMessage, commandRequired, paramsRequired []s
 		return wrapSignalingWireError(err, "PTZ RPC command")
 	}
 
-	params, err := decodeBodyProperty(command, "params")
+	params, err := decodeBodyProperty(command, protocol.FieldParams)
 	if err != nil {
 		return err
 	}
@@ -568,15 +585,15 @@ func requireJSONFields(fields map[string]json.RawMessage, required ...string) er
 }
 
 func marshalStreamOptions(message signaling.Message) ([]byte, error) {
-	hasAudio := bodyHasProperty(message.Body, "audio_enabled")
-	hasVideo := bodyHasProperty(message.Body, "video_enabled")
+	hasAudio := bodyHasProperty(message.Body, protocol.FieldAudioEnabled)
+	hasVideo := bodyHasProperty(message.Body, protocol.FieldVideoEnabled)
 
 	switch {
 	case hasAudio && hasVideo:
 		return marshalGeneratedFrame(
 			message,
 			protocol.MethodStreamOptions,
-			[]string{"doorbot_id", "session_id", "audio_enabled", "video_enabled"},
+			[]string{protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldAudioEnabled, protocol.FieldVideoEnabled},
 			func(body *generatedsignaling.SessionStreamAudioVideoOptionsBody) any {
 				return generatedsignaling.SessionStreamAudioVideoOptionsFrame{
 					Method: protocol.MethodStreamOptions, DialogId: message.DialogID,
@@ -588,7 +605,7 @@ func marshalStreamOptions(message signaling.Message) ([]byte, error) {
 		return marshalGeneratedFrame(
 			message,
 			protocol.MethodStreamOptions,
-			[]string{"doorbot_id", "session_id", "audio_enabled"},
+			[]string{protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldAudioEnabled},
 			func(body *generatedsignaling.SessionStreamAudioOptionsBody) any {
 				return generatedsignaling.SessionStreamAudioOptionsFrame{
 					Method: protocol.MethodStreamOptions, DialogId: message.DialogID,
@@ -600,7 +617,7 @@ func marshalStreamOptions(message signaling.Message) ([]byte, error) {
 		return marshalGeneratedFrame(
 			message,
 			protocol.MethodStreamOptions,
-			[]string{"doorbot_id", "session_id", "video_enabled"},
+			[]string{protocol.FieldDeviceID, protocol.FieldSessionID, protocol.FieldVideoEnabled},
 			func(body *generatedsignaling.SessionStreamVideoOptionsBody) any {
 				return generatedsignaling.SessionStreamVideoOptionsFrame{
 					Method: protocol.MethodStreamOptions, DialogId: message.DialogID,

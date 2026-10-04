@@ -338,10 +338,13 @@ func missingOperationCalls() map[string]func(*generatedhttp.Client) (*http.Respo
 			)
 		},
 		"updateLegacyDoorbotControls": func(c *generatedhttp.Client) (*http.Response, error) {
+			var params generatedhttp.UpdateLegacyDoorbotControlsParams
+			params.DoorbotDescription = "synthetic doorbell"
+
 			return c.UpdateLegacyDoorbotControls(
 				ctx,
 				1000,
-				&generatedhttp.UpdateLegacyDoorbotControlsParams{DoorbotDescription: "synthetic doorbell"},
+				&params,
 				accept("application/json"),
 			)
 		},

@@ -46,6 +46,9 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code -- go.mod go.sum
+          cd cmd/go-ring
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
   api-compatibility:
     runs-on: ubuntu-latest
     env:
@@ -200,7 +203,7 @@ jobs:
       - name: Check generated artifacts are current and tracked
         shell: bash
         run: |
-          generated_status="$(git status --porcelain --untracked-files=all -- internal/generatedhttp internal/generatedfcm internal/generatedsignaling internal/protocol/endpoints.go internal/protocol/signaling.go internal/protocol/fcm.go internal/protocol/mcs.gen.go pkg/generatedhttp pkg/generatedsignaling pkg/dependencymodels/models.gen.go pkg/ringapimodels/models.gen.go)"
+          generated_status="$(git status --porcelain --untracked-files=all -- internal/generatedhttp internal/generatedfcm internal/generatedsignaling internal/protocol/endpoints.go internal/protocol/signaling.go internal/protocol/fcm.go internal/protocol/mcs.gen.go pkg/generatedhttp pkg/generatedsignaling pkg/dependencymodels pkg/ringapimodels/models.gen.go)"
           if [ -n "$generated_status" ]; then
             echo "Generated API artifacts changed or are untracked:"
             echo "$generated_status"

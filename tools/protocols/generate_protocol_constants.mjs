@@ -7,19 +7,22 @@ import { parse } from 'yaml';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const check = process.argv.includes('--check');
 
-const [openapi, asyncapi, fcm] = await Promise.all([
+const [openapi, asyncapi, fcm, clientModels] = await Promise.all([
   readSchema('api/openapi.yaml'),
   readSchema('api/asyncapi.yaml'),
   readSchema('api/external/fcm.openapi.yaml'),
+  readSchema('api/client-models.openapi.yaml'),
 ]);
 
 const endpoints = generateEndpoints();
 const signaling = generateSignaling();
 const fcmConstants = generateFCM();
+const publicModelConstants = generatePublicModels();
 
 await writeOrCheck('internal/protocol/endpoints.go', endpoints);
 await writeOrCheck('internal/protocol/signaling.go', signaling);
 await writeOrCheck('internal/protocol/fcm.go', fcmConstants);
+await writeOrCheck('internal/protocol/public_models.go', publicModelConstants);
 
 async function readSchema(path) {
   return parse(await readFile(resolve(root, path), 'utf8'));
@@ -158,10 +161,18 @@ function generateSignaling() {
   constants.push(
     ['SDPTypeOffer', schemaConst(asyncProperty('LiveViewBody', 'type'), 'LiveViewBody.type')],
     ['SDPTypeAnswer', schemaConst(asyncProperty('LiveAnswerBody', 'type'), 'LiveAnswerBody.type')],
+    ['PlaybackOfferTypeCloud', schemaConst(asyncProperty('PlaybackOfferBody', 'type'), 'PlaybackOfferBody.type')],
+    ['PlaybackCloseReasonClientClosed', schemaConst(asyncProperty('PlaybackCloseReason', 'text'), 'PlaybackCloseReason.text')],
   );
 
+  const playbackEntryPoints = asyncProperty('PlaybackOfferBody', 'entry_point')?.['x-extensible-enum'];
+  if (!Array.isArray(playbackEntryPoints) || playbackEntryPoints.length !== 1) {
+    throw new Error('PlaybackOfferBody.entry_point must list its observed default value');
+  }
+  constants.push(['PlaybackEntryPointTimeline', String(playbackEntryPoints[0])]);
+
   const playbackAnswerType = schemaConst(asyncProperty('PlaybackAnswerBody', 'type'), 'PlaybackAnswerBody.type');
-  if (playbackAnswerType !== constants.at(-1)[1]) {
+  if (playbackAnswerType !== schemaConst(asyncProperty('LiveAnswerBody', 'type'), 'LiveAnswerBody.type')) {
     throw new Error('PlaybackAnswerBody.type does not match LiveAnswerBody.type');
   }
 
@@ -179,8 +190,36 @@ function generateSignaling() {
   );
 
   const fieldMappings = [
+    ['FieldMethod', ['SignalingInboundDiscriminator', 'method']],
+    ['FieldDialogID', ['SignalingInboundDiscriminator', 'dialog_id']],
+    ['FieldRIID', ['SignalingInboundDiscriminator', 'riid']],
+    ['FieldBody', ['SignalingInboundDiscriminator', 'body']],
     ['FieldDeviceID', ['SessionBody', 'doorbot_id']],
     ['FieldSessionID', ['SessionBody', 'session_id']],
+    ['FieldIce', ['LiveICEBody', 'ice']],
+    ['FieldMID', ['LiveICEBody', 'mid']],
+    ['FieldMLineIndex', ['LiveICEBody', 'mlineindex']],
+    ['FieldIsOK', ['SessionNotificationBody', 'is_ok']],
+    ['FieldText', ['SessionNotificationBody', 'text']],
+    ['FieldNotificationScope', ['PushEventBody', 'notification_scope']],
+    ['FieldNotificationType', ['PushEventBody', 'notification_type']],
+    ['FieldPayload', ['PushEventBody', 'payload']],
+    ['FieldSubscriptionID', ['PushSubscriptionAckBody', 'subscription_id']],
+    ['FieldStatus', ['PushSubscriptionAckBody', 'status']],
+    ['FieldSessionInfo', ['LiveAnswerBody', 'session_info']],
+    ['FieldSDP', ['LiveViewBody', 'sdp']],
+    ['FieldStreamOptions', ['LiveViewBody', 'stream_options']],
+    ['FieldType', ['LiveViewBody', 'type']],
+    ['FieldEntryPoint', ['PlaybackOfferBody', 'entry_point']],
+    ['FieldRequestedNotifications', ['PushSubscribeBody', 'requested_notifications']],
+    ['FieldJSONRPC', ['PTZWireCommand', 'jsonrpc']],
+    ['FieldRPCID', ['PTZWireCommand', 'id']],
+    ['FieldParams', ['PTZWireCommand', 'params']],
+    ['FieldResult', ['ServerRPCCommand', 'result']],
+    ['FieldError', ['ServerRPCCommand', 'error']],
+    ['FieldCode', ['ServerCloseReason', 'code']],
+    ['FieldReason', ['PlaybackCloseBody', 'reason']],
+    ['FieldPingInterval', ['LiveAnswerInfo', 'ping_interval']],
     ['FieldEnabled', ['SessionMicrophoneBody', 'enabled']],
     ['FieldAudioEnabled', ['SessionStreamAudioOptionsBody', 'audio_enabled']],
     ['FieldVideoEnabled', ['SessionStreamVideoOptionsBody', 'video_enabled']],
@@ -269,6 +308,14 @@ function generateFCM() {
     ['FCMRegistrationVAPIDKey', receiverAdapter.properties?.registration_web_vapid_key, null, 'pinned receiver registration_web_vapid_key'],
     ['FCMRegistrationTokenKey', registrationResponse, 'token', 'FCMRegistrationResponse.token'],
     ['FCMRegistrationPushSetKey', registrationResponse, 'pushSet', 'FCMRegistrationResponse.pushSet'],
+    ['FCMPushAndroidConfigKey', fcm.components.schemas.RingPushNotificationEnvelope, 'android_config', 'RingPushNotificationEnvelope.android_config'],
+    ['FCMPushDataKey', fcm.components.schemas.RingPushNotificationEnvelope, 'data', 'RingPushNotificationEnvelope.data'],
+    ['FCMPushDoorbotIDKey', fcm.components.schemas.RingPushNotificationEnvelope, 'doorbot_id', 'RingPushNotificationEnvelope.doorbot_id'],
+    ['FCMPushCategoryKey', fcm.components.schemas.RingPushNotificationConfig, 'category', 'RingPushNotificationConfig.category'],
+    ['FCMPushPayloadDeviceKey', fcm.components.schemas.RingPushNotificationPayload, 'device', 'RingPushNotificationPayload.device'],
+    ['FCMPushPayloadGCMDataKey', fcm.components.schemas.RingPushNotificationPayload, 'gcmData', 'RingPushNotificationPayload.gcmData'],
+    ['FCMPushDeviceIDKey', fcm.components.schemas.RingPushNotificationDevice, 'id', 'RingPushNotificationDevice.id'],
+    ['FCMPushGCMActionKey', fcm.components.schemas.RingPushNotificationGCMData, 'action', 'RingPushNotificationGCMData.action'],
   ];
 
   for (const [name, schema, key, label] of fieldMappings) {
@@ -280,6 +327,31 @@ function generateFCM() {
     FCMAPIKey: '// #nosec G101 -- public Firebase client key in the pinned receiver protocol.',
     FCMDefaultVAPIDKey: '// #nosec G101 -- public VAPID application key from the pinned receiver protocol.',
   });
+}
+
+function generatePublicModels() {
+  const mappings = [
+    ['DeviceKindStickUpMiniPTZ', 'DeviceKind', 'stickup_cam_mini_ptz_v1'],
+    ['ConnectionOnline', 'ConnectionState', 'online'],
+    ['ConnectionOffline', 'ConnectionState', 'offline'],
+    ['PowerModeWired', 'PowerMode', 'wired'],
+    ['LocationResourceLocations', 'LocationResourceType', 'locations'],
+    ['TimelineEventOnDemand', 'TimelineEventType', 'on_demand'],
+    ['TimelineEventDing', 'TimelineEventType', 'ding'],
+    ['TimelineEventMotion', 'TimelineEventType', 'motion'],
+    ['RecordingStatusReady', 'RecordingStatus', 'ready'],
+    ['TimelineStateCompleted', 'TimelineState', 'completed'],
+    ['HistoryFeedEvent', 'HistoryFeedType', 'EVENT'],
+  ];
+  const constants = mappings.map(([constantName, schemaName, expectedValue]) => {
+    const schema = requireObject(clientModels.components?.schemas?.[schemaName], `${schemaName} projection schema`);
+    const values = schema['x-extensible-enum'];
+    if (!Array.isArray(values) || !values.includes(expectedValue)) {
+      throw new Error(`${schemaName} must list ${expectedValue} as a known open value`);
+    }
+    return [constantName, expectedValue];
+  });
+  return goFile('protocol', constants);
 }
 
 function operationPath(operationID, document = openapi) {

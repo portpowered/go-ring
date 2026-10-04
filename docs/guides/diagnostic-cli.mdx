@@ -3,15 +3,19 @@ title: Diagnostic CLI
 description: Authenticate, inspect devices, watch events, and debug live video from a terminal.
 ---
 
-The `go-ring` CLI is a separate Go module. Build it from `cmd/go-ring` with
-`go build .`, or run it there with `go run .`. It uses the public `pkg/ring`
-client and stores credentials in the user's configuration directory.
+The `go-ring` CLI uses the public SDK and stores credentials in your
+configuration directory. Until its first CLI release, build it from
+`cmd/go-ring` with `go build .`, or run it there with `go run .`.
+Published CLI versions can be installed with
+`go install github.com/portpowered/go-ring/cmd/go-ring@latest`.
 
 ## Common commands
 
 ```text
 go-ring auth login
 go-ring auth status
+go-ring auth refresh
+go-ring auth export > tokens.json
 go-ring devices list
 go-ring health 12345 --refresh
 go-ring snapshot 12345 --output camera.jpg --timeout 45s
@@ -27,17 +31,19 @@ go-ring replay-video camera.rtp --output camera.h264
 
 Put the global `--token-file path` before the command to select a token file.
 Login prompts for credentials and a verification code when challenged.
-`RING_PASSWORD` and `RING_OTP_CODE` support scripted login. Tokens are never
-printed; `auth logout` removes saved login and push credentials. The CLI
-restricts private files to the current user and replaces token files after
-refresh. See [authentication](/docs/guides/authentication) for token lifecycle
+`RING_PASSWORD` and `RING_OTP_CODE` support scripted login. Ordinary commands
+never print tokens or refresh them. Run `auth refresh` to replace saved tokens;
+`auth export` explicitly prints credential JSON, so protect its destination.
+`auth status` prints expiry information as JSON. `auth logout` removes saved
+login and push credentials. The CLI restricts its private files to the current
+user. See [authentication](/docs/guides/authentication) for token lifecycle
 and the [OAuth exchange](/docs/openapi/authentication/exchangeOrRefreshOAuthToken)
 contract.
 
 ## Devices and events
 
-`devices list` prints ID, name, normalized type, and raw hardware kind as four
-tab-separated columns. It supplies IDs for controls. `health --refresh` also queries the
+`devices list` prints a JSON array of devices, including IDs for controls.
+`health --refresh` also queries the
 legacy health route, which may return no populated fields. `sound` requires a
 chime device. A successful `siren` or `reboot` request reports server
 acknowledgement; check the device before retrying a timed-out mutation.

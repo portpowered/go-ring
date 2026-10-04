@@ -232,7 +232,7 @@ linters:
       - path: '^internal/signaling/session\.go$'
         linters: [containedctx]
       # GO-15/LIB-05: These tests use the package's fake clock, terminal state, and RPC envelope to verify deterministic session scheduling and teardown without adding test-only exported APIs.
-      - path: '^internal/signaling/session_test\.go$'
+      - path: '^internal/signaling/session(_boundary)?_test\.go$'
         linters: [testpackage]
       - path: '^internal/signaling/session_stress_test\.go$'
         linters: [testpackage]

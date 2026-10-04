@@ -4,10 +4,9 @@
 package ringapimodels
 
 import (
-	"encoding/json"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
+	ringtypes "github.com/portpowered/go-ring/pkg/ringtypes"
 )
 
 // Defines values for DeviceType.
@@ -99,28 +98,20 @@ type AuthResponse struct {
 }
 
 // BatteryReading Battery percentage accepted as a JSON number or numeric text by the SDK adapter.
-type BatteryReading struct {
-	union json.RawMessage
-}
-
-// BatteryReading0 defines model for BatteryReading.0.
-type BatteryReading0 = float32
-
-// BatteryReading1 defines model for BatteryReading.1.
-type BatteryReading1 = string
+type BatteryReading = ringtypes.BatteryReading
 
 // CapturedTickets defines model for CapturedTickets.
 type CapturedTickets struct {
-	Host               string    `json:"host"`
-	SubscriptionTopics *[]string `json:"subscriptionTopics,omitempty"`
-	Ticket             string    `json:"ticket"`
+	Host               string   `json:"host"`
+	SubscriptionTopics []string `json:"subscriptionTopics,omitempty"`
+	Ticket             string   `json:"ticket"`
 }
 
 // ConnectionState Open connection state.
-type ConnectionState = string
+type ConnectionState = ringtypes.ConnectionState
 
 // DetailDeviceFamily Open device family in detail and inventory responses.
-type DetailDeviceFamily = string
+type DetailDeviceFamily = ringtypes.DeviceFamily
 
 // Device One account device. An absent capability means support was not confirmed by inventory; it does not prove the operation is unsupported.
 type Device struct {
@@ -173,7 +164,7 @@ type DeviceDetailDevice struct {
 	CreatedAt          *time.Time      `json:"created_at,omitempty"`
 	DeactivatedAt      *time.Time      `json:"deactivated_at,omitempty"`
 	Description        string          `json:"description"`
-	DeviceId           *string         `json:"device_id,omitempty"`
+	DeviceID           *string         `json:"device_id,omitempty"`
 	ExternalConnection *bool           `json:"external_connection,omitempty"`
 
 	// Family Open device family in detail and inventory responses.
@@ -181,12 +172,12 @@ type DeviceDetailDevice struct {
 	Features *DeviceFeatures     `json:"features,omitempty"`
 	HasLight *bool               `json:"has_light,omitempty"`
 	Health   *DeviceDetailHealth `json:"health,omitempty"`
-	Id       int64               `json:"id"`
+	ID       int64               `json:"id"`
 
 	// Kind Open hardware kind in device detail.
 	Kind                   DeviceKind            `json:"kind"`
 	LightBrightness        *int                  `json:"light_brightness,omitempty"`
-	LocationId             *string               `json:"location_id,omitempty"`
+	LocationID             *string               `json:"location_id,omitempty"`
 	MotionDetectionEnabled *bool                 `json:"motion_detection_enabled,omitempty"`
 	Name                   *string               `json:"name,omitempty"`
 	OperationSet           *string               `json:"operation_set,omitempty"`
@@ -202,18 +193,18 @@ type DeviceDetailDevice struct {
 
 // DeviceDetailHealth defines model for DeviceDetailHealth.
 type DeviceDetailHealth struct {
-	BatteryLevel              *int      `json:"battery_level,omitempty"`
-	BatteryPercentage         *float32  `json:"battery_percentage,omitempty"`
-	BatteryPercentageCategory *string   `json:"battery_percentage_category,omitempty"`
-	BatteryPresent            *bool     `json:"battery_present,omitempty"`
-	BatteryStatus             *string   `json:"battery_status,omitempty"`
-	Connected                 *bool     `json:"connected,omitempty"`
-	FirmwareVersion           *string   `json:"firmware_version,omitempty"`
-	LastUpdate                *string   `json:"last_update,omitempty"`
-	PtzConnected              *string   `json:"ptz_connected,omitempty"`
-	Rssi                      *float32  `json:"rssi,omitempty"`
-	SignalStrength            *int      `json:"signal_strength,omitempty"`
-	SupportedRpcCommands      *[]string `json:"supported_rpc_commands,omitempty"`
+	BatteryLevel              *int     `json:"battery_level,omitempty"`
+	BatteryPercentage         *float64 `json:"battery_percentage,omitempty"`
+	BatteryPercentageCategory *string  `json:"battery_percentage_category,omitempty"`
+	BatteryPresent            *bool    `json:"battery_present,omitempty"`
+	BatteryStatus             *string  `json:"battery_status,omitempty"`
+	Connected                 *bool    `json:"connected,omitempty"`
+	FirmwareVersion           *string  `json:"firmware_version,omitempty"`
+	LastUpdate                *string  `json:"last_update,omitempty"`
+	PTZConnected              *string  `json:"ptz_connected,omitempty"`
+	RSSI                      *float32 `json:"rssi,omitempty"`
+	SignalStrength            *int     `json:"signal_strength,omitempty"`
+	SupportedRPCCommands      []string `json:"supported_rpc_commands,omitempty"`
 }
 
 // DeviceFeatures defines model for DeviceFeatures.
@@ -234,7 +225,7 @@ type DeviceHealth struct {
 }
 
 // DeviceKind Open hardware kind in device detail.
-type DeviceKind = string
+type DeviceKind = ringtypes.DeviceKind
 
 // DeviceLegacySettings defines model for DeviceLegacySettings.
 type DeviceLegacySettings struct {
@@ -251,14 +242,14 @@ type DeviceOwner struct {
 	Email     *string `json:"email,omitempty"`
 	FirstName *string `json:"first_name,omitempty"`
 
-	// Id Numeric or text vendor owner identifier normalized to text by the SDK adapter.
-	Id       *OwnerID `json:"id,omitempty"`
+	// ID Numeric or text vendor owner identifier normalized to text by the SDK adapter.
+	ID       *OwnerID `json:"id,omitempty"`
 	LastName *string  `json:"last_name,omitempty"`
 }
 
 // DeviceStatus SDK-derived status from device detail, not an additional wire response.
 type DeviceStatus struct {
-	BatteryPercent *float32 `json:"battery_percent,omitempty"`
+	BatteryPercent *float64 `json:"battery_percent,omitempty"`
 
 	// Connection Open connection state.
 	Connection *ConnectionState `json:"connection,omitempty"`
@@ -303,15 +294,15 @@ type FeatureAvailability struct {
 
 // FeatureEligibility defines model for FeatureEligibility.
 type FeatureEligibility struct {
-	Eligible             *bool     `json:"eligible,omitempty"`
-	IneligibilityReasons *[]string `json:"ineligibility_reasons,omitempty"`
+	Eligible             *bool    `json:"eligible,omitempty"`
+	IneligibilityReasons []string `json:"ineligibility_reasons,omitempty"`
 }
 
 // FeatureEnablement defines model for FeatureEnablement.
 type FeatureEnablement struct {
-	Allowed         *bool     `json:"allowed,omitempty"`
-	DisallowReasons *[]string `json:"disallow_reasons,omitempty"`
-	Enabled         *bool     `json:"enabled,omitempty"`
+	Allowed         *bool    `json:"allowed,omitempty"`
+	DisallowReasons []string `json:"disallow_reasons,omitempty"`
+	Enabled         *bool    `json:"enabled,omitempty"`
 }
 
 // GeoCoordinates defines model for GeoCoordinates.
@@ -322,20 +313,20 @@ type GeoCoordinates struct {
 
 // HistoryDevices defines model for HistoryDevices.
 type HistoryDevices struct {
-	Events        []TimelineEvent    `json:"events"`
-	Feed          *[]HistoryFeedItem `json:"feed,omitempty"`
-	PaginationKey *string            `json:"pagination_key,omitempty"`
-	Schema        *string            `json:"schema,omitempty"`
+	Events        []TimelineEvent   `json:"events"`
+	Feed          []HistoryFeedItem `json:"feed,omitempty"`
+	PaginationKey *string           `json:"pagination_key,omitempty"`
+	Schema        *string           `json:"schema,omitempty"`
 }
 
 // HistoryFeedItem defines model for HistoryFeedItem.
 type HistoryFeedItem struct {
-	Id   *string          `json:"id,omitempty"`
+	ID   *string          `json:"id,omitempty"`
 	Type *HistoryFeedType `json:"type,omitempty"`
 }
 
 // HistoryFeedType defines model for HistoryFeedType.
-type HistoryFeedType = string
+type HistoryFeedType = ringtypes.HistoryFeedType
 
 // InHomeChimeSettings Supply exactly one field per update. Enabled maps to the legacy enable query value.
 type InHomeChimeSettings struct {
@@ -371,9 +362,9 @@ type LocationAttributes struct {
 
 // LocationDetail defines model for LocationDetail.
 type LocationDetail struct {
-	Data     LocationResource    `json:"data"`
-	Included *[]LocationResource `json:"included,omitempty"`
-	Meta     *LocationMeta       `json:"meta,omitempty"`
+	Data     LocationResource   `json:"data"`
+	Included []LocationResource `json:"included,omitempty"`
+	Meta     *LocationMeta      `json:"meta,omitempty"`
 }
 
 // LocationGroup defines model for LocationGroup.
@@ -389,13 +380,13 @@ type LocationGroupDevices struct {
 
 // LocationGroups defines model for LocationGroups.
 type LocationGroups struct {
-	DeviceGroups *[]LocationGroup `json:"device_groups,omitempty"`
-	IsOwner      *bool            `json:"is_owner,omitempty"`
+	DeviceGroups []LocationGroup `json:"device_groups,omitempty"`
+	IsOwner      *bool           `json:"is_owner,omitempty"`
 }
 
 // LocationList SDK projection; OperationSets is derived outside JSON.
 type LocationList struct {
-	UserLocations []LocationSummary `json:"user_locations"`
+	Locations []LocationSummary `json:"user_locations"`
 }
 
 // LocationMeta defines model for LocationMeta.
@@ -406,37 +397,29 @@ type LocationMeta struct {
 // LocationResource defines model for LocationResource.
 type LocationResource struct {
 	Attributes *LocationAttributes  `json:"attributes,omitempty"`
-	Id         string               `json:"id"`
+	ID         string               `json:"id"`
 	Type       LocationResourceType `json:"type"`
 }
 
 // LocationResourceType defines model for LocationResourceType.
-type LocationResourceType = string
+type LocationResourceType = ringtypes.LocationResourceType
 
 // LocationSummary defines model for LocationSummary.
 type LocationSummary struct {
 	Address        *LocationAddress `json:"address,omitempty"`
 	GeoCoordinates *GeoCoordinates  `json:"geo_coordinates,omitempty"`
 	IsOwner        *bool            `json:"is_owner,omitempty"`
-	LocationId     string           `json:"location_id"`
+	ID             string           `json:"location_id"`
 	LocationType   *string          `json:"location_type,omitempty"`
 	Name           string           `json:"name"`
-	OwnerId        *int64           `json:"owner_id,omitempty"`
+	OwnerID        *int64           `json:"owner_id,omitempty"`
 }
 
 // OwnerID Numeric or text vendor owner identifier normalized to text by the SDK adapter.
-type OwnerID struct {
-	union json.RawMessage
-}
-
-// OwnerID0 defines model for OwnerID.0.
-type OwnerID0 = string
-
-// OwnerID1 defines model for OwnerID.1.
-type OwnerID1 = int64
+type OwnerID = ringtypes.OwnerID
 
 // PowerMode Open device power mode.
-type PowerMode = string
+type PowerMode = ringtypes.PowerMode
 
 // Recording defines model for Recording.
 type Recording struct {
@@ -455,7 +438,7 @@ type RecordingHistoryResponse struct {
 }
 
 // RecordingStatus defines model for RecordingStatus.
-type RecordingStatus = string
+type RecordingStatus = ringtypes.RecordingStatus
 
 // SoundKind Accepted legacy chime test sounds.
 type SoundKind string
@@ -463,30 +446,30 @@ type SoundKind string
 // TimelineDevice defines model for TimelineDevice.
 type TimelineDevice struct {
 	Description *string `json:"description,omitempty"`
-	Id          *int64  `json:"id,omitempty"`
+	ID          *int64  `json:"id,omitempty"`
 	Type        *string `json:"type,omitempty"`
 }
 
 // TimelineEvent defines model for TimelineEvent.
 type TimelineEvent struct {
 	Device          *TimelineDevice   `json:"device,omitempty"`
-	DurationMs      *int              `json:"duration_ms,omitempty"`
+	DurationMS      *int              `json:"duration_ms,omitempty"`
 	EndTime         *time.Time        `json:"end_time,omitempty"`
-	EventId         string            `json:"event_id"`
-	EventType       TimelineEventType `json:"event_type"`
+	ID              string            `json:"event_id"`
+	Type            TimelineEventType `json:"event_type"`
 	IsFavorite      *bool             `json:"is_favorite,omitempty"`
 	RecordingStatus *RecordingStatus  `json:"recording_status,omitempty"`
 	Schema          *string           `json:"schema,omitempty"`
-	SourceId        *string           `json:"source_id,omitempty"`
+	SourceID        *string           `json:"source_id,omitempty"`
 	StartTime       time.Time         `json:"start_time"`
 	State           *TimelineState    `json:"state,omitempty"`
 }
 
 // TimelineEventType defines model for TimelineEventType.
-type TimelineEventType = string
+type TimelineEventType = ringtypes.TimelineEventType
 
 // TimelineState defines model for TimelineState.
-type TimelineState = string
+type TimelineState = ringtypes.TimelineState
 
 // VideoRenderingFeature defines model for VideoRenderingFeature.
 type VideoRenderingFeature struct {
@@ -495,127 +478,3 @@ type VideoRenderingFeature struct {
 
 // VolumeKind Legacy volume control target; selects the chime or doorbell endpoint.
 type VolumeKind string
-
-// AsBatteryReading0 returns the union data inside the BatteryReading as a BatteryReading0
-func (t BatteryReading) AsBatteryReading0() (BatteryReading0, error) {
-	var body BatteryReading0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromBatteryReading0 overwrites any union data inside the BatteryReading as the provided BatteryReading0
-func (t *BatteryReading) FromBatteryReading0(v BatteryReading0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeBatteryReading0 performs a merge with any union data inside the BatteryReading, using the provided BatteryReading0
-func (t *BatteryReading) MergeBatteryReading0(v BatteryReading0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsBatteryReading1 returns the union data inside the BatteryReading as a BatteryReading1
-func (t BatteryReading) AsBatteryReading1() (BatteryReading1, error) {
-	var body BatteryReading1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromBatteryReading1 overwrites any union data inside the BatteryReading as the provided BatteryReading1
-func (t *BatteryReading) FromBatteryReading1(v BatteryReading1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeBatteryReading1 performs a merge with any union data inside the BatteryReading, using the provided BatteryReading1
-func (t *BatteryReading) MergeBatteryReading1(v BatteryReading1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t BatteryReading) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *BatteryReading) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsOwnerID0 returns the union data inside the OwnerID as a OwnerID0
-func (t OwnerID) AsOwnerID0() (OwnerID0, error) {
-	var body OwnerID0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromOwnerID0 overwrites any union data inside the OwnerID as the provided OwnerID0
-func (t *OwnerID) FromOwnerID0(v OwnerID0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeOwnerID0 performs a merge with any union data inside the OwnerID, using the provided OwnerID0
-func (t *OwnerID) MergeOwnerID0(v OwnerID0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsOwnerID1 returns the union data inside the OwnerID as a OwnerID1
-func (t OwnerID) AsOwnerID1() (OwnerID1, error) {
-	var body OwnerID1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromOwnerID1 overwrites any union data inside the OwnerID as the provided OwnerID1
-func (t *OwnerID) FromOwnerID1(v OwnerID1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeOwnerID1 performs a merge with any union data inside the OwnerID, using the provided OwnerID1
-func (t *OwnerID) MergeOwnerID1(v OwnerID1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t OwnerID) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *OwnerID) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}

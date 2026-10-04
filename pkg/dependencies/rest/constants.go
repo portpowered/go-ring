@@ -1,7 +1,9 @@
 package rest
 
-// deviceModel is sent in both the OAuth request and client session registration.
-const deviceModel = "go-ring"
+import "github.com/portpowered/go-ring/internal/generatedhttp"
+
+// deviceModel is sent in OAuth, session registration, and push registration.
+const deviceModel = generatedhttp.GoRing
 
 const (
 	maxCSRFSearchDepth = 8

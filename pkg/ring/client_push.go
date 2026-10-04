@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/portpowered/go-ring/internal/generatedfcm"
+	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/pkg/dependencies/push"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
@@ -420,7 +421,8 @@ func ParseFCMNotification(data json.RawMessage) FCMEvent {
 		return event
 	}
 
-	if nested := expandedObject(envelope["data"]); nested["android_config"] != nil || nested["data"] != nil {
+	nested := expandedObject(envelope[protocol.FCMPushDataKey])
+	if nested[protocol.FCMPushAndroidConfigKey] != nil || nested[protocol.FCMPushDataKey] != nil {
 		envelope = nested
 	}
 
@@ -433,7 +435,7 @@ func ParseFCMNotification(data json.RawMessage) FCMEvent {
 
 	var config generatedfcm.RingPushNotificationConfig
 
-	_ = json.Unmarshal(envelope["android_config"], &config)
+	_ = json.Unmarshal(envelope[protocol.FCMPushAndroidConfigKey], &config)
 
 	if config.Category != nil {
 		event.Action = PushAction(*config.Category)
@@ -441,7 +443,7 @@ func ParseFCMNotification(data json.RawMessage) FCMEvent {
 
 	var payload generatedfcm.RingPushNotificationPayload
 
-	_ = json.Unmarshal(envelope["data"], &payload)
+	_ = json.Unmarshal(envelope[protocol.FCMPushDataKey], &payload)
 
 	if payload.Device != nil && payload.Device.Id != nil {
 		event.DeviceID = strconv.FormatInt(*payload.Device.Id, 10)
@@ -453,7 +455,7 @@ func ParseFCMNotification(data json.RawMessage) FCMEvent {
 
 	if event.DeviceID == "" {
 		var id int64
-		if json.Unmarshal(envelope["doorbot_id"], &id) == nil {
+		if json.Unmarshal(envelope[protocol.FCMPushDoorbotIDKey], &id) == nil {
 			event.DeviceID = strconv.FormatInt(id, 10)
 		}
 	}

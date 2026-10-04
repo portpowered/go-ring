@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/portpowered/go-ring/internal/generatedsignaling"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/ringerrors"
 	"github.com/portpowered/go-ring/internal/signaling"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 // LiveNegotiation contains the identities and timing returned by signaling.
@@ -122,12 +122,12 @@ func acceptLiveAnswer(state LiveNegotiation, message signaling.Message, deviceID
 		return state, ringerrors.NewConnectionError("invalid SDP answer", err)
 	}
 
-	err = json.Unmarshal(envelope["session_info"], &info)
+	err = json.Unmarshal(envelope[protocol.FieldSessionInfo], &info)
 	if err != nil {
 		return state, ringerrors.NewConnectionError("invalid SDP answer", err)
 	}
 
-	if raw, present := info["ping_interval"]; present {
+	if raw, present := info[protocol.FieldPingInterval]; present {
 		var seconds int
 
 		err := json.Unmarshal(raw, &seconds)

@@ -2,6 +2,7 @@ package replay
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,17 +46,26 @@ type WSStep struct {
 	Body    json.RawMessage `json:"body"`
 	// Template enables explicit $uuid:name and $ref:name bindings in JSON text frames.
 	Template bool `json:"template,omitempty"`
+	// OnMatch runs after an expected text frame matches and may add values that a
+	// later server frame renders with $ref:name. It is intentionally not part of
+	// the serialized transcript.
+	OnMatch func(map[string]string) error `json:"-"`
 }
 
 // WSHandshake is the expected upgrade origin, host, path, query, and application headers.
 // Empty Origin means the request must have no Origin header. Empty Host means
 // the server's loopback host, which is assigned after the test server starts.
 type WSHandshake struct {
-	Origin  string      `json:"origin,omitempty"`
-	Host    string      `json:"host,omitempty"`
-	Path    string      `json:"path,omitempty"`
-	Query   url.Values  `json:"query,omitempty"`
+	Origin string     `json:"origin,omitempty"`
+	Host   string     `json:"host,omitempty"`
+	Path   string     `json:"path,omitempty"`
+	Query  url.Values `json:"query,omitempty"`
+	// Headers lists the expected application-level upgrade headers.
 	Headers http.Header `json:"headers,omitempty"`
+	// ExactHeaders rejects application headers absent from Headers.
+	ExactHeaders bool `json:"exact_headers,omitempty"`
+	// RequireClose rejects a terminal read timeout after all scripted steps.
+	RequireClose bool `json:"require_close,omitempty"`
 }
 
 // WebSocketServer serves one scripted connection on a loopback httptest server.
@@ -112,8 +123,10 @@ func handleWebSocketUpgrade(
 	steps []WSStep,
 	timeout time.Duration,
 ) {
-	if !matchesHandshake(request, want, server.Server.Listener.Addr().String()) {
-		server.finish(webSocketReplayError{message: "websocket replay: upgrade request mismatch"})
+	if mismatch := handshakeMismatchReason(request, want, server.Server.Listener.Addr().String()); mismatch != "" {
+		server.finish(webSocketReplayError{
+			message: "websocket replay: upgrade request mismatch: " + mismatch,
+		})
 		http.Error(rw, "upgrade request mismatch", http.StatusBadRequest)
 
 		return
@@ -146,7 +159,7 @@ func handleWebSocketUpgrade(
 		return
 	}
 
-	err = checkTerminalFrame(connection, terminalFrameGraceFor(timeout))
+	err = checkTerminalFrame(connection, terminalFrameGraceFor(timeout), want.RequireClose)
 	if err != nil {
 		server.finish(err)
 
@@ -232,6 +245,13 @@ func expectWebSocketFrame(
 	}
 
 	if matched {
+		if step.OnMatch != nil {
+			err := step.OnMatch(bindings)
+			if err != nil {
+				return webSocketReplayError{message: fmt.Sprintf("step %d after-match", stepIndex), cause: err}
+			}
+		}
+
 		return nil
 	}
 
@@ -324,19 +344,115 @@ func (w *WebSocketServer) WaitStep(index int, timeout time.Duration) error {
 		}
 	}
 }
-func matchesHandshake(request *http.Request, want WSHandshake, serverHost string) bool {
+func handshakeMismatchReason(request *http.Request, want WSHandshake, serverHost string) string {
 	host := want.Host
 	if host == "" {
 		host = serverHost
 	}
 
-	return request.Method == http.MethodGet && request.Host == host && request.Header.Get("Origin") == want.Origin &&
-		request.URL.EscapedPath() == want.Path &&
-		reflect.DeepEqual(request.URL.Query(), want.Query) &&
-		headersMatch(want.Headers, request.Header, HeadersRequired)
+	if request.Method != http.MethodGet {
+		return "method"
+	}
+
+	if request.Host != host {
+		return "host"
+	}
+
+	originValues := request.Header.Values("Origin")
+	if (want.Origin == "" && len(originValues) != 0) ||
+		(want.Origin != "" && (len(originValues) != 1 || originValues[0] != want.Origin)) {
+		return "origin"
+	}
+
+	if request.URL.EscapedPath() != want.Path {
+		return "path"
+	}
+
+	if !reflect.DeepEqual(request.URL.Query(), want.Query) {
+		return "query"
+	}
+
+	expectedHeaders := want.Headers
+
+	if want.Origin != "" {
+		expectedHeaders = want.Headers.Clone()
+		if expectedHeaders == nil {
+			expectedHeaders = make(http.Header)
+		}
+
+		expectedHeaders.Set("Origin", want.Origin)
+	}
+
+	if !webSocketHeadersMatch(expectedHeaders, request.Header, want.ExactHeaders) {
+		return "headers (" + webSocketHeadersMismatch(expectedHeaders, request.Header, want.ExactHeaders) + ")"
+	}
+
+	return ""
 }
 
-func checkTerminalFrame(c *websocket.Conn, grace time.Duration) error {
+func webSocketHeadersMatch(want, got http.Header, exact bool) bool {
+	return webSocketHeadersMismatch(want, got, exact) == ""
+}
+
+func webSocketHeadersMismatch(want, got http.Header, exact bool) string {
+	if !exact {
+		if headersMatch(want, got, HeadersRequired) {
+			return ""
+		}
+
+		return "required header values"
+	}
+
+	wantedHeaders, actualHeaders := canonicalHeaders(want), canonicalHeaders(got)
+	for key, values := range wantedHeaders {
+		if !reflect.DeepEqual(values, actualHeaders[key]) {
+			return "field " + key
+		}
+	}
+
+	for key := range actualHeaders {
+		if _, exists := wantedHeaders[key]; exists {
+			continue
+		}
+
+		switch strings.ToLower(key) {
+		case "connection", "upgrade", "sec-websocket-key", "sec-websocket-version":
+		default:
+			return "unexpected field " + strings.ToLower(key)
+		}
+	}
+
+	connection := strings.ToLower(strings.Join(actualHeaders["connection"], ","))
+	if !hasHeaderToken(connection, "upgrade") ||
+		!strings.EqualFold(strings.Join(actualHeaders["upgrade"], ","), "websocket") ||
+		strings.Join(actualHeaders["sec-websocket-version"], ",") != "13" {
+		return "invalid protocol fields"
+	}
+
+	keyValues := actualHeaders["sec-websocket-key"]
+	if len(keyValues) != 1 {
+		return "invalid sec-websocket-key field"
+	}
+
+	decodedKey, err := base64.StdEncoding.DecodeString(keyValues[0])
+	if err != nil || len(decodedKey) != 16 {
+		return "invalid sec-websocket-key value"
+	}
+
+	return ""
+}
+
+func hasHeaderToken(value, expected string) bool {
+	for _, token := range strings.Split(value, ",") {
+		if strings.EqualFold(strings.TrimSpace(token), expected) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func checkTerminalFrame(c *websocket.Conn, grace time.Duration, requireClose bool) error {
 	_ = c.SetReadDeadline(time.Now().Add(grace))
 
 	frame, _, err := c.ReadMessage()
@@ -348,6 +464,10 @@ func checkTerminalFrame(c *websocket.Conn, grace time.Duration) error {
 
 	var netErr net.Error
 	if errors.As(err, &netErr) && netErr.Timeout() {
+		if requireClose {
+			return webSocketReplayError{message: "websocket replay: expected client close after script completion", cause: err}
+		}
+
 		return nil
 	}
 

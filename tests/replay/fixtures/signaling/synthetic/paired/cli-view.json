@@ -1,0 +1,271 @@
+{
+  "provenance": "hand-authored synthetic standalone CLI live-view and PTZ transcript; no provider capture",
+  "handshake": {
+    "path": "/",
+    "query": {
+      "token": ["view-ticket"]
+    },
+    "headers": {
+      "User-Agent": ["android:com.ringapp"],
+      "Hardware_id": ["view-hardware"]
+    },
+    "exact_headers": true,
+    "require_close": true
+  },
+  "steps": [
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "liveView",
+      "body": {
+        "method": "live_view",
+        "dialog_id": "$uuid:dialog",
+        "body": {
+          "doorbot_id": 12345,
+          "sdp": "$sdp:offer",
+          "stream_options": {"video_enabled": true},
+          "type": "offer"
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionCreated",
+      "body": {
+        "method": "session_created",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {"doorbot_id": 12345, "session_id": "signal-view"}
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "liveAnswer",
+      "body": {
+        "method": "sdp",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "type": "answer",
+          "sdp": "$ref:answer",
+          "session_info": {"session_id": "control-view", "ping_interval": 10}
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionActivate",
+      "body": {
+        "method": "activate_session",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {"doorbot_id": 12345, "session_id": "signal-view"}
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionMicrophone",
+      "body": {
+        "method": "mic_enable",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {"doorbot_id": 12345, "session_id": "signal-view", "enabled": false}
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionStreamOptions",
+      "body": {
+        "method": "stream_options",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {"doorbot_id": 12345, "session_id": "signal-view", "audio_enabled": false}
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "camera_started",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {"doorbot_id": 12345, "session_id": "signal-view"}
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "pTZCommand",
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "command": {
+            "jsonrpc": "2.0",
+            "id": "$rpcid:control-view:1:arrow1",
+            "method": "PTZ.Pan.Step",
+            "params": {"sessionId": "control-view", "timestamp": "$epochMillis", "version": 1, "direction": "RIGHT"}
+          }
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "command": {"jsonrpc": "2.0", "id": "$ref:arrow1", "result": {"sessionId": "control-view", "timestamp": 1700000000000, "version": 1}}
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "pTZCommand",
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "command": {
+            "jsonrpc": "2.0",
+            "id": "$rpcid:control-view:2:arrow2",
+            "method": "PTZ.Pan.Step",
+            "params": {"sessionId": "control-view", "timestamp": "$epochMillis", "version": 1, "direction": "LEFT"}
+          }
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "command": {
+            "destination": "client",
+            "protocol": "jsonrpc",
+            "message": {"jsonrpc": "2.0", "id": "$ref:arrow2", "result": {"sessionId": "control-view", "timestamp": 1700000000000, "version": 1}}
+          }
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "pTZCommand",
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "command": {
+            "jsonrpc": "2.0",
+            "id": "$rpcid:control-view:3:arrow3",
+            "method": "PTZ.Tilt.Step",
+            "params": {"sessionId": "control-view", "timestamp": "$epochMillis", "version": 1, "direction": "UP"}
+          }
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "command": {"jsonrpc": "2.0", "id": "$ref:arrow3", "result": {"sessionId": "control-view", "timestamp": 1700000000000, "version": 1}}
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "pTZCommand",
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "command": {
+            "jsonrpc": "2.0",
+            "id": "$rpcid:control-view:4:arrow4",
+            "method": "PTZ.Tilt.Step",
+            "params": {"sessionId": "control-view", "timestamp": "$epochMillis", "version": 1, "direction": "DOWN"}
+          }
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "rpc",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-view",
+          "command": {"jsonrpc": "2.0", "id": "$ref:arrow4", "result": {"sessionId": "control-view", "timestamp": 1700000000000, "version": 1}}
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionClose",
+      "body": {
+        "method": "close",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-view",
+        "body": {"doorbot_id": 12345, "session_id": "signal-view"}
+      }
+    }
+  ]
+}

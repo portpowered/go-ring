@@ -24,6 +24,14 @@ mcs_socket:
   tag_bytes: 1
   length_encoding: protobuf-varint
   callsite: third_party/go-push-receiver/fcm.go:tryToConnect
+  app_data_keys:
+    ContentEncoding: content-encoding
+    CryptoKey: crypto-key
+    Encryption: encryption
+  app_data_values:
+    ContentEncodingAES128GCM: aes128gcm
+    CryptoKeyDHPrefix: dh=
+    EncryptionSaltPrefix: salt=
   tags:
     HeartbeatPing: 0
     HeartbeatAck: 1

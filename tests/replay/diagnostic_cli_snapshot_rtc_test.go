@@ -1,35 +1,16 @@
 package replay_test
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"image/jpeg"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/gorilla/websocket"
-	"github.com/pion/webrtc/v3"
-	"github.com/pion/webrtc/v3/pkg/media"
 )
-
-type snapshotOfferEnvelope struct {
-	Method string            `json:"method"`
-	Dialog string            `json:"dialog_id"`
-	Body   snapshotOfferBody `json:"body"`
-}
-
-type snapshotOfferBody struct {
-	SDP string `json:"sdp"`
-}
 
 //nolint:paralleltest,funlen // LIB-05: this serial CLI-to-RTC replay keeps success and decoder-failure checks together.
 func TestDiagnosticCLISnapshotFromRTCReplay(t *testing.T) {
@@ -62,28 +43,9 @@ func TestDiagnosticCLISnapshotFromRTCReplay(t *testing.T) {
 		}
 	}
 
-	var legacyCalls atomic.Int32
+	api := newDiagnosticCLIHTTPPairs(t, "cli-snapshot-bootstrap.json")
 
-	api := httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "snapshots") {
-			legacyCalls.Add(1)
-		}
-
-		switch r.URL.Path {
-		case legacyClientSessionPath:
-			_, _ = responseWriter.Write([]byte(`{}`))
-		case clapSignalingBootstrapPath:
-			_, _ = responseWriter.Write([]byte(`{"ticket":"snapshot-ticket"}`))
-		default:
-			http.Error(responseWriter, "unexpected HTTP request", http.StatusNotFound)
-		}
-	}))
-	defer api.Close()
-
-	serverErr := make(chan error, 1)
-
-	ws := newSnapshotWebSocketPeer(t, serverErr)
-	defer ws.Close()
+	ws, rtc := newDiagnosticCLIRTCWebSocketPeer(t, "cli-snapshot.json")
 
 	imageFile := filepath.Join(t.TempDir(), "snapshot.jpg")
 	command := exec.CommandContext(t.Context(),
@@ -95,7 +57,7 @@ func TestDiagnosticCLISnapshotFromRTCReplay(t *testing.T) {
 		"--solutions-base",
 		api.URL,
 		"--signaling-url",
-		"ws"+strings.TrimPrefix(ws.URL, "http")+"?token={token}",
+		ws.URL()+"?token={token}",
 		"snapshot",
 		"12345",
 		"--output",
@@ -127,9 +89,18 @@ func TestDiagnosticCLISnapshotFromRTCReplay(t *testing.T) {
 		t.Fatalf("snapshot JPEG: %+v, %v", image, err)
 	}
 
-	assertSnapshotServerFinished(t, serverErr)
+	err = ws.AssertComplete(10 * time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = rtc.assertClosed()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	badImageFile := filepath.Join(t.TempDir(), "invalid.jpg")
+	badWS, badRTC := newDiagnosticCLIRTCWebSocketPeer(t, "cli-snapshot.json")
 	bad := exec.CommandContext(t.Context(),
 		exe,
 		"--token-file",
@@ -139,7 +110,7 @@ func TestDiagnosticCLISnapshotFromRTCReplay(t *testing.T) {
 		"--solutions-base",
 		api.URL,
 		"--signaling-url",
-		"ws"+strings.TrimPrefix(ws.URL, "http")+"?token={token}",
+		badWS.URL()+"?token={token}",
 		"snapshot",
 		"12345",
 		"--output",
@@ -163,10 +134,14 @@ func TestDiagnosticCLISnapshotFromRTCReplay(t *testing.T) {
 		}
 	}
 
-	assertSnapshotServerFinished(t, serverErr)
+	err = badWS.AssertComplete(10 * time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	if legacyCalls.Load() != 0 {
-		t.Fatal("RTC snapshot called a legacy snapshot endpoint")
+	err = badRTC.assertClosed()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -213,206 +188,4 @@ func main(){ b` +
 	}
 
 	return ffmpeg
-}
-
-//nolint:gocognit,funlen // LIB-05: one peer checks the ordered signaling and media transcript.
-func newSnapshotWebSocketPeer(t *testing.T, serverErr chan<- error) *httptest.Server {
-	t.Helper()
-
-	ws := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
-		conn, err := (&websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}).Upgrade(w, request, nil)
-		if err != nil {
-			serverErr <- err
-
-			return
-		}
-
-		defer func() { _ = conn.Close() }()
-
-		var first snapshotOfferEnvelope
-		{
-			err := conn.ReadJSON(&first)
-			if err != nil {
-				serverErr <- err
-
-				return
-			}
-		}
-
-		if first.Method != liveViewMethod || first.Body.SDP == "" {
-			serverErr <- cliReplayError("missing live-view SDP offer")
-
-			return
-		}
-
-		peer, err := webrtc.NewPeerConnection(webrtc.Configuration{})
-		if err != nil {
-			serverErr <- err
-
-			return
-		}
-
-		defer func() { _ = peer.Close() }()
-
-		track, err := webrtc.NewTrackLocalStaticSample(
-			webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8},
-			"video",
-			"camera",
-		)
-		if err != nil {
-			serverErr <- err
-
-			return
-		}
-
-		{
-			_, err := peer.AddTrack(track)
-			if err != nil {
-				serverErr <- err
-
-				return
-			}
-		}
-
-		{
-			err := peer.SetRemoteDescription(webrtc.SessionDescription{
-				Type: webrtc.SDPTypeOffer,
-				SDP:  first.Body.SDP,
-			})
-			if err != nil {
-				serverErr <- err
-
-				return
-			}
-		}
-
-		answer, err := peer.CreateAnswer(nil)
-		if err != nil {
-			serverErr <- err
-
-			return
-		}
-
-		complete := webrtc.GatheringCompletePromise(peer)
-
-		{
-			err := peer.SetLocalDescription(answer)
-			if err != nil {
-				serverErr <- err
-
-				return
-			}
-		}
-
-		select {
-		case <-complete:
-		case <-time.After(10 * time.Second):
-			serverErr <- cliReplayError("server ICE gathering timeout")
-
-			return
-		}
-
-		write := func(method string, body map[string]any) error {
-			return conn.WriteJSON(
-				map[string]any{"method": method, "dialog_id": first.Dialog, "riid": "route-snapshot", "body": body},
-			)
-		}
-		{
-			err := write("session_created", map[string]any{"doorbot_id": 12345, "session_id": "signal-snapshot"})
-			if err != nil {
-				serverErr <- err
-
-				return
-			}
-		}
-
-		{
-			err := write("sdp", map[string]any{
-				"doorbot_id": 12345,
-				"session_id": "signal-snapshot",
-				"type":       "answer",
-				"sdp":        peer.LocalDescription().SDP,
-				"session_info": map[string]any{
-					"session_id":    "control-snapshot",
-					"ping_interval": 10,
-				},
-			})
-			if err != nil {
-				serverErr <- err
-
-				return
-			}
-		}
-
-		for _, expected := range []string{"activate_session", "mic_enable", "stream_options"} {
-			var message struct {
-				Method string `json:"method"`
-			}
-
-			err := conn.ReadJSON(&message)
-			if err != nil {
-				serverErr <- err
-
-				return
-			}
-
-			if message.Method != expected {
-				serverErr <- cliReplayError(fmt.Sprintf("expected %s, got %s", expected, message.Method))
-
-				return
-			}
-		}
-
-		{
-			err := write("camera_started", map[string]any{"doorbot_id": 12345, "session_id": "signal-snapshot"})
-			if err != nil {
-				serverErr <- err
-
-				return
-			}
-		}
-
-		mediaCtx, stopMedia := context.WithCancel(request.Context())
-		defer stopMedia()
-
-		go func() {
-			tick := time.NewTicker(20 * time.Millisecond)
-			defer tick.Stop()
-
-			for {
-				select {
-				case <-mediaCtx.Done():
-					return
-				case <-tick.C:
-					_ = track.WriteSample(media.Sample{Data: []byte{0x10, 0x00, 0x00}, Duration: 20 * time.Millisecond})
-				}
-			}
-		}()
-
-		serverErr <- nil
-
-		for {
-			{
-				_, _, err := conn.ReadMessage()
-				if err != nil {
-					return
-				}
-			}
-		}
-	}))
-
-	return ws
-}
-
-func assertSnapshotServerFinished(t *testing.T, serverErr <-chan error) {
-	t.Helper()
-
-	select {
-	case err := <-serverErr:
-		if err != nil {
-			t.Fatal(err)
-		}
-	case <-time.After(10 * time.Second):
-		t.Fatal("snapshot server did not finish")
-	}
 }

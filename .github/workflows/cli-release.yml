@@ -1,0 +1,47 @@
+name: CLI release verification
+on:
+  push:
+    tags: ['cmd/go-ring/v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing cmd/go-ring/vMAJOR.MINOR.PATCH tag
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      GOWORK: 'off'
+      GOPRIVATE: ''
+      GOPROXY: https://proxy.golang.org
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version: '1.24.x'
+      - name: Install pinned all-linter tool
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.0
+      - name: Verify CLI source and module
+        run: |
+          make lint-cli check-cli
+          cd cmd/go-ring
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+          test -z "$(gofmt -l .)"
+          test -z "$(go list -m -f '{{if .Replace}}{{.Replace.Dir}}{{end}}' github.com/portpowered/go-ring)"
+      - name: Install published CLI from the public proxy
+        run: |
+          case "$TAG" in
+            cmd/go-ring/v*) version="${TAG#cmd/go-ring/}" ;;
+            *) echo 'Expected a cmd/go-ring/vMAJOR.MINOR.PATCH tag'; exit 1 ;;
+          esac
+          cd "$(mktemp -d)"
+          export GOBIN="$PWD/bin"
+          go install "github.com/portpowered/go-ring/cmd/go-ring@$version"
+          "$GOBIN/go-ring" --help

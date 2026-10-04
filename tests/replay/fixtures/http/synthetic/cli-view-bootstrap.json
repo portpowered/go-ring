@@ -1,0 +1,86 @@
+{
+  "classification": "synthetic",
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/clients_api/session",
+        "query": [],
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "Authorization": [
+            "Bearer view-token"
+          ],
+          "Content-Length": [
+            "112"
+          ],
+          "Content-Type": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "view-hardware"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": "{\"device\":{\"hardware_id\":\"view-hardware\",\"metadata\":{\"api_version\":11,\"device_model\":\"go-ring\"},\"os\":\"android\"}}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/api/v1/clap/ticket/request/signalsocket",
+        "query": [],
+        "headers": {
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "Authorization": [
+            "Bearer view-token"
+          ],
+          "Content-Length": [
+            "0"
+          ],
+          "Content-Type": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "view-hardware"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{\"ticket\":\"view-ticket\"}"
+      }
+    }
+  ]
+}

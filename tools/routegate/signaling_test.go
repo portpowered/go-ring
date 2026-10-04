@@ -105,7 +105,7 @@ func TestSignalingAdapterChecksAcceptSchemaBoundFrames(t *testing.T) {
 	}
 }
 
-func TestGeneratedFrameDiscoveryPrefersInternalPackage(t *testing.T) {
+func TestGeneratedFrameDiscoveryPrefersDependencyModelPackage(t *testing.T) {
 	t.Parallel()
 
 	root := fixtureRoot(t, "package sample\n")
@@ -117,6 +117,7 @@ type PingBody struct{}
 type PongFrame struct{}
 type PongBody struct{}
 `
+	writeFixtureFile(t, root, "pkg/dependencymodels/signaling/models.go", models)
 	writeFixtureFile(t, root, "internal/generatedsignaling/models.go", models)
 	writeFixtureFile(t, root, "pkg/generatedsignaling/models.go", models)
 
@@ -125,7 +126,7 @@ type PongBody struct{}
 		t.Fatal(err)
 	}
 
-	want := "example.com/routegatefixture/internal/generatedsignaling"
+	want := "example.com/routegatefixture/pkg/dependencymodels/signaling"
 	if contracts.GeneratedFrames["PingFrame"] != want || contracts.GeneratedFrames["PingBody"] != want {
 		t.Fatalf(
 			"generated signaling package = (%q, %q), want %q",

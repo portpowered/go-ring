@@ -7,6 +7,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 func TestTerminalErrorNamesAreStable(t *testing.T) {
@@ -70,7 +72,7 @@ func exerciseSessionTermination(t *testing.T, iteration, callers int) {
 
 			<-start
 
-			_, callErr := session.Call(context.Background(), "PTZ.Pan.Step", map[string]any{"direction": "LEFT"})
+			_, callErr := session.Call(context.Background(), "PTZ.Pan.Step", generatedsignaling.PtzDirectionLeft, nil)
 			results <- callErr
 		}()
 	}

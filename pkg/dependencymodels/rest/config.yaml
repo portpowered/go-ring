@@ -1,0 +1,7 @@
+package: rest
+generate:
+  models: true
+output: pkg/dependencymodels/rest/models.gen.go
+output-options:
+  generate-types-for-anonymous-schemas: true
+  skip-prune: true

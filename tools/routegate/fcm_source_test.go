@@ -405,8 +405,8 @@ func TestMCSSourceGateRejectsContractMutations(t *testing.T) {
 					t,
 					root,
 					"internal/protocol/mcs.gen.go",
-					`MCSNetwork                = "tcp"`,
-					`MCSNetwork                = "udp"`,
+					`MCSNetwork                         = "tcp"`,
+					`MCSNetwork                         = "udp"`,
 				)
 			},
 		},

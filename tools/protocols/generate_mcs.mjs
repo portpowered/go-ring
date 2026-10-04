@@ -17,6 +17,20 @@ if (tags.length !== 18 || new Set(tags.map(([, value]) => value)).size !== tags.
   throw new Error('invalid MCS tag inventory');
 }
 
+const appDataKeys = Object.entries(socket.app_data_keys ?? {});
+if (appDataKeys.length === 0 || new Set(appDataKeys.map(([, value]) => value)).size !== appDataKeys.length ||
+    appDataKeys.some(([name, value]) => !/^[A-Z][A-Za-z0-9]+$/.test(name) ||
+      typeof value !== 'string' || !/^[a-z][a-z0-9-]+$/.test(value))) {
+  throw new Error('invalid MCS AppData key inventory');
+}
+
+const appDataValues = Object.entries(socket.app_data_values ?? {});
+if (appDataValues.length === 0 || new Set(appDataValues.map(([, value]) => value)).size !== appDataValues.length ||
+    appDataValues.some(([name, value]) => !/^[A-Z][A-Za-z0-9]+$/.test(name) ||
+      typeof value !== 'string' || !/^[a-z0-9][a-z0-9=._-]*$/.test(value))) {
+  throw new Error('invalid MCS AppData value inventory');
+}
+
 const goString = (value) => JSON.stringify(String(value));
 const source = [
   '// Code generated from api/external/push-protocol-inventory.yaml. DO NOT EDIT.',
@@ -35,6 +49,8 @@ const source = [
   `  MCSTagPacketBytes = ${socket.tag_bytes}`,
   `  MCSLengthEncoding = ${goString(socket.length_encoding)}`,
   ...tags.map(([name, value]) => `  MCS${name}Tag = ${value}`),
+  ...appDataKeys.map(([name, value]) => `  MCSAppData${name}Key = ${goString(value)}`),
+  ...appDataValues.map(([name, value]) => `  MCSAppData${name} = ${goString(value)}`),
   ')',
   '',
 ].join('\n');
