@@ -1,7 +1,7 @@
 # go-ring checklist
 
 Requirements copied from the shared template at
-`25aeb783126c4049b3bc49286ee7808069db28e9`.
+`2f21da33e8acc0f9f94e5b53e9c812140c9cee1c`.
 
 The [review record](independent-review.md) verifies the earlier documentation
 cleanup for items 2, 3, 12, and 13. It does not verify the complete model
@@ -40,6 +40,11 @@ Historical signoffs remain in Git history.
    a generated map escaping through a named result to an unverified helper. Retain
    positive controls for caller-defined values; do not treat diagnostic or error
    return values as wire payloads merely because they share a helper.
+   Resolve helpers across every production file in their Go package, retaining each
+   file's import bindings. Add a compile-valid two-file negative where a sibling
+   helper returns an unregistered fixed value or mutates a generated map, plus
+   a caller-defined positive control. A per-file scan does not prove package-wide
+   provenance.
    Check all intermediate keys in indexed receiver paths and aliases, including slices,
    pointer dereferences, and type assertions. Test inferred nested composites and retain
    positive cases for explicitly caller-defined open keys.
@@ -72,7 +77,12 @@ Historical signoffs remain in Git history.
    generated path does not approve an arbitrary authority in a formatted full URL; accept only an
    explicitly configured or inventoried authority, and require REST base prefixes to come from
    configured or inventoried origins. Exercise lexical shadowing so a same-named local variable
-   cannot inherit another scope's generated route. Require generated `QueryParam` and `Header` keys
+   cannot inherit another scope's generated route.
+   Check the actual request object through the send: reject unregistered method,
+   URL origin/path/query, header, or body mutations after construction, including
+   aliases, cloned requests, and helper escapes. Add a negative control that changes
+   `request.URL.Path` between a generated constructor and `Do` or its equivalent.
+   Require generated `QueryParam` and `Header` keys
    for query setters and direct or aliased map writes, map literals, request headers, and
    custom-header maps. Normalize parenthesized map receivers and indexed expressions before checking
    query/header keys, and reject aliases to query or header `Set`/`Add` method values that could
