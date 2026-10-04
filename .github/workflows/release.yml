@@ -25,6 +25,22 @@ jobs:
           ref: ${{ inputs.version || github.ref }}
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
+          go-version: '1.26.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Regenerate and verify all wire artifacts on the release tag
+        shell: bash
+        run: |
+          make generate-api
+          generated_status="$(git status --porcelain --untracked-files=all)"
+          if [ -n "$generated_status" ]; then
+            echo "Regeneration changed tracked files or produced untracked artifacts:"
+            echo "$generated_status"
+            exit 1
+          fi
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
           go-version-file: go.mod
       - name: Check public Go API compatibility
         env:
@@ -34,6 +50,10 @@ jobs:
         run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.0
       - name: Run all lint checks
         run: make lint
+      - name: Verify wire model, endpoint and fixture contracts on the tag
+        run: make test-contracts routegate
+      - name: Verify non-generated coverage on the tag
+        run: make test-cover
       - run: go test -race ./... -timeout 120s
       - run: go vet ./...
       - name: Check CLI module

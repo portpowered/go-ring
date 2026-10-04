@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pion/rtp v1.8.5
 	github.com/pion/webrtc/v3 v3.2.40
-	github.com/portpowered/go-ring v0.6.0
+	github.com/portpowered/go-ring v0.7.0
 	golang.org/x/sys v0.39.0
 	golang.org/x/term v0.38.0
 )
@@ -38,3 +38,5 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/portpowered/go-ring => ../..

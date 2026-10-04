@@ -44,6 +44,21 @@ func identityPeer(t *testing.T, script func(*websocket.Conn, string)) *ring.Sign
 func openRecordedPeer(t *testing.T, script func(*websocket.Conn)) *ring.SignalingConnection {
 	t.Helper()
 
+	connection, _ := openRecordedPeerWithDone(t, script)
+
+	return connection
+}
+
+func openRecordedPeerWithDone(
+	t *testing.T,
+	script func(*websocket.Conn),
+) (*ring.SignalingConnection, <-chan struct{}) {
+	t.Helper()
+
+	serverDone := make(chan struct{})
+
+	var serverDoneOnce sync.Once
+
 	tickets := httptest.NewServer(
 		http.HandlerFunc(
 			func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{"ticket":"synthetic"}`)) },
@@ -52,6 +67,8 @@ func openRecordedPeer(t *testing.T, script func(*websocket.Conn)) *ring.Signalin
 	t.Cleanup(tickets.Close)
 
 	peer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer serverDoneOnce.Do(func() { close(serverDone) })
+
 		connection, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
 		if err != nil {
 			return
@@ -86,7 +103,7 @@ func openRecordedPeer(t *testing.T, script func(*websocket.Conn)) *ring.Signalin
 		t.Fatal(err)
 	}
 
-	return conn
+	return conn, serverDone
 }
 
 func waitForRecordedClientClose(t *testing.T, connection *websocket.Conn) {

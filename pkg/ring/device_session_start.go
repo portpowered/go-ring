@@ -224,7 +224,7 @@ func (c *SignalingConnection) createNegotiatedDeviceSession(
 			ControlID: controlID,
 			Heartbeat: heartbeat,
 			MaxAge:    remaining,
-			Clock:     nil,
+			Clock:     c.clock,
 			Send: func(ctx context.Context, message signaling.Message) error {
 				if message.RIID == "" {
 					message.RIID = negotiation.riid

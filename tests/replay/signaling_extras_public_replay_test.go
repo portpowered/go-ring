@@ -330,14 +330,21 @@ func TestRecordedPublicPushIdentityAndCancellation(t *testing.T) {
 func runRecordedPublicPushIdentityScenario(t *testing.T, scenario string) {
 	t.Helper()
 
-	conn := openRecordedPeer(t, func(connection *websocket.Conn) {
-		serveRecordedPushIdentityScenario(t, connection, scenario)
+	requestRead := make(chan struct{}, 1)
+
+	conn, peerDone := openRecordedPeerWithDone(t, func(connection *websocket.Conn) {
+		serveRecordedPushIdentityScenario(t, connection, scenario, requestRead)
 	})
 
-	defer func() { _ = conn.Close() }()
+	defer func() {
+		_ = conn.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
-	defer cancel()
+		select {
+		case <-peerDone:
+		case <-time.After(5 * time.Second):
+			t.Error("recorded push peer did not finish after the signaling connection closed")
+		}
+	}()
 
 	filter := ring.PushFilter{
 		FilterIdentifier:  "sanitized-text",
@@ -345,15 +352,38 @@ func runRecordedPublicPushIdentityScenario(t *testing.T, scenario string) {
 		NotificationType:  shoulderTapNotificationType,
 	}
 
-	subscription, err := conn.SubscribePush(ctx, []ring.PushFilter{filter})
 	if scenario == canceledNegotiationScenario {
-		if !errors.Is(err, context.DeadlineExceeded) {
-			t.Fatalf("canceled subscription = %v", err)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		result := make(chan error, 1)
+
+		go func() {
+			_, subscribeErr := conn.SubscribePush(ctx, []ring.PushFilter{filter})
+			result <- subscribeErr
+		}()
+
+		select {
+		case <-requestRead:
+		case <-time.After(5 * time.Second):
+			t.Fatal("recorded peer did not receive push_subscribe before cancellation")
+		}
+
+		cancel()
+
+		select {
+		case err := <-result:
+			if !errors.Is(err, context.Canceled) {
+				t.Fatalf("canceled subscription = %v", err)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("canceled push_subscribe did not return")
 		}
 
 		return
 	}
 
+	subscription, err := conn.SubscribePush(context.Background(), []ring.PushFilter{filter})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -365,13 +395,20 @@ func runRecordedPublicPushIdentityScenario(t *testing.T, scenario string) {
 	assertPublicPushSubscriptionCloses(t, subscription)
 }
 
-func serveRecordedPushIdentityScenario(t *testing.T, connection *websocket.Conn, scenario string) {
+func serveRecordedPushIdentityScenario(
+	t *testing.T,
+	connection *websocket.Conn,
+	scenario string,
+	requestRead chan<- struct{},
+) {
 	t.Helper()
 
 	request := readSignalRequest(t, connection, "push_subscribe")
 	if request == nil {
 		return
 	}
+
+	requestRead <- struct{}{}
 
 	if scenario == canceledNegotiationScenario {
 		_, _, _ = connection.ReadMessage()

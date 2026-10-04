@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main'
     uses: portpowered/api-docs-website-github-action/.github/workflows/publish.yml@v0.3.1
     with:
       title: go-ring API Reference

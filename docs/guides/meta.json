@@ -13,6 +13,7 @@
     "live-sessions",
     "sdp-ice",
     "push-notifications",
-    "cloud-playback"
+    "cloud-playback",
+    "upgrading"
   ]
 }

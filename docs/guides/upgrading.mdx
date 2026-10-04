@@ -1,0 +1,39 @@
+---
+title: Upgrade from v0.6
+description: Adjust imports and account event handling for the generated model packages.
+---
+
+The next minor release changes public model type identities. Rebuild your
+application and check interfaces, struct literals, and type assertions before
+upgrading from v0.6.0.
+
+## Model imports
+
+Use `pkg/ring` for client calls and public result types. Wire models live in
+`pkg/dependencymodels/rest`, `pkg/dependencymodels/fcm`, and
+`pkg/dependencymodels/signaling`. Public read models live in `pkg/ringapimodels`.
+Existing model names have compatibility aliases, but types moved between
+packages can require changes to your own aliases and interface implementations.
+
+## Low-level account events
+
+`pkg/dependencies/websocket.EventConnection.ReceiveFrame` now returns the typed
+event and its original JSON as `json.RawMessage`. Use the typed first result for
+known fields. Decode the second result only when you need unknown extensions:
+
+```go
+frame, raw, err := connection.ReceiveFrame()
+if err != nil {
+    return err
+}
+var extensions map[string]any
+err = json.Unmarshal(raw, &extensions)
+if err != nil {
+    return err
+}
+fmt.Println(frame.Kind, extensions)
+```
+
+The higher-level account event API keeps its map projection. See the
+[account events guide](/docs/guides/account-events-and-tickets) for normal client
+usage.
