@@ -3,7 +3,36 @@ package routegate_test
 import (
 	"strings"
 	"testing"
+
+	"github.com/portpowered/go-ring/tools/routegate"
 )
+
+//nolint:paralleltest // t.Chdir must run serially to reproduce the CLI's default relative root (GO-15).
+func TestSignalingSourceInventoryAuditsDefaultRelativeRoot(t *testing.T) {
+	root := fixtureRoot(t, "package sample\n")
+	writeFixtureFile(t, root, "pkg/dependencies/websocket/sibling.go", "package websocket\n"+
+		"type UnregisteredSiblingFrame struct { Payload string `json:\"unregistered_payload\"` }\n"+
+		"func siblingProperties() map[string]any { return map[string]any{\"unregistered_key\": true} }\n")
+	assertRequestFixtureCompiles(t, root)
+	t.Chdir(root)
+
+	findings, err := routegate.Audit(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rules := make([]string, 0, len(findings))
+
+	for _, finding := range findings {
+		rules = append(rules, finding.Rule)
+	}
+
+	for _, required := range []string{"handwritten-signaling-wire-key", "handwritten-signaling-wire-model"} {
+		if !strings.Contains(strings.Join(rules, "\n"), required) {
+			t.Fatalf("default relative root missed %s: %v", required, findings)
+		}
+	}
+}
 
 func TestSignalingSourceInventoryIncludesEverySiblingFile(t *testing.T) {
 	t.Parallel()

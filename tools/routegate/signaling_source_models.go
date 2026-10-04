@@ -9,7 +9,7 @@ import (
 const handwrittenSignalingKeyRule = "handwritten-signaling-wire-key"
 
 func signalingSourcePackage(path string) bool {
-	path = strings.ReplaceAll(path, "\\", "/")
+	path = "/" + strings.ReplaceAll(path, "\\", "/")
 
 	return strings.Contains(path, "/pkg/dependencies/websocket/") ||
 		strings.Contains(path, "/internal/signaling/")
