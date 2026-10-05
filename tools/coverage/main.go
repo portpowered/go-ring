@@ -335,6 +335,12 @@ func suiteSpecFor(name string) (suiteSpec, error) {
 					"./pkg/ringtypes",
 				},
 				coverPackages: []string{"github.com/portpowered/go-ring/pkg/ringtypes"},
+			}, {
+				args: []string{
+					"-run=^(TestEmptyDetailErrorsRemainClassifiedAndSafe|TestTokenErrorPreservesCause)$",
+					"./internal/ringerrors",
+				},
+				coverPackages: nil,
 			}},
 			profile: "coverage.replay.out",
 			minimum: 85,

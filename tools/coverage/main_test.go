@@ -30,6 +30,12 @@ func TestCoverageSuitesUseDisjointTestTargetsAndProfiles(t *testing.T) {
 					"./pkg/ringtypes",
 				},
 				coverPackages: []string{"github.com/portpowered/go-ring/pkg/ringtypes"},
+			}, {
+				args: []string{
+					"-run=^(TestEmptyDetailErrorsRemainClassifiedAndSafe|TestTokenErrorPreservesCause)$",
+					"./internal/ringerrors",
+				},
+				coverPackages: nil,
 			}},
 			profile: "coverage.replay.out",
 		},
