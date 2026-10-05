@@ -341,7 +341,7 @@ func assertRecordedHeartbeatPair(t *testing.T, ping, pong signaling.Message) {
 		t.Fatal(err)
 	}
 
-	err = session.Send(context.Background(), "mic_enable", map[string]any{"enabled": true})
+	err = session.Send(context.Background(), "mic_enable", json.RawMessage(`{"enabled":true}`))
 	if err != nil {
 		t.Fatalf("matching pong did not keep session active: %v", err)
 	}

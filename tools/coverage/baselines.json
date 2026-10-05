@@ -8,5 +8,6 @@
   "github.com/portpowered/go-ring/pkg/dependencies/webrtc": 95.0,
   "github.com/portpowered/go-ring/pkg/dependencies/websocket": 90.0,
   "github.com/portpowered/go-ring/pkg/ring": 87.2,
-  "github.com/portpowered/go-ring/pkg/ringapimodels": 100.0
+  "github.com/portpowered/go-ring/pkg/ringapimodels": 100.0,
+  "github.com/portpowered/go-ring/pkg/ringtypes": 94.1
 }

@@ -1,0 +1,313 @@
+{
+  "classification": "synthetic",
+  "volatile_rules": {
+    "state": "16-byte lowercase hex; binds callback",
+    "challenge": "canonical unpadded base64url of 32 bytes; binds SHA256(verifier)",
+    "verifier": "canonical unpadded base64url of 32 bytes; SHA256 must equal challenge",
+    "hardware": "canonical UUID version 4; same authorization query and token headers",
+    "content_length": "exact original encoded body byte count before placeholder substitution"
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/v2/authorize",
+        "query": [
+          {
+            "name": "app_brand",
+            "value": "ring"
+          },
+          {
+            "name": "app_version",
+            "value": "3.102.0"
+          },
+          {
+            "name": "client_id",
+            "value": "ring_official_android"
+          },
+          {
+            "name": "code_challenge",
+            "value": "$challenge"
+          },
+          {
+            "name": "code_challenge_method",
+            "value": "S256"
+          },
+          {
+            "name": "dark_mode",
+            "value": "false"
+          },
+          {
+            "name": "device_brand",
+            "value": "golang"
+          },
+          {
+            "name": "device_model",
+            "value": "go-ring"
+          },
+          {
+            "name": "device_os_version",
+            "value": "go"
+          },
+          {
+            "name": "hardware_id",
+            "value": "$hardware"
+          },
+          {
+            "name": "prompt",
+            "value": "login"
+          },
+          {
+            "name": "redirect_uri",
+            "value": "https://ring.com/signin/callback"
+          },
+          {
+            "name": "response_type",
+            "value": "code"
+          },
+          {
+            "name": "scope",
+            "value": "client"
+          },
+          {
+            "name": "state",
+            "value": "$state"
+          }
+        ],
+        "headers": {
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "<script id=\"oauth-args\">{\"csrf-token\":\"csrf-value\"}</script>"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/v2/signin",
+        "query": [],
+        "headers": {
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ],
+          "Content-Type": [
+            "application/x-www-form-urlencoded"
+          ],
+          "Content-Length": [
+            "76"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": "csrf-token=csrf-value&password=replay-password&username=replay%40example.com"
+      },
+      "response": {
+        "status": 412,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{\"tsv_state\":\"email\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/v2/2fa/verify",
+        "query": [],
+        "headers": {
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ],
+          "Content-Type": [
+            "application/x-www-form-urlencoded"
+          ],
+          "Content-Length": [
+            "55"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": "2fa_code=123456&csrf-token=csrf-value&remember_me=false"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{}"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/v2/authorize",
+        "query": [],
+        "headers": {
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": ""
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Location": [
+            "https://ring.com/signin/callback?code=auth-code&state=$state"
+          ]
+        },
+        "body": ""
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/token",
+        "query": [],
+        "headers": {
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ],
+          "Content-Type": [
+            "application/x-www-form-urlencoded"
+          ],
+          "Content-Length": [
+            "158"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "$hardware"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": "client_id=ring_official_android&code=auth-code&code_verifier=%24verifier&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fring.com%2Fsignin%2Fcallback"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{\"access_token\":\"initial-access\",\"refresh_token\":\"initial-refresh\",\"expires_in\":3600,\"token_type\":\"Bearer\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/token",
+        "query": [],
+        "headers": {
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ],
+          "Content-Type": [
+            "application/x-www-form-urlencoded"
+          ],
+          "Content-Length": [
+            "99"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "$hardware"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": "client_id=ring_official_android&grant_type=refresh_token&refresh_token=initial-refresh&scope=client"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{\"access_token\":\"rotated-access\",\"refresh_token\":\"rotated-refresh\",\"expires_in\":3600,\"token_type\":\"Bearer\"}"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/token",
+        "query": [],
+        "headers": {
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ],
+          "Content-Type": [
+            "application/x-www-form-urlencoded"
+          ],
+          "Content-Length": [
+            "99"
+          ],
+          "Accept": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "$hardware"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": "client_id=ring_official_android&grant_type=refresh_token&refresh_token=rotated-refresh&scope=client"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{\"access_token\":\"second-access\",\"refresh_token\":\"second-refresh\",\"expires_in\":3600,\"token_type\":\"Bearer\"}"
+      }
+    }
+  ]
+}

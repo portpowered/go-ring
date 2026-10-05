@@ -30,6 +30,8 @@ func TestAccountEventTransportReplaysFrameBeforePeerClose(t *testing.T) {
 	require.Len(t, fixture.Frames, 1)
 
 	requestSeen := make(chan *http.Request, 1)
+	pongSeen := make(chan struct{})
+	allowPeerClose := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		requestSeen <- request.Clone(request.Context())
 
@@ -50,9 +52,52 @@ func TestAccountEventTransportReplaysFrameBeforePeerClose(t *testing.T) {
 
 		defer func() { _ = connection.Close() }()
 
+		connection.SetPongHandler(func(payload string) error {
+			if payload == "event-buffered" {
+				close(pongSeen)
+			}
+
+			return nil
+		})
+
 		writeErr := connection.WriteJSON(fixture.Frames[0].Payload)
 		if writeErr != nil {
 			return
+		}
+
+		writeErr = connection.WriteControl(
+			websocket.PingMessage,
+			[]byte("event-buffered"),
+			time.Now().Add(time.Second),
+		)
+		if writeErr != nil {
+			return
+		}
+
+		go func() {
+			for {
+				_, _, readErr := connection.ReadMessage()
+				if readErr != nil {
+					return
+				}
+			}
+		}()
+
+		select {
+		case <-pongSeen:
+		case <-request.Context().Done():
+			return
+		case <-time.After(2 * time.Second):
+			t.Error("client did not acknowledge the synthetic event-buffering barrier")
+
+			return
+		}
+
+		select {
+		case <-allowPeerClose:
+		case <-request.Context().Done():
+		case <-time.After(2 * time.Second):
+			t.Error("test did not release the synthetic peer close")
 		}
 	}))
 	t.Cleanup(server.Close)
@@ -71,14 +116,34 @@ func TestAccountEventTransportReplaysFrameBeforePeerClose(t *testing.T) {
 	require.Equal(t, fixture.Handshake.Request.EscapedPath, handshake.URL.EscapedPath())
 	require.Equal(t, "Bearer test_token", handshake.Header.Get("Authorization"))
 
-	event, err := connection.Receive()
+	waitForAccountEventBufferBarrier(t, ctx, pongSeen)
+
+	frame, raw, err := connection.ReceiveFrame()
 	require.NoError(t, err)
-	require.Equal(t, fixture.Frames[0].Payload.Kind, event["kind"])
+	require.Equal(t, fixture.Frames[0].Payload.Kind, frame.Kind)
+	require.Equal(t, fixture.Frames[0].Payload.DeviceID, int64(frame.DeviceId))
+	require.Equal(t, fixture.Frames[0].Payload.Timestamp, frame.Timestamp)
+
+	var event map[string]interface{}
+
+	require.NoError(t, json.Unmarshal(raw, &event))
 	require.InDelta(t, float64(fixture.Frames[0].Payload.DeviceID), event["device_id"], 0)
 	require.Equal(t, fixture.Frames[0].Payload.Source, event["source"])
+
+	close(allowPeerClose)
 
 	_, err = connection.Receive()
 	require.Error(t, err)
 	require.True(t, ringerrors.IsConnectionError(err), "peer close follows the queued synthetic frame")
 	require.NoError(t, connection.Close())
+}
+
+func waitForAccountEventBufferBarrier(t *testing.T, ctx context.Context, pongSeen <-chan struct{}) {
+	t.Helper()
+
+	select {
+	case <-pongSeen:
+	case <-ctx.Done():
+		t.Fatal("client did not acknowledge the synthetic event-buffering barrier")
+	}
 }

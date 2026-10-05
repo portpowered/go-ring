@@ -1,0 +1,6 @@
+package: fcm
+generate:
+  models: true
+output: pkg/dependencymodels/fcm/models.gen.go
+output-options:
+  skip-prune: true

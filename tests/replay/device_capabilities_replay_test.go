@@ -27,21 +27,20 @@ func TestDeviceCapabilitiesComeFromInventoryEvidence(t *testing.T) {
 		want   []ringapimodels.DeviceCapability
 	}{
 		{
-			name: "unknown hardware without evidence",
-			device: generatedhttp.Device{
-				Id: 1, Kind: "future", Description: "future",
-			},
-			want: []ringapimodels.DeviceCapability{},
+			name:   "unknown hardware without evidence",
+			device: capabilityDeviceFixture(1, "future", "future", nil, nil, nil),
+			want:   []ringapimodels.DeviceCapability{},
 		},
 		{
 			name: "explicit disabled controls",
-			device: generatedhttp.Device{
-				Id: 2, Kind: "future", Description: "future",
-				HasLight: &falseValue, MotionDetectionEnabled: &falseValue,
-				Health: &generatedhttp.DeviceHealth{
-					SirenOn: &falseValue, VodEnabled: &falseValue,
-				},
-			},
+			device: capabilityDeviceFixture(
+				2,
+				"future",
+				"future",
+				&falseValue,
+				&falseValue,
+				capabilityHealthFixture(&falseValue, &falseValue, nil),
+			),
 			want: []ringapimodels.DeviceCapability{
 				ringapimodels.DeviceCapabilityMotionDetection,
 				ringapimodels.DeviceCapabilitySiren,
@@ -49,13 +48,14 @@ func TestDeviceCapabilitiesComeFromInventoryEvidence(t *testing.T) {
 		},
 		{
 			name: "selected RPC controls",
-			device: generatedhttp.Device{
-				Id: 3, Kind: "future", Description: "future",
-				HasLight: &trueValue,
-				Health: &generatedhttp.DeviceHealth{
-					VodEnabled: &trueValue, SupportedRpcCommands: &commands,
-				},
-			},
+			device: capabilityDeviceFixture(
+				3,
+				"future",
+				"future",
+				&trueValue,
+				nil,
+				capabilityHealthFixture(nil, &trueValue, &commands),
+			),
 			want: []ringapimodels.DeviceCapability{
 				ringapimodels.DeviceCapabilityLight,
 				ringapimodels.DeviceCapabilityLiveView,
@@ -68,7 +68,11 @@ func TestDeviceCapabilitiesComeFromInventoryEvidence(t *testing.T) {
 			t.Parallel()
 
 			exchange := deviceListExchange(t, "https://api.ring.com")
-			body, err := json.Marshal(generatedhttp.DeviceList{Devices: []generatedhttp.Device{tc.device}})
+
+			var list generatedhttp.DeviceList
+
+			list.Devices = []generatedhttp.Device{tc.device}
+			body, err := json.Marshal(list)
 			require.NoError(t, err)
 
 			exchange.Response.Body = body
@@ -87,4 +91,35 @@ func TestDeviceCapabilitiesComeFromInventoryEvidence(t *testing.T) {
 			require.NoError(t, transport.AssertConsumed())
 		})
 	}
+}
+
+func capabilityDeviceFixture(
+	id int64,
+	kind, description string,
+	hasLight, motionEnabled *bool,
+	health *generatedhttp.DeviceHealth,
+) generatedhttp.Device {
+	var device generatedhttp.Device
+
+	device.Id = id
+	device.Kind = kind
+	device.Description = description
+	device.HasLight = hasLight
+	device.MotionDetectionEnabled = motionEnabled
+	device.Health = health
+
+	return device
+}
+
+func capabilityHealthFixture(
+	sirenOn, vodEnabled *bool,
+	commands *[]string,
+) *generatedhttp.DeviceHealth {
+	var health generatedhttp.DeviceHealth
+
+	health.SirenOn = sirenOn
+	health.VodEnabled = vodEnabled
+	health.SupportedRpcCommands = commands
+
+	return &health
 }

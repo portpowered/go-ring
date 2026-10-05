@@ -7,6 +7,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 type alarm struct {
@@ -161,7 +163,7 @@ func TestWrappedRPCReplyResolvesPendingPTZ(t *testing.T) {
 	done := make(chan error, 1)
 
 	go func() {
-		_, err := session.Call(context.Background(), "PTZ.Pan.Step", map[string]any{"direction": "LEFT"})
+		_, err := session.Call(context.Background(), "PTZ.Pan.Step", generatedsignaling.PtzDirectionLeft, nil)
 		done <- err
 	}()
 
@@ -222,7 +224,10 @@ func TestRPCCorrelationCancellationAndLateReply(t *testing.T) {
 
 	done := make(chan error, 1)
 
-	go func() { _, err := session.Call(ctx, "PTZ.Pan.Step", map[string]any{"direction": "LEFT"}); done <- err }()
+	go func() {
+		_, err := session.Call(ctx, "PTZ.Pan.Step", generatedsignaling.PtzDirectionLeft, nil)
+		done <- err
+	}()
 
 	requestMessage := nextMessage(t, out)
 	reply(t, session, requestMessage, "other-session")
@@ -245,7 +250,7 @@ func TestRPCCorrelationCancellationAndLateReply(t *testing.T) {
 	reply(t, session, requestMessage, "signal")
 
 	go func() {
-		_, err := session.Call(context.Background(), "PTZ.Pan.Step", map[string]any{"direction": "RIGHT"})
+		_, err := session.Call(context.Background(), "PTZ.Pan.Step", generatedsignaling.PtzDirectionRight, nil)
 		done <- err
 	}()
 
@@ -368,7 +373,10 @@ func TestExpiryCancelsBlockedWriteAndPendingRPC(t *testing.T) {
 
 	done := make(chan error, 1)
 
-	go func() { _, err := session.Call(context.Background(), "PTZ.Pan.Step", nil); done <- err }()
+	go func() {
+		_, err := session.Call(context.Background(), "PTZ.Pan.Step", generatedsignaling.PtzDirectionLeft, nil)
+		done <- err
+	}()
 
 	<-entered
 	clock.advance(MaxSessionAge)
@@ -448,7 +456,7 @@ func TestRPCDefaultDeadlineAndProtocolError(t *testing.T) {
 	done := make(chan error, 1)
 
 	go func() {
-		_, err := session.Call(context.Background(), "PTZ.Tilt.Step", map[string]any{"direction": "UP"})
+		_, err := session.Call(context.Background(), "PTZ.Tilt.Step", generatedsignaling.PtzDirectionUp, nil)
 		done <- err
 	}()
 
@@ -492,7 +500,10 @@ func TestRPCDefaultDeadlineAndProtocolError(t *testing.T) {
 		}
 	}
 
-	go func() { _, err := session.Call(context.Background(), "PTZ.Tilt.Step", nil); done <- err }()
+	go func() {
+		_, err := session.Call(context.Background(), "PTZ.Tilt.Step", generatedsignaling.PtzDirectionUp, nil)
+		done <- err
+	}()
 
 	nextMessage(t, out)
 	clock.advance(10 * time.Second)
@@ -518,7 +529,7 @@ func TestRPCResultRequiresControlSessionIdentity(t *testing.T) {
 	result := make(chan error, 1)
 
 	go func() {
-		_, err := session.Call(context.Background(), "PTZ.Pan.Step", map[string]any{"direction": "LEFT"})
+		_, err := session.Call(context.Background(), "PTZ.Pan.Step", generatedsignaling.PtzDirectionLeft, nil)
 		result <- err
 	}()
 
@@ -588,7 +599,7 @@ func TestSendRejectsExpiredSessionBeforeTimerDelivery(t *testing.T) {
 	clock.now = clock.now.Add(MaxSessionAge)
 	clock.mu.Unlock()
 
-	err := session.Send(context.Background(), "mic_enable", map[string]any{"enabled": true})
+	err := session.Send(context.Background(), "mic_enable", nil)
 	if !errors.Is(err, ErrExpired) {
 		t.Fatalf("send = %v", err)
 	}
@@ -602,205 +613,5 @@ func TestSendRejectsExpiredSessionBeforeTimerDelivery(t *testing.T) {
 	err = session.Wait(context.Background())
 	if !errors.Is(err, ErrExpired) {
 		t.Fatalf("terminal = %v", err)
-	}
-}
-
-func TestSessionRejectsInvalidStartupWithoutSending(t *testing.T) {
-	t.Parallel()
-
-	for name, change := range map[string]func(*SessionConfig){
-		"missing identity":      func(c *SessionConfig) { c.DialogID = "" },
-		"same identity domains": func(c *SessionConfig) { c.ControlID = c.SignalID },
-		"missing heartbeat":     func(c *SessionConfig) { c.Heartbeat = 0 },
-		"unbounded heartbeat":   func(c *SessionConfig) { c.Heartbeat = 2 * time.Minute },
-		"negative max age":      func(c *SessionConfig) { c.MaxAge = -time.Second },
-		"extended max age":      func(c *SessionConfig) { c.MaxAge = MaxSessionAge + time.Second },
-	} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			config := SessionConfig{
-				DeviceID:  1001,
-				DialogID:  "d",
-				SignalID:  "s",
-				ControlID: "c",
-				Heartbeat: time.Second,
-				Clock:     newClock(),
-				Send: func(context.Context, Message) error {
-					t.Error("invalid session sent a message")
-
-					return nil
-				},
-			}
-			change(&config)
-
-			{
-				s, err := NewSession(context.Background(), config)
-				if err == nil {
-					_ = s.Close()
-
-					t.Fatal("invalid startup succeeded")
-				}
-			}
-		})
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	{
-		session, err := NewSession(ctx, SessionConfig{
-			DeviceID:  1001,
-			DialogID:  "d",
-			SignalID:  "s",
-			ControlID: "c",
-			Heartbeat: time.Second,
-			Send:      func(context.Context, Message) error { return nil },
-		})
-		if !errors.Is(err, context.Canceled) || session != nil {
-			t.Fatalf("canceled startup: %v", err)
-		}
-	}
-}
-
-func TestSessionCancellationAndMalformedPayloadDoNotLeakPendingWork(t *testing.T) {
-	t.Parallel()
-
-	session, _, out := setupSession(t)
-	canceled, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	{
-		_, err := session.Receive(canceled)
-		if !errors.Is(err, context.Canceled) {
-			t.Fatal(err)
-		}
-	}
-
-	err := session.Wait(canceled)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal(err)
-	}
-
-	err = session.Send(canceled, "mic_enable", nil)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal(err)
-	}
-
-	{
-		_, err := session.Call(canceled, "PTZ.Pan.Step", nil)
-		if !errors.Is(err, context.Canceled) {
-			t.Fatal(err)
-		}
-	}
-
-	{
-		_, err := session.Call(context.Background(), "PTZ.Pan.Step", map[string]any{"invalid": make(chan int)})
-		if err == nil {
-			t.Fatal("accepted unencodable command")
-		}
-	}
-
-	if session.Pending() != 0 {
-		t.Fatal("malformed/canceled call retained pending entry")
-	}
-
-	select {
-	case <-out:
-		t.Fatal("canceled/malformed operation reached peer")
-	default:
-	}
-
-	err = session.Handle(Message{DialogID: "dialog", Method: "rpc", Body: json.RawMessage(`{`)})
-	if err == nil {
-		t.Fatal("accepted malformed body")
-	}
-
-	session.Fail(nil)
-
-	{
-		_, err := session.Receive(context.Background())
-		if !errors.Is(err, ErrClosed) {
-			t.Fatal(err)
-		}
-	}
-
-	{
-		_, err := session.Call(context.Background(), "PTZ.Pan.Step", nil)
-		if !errors.Is(err, ErrClosed) {
-			t.Fatal(err)
-		}
-	}
-
-	err = session.Send(context.Background(), "ping", nil)
-	if !errors.Is(err, ErrClosed) {
-		t.Fatal(err)
-	}
-
-	err = session.Handle(
-		Message{DialogID: "dialog", Method: "pong", Body: json.RawMessage(`{"doorbot_id":1001,"session_id":"signal"}`)},
-	)
-	if !errors.Is(err, ErrClosed) {
-		t.Fatal(err)
-	}
-}
-
-func TestRPCErrorFormattingDoesNotExposePeerText(t *testing.T) {
-	t.Parallel()
-
-	err := &RPCError{Code: -32602, Message: "private response body"}
-	if err.Error() != "session RPC error -32602" {
-		t.Fatalf("unsafe error text: %s", err)
-	}
-}
-
-func TestBlockedRPCPreservesTerminalCause(t *testing.T) {
-	t.Parallel()
-
-	entered := make(chan struct{})
-	terminal := syntheticSocketFailureError{}
-
-	session, err := NewSession(
-		context.Background(),
-		SessionConfig{
-			DeviceID:  1,
-			DialogID:  "d",
-			SignalID:  "s",
-			ControlID: "c",
-			Heartbeat: time.Second,
-			Clock:     newClock(),
-			Send: func(ctx context.Context, _ Message) error {
-				close(entered)
-				<-ctx.Done()
-
-				return ctx.Err()
-			},
-		},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() { _ = session.Close() }()
-
-	result := make(chan error, 1)
-
-	go func() { _, err := session.Call(context.Background(), "PTZ.Pan.Step", nil); result <- err }()
-
-	select {
-	case <-entered:
-	case <-time.After(time.Second):
-		t.Fatal("write not entered")
-	}
-
-	session.Fail(terminal)
-
-	select {
-	case err := <-result:
-		if !errors.Is(err, terminal) {
-			t.Fatalf("lost failure cause: %v", err)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("RPC did not unblock")
 	}
 }

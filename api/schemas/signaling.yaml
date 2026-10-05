@@ -1,0 +1,57 @@
+# Ring REST components owned by the signaling API responsibility.
+components:
+  parameters:
+    allowUserOnly: {name: allowUserOnly, in: query, required: false, description: Boolean encoded as a query string; false was recorded., schema: {type: boolean}}
+
+    locationID: {name: locationID, in: query, required: false, schema: {type: string}}
+
+    locationSubscription: {name: locationSubscription, in: query, required: false, schema: {type: string}}
+
+    enableExtendedEmergencyCellUsage: {name: enableExtendedEmergencyCellUsage, in: query, required: false, description: Boolean encoded as a query string; true was recorded., schema: {type: boolean}}
+
+    requestedTransport: {name: requestedTransport, in: query, required: false, description: WebSocket transport ws was recorded; other transports remain possible., schema: {type: string, x-extensible-enum: [ws]}}
+
+  responses:
+    CapturedTickets:
+      description: Location signaling tickets
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/CapturedTickets'}
+          examples:
+            syntheticCapturedTickets:
+              summary: Synthetic signaling ticket response
+              value: {host: wss://example.invalid/signaling, ticket: synthetic-ticket}
+              x-example-evidence: synthetic
+
+    LegacySignalingTicket:
+      description: Signaling ticket
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/LegacySignalingTicket'}
+          examples:
+            syntheticLegacySignalingTicket:
+              summary: Synthetic signaling ticket response
+              value: {ticket: synthetic-ticket}
+              x-example-evidence: synthetic
+
+  schemas:
+    LegacySignalingTicket:
+      type: object
+      required: [ticket]
+      properties:
+        ticket: {type: string, minLength: 1}
+      additionalProperties: true
+      example: {ticket: synthetic-ticket}
+      x-example-evidence: synthetic
+
+    CapturedTickets:
+      type: object
+      required: [host, ticket]
+      properties:
+        host: {type: string}
+        ticket: {type: string}
+        subscriptionTopics: {type: array, items: {type: string}}
+        assets: {type: array, items: {$ref: './common.yaml#/components/schemas/JsonValue'}}
+      additionalProperties: true
+      example: {host: wss://example.invalid/signaling, ticket: synthetic-ticket}
+      x-example-evidence: synthetic

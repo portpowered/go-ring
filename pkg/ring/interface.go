@@ -101,6 +101,7 @@ type SignalingConnection struct {
 	conn       *websocket.Conn
 	ctx        context.Context
 	cancel     context.CancelFunc
+	clock      signaling.Clock
 	mu         sync.Mutex
 	closed     bool
 	terminal   error

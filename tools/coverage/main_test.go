@@ -11,21 +11,54 @@ func TestCoverageSuitesUseDisjointTestTargetsAndProfiles(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name    string
-		args    []string
-		profile string
+		name            string
+		args            []string
+		additionalTests []coverageTestRun
+		profile         string
 	}{
-		{"replay", []string{"./tests/replay/..."}, "coverage.replay.out"},
-		{"unit", []string{"./pkg/...", "./internal/..."}, "coverage.unit.out"},
-		{"integration", []string{"-tags=integration", "./tests/integration/..."}, "coverage.integration.out"},
-		{"combined", []string{"./tests/replay/...", "./pkg/...", "./internal/..."}, "coverage.combined.out"},
+		{
+			name: "replay", args: []string{"./tests/replay/..."},
+			additionalTests: []coverageTestRun{{
+				args: []string{
+					"-run=^TestPublicSessionExpirySendsCloseAndClosesReplaySocket$",
+					"./pkg/ring",
+				},
+				coverPackages: nil,
+			}, {
+				args: []string{
+					"-run=^(TestBatteryReadingUnmarshalJSON|TestOwnerIDUnmarshalJSON)$",
+					"./pkg/ringtypes",
+				},
+				coverPackages: []string{"github.com/portpowered/go-ring/pkg/ringtypes"},
+			}, {
+				args: []string{
+					"-run=^(TestEmptyDetailErrorsRemainClassifiedAndSafe|TestTokenErrorPreservesCause)$",
+					"./internal/ringerrors",
+				},
+				coverPackages: nil,
+			}},
+			profile: "coverage.replay.out",
+		},
+		{
+			name: "unit", args: []string{"./pkg/...", "./internal/..."},
+			additionalTests: nil, profile: "coverage.unit.out",
+		},
+		{
+			name: "integration", args: []string{"-tags=integration", "./tests/integration/..."},
+			additionalTests: nil, profile: "coverage.integration.out",
+		},
+		{
+			name: "combined", args: []string{"./tests/replay/...", "./pkg/...", "./internal/..."},
+			additionalTests: nil, profile: "coverage.combined.out",
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			got, err := suiteSpecFor(tc.name)
-			if err != nil || got.profile != tc.profile || !reflect.DeepEqual(got.args, tc.args) {
+			if err != nil || got.profile != tc.profile || !reflect.DeepEqual(got.args, tc.args) ||
+				!reflect.DeepEqual(got.additionalTests, tc.additionalTests) {
 				t.Fatalf("suite = %+v, %v", got, err)
 			}
 		})
@@ -48,6 +81,52 @@ func TestTotalsMergeDuplicatesAndCountStatements(t *testing.T) {
 	}
 }
 
+func TestAppendCoverageProfileMergesRecordsWithMatchingMode(t *testing.T) {
+	t.Parallel()
+
+	profilePath := filepath.Join(t.TempDir(), "primary.out")
+	additionalPath := filepath.Join(t.TempDir(), "additional.out")
+	primary := []byte("mode: atomic\na.go:1.1,2.1 3 0\nb.go:1.1,2.1 2 1\n")
+	additional := []byte("mode: atomic\na.go:1.1,2.1 3 1\nc.go:1.1,2.1 4 0\n")
+
+	writeErr := os.WriteFile(profilePath, primary, 0600)
+	if writeErr != nil {
+		t.Fatal(writeErr)
+	}
+
+	writeErr = os.WriteFile(additionalPath, additional, 0600)
+	if writeErr != nil {
+		t.Fatal(writeErr)
+	}
+
+	appendErr := appendCoverageProfile(profilePath, additionalPath)
+	if appendErr != nil {
+		t.Fatal(appendErr)
+	}
+
+	merged, readErr := os.ReadFile(profilePath) // #nosec G304 -- profilePath is created by t.TempDir above.
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+
+	covered, total, totalsErr := totals(merged)
+	if totalsErr != nil || covered != 5 || total != 9 {
+		t.Fatalf("merged coverage = %d/%d, %v", covered, total, totalsErr)
+	}
+
+	badModePath := filepath.Join(t.TempDir(), "incompatible.out")
+
+	writeErr = os.WriteFile(badModePath, []byte("mode: set\na.go:1.1,2.1 3 1\n"), 0600)
+	if writeErr != nil {
+		t.Fatal(writeErr)
+	}
+
+	appendErr = appendCoverageProfile(profilePath, badModePath)
+	if appendErr == nil {
+		t.Fatal("incompatible coverage modes were accepted")
+	}
+}
+
 func TestExcludeGeneratedCodeKeepsHandwrittenPackageCoverage(t *testing.T) {
 	t.Parallel()
 
@@ -59,12 +138,16 @@ func TestExcludeGeneratedCodeKeepsHandwrittenPackageCoverage(t *testing.T) {
 			"github.com/example/internal/generatedsignaling/server_frame.go:1.1,2.1 16 0\n" +
 			"github.com/example/pkg/generatedhttp/client.gen.go:1.1,2.1 18 0\n" +
 			"github.com/example/pkg/generatedsignaling/server_frame.go:1.1,2.1 20 0\n" +
+			"github.com/example/pkg/dependencymodels/fcm/models.gen.go:1.1,2.1 22 0\n" +
+			"github.com/example/pkg/dependencymodels/rest/models.gen.go:1.1,2.1 24 0\n" +
+			"github.com/example/pkg/dependencymodels/signaling/live_view_body.go:1.1,2.1 26 0\n" +
+			"github.com/example/pkg/ringtypes/types.go:1.1,2.1 5 1\n" +
 			"github.com/example/pkg/ringapimodels/devices.go:1.1,2.1 2 1\n",
 	)
 	filtered := excludeGeneratedCode(profile)
 
 	covered, total, err := totals(filtered)
-	if err != nil || covered != 2 || total != 2 {
+	if err != nil || covered != 7 || total != 7 {
 		t.Fatalf("filtered coverage = %d/%d, %v", covered, total, err)
 	}
 }
@@ -79,14 +162,23 @@ func TestGeneratedPackagesAreExcludedFromMaintainedCoverage(t *testing.T) {
 		"github.com/example/pkg/generatedhttp",
 		"github.com/example/pkg/generatedsignaling",
 		"github.com/example/pkg/generatedfcm",
+		"github.com/example/pkg/dependencymodels/fcm",
+		"github.com/example/pkg/dependencymodels/rest",
+		"github.com/example/pkg/dependencymodels/signaling",
 	} {
 		if !isGeneratedPackage(packageName) {
 			t.Errorf("generated package %s was not excluded", packageName)
 		}
 	}
 
-	if isGeneratedPackage("github.com/example/pkg/ring") {
-		t.Fatal("handwritten ring package was excluded")
+	for _, packageName := range []string{
+		"github.com/example/pkg/ring",
+		"github.com/example/pkg/ringtypes",
+		"github.com/example/pkg/ringapimodels",
+	} {
+		if isGeneratedPackage(packageName) {
+			t.Fatalf("handwritten package %s was excluded", packageName)
+		}
 	}
 }
 

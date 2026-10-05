@@ -2,14 +2,10 @@ package replay_test
 
 import (
 	"encoding/json"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -45,48 +41,7 @@ func TestDiagnosticCLIHealthSoundAndRebootReplay(t *testing.T) {
 		}
 	}
 
-	var (
-		mu       sync.Mutex
-		requests []string
-	)
-
-	api := httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-		mu.Lock()
-
-		requests = append(requests, request.Method+" "+request.URL.RequestURI())
-
-		mu.Unlock()
-		responseWriter.Header().Set("Content-Type", "application/json")
-
-		switch request.URL.Path {
-		case "/clients_api/session":
-			_, _ = io.WriteString(responseWriter, `{}`)
-		case "/device_info/v3/devices/12345":
-			_, _ = io.WriteString(
-				responseWriter,
-				`{"device":{"id":12345,"kind":"stickup_ca`+
-					`m_mini_ptz_v1","description":"Fixture ca`+
-					`mera","wifi_signal_strength":-55,"health`+
-					`":{"connected":true,"rssi":-50,"firmware`+
-					`_version":"fixture"}}}`,
-			)
-		case "/clients_api/ring_devices/12345/health":
-			_, _ = io.WriteString(responseWriter, `{"battery_level":88,"signal_strength":-55}`)
-		case "/clients_api/chimes/12345/play_sound":
-			_, _ = io.WriteString(responseWriter, `{}`)
-		case "/commands/v1/devices/12345":
-			body, _ := io.ReadAll(request.Body)
-			if request.Method != http.MethodPatch || !strings.Contains(string(body), `"command_name":"reboot"`) {
-				http.Error(responseWriter, "wrong reboot request", http.StatusBadRequest)
-
-				return
-			}
-
-			responseWriter.WriteHeader(http.StatusNoContent)
-		default:
-			http.NotFound(responseWriter, request)
-		}
-	}))
+	api := newDiagnosticCLIHTTPPairs(t, "cli-health-sound-reboot.json")
 	defer api.Close()
 
 	run := func(args ...string) string {
@@ -115,20 +70,5 @@ func TestDiagnosticCLIHealthSoundAndRebootReplay(t *testing.T) {
 
 	if output := run("reboot", "12345"); !strings.Contains(output, "Reboot request acknowledged") {
 		t.Fatalf("reboot output: %s", output)
-	}
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	joined := strings.Join(requests, "\n")
-	for _, route := range []string{
-		"GET /device_info/v3/devices/12345",
-		"GET /clients_api/ring_devices/12345/health",
-		"POST /clients_api/chimes/12345/play_sound?kind=ding",
-		"PATCH /commands/v1/devices/12345",
-	} {
-		if !strings.Contains(joined, route) {
-			t.Fatalf("missing %s in requests:\n%s", route, joined)
-		}
 	}
 }

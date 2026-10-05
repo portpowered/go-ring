@@ -108,8 +108,10 @@ func TestFCMHTTPSetupUsesPairedSyntheticReplay(t *testing.T) {
 	type dialCall struct{ network, address string }
 
 	dialCalls := make(chan dialCall, 2)
-	dialOffline := push.DialContextFunc(func(_ context.Context, network, address string) (net.Conn, error) {
+	dialOffline := push.DialContextFunc(func(ctx context.Context, network, address string) (net.Conn, error) {
 		dialCalls <- dialCall{network: network, address: address}
+
+		<-ctx.Done()
 
 		return nil, ringerrors.NewNetworkError("synthetic replay keeps MCS offline", net.ErrClosed)
 	})
@@ -119,7 +121,8 @@ func TestFCMHTTPSetupUsesPairedSyntheticReplay(t *testing.T) {
 
 	credentials := waitForFCMCredentials(t, ctx, cancel, events)
 
-	for range events {
+	for event := range events {
+		t.Fatalf("public FCM stream emitted %s after caller cancellation: %v", event.Kind, event.Err)
 	}
 
 	require.Equal(t, "synthetic-fcm-token", credentials.Token)
@@ -166,6 +169,102 @@ func TestFCMHTTPSetupUsesPairedSyntheticReplay(t *testing.T) {
 	}
 
 	require.Error(t, unlistedReplay.AssertConsumed())
+}
+
+func TestFCMSavedCredentialsResumeThroughPairedReplay(t *testing.T) {
+	t.Parallel()
+
+	exchange, err := replay.LoadExchange(filepath.Join(
+		"fixtures", "http", "synthetic", "fcm", "checkin-existing.json",
+	))
+	require.NoError(t, err)
+
+	strictReplay := replay.NewTransport(exchange)
+	observedTransport := &observedFCMReplayTransport{
+		next:     strictReplay,
+		requests: make(chan string, 1),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	defer cancel()
+
+	dialCalls := make(chan replayFCMDialCall, 1)
+	dialOffline := push.DialContextFunc(func(ctx context.Context, network, address string) (net.Conn, error) {
+		dialCalls <- replayFCMDialCall{network: network, address: address}
+
+		<-ctx.Done()
+
+		return nil, ringerrors.NewNetworkError("saved FCM replay stops at injected MCS dial", net.ErrClosed)
+	})
+	savedCredentials, err := json.Marshal(pushreceiver.FCMCredentials{
+		AppID:         "",
+		Endpoint:      "",
+		AndroidID:     12345,
+		SecurityToken: 67890,
+		Token:         "synthetic-saved-fcm-token",
+		PrivateKey:    nil,
+		PublicKey:     nil,
+		AuthSecret:    nil,
+	})
+	require.NoError(t, err)
+
+	events, err := push.StartWithTransports(ctx, savedCredentials, observedTransport, dialOffline)
+	require.NoError(t, err)
+
+	select {
+	case event, ok := <-events:
+		require.True(t, ok, "saved FCM credentials should be emitted before reconnecting")
+		require.Equal(t, push.KindCredentials, event.Kind)
+		require.Equal(t, "synthetic-saved-fcm-token", event.Token)
+	case <-ctx.Done():
+		t.Fatal("saved FCM credentials were not emitted before the resume timeout")
+	}
+
+	select {
+	case path := <-observedTransport.requests:
+		require.Equal(t, "/checkin", path)
+	case <-ctx.Done():
+		t.Fatal("saved FCM credentials did not consume the paired check-in exchange")
+	}
+
+	select {
+	case call := <-dialCalls:
+		require.Equal(t, protocol.MCSNetwork, call.network)
+		require.Equal(t, net.JoinHostPort(protocol.MCSHost, protocol.MCSPort), call.address)
+	case <-ctx.Done():
+		t.Fatal("saved FCM replay did not reach the injected offline MCS dial")
+	}
+
+	cancel()
+
+	for event := range events {
+		t.Fatalf("public FCM stream emitted %s after caller cancellation: %v", event.Kind, event.Err)
+	}
+
+	require.NoError(t, strictReplay.AssertConsumed())
+
+	select {
+	case call := <-dialCalls:
+		t.Fatalf("saved FCM receiver redialed after cancellation: %#v", call)
+	default:
+	}
+}
+
+type observedFCMReplayTransport struct {
+	next     http.RoundTripper
+	requests chan string
+}
+
+func (transport *observedFCMReplayTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	response, err := transport.next.RoundTrip(request)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("observed synthetic FCM replay", err)
+	}
+
+	transport.requests <- request.URL.EscapedPath()
+
+	return response, nil
 }
 
 func waitForFCMCredentials(

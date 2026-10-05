@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,11 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+)
+
+const (
+	replayExpectedHTTPHost = "example.test"
+	replayUnexpectedHost   = "attacker.example"
 )
 
 func TestLoadExchangePreservesJSONSyntaxCause(t *testing.T) {
@@ -41,7 +47,7 @@ func TestTransportCancellationPreservesCause(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	request := httptest.NewRequest(http.MethodGet, "https://example.test/", nil).WithContext(ctx)
+	request := outgoingReplayTestRequest(http.MethodGet, "https://example.test/", nil).WithContext(ctx)
 
 	response, err := NewTransport().RoundTrip(request)
 	if response != nil && response.Body != nil {
@@ -75,7 +81,7 @@ func TestTransportStrictOnceAndFreshResponses(t *testing.T) {
 	}
 	tr := NewTransport(exchange)
 	call := func(body string) *http.Response {
-		r := httptest.NewRequest(http.MethodPost, "https://example.test/v1?x=2&x=1", strings.NewReader(body))
+		r := outgoingReplayTestRequest(http.MethodPost, "https://example.test/v1?x=2&x=1", strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/json")
 
 		resp, e := tr.RoundTrip(r)
@@ -111,9 +117,9 @@ func TestTransportStrictOnceAndFreshResponses(t *testing.T) {
 		}
 	}
 	assertRejected(
-		httptest.NewRequest(http.MethodPost, "https://example.test/v1?x=1&x=2", strings.NewReader(`{"n":1}`)),
+		outgoingReplayTestRequest(http.MethodPost, "https://example.test/v1?x=1&x=2", strings.NewReader(`{"n":1}`)),
 	)
-	assertRejected(httptest.NewRequest(http.MethodGet, "https://extra.test/", nil))
+	assertRejected(outgoingReplayTestRequest(http.MethodGet, "https://extra.test/", nil))
 
 	unexpectedRequestErr := tr.AssertConsumed()
 	if unexpectedRequestErr == nil {
@@ -143,7 +149,7 @@ func TestTransportRequiresRecordedOrder(t *testing.T) {
 		Response: Response{Status: http.StatusNoContent},
 	}
 	request := func(path string) *http.Request {
-		return httptest.NewRequest(http.MethodGet, "https://example.test"+path, nil)
+		return outgoingReplayTestRequest(http.MethodGet, "https://example.test"+path, nil)
 	}
 
 	ordered := NewTransport(first, second)
@@ -189,7 +195,7 @@ func TestTransportNilBodyAndCanceledContext(t *testing.T) {
 	}
 	tr := NewTransport(x)
 
-	response, err := tr.RoundTrip(httptest.NewRequest(http.MethodGet, "https://example.test/", nil))
+	response, err := tr.RoundTrip(outgoingReplayTestRequest(http.MethodGet, "https://example.test/", nil))
 	if response != nil && response.Body != nil {
 		_ = response.Body.Close()
 	}
@@ -201,7 +207,7 @@ func TestTransportNilBodyAndCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	response, err = tr.RoundTrip(httptest.NewRequest(http.MethodGet, "https://example.test/", nil).WithContext(ctx))
+	response, err = tr.RoundTrip(outgoingReplayTestRequest(http.MethodGet, "https://example.test/", nil).WithContext(ctx))
 	if response != nil && response.Body != nil {
 		_ = response.Body.Close()
 	}
@@ -292,7 +298,7 @@ func TestTransportRejectsUnexpectedHeaderAndQuery(t *testing.T) {
 
 	tr := NewTransport(exchange)
 	for _, target := range []string{"https://example.test/x?a=2", "https://example.test/x?a=1&b=2"} {
-		response, err := tr.RoundTrip(httptest.NewRequest(http.MethodGet, target, nil))
+		response, err := tr.RoundTrip(outgoingReplayTestRequest(http.MethodGet, target, nil))
 		if response != nil && response.Body != nil {
 			_ = response.Body.Close()
 		}
@@ -306,6 +312,295 @@ func TestTransportRejectsUnexpectedHeaderAndQuery(t *testing.T) {
 	if e == nil {
 		t.Fatal("expected unconsumed assertion")
 	}
+}
+
+func TestTransportValidatesEffectiveHTTPAuthorityAndURLShape(t *testing.T) {
+	t.Parallel()
+
+	exchange := strictHTTPIdentityExchange()
+
+	validOverride := strictHTTPIdentityRequest(t)
+	validOverride.Host = replayExpectedHTTPHost
+
+	transport := NewTransport(exchange)
+
+	response, err := transport.RoundTrip(validOverride)
+	if err != nil {
+		t.Fatalf("matching Host override rejected: %v", err)
+	}
+
+	if response == nil {
+		t.Fatal("matching Host override returned no paired response")
+	}
+
+	_ = response.Body.Close()
+
+	err = transport.AssertConsumed()
+	if err != nil {
+		t.Fatalf("matching Host override did not consume its pair: %v", err)
+	}
+}
+
+func TestTransportMatchesBodyAndPreservesBodyReplayMetadata(t *testing.T) {
+	t.Parallel()
+
+	const body = "request payload"
+
+	exchange := Exchange{
+		Request: Request{
+			Method:  http.MethodPost,
+			Origin:  "https://example.test",
+			Path:    "/resource",
+			Headers: http.Header{},
+			Body:    []byte(body),
+		},
+		Response: Response{Status: http.StatusNoContent},
+	}
+	transport := NewTransport(exchange)
+	request := outgoingReplayTestRequest(http.MethodPost, "https://example.test/resource", strings.NewReader(body))
+	request.ContentLength = -1
+	request.TransferEncoding = []string{"chunked"}
+	getBodyCalls := 0
+	request.GetBody = func() (io.ReadCloser, error) {
+		getBodyCalls++
+
+		return io.NopCloser(strings.NewReader(body)), nil
+	}
+
+	response, err := transport.RoundTrip(request)
+	if err != nil {
+		t.Fatalf("matching request body rejected: %v", err)
+	}
+
+	if response == nil {
+		t.Fatal("matching request body returned no paired response")
+	}
+
+	_ = response.Body.Close()
+
+	if getBodyCalls != 0 {
+		t.Fatalf("GetBody calls = %d, want the outbound Body to be authoritative", getBodyCalls)
+	}
+
+	if request.ContentLength != -1 || len(request.TransferEncoding) != 1 || request.TransferEncoding[0] != "chunked" {
+		t.Fatalf(
+			"request framing metadata changed: ContentLength=%d TransferEncoding=%v",
+			request.ContentLength,
+			request.TransferEncoding,
+		)
+	}
+
+	matchedBody, err := io.ReadAll(request.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(matchedBody) != body {
+		t.Fatalf("request body after matching = %q, want %q", matchedBody, body)
+	}
+
+	bodyCopy, err := request.GetBody()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		_ = bodyCopy.Close()
+	}()
+
+	bodyCopyBytes, err := io.ReadAll(bodyCopy)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if string(bodyCopyBytes) != body || getBodyCalls != 1 {
+		t.Fatalf("GetBody copy = %q, calls = %d; want original payload and one explicit call", bodyCopyBytes, getBodyCalls)
+	}
+
+	err = transport.AssertConsumed()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTransportRejectsForgedHTTPIdentityWithoutLeakingRequestValues(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		mutate func(*http.Request)
+	}{
+		{
+			name: "forged effective authority",
+			mutate: func(request *http.Request) {
+				request.Host = replayUnexpectedHost
+			},
+		},
+		{
+			name: "forged destination authority with matching Host override",
+			mutate: func(request *http.Request) {
+				request.URL.Host = replayUnexpectedHost
+				request.Host = replayExpectedHTTPHost
+			},
+		},
+		{
+			name: "URL user information",
+			mutate: func(request *http.Request) {
+				request.URL.User = url.UserPassword("userinfo-secret", "password-secret")
+			},
+		},
+		{
+			name: "opaque URL",
+			mutate: func(request *http.Request) {
+				request.URL.Opaque = "//example.test/resource?token=query-secret&page=1"
+			},
+		},
+		{
+			name: "malformed query",
+			mutate: func(request *http.Request) {
+				request.URL.RawQuery += "&%zz"
+			},
+		},
+		{
+			name: "client request URI override",
+			mutate: func(request *http.Request) {
+				request.RequestURI = "/resource?token=request-uri-secret"
+			},
+		},
+		{
+			name: "URL fragment",
+			mutate: func(request *http.Request) {
+				request.URL.Fragment = "fragment-secret"
+			},
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			transport := NewTransport(strictHTTPIdentityExchange())
+			request := strictHTTPIdentityRequest(t)
+			testCase.mutate(request)
+
+			response, err := transport.RoundTrip(request)
+			if response != nil {
+				_ = response.Body.Close()
+
+				t.Fatal("mismatched request received the paired response")
+			}
+
+			if err == nil {
+				t.Fatal("mismatched request was accepted")
+			}
+
+			assertNoSensitiveRequestValues(t, err.Error())
+
+			if transport.used[0] {
+				t.Fatal("mismatched request consumed the paired response")
+			}
+
+			assertionErr := transport.AssertConsumed()
+			if assertionErr == nil {
+				t.Fatal("unmatched exchange was not reported")
+			}
+
+			assertNoSensitiveRequestValues(t, assertionErr.Error())
+
+			assertStrictHTTPIdentityPairStillAvailable(t, transport)
+		})
+	}
+}
+
+func assertStrictHTTPIdentityPairStillAvailable(t *testing.T, transport *Transport) {
+	t.Helper()
+
+	response, err := transport.RoundTrip(strictHTTPIdentityRequest(t))
+	if err != nil {
+		t.Fatalf("valid request failed after mismatch: %v", err)
+	}
+
+	if response == nil {
+		t.Fatal("valid request returned no paired response after mismatch")
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	closeErr := response.Body.Close()
+	if closeErr != nil {
+		t.Fatal(closeErr)
+	}
+
+	if response.StatusCode != http.StatusOK || string(body) != "paired response" {
+		t.Fatalf("valid follow-up response = %d %q; want paired response", response.StatusCode, body)
+	}
+
+	if !transport.used[0] {
+		t.Fatal("valid follow-up did not consume the paired exchange")
+	}
+}
+
+func assertNoSensitiveRequestValues(t *testing.T, diagnostic string) {
+	t.Helper()
+
+	for _, secret := range []string{
+		"userinfo-secret",
+		"password-secret",
+		"query-secret",
+		"header-secret",
+		"body-secret",
+		"request-uri-secret",
+		"fragment-secret",
+	} {
+		if strings.Contains(diagnostic, secret) {
+			t.Errorf("request diagnostic exposed %q: %s", secret, diagnostic)
+		}
+	}
+}
+
+func strictHTTPIdentityExchange() Exchange {
+	return Exchange{
+		Request: Request{
+			Method: http.MethodPost,
+			Origin: "https://" + replayExpectedHTTPHost,
+			Path:   "/resource",
+			Query:  []Pair{{Name: "page", Value: "1"}, {Name: "token", Value: "query-secret"}},
+			Headers: http.Header{
+				"Authorization": {"Bearer header-secret"},
+				"Content-Type":  {"application/octet-stream"},
+			},
+			Body: []byte("body-secret"),
+		},
+		Response: Response{
+			Status:  http.StatusOK,
+			Headers: http.Header{"Content-Type": {"text/plain"}},
+			Body:    []byte("paired response"),
+		},
+	}
+}
+
+func strictHTTPIdentityRequest(t *testing.T) *http.Request {
+	t.Helper()
+
+	request := outgoingReplayTestRequest(
+		http.MethodPost,
+		"https://"+replayExpectedHTTPHost+"/resource?page=1&token=query-secret",
+		strings.NewReader("body-secret"),
+	)
+	request.Header.Set("Authorization", "Bearer header-secret")
+	request.Header.Set("Content-Type", "application/octet-stream")
+
+	return request
+}
+
+func outgoingReplayTestRequest(method, target string, body io.Reader) *http.Request {
+	request := httptest.NewRequest(method, target, body)
+	request.RequestURI = ""
+
+	return request
 }
 
 func TestWebSocketScript(t *testing.T) {

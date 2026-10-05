@@ -1,0 +1,164 @@
+# Ring REST components owned by the locations API responsibility.
+components:
+  parameters:
+    location_id: {name: location_id, in: path, required: true, schema: {type: string}}
+
+    include: {name: include, in: query, required: false, description: "Comma-separated location expansions. Observed tokens are capabilities, presentation and status; future tokens are possible.", schema: {type: string, x-known-tokens: [capabilities, presentation, status]}}
+
+  responses:
+    LocationGroupDevices:
+      description: Devices in a location group
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/LocationGroupDevices'}
+          examples:
+            syntheticLocationGroupDevices:
+              summary: Synthetic location group devices response
+              value: {groups: []}
+              x-example-evidence: synthetic
+
+    LocationGroups:
+      description: Groups at a location
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/LocationGroups'}
+          examples:
+            syntheticLocationGroups:
+              summary: Synthetic location groups response
+              value: {device_groups: [], is_owner: false}
+              x-example-evidence: synthetic
+
+    LocationList:
+      description: Locations
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/LocationList'}
+          examples:
+            syntheticLocationList:
+              summary: Synthetic location list response
+              value: {user_locations: []}
+              x-example-evidence: synthetic
+
+    LocationDetail:
+      description: Location details
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/LocationDetail'}
+          examples:
+            syntheticLocationDetail:
+              summary: Synthetic location detail response
+              value:
+                data:
+                  type: synthetic-location
+                  id: synthetic-location-id
+                  attributes: {name: Synthetic location}
+              x-example-evidence: synthetic
+
+  schemas:
+    LocationGroupDevices:
+      type: object
+      required: [groups]
+      properties:
+        groups: {type: array, items: {$ref: '#/components/schemas/LocationGroup'}}
+      additionalProperties: true
+      example: {groups: []}
+      x-example-evidence: synthetic
+
+    LocationGroups:
+      type: object
+      properties:
+        device_groups: {type: [array, 'null'], items: {$ref: '#/components/schemas/LocationGroup'}}
+        is_owner: {type: boolean}
+      additionalProperties: true
+      example: {device_groups: [], is_owner: false}
+      x-example-evidence: synthetic
+
+    LocationGroup:
+      description: Group entries were empty or null in the historical fixture; identity fields follow the baseline fixtures.
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+      additionalProperties: true
+
+    LocationList:
+      type: object
+      required: [user_locations]
+      properties:
+        user_locations: {type: array, items: {$ref: '#/components/schemas/LocationSummary'}}
+        location_operation_sets:
+          type: object
+          additionalProperties: {$ref: './device-settings.yaml#/components/schemas/DeviceOperationSet'}
+      additionalProperties: true
+      example: {user_locations: []}
+      x-example-evidence: synthetic
+
+    LocationSummary:
+      type: object
+      required: [location_id, name]
+      properties:
+        location_id: {type: string}
+        owner_id: {type: integer, format: int64}
+        name: {type: string}
+        geo_coordinates: {$ref: '#/components/schemas/GeoCoordinates'}
+        address: {$ref: '#/components/schemas/LocationAddress'}
+        is_owner: {type: boolean}
+        location_type: {type: string}
+      additionalProperties: true
+
+    GeoCoordinates:
+      type: object
+      properties:
+        latitude: {type: number}
+        longitude: {type: number}
+      additionalProperties: true
+
+    LocationAddress:
+      type: object
+      properties:
+        address1: {type: string}
+        address2: {type: string}
+        city: {type: string}
+        state: {type: string}
+        zip_code: {type: string}
+        country: {type: string}
+        timezone: {type: string}
+      additionalProperties: true
+
+    LocationDetail:
+      type: object
+      required: [data]
+      properties:
+        meta: {$ref: '#/components/schemas/LocationMeta'}
+        data: {$ref: '#/components/schemas/LocationResource'}
+        included: {type: array, items: {$ref: '#/components/schemas/LocationResource'}}
+      additionalProperties: true
+      example: {data: {type: synthetic-location, id: synthetic-location-id}}
+      x-example-evidence: synthetic
+
+    LocationMeta:
+      type: object
+      properties:
+        time: {type: string, format: date-time}
+      additionalProperties: true
+
+    LocationResource:
+      type: object
+      required: [type, id]
+      properties:
+        type: {type: string}
+        id: {type: string}
+        attributes: {$ref: '#/components/schemas/LocationAttributes'}
+      additionalProperties: true
+
+    LocationAttributes:
+      type: object
+      properties:
+        name: {type: string}
+        city: {type: string}
+        country: {type: string}
+        state: {type: string}
+        latitude: {type: number}
+        longitude: {type: number}
+        time_zone: {type: string}
+      additionalProperties: true

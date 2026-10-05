@@ -232,7 +232,7 @@ linters:
       - path: '^internal/signaling/session\.go$'
         linters: [containedctx]
       # GO-15/LIB-05: These tests use the package's fake clock, terminal state, and RPC envelope to verify deterministic session scheduling and teardown without adding test-only exported APIs.
-      - path: '^internal/signaling/session_test\.go$'
+      - path: '^internal/signaling/session(_boundary)?_test\.go$'
         linters: [testpackage]
       - path: '^internal/signaling/session_stress_test\.go$'
         linters: [testpackage]
@@ -273,6 +273,9 @@ linters:
         linters: [testpackage]
       # GO-15: These device-session tests construct private session state and completion channels to verify activation, cancellation, and concurrency invariants.
       - path: '^pkg/ring/device_session_(activation|concurrency|public|stress)_test\.go$'
+        linters: [testpackage]
+      # GO-15: The expiry replay injects a private clock after opening the public signaling connection; exporting a test-only clock would weaken the client API boundary.
+      - path: '^pkg/ring/device_session_expiry_replay_test\.go$'
         linters: [testpackage]
       # GO-15: These signaling tests inspect private queues, maps, and worker completion to verify close and failure cleanup that is not part of the public API.
       - path: '^pkg/ring/signaling_connection_(failure|stress)_test\.go$'

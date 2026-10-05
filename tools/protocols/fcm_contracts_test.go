@@ -26,17 +26,19 @@ type fcmInventory struct {
 }
 
 type mcsSocketInventory struct {
-	Host           string         `yaml:"host"`
-	Port           int            `yaml:"port"`
-	Network        string         `yaml:"network"`
-	TLS            bool           `yaml:"tls"`
-	Domain         string         `yaml:"domain"`
-	Version        int            `yaml:"version"`
-	VersionBytes   int            `yaml:"version_bytes"`
-	TagBytes       int            `yaml:"tag_bytes"`
-	LengthEncoding string         `yaml:"length_encoding"`
-	Callsite       string         `yaml:"callsite"`
-	Tags           map[string]int `yaml:"tags"`
+	Host           string            `yaml:"host"`
+	Port           int               `yaml:"port"`
+	Network        string            `yaml:"network"`
+	TLS            bool              `yaml:"tls"`
+	Domain         string            `yaml:"domain"`
+	Version        int               `yaml:"version"`
+	VersionBytes   int               `yaml:"version_bytes"`
+	TagBytes       int               `yaml:"tag_bytes"`
+	LengthEncoding string            `yaml:"length_encoding"`
+	Callsite       string            `yaml:"callsite"`
+	AppDataKeys    map[string]string `yaml:"app_data_keys"`
+	AppDataValues  map[string]string `yaml:"app_data_values"`
+	Tags           map[string]int    `yaml:"tags"`
 }
 
 type fcmInventoryProvenance struct {

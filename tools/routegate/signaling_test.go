@@ -25,7 +25,7 @@ func marshalSignalingFrame(message signaling.Message) ([]byte, error) {
 		return marshalGeneratedFrame(
 			message,
 			protocol.MethodPing,
-			[]string{"nonce"},
+			[]string{protocol.FieldNonce},
 			func(body *generatedsignaling.PingBody) any {
 				return generatedsignaling.PingFrame{Method: protocol.MethodPing, Body: body}
 			},
@@ -105,7 +105,7 @@ func TestSignalingAdapterChecksAcceptSchemaBoundFrames(t *testing.T) {
 	}
 }
 
-func TestGeneratedFrameDiscoveryPrefersInternalPackage(t *testing.T) {
+func TestGeneratedFrameDiscoveryPrefersDependencyModelPackage(t *testing.T) {
 	t.Parallel()
 
 	root := fixtureRoot(t, "package sample\n")
@@ -117,6 +117,7 @@ type PingBody struct{}
 type PongFrame struct{}
 type PongBody struct{}
 `
+	writeFixtureFile(t, root, "pkg/dependencymodels/signaling/models.go", models)
 	writeFixtureFile(t, root, "internal/generatedsignaling/models.go", models)
 	writeFixtureFile(t, root, "pkg/generatedsignaling/models.go", models)
 
@@ -125,7 +126,7 @@ type PongBody struct{}
 		t.Fatal(err)
 	}
 
-	want := "example.com/routegatefixture/internal/generatedsignaling"
+	want := "example.com/routegatefixture/pkg/dependencymodels/signaling"
 	if contracts.GeneratedFrames["PingFrame"] != want || contracts.GeneratedFrames["PingBody"] != want {
 		t.Fatalf(
 			"generated signaling package = (%q, %q), want %q",
@@ -262,11 +263,12 @@ func auditSignalingFixture(t *testing.T, wire, writer string) []string {
 const (
 	MethodPing = "ping"
 	MethodPong = "pong"
+	FieldNonce = "nonce"
 )
 `)
 	write("pkg/generatedsignaling/models.go", `package generatedsignaling
 type PingFrame struct{}
-type PingBody struct{}
+type PingBody struct { Nonce string `+"`json:\"nonce\"`"+` }
 type PongFrame struct{}
 type PongBody struct{}
 type SignalingInboundDiscriminator struct{ Method methodValue }
@@ -330,7 +332,7 @@ components:
       properties:
         method: {type: string, const: ping}
         body: {$ref: '#/components/schemas/PingBody'}
-    PingBody: {type: object}
+    PingBody: {type: object, properties: {nonce: {type: string}}}
     PongFrame:
       type: object
       properties:

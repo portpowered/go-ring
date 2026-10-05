@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -24,6 +26,14 @@ func authenticatedContext() context.Context {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+
+type pointerRoundTripper struct {
+	roundTrip func(*http.Request) (*http.Response, error)
+}
+
+func (t *pointerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return t.roundTrip(req)
+}
 
 type trackedBody struct {
 	reader  io.Reader
@@ -153,8 +163,104 @@ func TestRetryRewindsGeneratedRequestBodyAndClosesDiscardedResponse(t *testing.T
 		t.Fatal("discarded 503 response body was not closed before retry")
 	}
 
-	if client.HTTPClient() != httpClient {
-		t.Fatal("custom HTTP client was not retained")
+	if client.HTTPClient() == httpClient {
+		t.Fatal("HTTPClient() returned the mutable injected client instead of a copy")
+	}
+
+	if client.ConfigurationError() != nil {
+		t.Fatalf("valid custom HTTP client configuration error = %v", client.ConfigurationError())
+	}
+}
+
+func TestWithHTTPClientSnapshotsMutableClientAndReturnsDefensiveCopy(t *testing.T) {
+	t.Parallel()
+
+	type observedRequest struct {
+		cookie string
+		body   string
+	}
+
+	var (
+		observed []observedRequest
+		calls    int
+	)
+
+	transport := &pointerRoundTripper{roundTrip: func(req *http.Request) (*http.Response, error) {
+		calls++
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, ringapimodels.NewNetworkError("test transport could not read refresh request body", err)
+		}
+		observed = append(observed, observedRequest{cookie: req.Header.Get("Cookie"), body: string(body)})
+
+		return testResponse(req, http.StatusOK, io.NopCloser(strings.NewReader(
+			`{"access_token":"next-access","refresh_token":"next-refresh","token_type":"Bearer"}`,
+		))), nil
+	}}
+
+	injectedHTTPClient := &http.Client{Transport: transport}
+	client := NewClient(
+		WithHTTPClient(injectedHTTPClient),
+		WithEndpointBases("https://api.example.test", "https://oauth.example.test"),
+	)
+
+	if client.ConfigurationError() != nil {
+		t.Fatalf("valid HTTP client configuration error = %v", client.ConfigurationError())
+	}
+
+	if client.HTTPClient().Transport != transport {
+		t.Fatal("HTTP client snapshot did not preserve the injected Transport pointer")
+	}
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatalf("create cookie jar: %v", err)
+	}
+
+	oauthURL, err := url.Parse("https://oauth.example.test")
+	if err != nil {
+		t.Fatalf("parse OAuth URL: %v", err)
+	}
+
+	jar.SetCookies(oauthURL, []*http.Cookie{{Name: "account_session", Value: "late-cookie"}})
+	injectedHTTPClient.Jar = jar
+
+	returnedHTTPClient := client.HTTPClient()
+	if returnedHTTPClient == injectedHTTPClient {
+		t.Fatal("HTTPClient() returned the caller's mutable HTTP client")
+	}
+
+	returnedHTTPClient.Jar = jar
+
+	internalHTTPClient := client.HTTPClient()
+	if internalHTTPClient.Jar != nil {
+		t.Fatal("mutating the defensive HTTP client copy changed reusable client state")
+	}
+
+	accounts := []struct{ refreshToken, hardwareID string }{
+		{refreshToken: "first-refresh", hardwareID: "first-hardware"},
+		{refreshToken: "second-refresh", hardwareID: "second-hardware"},
+	}
+	for _, account := range accounts {
+		_, err = client.RefreshAccessTokenFor(context.Background(), account.refreshToken, account.hardwareID)
+		if err != nil {
+			t.Fatalf("refresh %q: %v", account.refreshToken, err)
+		}
+	}
+
+	if calls != 2 || len(observed) != 2 {
+		t.Fatalf("transport calls = %d, observations = %d, want 2", calls, len(observed))
+	}
+
+	for index, want := range []string{"first-refresh", "second-refresh"} {
+		if observed[index].cookie != "" {
+			t.Errorf("request %d sent shared cookie %q", index, observed[index].cookie)
+		}
+
+		values, parseErr := url.ParseQuery(observed[index].body)
+		if parseErr != nil || values.Get("refresh_token") != want {
+			t.Errorf("request %d refresh body = %q, parse error = %v", index, observed[index].body, parseErr)
+		}
 	}
 }
 

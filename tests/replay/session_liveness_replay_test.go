@@ -8,7 +8,78 @@ import (
 	"time"
 
 	"github.com/portpowered/go-ring/internal/signaling"
+	"github.com/portpowered/go-ring/internal/testkit/replay"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
+
+// This synthetic boundary derives its paired ping/pong from the recording.
+// Time advances without delivering timers to exercise the write-side expiry guard.
+func TestSyntheticRecordedHeartbeatRejectsWriteBeforeExpiryTimerDelivery(t *testing.T) {
+	t.Parallel()
+
+	ping, pong := recordedHeartbeatPair(t)
+	clock := newRecordedClock()
+	out := make(chan signaling.Message, 1)
+	session := newHeartbeatReplaySession(t, ping, clock, out)
+
+	cancelledContext, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := session.Send(cancelledContext, ping.Method, ping.Body)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("send with canceled context = %v, want context cancellation", err)
+	}
+
+	select {
+	case unexpected := <-out:
+		t.Fatalf("canceled session send emitted a frame: %+v", unexpected)
+	default:
+	}
+
+	err = session.Send(context.Background(), ping.Method, ping.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := recordedNextMessage(t, out)
+	if actual.Method != ping.Method || actual.DialogID != ping.DialogID ||
+		!replay.SemanticEqual(actual.Body, ping.Body) {
+		t.Fatalf("ping differs from recording: %+v", actual)
+	}
+
+	err = session.Handle(pong)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clock.mu.Lock()
+	clock.now = clock.now.Add(signaling.MaxSessionAge)
+	clock.mu.Unlock()
+
+	err = session.Send(context.Background(), ping.Method, ping.Body)
+	if !errors.Is(err, signaling.ErrExpired) {
+		t.Fatalf("write at maximum age = %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	t.Cleanup(cancel)
+
+	err = session.Wait(ctx)
+	if !errors.Is(err, signaling.ErrExpired) {
+		t.Fatalf("expiry completion = %v", err)
+	}
+
+	err = session.Handle(pong)
+	if !errors.Is(err, signaling.ErrExpired) {
+		t.Fatalf("late pong after expiry = %v", err)
+	}
+
+	select {
+	case unexpected := <-out:
+		t.Fatalf("expired session sent a frame: %+v", unexpected)
+	default:
+	}
+}
 
 const (
 	wrongControlIdentityScenario = "wrong control identity"
@@ -179,7 +250,7 @@ func runRecordedPTZReplyScenario(
 	result := make(chan error, 1)
 
 	go func() {
-		_, err := session.Call(ctx, "PTZ.Tilt.Step", map[string]any{"direction": "UP"})
+		_, err := session.Call(ctx, "PTZ.Tilt.Step", generatedsignaling.PtzDirectionUp, nil)
 		result <- err
 	}()
 

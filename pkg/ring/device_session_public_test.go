@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/portpowered/go-ring/internal/signaling"
+	"github.com/portpowered/go-ring/internal/testkit/replay"
 )
 
 const publicTestOffer = "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\n" +
@@ -16,6 +17,15 @@ const publicTestOffer = "v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\n" +
 	"c=IN IP4 0.0.0.0\r\na=mid:0\r\na=recvonly\r\n"
 
 func newPublicTestSession(t *testing.T) (*DeviceSession, *signaling.Session) {
+	t.Helper()
+
+	return newPublicTestSessionWithSender(t, func(context.Context, signaling.Message) error { return nil })
+}
+
+func newPublicTestSessionWithSender(
+	t *testing.T,
+	send func(context.Context, signaling.Message) error,
+) (*DeviceSession, *signaling.Session) {
 	t.Helper()
 
 	core, err := signaling.NewSession(
@@ -26,7 +36,7 @@ func newPublicTestSession(t *testing.T) (*DeviceSession, *signaling.Session) {
 			SignalID:  "signal",
 			ControlID: "control",
 			Heartbeat: time.Minute,
-			Send:      func(context.Context, signaling.Message) error { return nil },
+			Send:      send,
 		},
 	)
 	if err != nil {
@@ -343,5 +353,79 @@ func TestDeviceSessionRemoteCloseTerminatesMatchingSession(t *testing.T) {
 
 	if got := other.State(); got != SessionActive {
 		t.Fatalf("unmatched close changed state to %q", got)
+	}
+}
+
+func TestDeviceSessionGeneratedControlPayloads(t *testing.T) {
+	t.Parallel()
+
+	enabled, disabled := true, false
+
+	tests := []struct {
+		name   string
+		method string
+		body   string
+		call   func(*DeviceSession) error
+	}{
+		{
+			name: "microphone", method: "mic_enable",
+			body: `{"doorbot_id":7,"session_id":"signal","enabled":true}`,
+			call: func(session *DeviceSession) error {
+				return session.SetMicrophone(context.Background(), SetMicrophoneRequest{Enabled: enabled})
+			},
+		},
+		{
+			name: "audio only", method: "stream_options",
+			body: `{"doorbot_id":7,"session_id":"signal","audio_enabled":false}`,
+			call: func(session *DeviceSession) error {
+				return session.SetStreamOptions(context.Background(), SetStreamOptionsRequest{
+					AudioEnabled: &disabled, VideoEnabled: nil,
+				})
+			},
+		},
+		{
+			name: "video only", method: "stream_options",
+			body: `{"doorbot_id":7,"session_id":"signal","video_enabled":true}`,
+			call: func(session *DeviceSession) error {
+				return session.SetStreamOptions(context.Background(), SetStreamOptionsRequest{
+					AudioEnabled: nil, VideoEnabled: &enabled,
+				})
+			},
+		},
+		{
+			name: "audio and video", method: "stream_options",
+			body: `{"doorbot_id":7,"session_id":"signal","audio_enabled":true,"video_enabled":false}`,
+			call: func(session *DeviceSession) error {
+				return session.SetStreamOptions(context.Background(), SetStreamOptionsRequest{
+					AudioEnabled: &enabled, VideoEnabled: &disabled,
+				})
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			var sent []signaling.Message
+
+			session, core := newPublicTestSessionWithSender(t, func(_ context.Context, message signaling.Message) error {
+				sent = append(sent, message)
+
+				return nil
+			})
+
+			t.Cleanup(func() { _ = core.Close() })
+
+			err := test.call(session)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(sent) != 1 || sent[0].Method != test.method || sent[0].DialogID != "dialog" ||
+				!replay.SemanticEqual(sent[0].Body, []byte(test.body)) {
+				t.Fatalf("control payload = %+v; want %s %s", sent, test.method, test.body)
+			}
+		})
 	}
 }

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "api/openapi.yaml"
+      - "api/external/fcm.openapi.yaml"
       - "api/asyncapi.yaml"
       - "docs/guides/**"
       - ".github/workflows/api-docs.yml"
@@ -17,12 +18,14 @@ permissions:
 
 jobs:
   publish:
-    uses: portpowered/api-docs-website-github-action/.github/workflows/publish.yml@v0.3.1
+    if: github.ref == 'refs/heads/main'
+    uses: portpowered/api-docs-website-github-action/.github/workflows/publish.yml@f7bb9340238620b058d6bff9fb953a9efb2f3bd5
     with:
       title: go-ring API Reference
-      openapi: api/openapi.yaml
+      openapi: api/openapi.yaml,api/external/fcm.openapi.yaml
       asyncapi: api/asyncapi.yaml
       discover: false
+      action-ref: f7bb9340238620b058d6bff9fb953a9efb2f3bd5
       guides-directory: docs/guides
       base-path: /go-ring
       source-directory: .

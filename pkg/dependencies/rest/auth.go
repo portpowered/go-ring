@@ -298,7 +298,7 @@ func oauthAuthorizationValues(redirectURI, state, hardwareID string, challengeBy
 		"scope":                 {protocol.RingScope},
 		"code_challenge":        {base64.RawURLEncoding.EncodeToString(challengeBytes[:])},
 		"code_challenge_method": {"S256"},
-		"device_model":          {deviceModel},
+		"device_model":          {string(deviceModel)},
 		"app_version":           {"3.102.0"},
 		"dark_mode":             {"false"},
 		"device_brand":          {"golang"},

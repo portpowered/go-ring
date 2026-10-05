@@ -46,16 +46,13 @@ func Audit(root string) ([]Finding, error) {
 	}
 
 	parsed := make([]*parsedGoFile, 0, len(files))
+	modelSources := make([]*parsedGoFile, 0, len(files))
 	byDirectory := make(map[string][]*parsedGoFile)
 
 	for _, path := range files {
 		raw, err := fs.ReadFile(os.DirFS(filepath.Dir(path)), filepath.Base(path))
 		if err != nil {
 			return nil, wrapRouteGateError(err, "read %s", path)
-		}
-
-		if isGeneratedGo(raw) {
-			continue
 		}
 
 		fileSet := token.NewFileSet()
@@ -66,9 +63,24 @@ func Audit(root string) ([]Finding, error) {
 		}
 
 		item := &parsedGoFile{path: path, fileSet: fileSet, file: file}
-		parsed = append(parsed, item)
-		byDirectory[filepath.Dir(path)] = append(byDirectory[filepath.Dir(path)], item)
+		modelSources = append(modelSources, item)
+
+		if !isGeneratedGo(raw) || signalingSourcePackage(path) {
+			parsed = append(parsed, item)
+			byDirectory[filepath.Dir(path)] = append(byDirectory[filepath.Dir(path)], item)
+		}
 	}
+
+	protocolValues := protocolStringConstants(root)
+	findings = append(findings, auditSignalingSourceModels(root, parsed)...)
+	findings = append(findings, auditWireModelSource(root, modelSources)...)
+
+	primitiveFindings, err := auditSchemaPrimitiveProvenance(root, parsed, protocolScalarConstants(root))
+	if err != nil {
+		return nil, err
+	}
+
+	findings = append(findings, primitiveFindings...)
 
 	verifiedFCMCalls, fcmFindings := auditExternalFCM(root, parsed)
 	findings = append(findings, fcmFindings...)
@@ -82,8 +94,6 @@ func Audit(root string) ([]Finding, error) {
 	for call := range verifiedMCSCalls {
 		verifiedFCMCalls[call] = true
 	}
-
-	protocolValues := protocolStringConstants(root)
 
 	for _, item := range parsed {
 		packageFiles := byDirectory[filepath.Dir(item.path)]

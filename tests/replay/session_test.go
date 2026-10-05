@@ -42,8 +42,9 @@ func TestSignalingSessionIntegrationSmoke(t *testing.T) {
 	defer httpPeer.Close()
 
 	serverErrors := make(chan error, 1)
+	lastPTZRequestObserved := make(chan struct{})
 
-	wsPeer := newSignalingSmokeWSPeer(t, serverErrors)
+	wsPeer := newSignalingSmokeWSPeer(t, serverErrors, lastPTZRequestObserved)
 	defer wsPeer.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(wsPeer.URL, "http") + "?token={token}"
@@ -93,7 +94,7 @@ func TestSignalingSessionIntegrationSmoke(t *testing.T) {
 
 	assertSmokeAnswer(t, session)
 	exerciseSmokeSessionControls(t, session)
-	runSmokePTZCalls(t, session)
+	runSmokePTZCalls(t, session, lastPTZRequestObserved)
 	closeSmokeSession(t, conn, session)
 
 	if httpCalls != 1 {
@@ -153,7 +154,7 @@ type smokePTZCall struct {
 	outcome int
 }
 
-func runSmokePTZCalls(t *testing.T, session *ring.DeviceSession) {
+func runSmokePTZCalls(t *testing.T, session *ring.DeviceSession, lastPTZRequestObserved <-chan struct{}) {
 	t.Helper()
 
 	calls := []smokePTZCall{
@@ -183,19 +184,24 @@ func runSmokePTZCalls(t *testing.T, session *ring.DeviceSession) {
 		}, outcome: 2},
 	}
 	for _, call := range calls {
-		assertSmokePTZCall(t, call)
+		assertSmokePTZCall(t, call, lastPTZRequestObserved)
 	}
 }
 
-func assertSmokePTZCall(t *testing.T, call smokePTZCall) {
+func assertSmokePTZCall(
+	t *testing.T,
+	call smokePTZCall,
+	lastPTZRequestObserved <-chan struct{},
+) {
 	t.Helper()
 
-	duration := time.Second
 	if call.outcome == 2 {
-		duration = 20 * time.Millisecond
+		assertDeadlineSmokePTZCall(t, call, lastPTZRequestObserved)
+
+		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), duration)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	result, callErr := call.run(ctx)
 
 	cancel()
@@ -206,12 +212,41 @@ func assertSmokePTZCall(t *testing.T, call smokePTZCall) {
 		if !errors.As(callErr, &rpcErr) || rpcErr.Code != 422 {
 			t.Fatalf("RPC error = %v", callErr)
 		}
-	case 2:
-		if !errors.Is(callErr, context.DeadlineExceeded) {
-			t.Fatalf("canceled PTZ error = %v", callErr)
-		}
 	default:
 		assertSuccessfulSmokePTZResult(t, result, callErr)
+	}
+}
+
+func assertDeadlineSmokePTZCall(
+	t *testing.T,
+	call smokePTZCall,
+	lastPTZRequestObserved <-chan struct{},
+) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	callDone := make(chan error, 1)
+
+	go func() {
+		_, err := call.run(ctx)
+		callDone <- err
+	}()
+
+	select {
+	case <-lastPTZRequestObserved:
+	case <-time.After(time.Second):
+		t.Fatal("peer did not observe PTZ request before deadline")
+	}
+
+	select {
+	case callErr := <-callDone:
+		if !errors.Is(callErr, context.DeadlineExceeded) {
+			t.Fatalf("deadline PTZ error = %v", callErr)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("PTZ request did not return after deadline")
 	}
 }
 
@@ -270,7 +305,11 @@ func failSmokeSessionStart(t *testing.T, startErr error, serverErrors <-chan err
 		t.Fatal(startErr)
 	}
 }
-func newSignalingSmokeWSPeer(t *testing.T, serverErrors chan error) *httptest.Server {
+func newSignalingSmokeWSPeer(
+	t *testing.T,
+	serverErrors chan error,
+	lastPTZRequestObserved chan<- struct{},
+) *httptest.Server {
 	t.Helper()
 
 	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
@@ -289,7 +328,11 @@ func newSignalingSmokeWSPeer(t *testing.T, serverErrors chan error) *httptest.Se
 			return
 		}
 
-		peer := signalingSmokeWSPeer{conn: conn, dialog: ""}
+		peer := signalingSmokeWSPeer{
+			conn:                   conn,
+			dialog:                 "",
+			lastPTZRequestObserved: lastPTZRequestObserved,
+		}
 		serverErrors <- peer.serve()
 	}))
 }

@@ -1,0 +1,30 @@
+# Ring REST components owned by the intercom API responsibility.
+components:
+  schemas:
+    IntercomUnlockCommand:
+      type: object
+      required: [command_name, request]
+      properties:
+        command_name: {type: string, enum: [device_rpc]}
+        request: {$ref: '#/components/schemas/IntercomUnlockRPC'}
+      example: {command_name: device_rpc, request: {jsonrpc: '2.0', method: unlock_door, params: {door_id: 0, user_id: 0}}}
+      x-example-evidence: synthetic
+
+    IntercomUnlockRPC:
+      type: object
+      required: [jsonrpc, method, params]
+      properties:
+        jsonrpc: {type: string, enum: ['2.0']}
+        method: {type: string, enum: [unlock_door]}
+        params: {$ref: '#/components/schemas/IntercomUnlockParams'}
+      example: {jsonrpc: '2.0', method: unlock_door, params: {door_id: 0, user_id: 0}}
+      x-example-evidence: synthetic
+
+    IntercomUnlockParams:
+      type: object
+      required: [door_id, user_id]
+      properties:
+        door_id: {type: integer, enum: [0]}
+        user_id: {type: integer, enum: [0]}
+      example: {door_id: 0, user_id: 0}
+      x-example-evidence: synthetic

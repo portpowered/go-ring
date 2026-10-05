@@ -8,8 +8,9 @@ import (
 )
 
 type signalingSmokeWSPeer struct {
-	conn   *websocket.Conn
-	dialog string
+	conn                   *websocket.Conn
+	dialog                 string
+	lastPTZRequestObserved chan<- struct{}
 }
 
 func (peer *signalingSmokeWSPeer) serve() error {
@@ -186,6 +187,10 @@ func (peer *signalingSmokeWSPeer) servePTZCalls() error {
 		callID, err := verifySmokeRPC(message, method, callIndex)
 		if err != nil {
 			return err
+		}
+
+		if callIndex == len(methods)-1 {
+			close(peer.lastPTZRequestObserved)
 		}
 
 		replyErr := peer.replySmokeRPC(callIndex, callID)

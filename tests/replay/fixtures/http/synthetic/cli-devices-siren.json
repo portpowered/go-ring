@@ -1,0 +1,170 @@
+{
+  "classification": "synthetic",
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/clients_api/session",
+        "query": [],
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "Authorization": [
+            "Bearer replay-token"
+          ],
+          "Content-Length": [
+            "114"
+          ],
+          "Content-Type": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "replay-hardware"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": "{\"device\":{\"hardware_id\":\"replay-hardware\",\"metadata\":{\"api_version\":11,\"device_model\":\"go-ring\"},\"os\":\"android\"}}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{}"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "origin": "http://cli.synthetic.test",
+        "path": "/device_info/v3/devices",
+        "query": [],
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "Authorization": [
+            "Bearer replay-token"
+          ],
+          "Content-Type": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "replay-hardware"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{\"devices\":[{\"id\":12345,\"name\":\"Replay camera\",\"family\":\"stickup_cams\",\"kind\":\"stickup_cam\"}]}"
+      }
+    },
+    {
+      "request": {
+        "method": "PUT",
+        "origin": "http://cli.synthetic.test",
+        "path": "/clients_api/doorbots/12345/siren_on",
+        "query": [],
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "Authorization": [
+            "Bearer replay-token"
+          ],
+          "Content-Length": [
+            "0"
+          ],
+          "Content-Type": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "replay-hardware"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{}"
+      }
+    },
+    {
+      "request": {
+        "method": "PUT",
+        "origin": "http://cli.synthetic.test",
+        "path": "/clients_api/doorbots/12345/siren_off",
+        "query": [],
+        "headers": {
+          "Accept": [
+            "application/json"
+          ],
+          "Accept-Encoding": [
+            "gzip"
+          ],
+          "Authorization": [
+            "Bearer replay-token"
+          ],
+          "Content-Length": [
+            "0"
+          ],
+          "Content-Type": [
+            "application/json"
+          ],
+          "Hardware_id": [
+            "replay-hardware"
+          ],
+          "User-Agent": [
+            "android:com.ringapp"
+          ]
+        },
+        "headers_mode": "exact",
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "body": "{}"
+      }
+    }
+  ]
+}

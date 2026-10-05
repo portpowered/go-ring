@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const generatedFrameMarshallerName = "marshalGeneratedFrame"
+
 func protocolMethodCases(
 	function *ast.FuncDecl,
 	imports map[string]string,
@@ -98,7 +100,7 @@ func collectFramePairs(
 		}
 
 		identifier, isIdentifier := call.Fun.(*ast.Ident)
-		if isIdentifier && identifier.Name == "marshalGeneratedFrame" {
+		if isIdentifier && identifier.Name == generatedFrameMarshallerName {
 			for pair := range framePairFromGeneratedCall(call, method, imports, protocolValues, contracts) {
 				pairs[pair] = true
 			}

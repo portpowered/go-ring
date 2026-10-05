@@ -32,6 +32,8 @@ jobs:
         run: make check-cli
       - name: Check API route contracts against source callsites
         run: make routegate
+      - name: Validate canonical schema examples
+        run: make schema-examples
       - name: Check formatting
         shell: bash
         run: |
@@ -44,6 +46,9 @@ jobs:
       - name: Check module metadata
         shell: bash
         run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+          cd cmd/go-ring
           go mod tidy
           git diff --exit-code -- go.mod go.sum
   api-compatibility:
@@ -111,13 +116,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: portpowered/api-docs-website-github-action
-          ref: v0.3.1
+          ref: f7bb9340238620b058d6bff9fb953a9efb2f3bd5
           path: .api-docs-action
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache: true
       - name: Build rendered API references and guides
         uses: ./.api-docs-action
         with:
           title: go-ring API Reference
-          openapi: api/openapi.yaml
+          openapi: api/openapi.yaml,api/external/fcm.openapi.yaml
           asyncapi: api/asyncapi.yaml
           discover: false
           guides-directory: docs/guides
@@ -128,6 +137,16 @@ jobs:
         run: node --test tools/docs/check-internal-links.test.mjs
       - name: Check rendered-site internal links
         run: node tools/docs/check-internal-links.mjs api-docs-out /go-ring
+      - name: Check schema-supplied links
+        run: go run ./tools/schemalinks -site api-docs-out -schemas api/openapi.yaml,api/external/fcm.openapi.yaml,api/asyncapi.yaml -base-path /go-ring
+      - name: Upload rendered API documentation for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-api-docs-${{ github.sha }}
+          path: api-docs-out/
+          if-no-files-found: error
+          retention-days: 14
   coverage:
     runs-on: ubuntu-latest
     permissions:
@@ -200,7 +219,7 @@ jobs:
       - name: Check generated artifacts are current and tracked
         shell: bash
         run: |
-          generated_status="$(git status --porcelain --untracked-files=all -- internal/generatedhttp internal/generatedfcm internal/generatedsignaling internal/protocol/endpoints.go internal/protocol/signaling.go internal/protocol/fcm.go internal/protocol/mcs.gen.go pkg/generatedhttp pkg/generatedsignaling pkg/dependencymodels/models.gen.go pkg/ringapimodels/models.gen.go)"
+          generated_status="$(git status --porcelain --untracked-files=all)"
           if [ -n "$generated_status" ]; then
             echo "Generated API artifacts changed or are untracked:"
             echo "$generated_status"

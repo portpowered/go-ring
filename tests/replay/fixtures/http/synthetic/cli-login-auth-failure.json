@@ -1,0 +1,68 @@
+{
+  "classification": "synthetic",
+  "behavior": "CLI login stops after the provider rejects the submitted credentials",
+  "volatile_rules": {
+    "state": "16-byte lowercase hex",
+    "challenge": "canonical unpadded base64url of 32 bytes",
+    "hardware": "canonical UUID version 4",
+    "content_length": "exact encoded form-body byte count"
+  },
+  "exchanges": [
+    {
+      "request": {
+        "method": "GET",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/v2/authorize",
+        "query": [
+          {"name": "app_brand", "value": "ring"},
+          {"name": "app_version", "value": "3.102.0"},
+          {"name": "client_id", "value": "ring_official_android"},
+          {"name": "code_challenge", "value": "$challenge"},
+          {"name": "code_challenge_method", "value": "S256"},
+          {"name": "dark_mode", "value": "false"},
+          {"name": "device_brand", "value": "golang"},
+          {"name": "device_model", "value": "go-ring"},
+          {"name": "device_os_version", "value": "go"},
+          {"name": "hardware_id", "value": "$hardware"},
+          {"name": "prompt", "value": "login"},
+          {"name": "redirect_uri", "value": "https://ring.com/signin/callback"},
+          {"name": "response_type", "value": "code"},
+          {"name": "scope", "value": "client"},
+          {"name": "state", "value": "$state"}
+        ],
+        "headers": {
+          "Accept-Encoding": ["gzip"],
+          "User-Agent": ["android:com.ringapp"]
+        },
+        "headers_mode": "exact",
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": ["application/json"]},
+        "body": "<script id=\"oauth-args\">{\"csrf-token\":\"csrf-value\"}</script>"
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "origin": "http://cli.synthetic.test",
+        "path": "/oauth/v2/signin",
+        "query": [],
+        "headers": {
+          "Accept-Encoding": ["gzip"],
+          "User-Agent": ["android:com.ringapp"],
+          "Content-Type": ["application/x-www-form-urlencoded"],
+          "Content-Length": ["75"]
+        },
+        "headers_mode": "exact",
+        "body": "csrf-token=csrf-value&password=wrong-password&username=replay%40example.com"
+      },
+      "response": {
+        "status": 401,
+        "headers": {"Content-Type": ["application/json"]},
+        "body": "{\"error\":\"invalid_grant\"}"
+      }
+    }
+  ]
+}

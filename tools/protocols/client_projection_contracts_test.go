@@ -78,6 +78,46 @@ func TestHandwrittenClientProjectionFieldsMatchSchema(t *testing.T) {
 	}
 }
 
+func TestClientReadModelsUseGeneratedProjectionTypes(t *testing.T) {
+	t.Parallel()
+
+	projections := map[string]reflect.Type{
+		"DeviceDetailDevice":    reflect.TypeFor[ring.DeviceDetailDevice](),
+		"DeviceAlerts":          reflect.TypeFor[ring.DeviceAlerts](),
+		"DeviceStatus":          reflect.TypeFor[ring.DeviceStatus](),
+		"DeviceOwner":           reflect.TypeFor[ring.DeviceOwner](),
+		"DeviceLegacySettings":  reflect.TypeFor[ring.DeviceLegacySettings](),
+		"DeviceDetailHealth":    reflect.TypeFor[ring.DeviceDetailHealth](),
+		"DeviceFeatures":        reflect.TypeFor[ring.DeviceFeatures](),
+		"VideoRenderingFeature": reflect.TypeFor[ring.VideoRenderingFeature](),
+		"FeatureAvailability":   reflect.TypeFor[ring.FeatureAvailability](),
+		"FeatureEligibility":    reflect.TypeFor[ring.FeatureEligibility](),
+		"FeatureEnablement":     reflect.TypeFor[ring.FeatureEnablement](),
+		"LocationAddress":       reflect.TypeFor[ring.LocationAddress](),
+		"LocationSummary":       reflect.TypeFor[ring.LocationSummary](),
+		"GeoCoordinates":        reflect.TypeFor[ring.GeoCoordinates](),
+		"LocationAttributes":    reflect.TypeFor[ring.LocationAttributes](),
+		"LocationResource":      reflect.TypeFor[ring.LocationResource](),
+		"LocationDetail":        reflect.TypeFor[ring.LocationDetail](),
+		"LocationMeta":          reflect.TypeFor[ring.LocationMeta](),
+		"LocationGroup":         reflect.TypeFor[ring.LocationGroup](),
+		"LocationGroups":        reflect.TypeFor[ring.LocationGroups](),
+		"LocationGroupDevices":  reflect.TypeFor[ring.LocationGroupDevices](),
+		"TimelineDevice":        reflect.TypeFor[ring.TimelineDevice](),
+		"TimelineEvent":         reflect.TypeFor[ring.TimelineEvent](),
+		"DeviceTimeline":        reflect.TypeFor[ring.DeviceTimeline](),
+		"HistoryFeedItem":       reflect.TypeFor[ring.HistoryFeedItem](),
+		"HistoryDevices":        reflect.TypeFor[ring.HistoryDevices](),
+		"CapturedTickets":       reflect.TypeFor[ring.CapturedTickets](),
+	}
+
+	for name, model := range projections {
+		if model.PkgPath() != "github.com/portpowered/go-ring/pkg/ringapimodels" {
+			t.Errorf("%s resolves to %s.%s, want the generated projection package", name, model.PkgPath(), model.Name())
+		}
+	}
+}
+
 func projectionJSONFields(model reflect.Type) ([]string, []string) {
 	fields := make([]string, 0, model.NumField())
 	required := make([]string, 0)

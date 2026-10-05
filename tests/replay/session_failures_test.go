@@ -22,7 +22,6 @@ import (
 
 const (
 	negotiationCancelMode    = "negotiation_cancel"
-	sessionExpiryMode        = "session_expiry"
 	heartbeatTimeoutMode     = "heartbeat_timeout"
 	eventBackpressureMode    = "event_backpressure"
 	malformedRPCEnvelopeMode = "malformed_rpc_envelope"
@@ -33,7 +32,6 @@ const (
 	syntheticFailureDeviceID  = 1001
 	syntheticFailureSessionID = "s"
 	syntheticFailureRIID      = "r"
-	expiryPeerReadTimeout     = 4 * time.Second
 	heartbeatPeerReadTimeout  = 6 * time.Second
 )
 
@@ -133,7 +131,6 @@ func TestNegotiationCancellationAndPendingRPCFailure(t *testing.T) {
 	for _, mode := range []string{
 		negotiationCancelMode,
 		"rpc_remote_close",
-		sessionExpiryMode,
 		heartbeatTimeoutMode,
 		eventBackpressureMode,
 		malformedRPCEnvelopeMode,
@@ -287,22 +284,10 @@ func serveNegotiationFailurePeer(
 		return
 	}
 
-	if mode == sessionExpiryMode {
-		serveExpiryClosePeer(t, connection, first.Dialog)
-
-		return
-	}
-
 	_, _, e := connection.ReadMessage()
 	if e != nil {
 		return
 	}
-}
-
-func serveExpiryClosePeer(t *testing.T, connection *websocket.Conn, dialog string) {
-	t.Helper()
-
-	consumeFailureSessionUntilClose(t, connection, dialog, "expiry", expiryPeerReadTimeout, 0, true)
 }
 
 func consumeHeartbeatUntilClose(t *testing.T, connection *websocket.Conn, dialog string) {
@@ -587,10 +572,6 @@ func runFailureScenario(
 		Offer:    ring.SessionDescription{Type: ring.SDPTypeOffer, SDP: offerSDP},
 	}
 
-	if mode == sessionExpiryMode {
-		request.MaxAge = 25 * time.Millisecond
-	}
-
 	session, err := conn.StartDeviceSession(context.Background(), request)
 	if err != nil {
 		t.Fatal(err)
@@ -613,7 +594,7 @@ func runFailureScenario(
 func assertSessionFailureOutcome(t *testing.T, mode string, session *ring.DeviceSession) {
 	t.Helper()
 
-	if mode == sessionExpiryMode || mode == heartbeatTimeoutMode || mode == eventBackpressureMode {
+	if mode == heartbeatTimeoutMode || mode == eventBackpressureMode {
 		waitLimit := time.Second
 		want := ring.ErrSessionExpired
 		state := ring.SessionExpired

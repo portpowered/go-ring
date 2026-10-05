@@ -138,8 +138,8 @@ func retryAttemptAssignmentsAreSafe(function *ast.FuncDecl, request, attempt *as
 	assignments := 0
 	validAssignments := true
 	attemptRequests := map[*ast.Object]HTTPRoute{
-		request: {OperationID: "transport", Method: "", Path: ""},
-		attempt: {OperationID: "transport", Method: "", Path: ""},
+		request: {OperationID: "transport", Method: "", Path: "", HasBody: false},
+		attempt: {OperationID: "transport", Method: "", Path: "", HasBody: false},
 	}
 
 	ast.Inspect(function.Body, func(node ast.Node) bool {
@@ -150,6 +150,10 @@ func retryAttemptAssignmentsAreSafe(function *ast.FuncDecl, request, attempt *as
 		switch value := node.(type) {
 		case *ast.AssignStmt:
 			for index, left := range value.Lhs {
+				if index < len(value.Rhs) && safeRetryBodyRestoration(left, value.Rhs[index], request, attempt) {
+					continue
+				}
+
 				identifier, ok := left.(*ast.Ident)
 				if !ok || identifier.Obj != attempt || index >= len(value.Rhs) {
 					if requestMutationObject(left, attemptRequests) != nil {
@@ -175,6 +179,17 @@ func retryAttemptAssignmentsAreSafe(function *ast.FuncDecl, request, attempt *as
 	})
 
 	return assignments > 0 && validAssignments
+}
+
+func safeRetryBodyRestoration(left, right ast.Expr, request, attempt *ast.Object) bool {
+	selector, ok := left.(*ast.SelectorExpr)
+	if !ok || selector.Sel.Name != "Body" {
+		return false
+	}
+
+	receiver, ok := selector.X.(*ast.Ident)
+
+	return ok && receiver.Obj == attempt && receiver.Obj != request && safeRequestBodyCall(right, request)
 }
 
 func safeAttemptRequestAssignment(expression ast.Expr, request *ast.Object) bool {
@@ -247,7 +262,7 @@ func retryDoCall(function *ast.FuncDecl) *ast.CallExpr {
 func functionHasOnlyRequestCalls(function *ast.FuncDecl, request *ast.Object, allowedMethods map[string]bool) bool {
 	valid := true
 	testRoutes := map[*ast.Object]HTTPRoute{
-		request: {OperationID: "transport", Method: "", Path: ""},
+		request: {OperationID: "transport", Method: "", Path: "", HasBody: false},
 	}
 
 	ast.Inspect(function.Body, func(node ast.Node) bool {

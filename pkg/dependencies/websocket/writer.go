@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/portpowered/go-ring/internal/generatedsignaling"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 )
 
 type signalingWriteRequest struct {
@@ -241,21 +241,21 @@ func hasExplicitPTZStop(encoded json.RawMessage, method string) bool {
 	}
 
 	var command map[string]json.RawMessage
-	if json.Unmarshal(envelope["command"], &command) != nil {
+	if json.Unmarshal(envelope[protocol.FieldCommand], &command) != nil {
 		return false
 	}
 
 	var wireMethod string
-	if json.Unmarshal(command["method"], &wireMethod) != nil || wireMethod != method {
+	if json.Unmarshal(command[protocol.FieldMethod], &wireMethod) != nil || wireMethod != method {
 		return false
 	}
 
 	var params map[string]json.RawMessage
-	if json.Unmarshal(command["params"], &params) != nil {
+	if json.Unmarshal(command[protocol.FieldParams], &params) != nil {
 		return false
 	}
 
 	var speed float64
 
-	return json.Unmarshal(params["speed"], &speed) == nil && speed == 0
+	return json.Unmarshal(params[protocol.FieldSpeed], &speed) == nil && speed == 0
 }

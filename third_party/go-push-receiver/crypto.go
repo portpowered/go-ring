@@ -13,6 +13,7 @@ import (
 	"encoding/base64"
 
 	ece "github.com/crow-misia/http-ece"
+	"github.com/portpowered/go-ring/internal/protocol"
 	pb "github.com/portpowered/go-ring/third_party/go-push-receiver/pb/mcs"
 )
 
@@ -46,8 +47,8 @@ func decryptData(data *pb.DataMessageStanza, creds *FCMCredentials) (*MessageEve
 
 	var err error
 
-	contentEncoding, lookupErr := findByKey(data.GetAppData(), "content-encoding")
-	if lookupErr == nil && contentEncoding.GetValue() == "aes128gcm" {
+	contentEncoding, lookupErr := findByKey(data.GetAppData(), protocol.MCSAppDataContentEncodingKey)
+	if lookupErr == nil && contentEncoding.GetValue() == protocol.MCSAppDataContentEncodingAES128GCM {
 		bytes, err = decryptDataV1(data, creds)
 	} else {
 		bytes, err = decryptDataLegacy(data, creds)
@@ -63,22 +64,22 @@ func decryptData(data *pb.DataMessageStanza, creds *FCMCredentials) (*MessageEve
 func decryptDataLegacy(data *pb.DataMessageStanza, creds *FCMCredentials) ([]byte, error) {
 	rawData := data.GetRawData()
 
-	cryptoKeyData, err := findByKey(data.GetAppData(), "crypto-key")
+	cryptoKeyData, err := findByKey(data.GetAppData(), protocol.MCSAppDataCryptoKeyKey)
 	if err != nil {
 		return nil, wrapError(err, "dh is not provided")
 	}
 
-	cryptoKey, err := base64.URLEncoding.DecodeString(cryptoKeyData.GetValue()[3:])
+	cryptoKey, err := base64.URLEncoding.DecodeString(cryptoKeyData.GetValue()[len(protocol.MCSAppDataCryptoKeyDHPrefix):])
 	if err != nil {
 		return nil, wrapError(err, "decode decrypt data")
 	}
 
-	saltData, err := findByKey(data.GetAppData(), "encryption")
+	saltData, err := findByKey(data.GetAppData(), protocol.MCSAppDataEncryptionKey)
 	if err != nil {
 		return nil, wrapError(err, "salt is not provided")
 	}
 
-	salt, err := base64.URLEncoding.DecodeString(saltData.GetValue()[5:])
+	salt, err := base64.URLEncoding.DecodeString(saltData.GetValue()[len(protocol.MCSAppDataEncryptionSaltPrefix):])
 	if err != nil {
 		return nil, wrapError(err, "decode salt")
 	}

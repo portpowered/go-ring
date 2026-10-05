@@ -1,14 +1,17 @@
 # Schema value conventions
 
-The model boundary is explicit: `openapi.yaml` generates
-`internal/generatedhttp` for Ring HTTP request and response bodies, and
-`asyncapi.yaml` generates `internal/generatedsignaling` for signaling frames.
-`api/external/fcm.openapi.yaml` generates `internal/generatedfcm` for the
-pinned push receiver's HTTP exchanges and Ring notification payloads. REST,
-signaling, and push adapters decode these private wire models, then project
-them into SDK-facing types where needed. The previously published
-`pkg/generatedhttp` and `pkg/generatedsignaling` import paths remain generated
-compatibility packages; production transports use the internal copies.
+The canonical internal wire models live in `pkg/dependencymodels`. REST models
+are generated from `openapi.yaml` into responsibility-group files under
+`pkg/dependencymodels/rest`; `openapi.base.yaml` and the files in `schemas/`
+compose that checked-in bundle. `make generate-api` regenerates the bundle and
+models. Signaling frames are generated from `asyncapi.yaml` into
+`pkg/dependencymodels/signaling`, and the pinned push receiver's HTTP exchanges
+and Ring notification payloads are generated from `api/external/fcm.openapi.yaml`
+into `pkg/dependencymodels/fcm`. REST, signaling, and push adapters decode
+these wire models, then project them into SDK-facing types where needed.
+`internal/generatedhttp`, `pkg/generatedhttp`, and their FCM equivalents are
+generated client packages or compatibility aliases; they are not canonical
+wire-model homes.
 `client-models.openapi.yaml` generates only the public
 types in `pkg/ringapimodels`. Internal transport errors and recording body
 ownership live below the public package, with public aliases for callers.
@@ -18,10 +21,9 @@ The in-home chime update uses generated typed optional fields instead of an
 arbitrary settings map. History kind stays an open string because the server
 may introduce new recording kinds.
 
-The legacy account-event WebSocket has no captured wire schema in this
-repository and remains separate from the historical signaling examples. Its
-transport passes through decoded JSON; `pkg/ring` projects that data into the
-public `Event` model.
+The account-event WebSocket uses the extensible `AccountEventFrame` schema in
+`asyncapi.yaml`. The transport preserves unknown event fields, and `pkg/ring`
+projects the decoded frame into the public `Event` model.
 
 The OpenAPI files describe HTTP responses from historical and synthetic
 examples and public SDK models.

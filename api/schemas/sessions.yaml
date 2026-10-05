@@ -1,0 +1,28 @@
+# Ring REST components owned by the sessions API responsibility.
+components:
+  schemas:
+    ClientSessionRegistration:
+      type: object
+      required: [device]
+      properties:
+        device:
+          type: object
+          required: [hardware_id, metadata, os]
+          properties:
+            hardware_id: {type: string}
+            metadata:
+              type: object
+              required: [api_version, device_model]
+              properties:
+                api_version: {type: integer, const: 11}
+                device_model: {$ref: './authentication.yaml#/components/schemas/ClientDeviceModel'}
+              additionalProperties: true
+            os: {type: string, const: android}
+          additionalProperties: true
+      additionalProperties: true
+      example:
+        device:
+          hardware_id: synthetic-hardware-id
+          metadata: {api_version: 11, device_model: go-ring}
+          os: android
+      x-example-evidence: synthetic

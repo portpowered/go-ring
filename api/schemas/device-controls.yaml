@@ -1,0 +1,38 @@
+# Ring REST components owned by the device-controls API responsibility.
+components:
+  responses:
+    SirenOn:
+      description: Current siren status, including the remaining duration
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/SirenStatus'}
+          examples:
+            syntheticSirenStatus:
+              summary: Synthetic siren status
+              value:
+                started_at: '2025-01-01T00:00:00Z'
+                ends_at: '2025-01-01T00:00:30Z'
+                duration: 30
+                seconds_remaining: 30
+              x-example-evidence: synthetic
+
+  schemas:
+    DeviceCommand:
+      type: object
+      required: [command_name]
+      properties:
+        command_name: {type: string, enum: [reboot]}
+      example: {command_name: reboot}
+      x-example-evidence: synthetic
+
+    SirenStatus:
+      type: object
+      required: [started_at, ends_at, duration, seconds_remaining]
+      properties:
+        started_at: {type: string, format: date-time}
+        ends_at: {type: string, format: date-time}
+        duration: {type: integer, minimum: 0, description: Server-reported siren duration in seconds.}
+        seconds_remaining: {type: integer, minimum: 0, description: Server-reported remaining siren time in seconds.}
+      additionalProperties: true
+      example: {started_at: '2025-01-01T00:00:00Z', ends_at: '2025-01-01T00:00:30Z', duration: 30, seconds_remaining: 30}
+      x-example-evidence: synthetic

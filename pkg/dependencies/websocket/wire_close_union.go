@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"strconv"
+
+	"github.com/portpowered/go-ring/internal/protocol"
 )
 
 func normalizeCloseReasonCode(encoded []byte) ([]byte, error) {
@@ -14,12 +16,12 @@ func normalizeCloseReasonCode(encoded []byte) ([]byte, error) {
 		return nil, wrapSignalingWireError(err, "decode generated close frame")
 	}
 
-	body, err := rawObjectField(frame, "body")
+	body, err := rawObjectField(frame, protocol.FieldBody)
 	if err != nil {
 		return nil, err
 	}
 
-	reason, exists := body["reason"]
+	reason, exists := body[protocol.FieldReason]
 	if !exists {
 		return encoded, nil
 	}
@@ -31,7 +33,7 @@ func normalizeCloseReasonCode(encoded []byte) ([]byte, error) {
 		return nil, signalingWireError("close reason must be an object")
 	}
 
-	code, exists := reasonFields["code"]
+	code, exists := reasonFields[protocol.FieldCode]
 	if !exists {
 		return encoded, nil
 	}
@@ -40,21 +42,21 @@ func normalizeCloseReasonCode(encoded []byte) ([]byte, error) {
 		return nil, signalingWireError("close reason code must be an integer or string")
 	}
 
-	delete(reasonFields, "code")
+	delete(reasonFields, protocol.FieldCode)
 
 	reason, err = json.Marshal(reasonFields)
 	if err != nil {
 		return nil, wrapSignalingWireError(err, "normalize generated close reason")
 	}
 
-	body["reason"] = reason
+	body[protocol.FieldReason] = reason
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, wrapSignalingWireError(err, "normalize generated close body")
 	}
 
-	frame["body"] = bodyBytes
+	frame[protocol.FieldBody] = bodyBytes
 
 	normalized, err := json.Marshal(frame)
 	if err != nil {

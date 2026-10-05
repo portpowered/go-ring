@@ -114,6 +114,9 @@ func isGeneratedPackage(name string) bool {
 		"/pkg/generatedhttp",
 		"/pkg/generatedsignaling",
 		"/pkg/generatedfcm",
+		"/pkg/dependencymodels/fcm",
+		"/pkg/dependencymodels/rest",
+		"/pkg/dependencymodels/signaling",
 	} {
 		if strings.HasSuffix(name, suffix) {
 			return true
@@ -140,27 +143,41 @@ func calculateCoverage(spec suiteSpec, baselinePath string, packages []string) e
 
 	defer func() { _ = os.Remove(profilePath) }()
 
-	args := []string{
-		"test",
-		"-race",
-		"-coverpkg=" + strings.Join(packages, ","),
-		"-coverprofile=" + profilePath,
-		"-covermode=atomic",
+	err = runCoverageTests(spec, packages, spec.args, profilePath)
+	if err != nil {
+		return err
 	}
-	args = append(args, spec.args...)
-	args = append(args, "-timeout", spec.timeout)
-	cmd := exec.CommandContext(
-		context.Background(),
-		"go",
-		args...,
-	) // #nosec G204 -- args are built from fixed local suite definitions.
 
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	for _, testRun := range spec.additionalTests {
+		extraProfile, createErr := os.CreateTemp(".", "coverage.additional.*.out")
+		if createErr != nil {
+			return coverageCauseError{operation: "create additional coverage profile", cause: createErr}
+		}
 
-	{
-		err = cmd.Run()
+		extraProfilePath := extraProfile.Name()
+
+		closeErr := extraProfile.Close()
+		if closeErr != nil {
+			_ = os.Remove(extraProfilePath)
+
+			return coverageCauseError{operation: "close additional coverage profile", cause: closeErr}
+		}
+
+		defer func() { _ = os.Remove(extraProfilePath) }()
+
+		coverPackages := testRun.coverPackages
+		if len(coverPackages) == 0 {
+			coverPackages = packages
+		}
+
+		err = runCoverageTests(spec, coverPackages, testRun.args, extraProfilePath)
 		if err != nil {
-			return coverageCauseError{operation: "run " + spec.name + " coverage tests", cause: err}
+			return err
+		}
+
+		err = appendCoverageProfile(profilePath, extraProfilePath)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -225,35 +242,136 @@ func calculateCoverage(spec suiteSpec, baselinePath string, packages []string) e
 	return nil
 }
 
+func runCoverageTests(spec suiteSpec, packages, testArgs []string, profilePath string) error {
+	args := []string{
+		"test",
+		"-race",
+		"-coverpkg=" + strings.Join(packages, ","),
+		"-coverprofile=" + profilePath,
+		"-covermode=atomic",
+	}
+	args = append(args, testArgs...)
+	args = append(args, "-timeout", spec.timeout)
+	cmd := exec.CommandContext(
+		context.Background(),
+		"go",
+		args...,
+	) // #nosec G204 -- args are built from fixed local suite definitions.
+
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return coverageCauseError{operation: "run " + spec.name + " coverage tests", cause: err}
+	}
+
+	return nil
+}
+
+func appendCoverageProfile(profilePath, additionalPath string) error {
+	profile, err := os.ReadFile(profilePath) // #nosec G304 -- both paths were created by os.CreateTemp above.
+	if err != nil {
+		return coverageCauseError{operation: "read primary coverage profile", cause: err}
+	}
+
+	additional, err := os.ReadFile(additionalPath) // #nosec G304 -- both paths were created by os.CreateTemp above.
+	if err != nil {
+		return coverageCauseError{operation: "read additional coverage profile", cause: err}
+	}
+
+	profileHeaderEnd := bytes.IndexByte(profile, '\n')
+	if profileHeaderEnd < 0 {
+		return coverageError("coverage profile is missing its mode")
+	}
+
+	additionalHeaderEnd := bytes.IndexByte(additional, '\n')
+	if additionalHeaderEnd < 0 {
+		return coverageError("additional coverage profile is missing its mode")
+	}
+
+	if !bytes.Equal(profile[:profileHeaderEnd], additional[:additionalHeaderEnd]) {
+		return coverageError("coverage profiles use incompatible modes")
+	}
+
+	profile = append(profile, additional[additionalHeaderEnd+1:]...)
+
+	err = os.WriteFile(profilePath, profile, 0o600)
+	if err != nil {
+		return coverageCauseError{operation: "merge additional coverage profile", cause: err}
+	}
+
+	return nil
+}
+
 type suiteSpec struct {
-	name    string
-	args    []string
-	profile string
-	minimum float64
-	timeout string
+	name            string
+	args            []string
+	additionalTests []coverageTestRun
+	profile         string
+	minimum         float64
+	timeout         string
+}
+
+type coverageTestRun struct {
+	args          []string
+	coverPackages []string
 }
 
 func suiteSpecFor(name string) (suiteSpec, error) {
 	switch name {
 	case "replay":
-		return suiteSpec{name, []string{"./tests/replay/..."}, "coverage.replay.out", 85, "120s"}, nil
+		return suiteSpec{
+			name: name,
+			args: []string{"./tests/replay/..."},
+			additionalTests: []coverageTestRun{{
+				args: []string{
+					"-run=^TestPublicSessionExpirySendsCloseAndClosesReplaySocket$",
+					"./pkg/ring",
+				},
+				coverPackages: nil,
+			}, {
+				args: []string{
+					"-run=^(TestBatteryReadingUnmarshalJSON|TestOwnerIDUnmarshalJSON)$",
+					"./pkg/ringtypes",
+				},
+				coverPackages: []string{"github.com/portpowered/go-ring/pkg/ringtypes"},
+			}, {
+				args: []string{
+					"-run=^(TestEmptyDetailErrorsRemainClassifiedAndSafe|TestTokenErrorPreservesCause)$",
+					"./internal/ringerrors",
+				},
+				coverPackages: nil,
+			}},
+			profile: "coverage.replay.out",
+			minimum: 85,
+			timeout: "120s",
+		}, nil
 	case "unit":
-		return suiteSpec{name, []string{"./pkg/...", "./internal/..."}, "coverage.unit.out", 50, "120s"}, nil
+		return suiteSpec{
+			name:            name,
+			args:            []string{"./pkg/...", "./internal/..."},
+			additionalTests: nil,
+			profile:         "coverage.unit.out",
+			minimum:         50,
+			timeout:         "120s",
+		}, nil
 	case suiteIntegrationName:
 		return suiteSpec{
-			name,
-			[]string{"-tags=integration", "./tests/integration/..."},
-			"coverage.integration.out",
-			0,
-			"5m",
+			name:            name,
+			args:            []string{"-tags=integration", "./tests/integration/..."},
+			additionalTests: nil,
+			profile:         "coverage.integration.out",
+			minimum:         0,
+			timeout:         "5m",
 		}, nil
 	case suiteCombinedName:
 		return suiteSpec{
-			name,
-			[]string{"./tests/replay/...", "./pkg/...", "./internal/..."},
-			"coverage.combined.out",
-			90,
-			"120s",
+			name:            name,
+			args:            []string{"./tests/replay/...", "./pkg/...", "./internal/..."},
+			additionalTests: nil,
+			profile:         "coverage.combined.out",
+			minimum:         90,
+			timeout:         "120s",
 		}, nil
 	default:
 		return suiteSpec{}, coverageError(fmt.Sprintf("unknown suite %q", name))
@@ -287,6 +405,9 @@ func excludeGeneratedCode(profile []byte) []byte {
 		[]byte("/pkg/generatedhttp/"),
 		[]byte("/pkg/generatedsignaling/"),
 		[]byte("/pkg/generatedfcm/"),
+		[]byte("/pkg/dependencymodels/fcm/"),
+		[]byte("/pkg/dependencymodels/rest/"),
+		[]byte("/pkg/dependencymodels/signaling/"),
 		[]byte("/pkg/ringapimodels/models.gen.go:"),
 	}
 

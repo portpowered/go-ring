@@ -35,6 +35,11 @@ paths:
           application/x-protobuf:
             schema:
               $ref: '#/components/schemas/AndroidCheckinRequestWire'
+            examples:
+              synthetic:
+                summary: Synthetic Android check-in request bytes
+                value: 'ELlgIhdIAGADahEIAxILNjMuMC4zMjM0LjAYAWkyCQEAAAAAAHADoAEAsAEA'
+                x-example-evidence: synthetic
       responses:
         '200':
           description: Check-in response with status and optional device credentials.
@@ -42,6 +47,11 @@ paths:
             application/x-protobuf:
               schema:
                 $ref: '#/components/schemas/AndroidCheckinResponseWire'
+              examples:
+                synthetic:
+                  summary: Synthetic Android check-in response bytes
+                  value: 'CAE5OTAAAAAAAABBMgkBAAAAAAA='
+                  x-example-evidence: synthetic
         '401':
           description: Saved device credentials were rejected.
         default:
@@ -80,6 +90,15 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/LegacyRegistrationRequest'
+            examples:
+              synthetic:
+                summary: Synthetic legacy registration form
+                value:
+                  app: org.chromium.linux
+                  X-subtype: '1:876313859327:android:e10ec6ddb3c81f39'
+                  device: '123456789'
+                  sender: BDOU99-h67HcA6JeFXHbSNMu7e2yNNu3RzoMj8TM4W88jITfq7ZmPvIM1Iv-4_l2LxQcYwhqby2xGpWwzjfAnG4
+                x-example-evidence: synthetic
       responses:
         '200':
           description: Registration token returned as a form-encoded text response.
@@ -87,6 +106,11 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/LegacyRegistrationResponse'
+              examples:
+                synthetic:
+                  summary: Synthetic legacy registration token response
+                  value: 'token=synthetic-registration-token'
+                  x-example-evidence: synthetic
         default:
           description: Registration was rejected or unavailable.
   /v1/projects/ring-17770/installations:
@@ -106,6 +130,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/InstallationRequest'
+            examples:
+              synthetic:
+                summary: Synthetic Firebase installation request
+                value:
+                  appId: '1:876313859327:android:e10ec6ddb3c81f39'
+                  authVersion: FIS_v2
+                  fid: cAAAAAAAAAAAAAAAAAAAAAA=
+                  sdkVersion: 'w:0.6.17'
+                x-example-evidence: synthetic
       responses:
         '200':
           description: Firebase installation created or returned.
@@ -113,12 +146,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstallationResponse'
+              examples:
+                synthetic:
+                  summary: Synthetic Firebase installation response
+                  value:
+                    name: projects/ring-17770/installations/cAAAAAAAAAAAAAAAAAAAAAA=
+                    fid: cAAAAAAAAAAAAAAAAAAAAAA=
+                    refreshToken: synthetic-refresh-token
+                    authToken:
+                      token: synthetic-installation-token
+                      expiresIn: 3600s
+                  x-example-evidence: synthetic
         '201':
           description: Firebase installation created.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstallationResponse'
+              examples:
+                synthetic:
+                  summary: Synthetic Firebase installation response
+                  value:
+                    name: projects/ring-17770/installations/cAAAAAAAAAAAAAAAAAAAAAA=
+                    fid: cAAAAAAAAAAAAAAAAAAAAAA=
+                    refreshToken: synthetic-refresh-token
+                    authToken:
+                      token: synthetic-installation-token
+                      expiresIn: 3600s
+                  x-example-evidence: synthetic
         default:
           description: Installation creation was rejected or unavailable.
   /v1/projects/ring-17770/registrations:
@@ -145,6 +200,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/FCMRegistrationRequest'
+            examples:
+              synthetic:
+                summary: Synthetic FCM Web Push registration request
+                value:
+                  web:
+                    endpoint: https://fcm.googleapis.com/fcm/send/legacy-registration-token
+                    p256dh: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+                    auth: AAAAAAAAAAAAAAAAAAAAAA==
+                x-example-evidence: synthetic
       responses:
         '200':
           description: FCM registration created.
@@ -152,12 +216,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FCMRegistrationResponse'
+              examples:
+                synthetic:
+                  summary: Synthetic FCM registration response
+                  value:
+                    token: synthetic-fcm-token
+                    pushSet: synthetic-push-set
+                  x-example-evidence: synthetic
         '201':
           description: FCM registration created.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/FCMRegistrationResponse'
+              examples:
+                synthetic:
+                  summary: Synthetic FCM registration response
+                  value:
+                    token: synthetic-fcm-token
+                    pushSet: synthetic-push-set
+                  x-example-evidence: synthetic
         default:
           description: FCM registration was rejected or unavailable.
 components:
@@ -333,3 +411,23 @@ components:
         action:
           type: string
           description: Open Ring action name, including intercom_unlock.
+    RingPushNotificationEnvelope:
+      description: >-
+        Synthetic decoded notification envelope used by the public push adapter.
+        The captured encrypted MCS replay carries android_config and data as
+        JSON-encoded strings; the adapter also accepts already-decoded objects.
+      type: object
+      additionalProperties: true
+      properties:
+        android_config:
+          oneOf:
+            - type: string
+            - {$ref: '#/components/schemas/RingPushNotificationConfig'}
+        data:
+          oneOf:
+            - type: string
+            - {$ref: '#/components/schemas/RingPushNotificationPayload'}
+        doorbot_id:
+          type: integer
+          format: int64
+          description: Synthetic compatibility fallback when a nested device ID is absent.

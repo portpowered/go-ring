@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,7 +21,12 @@ import (
 const loopbackHTTPScheme = "http"
 
 func main() {
-	err := run(context.Background(), os.Args[1:], os.Stdin, os.Stdout)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+
+	err := run(ctx, os.Args[1:], os.Stdin, os.Stdout)
+
+	stop()
+
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -27,6 +34,10 @@ func main() {
 }
 
 func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error {
+	if isHelpCommand(args) {
+		return printHelp(out)
+	}
+
 	if len(args) == 0 {
 		return usage(out)
 	}
@@ -47,6 +58,10 @@ func run(ctx context.Context, args []string, in io.Reader, out io.Writer) error 
 	signalingURL := cmd.String("signaling-url", "", "signaling socket override for local testing")
 
 	err = cmd.Parse(args)
+	if errors.Is(err, flag.ErrHelp) {
+		return printHelp(out)
+	}
+
 	if err != nil {
 		return wrapCommandError("parse command flags", err)
 	}
@@ -115,6 +130,10 @@ func authCommand(ctx context.Context, store tokenStore, args []string, in io.Rea
 		return login(ctx, store, in, out)
 	case "status":
 		return authStatus(store, out)
+	case "refresh":
+		return refreshLogin(ctx, store, out)
+	case "export":
+		return exportLogin(store, out)
 	case "logout":
 		err := os.Remove(store.path)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -136,17 +155,33 @@ func authCommand(ctx context.Context, store tokenStore, args []string, in io.Rea
 	}
 }
 
+func isHelpCommand(args []string) bool {
+	return len(args) == 1 && (args[0] == "help" || args[0] == "--help" || args[0] == "-h")
+}
+
 func usage(out io.Writer) error {
-	const usageText = "Usage: go-ring [--token-file path] auth login|status|logout | devices list | " +
+	err := printHelp(out)
+	if err != nil {
+		return err
+	}
+
+	return commandError("invalid command")
+}
+
+func printHelp(out io.Writer) error {
+	const usageText = "Usage: go-ring [--token-file path] auth login|status|refresh|export|logout | devices list | " +
 		"snapshot <id> --output file [--timeout 30s] [--ice-servers file.json] | siren <id> on|off | reboot <id> | " +
 		"health <id> [--refresh] | sound <chime-id> ding|motion | " +
 		"view <id> [--player ffplay] [--debug] [--record-rtp file] " +
 		"[--ice-servers file.json] [--continuous] [--speed 0.5] | events watch <id> [--duration 60s] | " +
 		"replay-video <recording> --output file.h264"
 
-	_, _ = fmt.Fprintln(out, usageText)
+	_, err := fmt.Fprintln(out, usageText)
+	if err != nil {
+		return wrapCommandError("write help", err)
+	}
 
-	return commandError("invalid command")
+	return nil
 }
 
 func safeEndpoint(raw string) error {
@@ -181,6 +216,11 @@ func isLoopbackHost(host string) bool {
 }
 
 func withClient(ctx context.Context, store tokenStore, action func(*ring.Client, ring.AuthContext) error) error {
+	err := ctx.Err()
+	if err != nil {
+		return wrapCommandError("command canceled", err)
+	}
+
 	tokens, err := store.load()
 	if err != nil {
 		return wrapCommandError("load saved login", err)
@@ -194,28 +234,7 @@ func withClient(ctx context.Context, store tokenStore, action func(*ring.Client,
 	defer func() { _ = client.Close() }()
 
 	if time.Now().After(tokens.ReceivedAt.Add(time.Duration(tokens.ExpiresIn-refreshSkewSeconds) * time.Second)) {
-		if tokens.RefreshToken == "" {
-			return commandError("token expired; run auth login")
-		}
-
-		refreshed, refreshErr := client.RefreshToken(ctx, ring.RefreshTokenRequest{
-			RefreshToken: tokens.RefreshToken,
-			HardwareID:   tokens.HardwareID,
-		})
-		if refreshErr != nil {
-			return wrapCommandError("refresh login", refreshErr)
-		}
-
-		if refreshed.RefreshToken == "" {
-			refreshed.RefreshToken = tokens.RefreshToken
-		}
-
-		tokens = storedTokens{AuthResponse: *refreshed, HardwareID: tokens.HardwareID, ReceivedAt: time.Now()}
-
-		err := store.save(tokens)
-		if err != nil {
-			return wrapCommandError("save refreshed login", err)
-		}
+		return commandError("token expired or nearing expiry; run auth refresh or auth login")
 	}
 
 	return action(client, ring.AuthContext{AccessToken: tokens.AccessToken, HardwareID: tokens.HardwareID})
@@ -282,8 +301,9 @@ func listDevices(ctx context.Context, client *ring.Client, auth ring.AuthContext
 		return wrapCommandError("list devices", err)
 	}
 
-	for _, device := range devices.Devices {
-		_, _ = fmt.Fprintf(out, "%s\t%s\t%s\t%s\n", device.ID, device.Name, device.Type, device.Kind)
+	err = json.NewEncoder(out).Encode(devices.Devices)
+	if err != nil {
+		return wrapCommandError("write devices", err)
 	}
 
 	return nil

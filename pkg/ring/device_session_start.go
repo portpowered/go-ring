@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/portpowered/go-ring/internal/generatedsignaling"
 	"github.com/portpowered/go-ring/internal/protocol"
 	"github.com/portpowered/go-ring/internal/signaling"
 	"github.com/portpowered/go-ring/pkg/dependencies/webrtc"
 	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
+	generatedsignaling "github.com/portpowered/go-ring/pkg/dependencymodels/signaling"
 	"github.com/portpowered/go-ring/pkg/ringapimodels"
 )
 
@@ -224,7 +224,7 @@ func (c *SignalingConnection) createNegotiatedDeviceSession(
 			ControlID: controlID,
 			Heartbeat: heartbeat,
 			MaxAge:    remaining,
-			Clock:     nil,
+			Clock:     c.clock,
 			Send: func(ctx context.Context, message signaling.Message) error {
 				if message.RIID == "" {
 					message.RIID = negotiation.riid

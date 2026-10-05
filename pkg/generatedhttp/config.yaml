@@ -1,6 +1,6 @@
 package: generatedhttp
 generate:
-  models: true
+  models: false
   client: true
 output: pkg/generatedhttp/client.gen.go
 output-options:

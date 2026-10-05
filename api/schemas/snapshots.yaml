@@ -1,0 +1,25 @@
+# Ring REST components owned by the snapshots API responsibility.
+components:
+  schemas:
+    SnapshotTimestampRequest:
+      type: object
+      required: [doorbot_ids]
+      properties:
+        doorbot_ids: {type: array, minItems: 1, items: {type: integer, minimum: 1}}
+      example: {doorbot_ids: [1]}
+      x-example-evidence: synthetic
+
+    SnapshotTimestampResponse:
+      type: object
+      properties:
+        timestamps: {type: array, items: {$ref: '#/components/schemas/SnapshotTimestamp'}}
+      example: {timestamps: [{timestamp: 0}]}
+      x-example-evidence: synthetic
+
+    SnapshotTimestamp:
+      type: object
+      required: [timestamp]
+      properties:
+        timestamp: {type: integer, format: int64}
+      example: {timestamp: 0}
+      x-example-evidence: synthetic

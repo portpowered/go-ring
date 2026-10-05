@@ -2,6 +2,7 @@ package ring
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/portpowered/go-ring/internal/protocol"
 	dependencywebsocket "github.com/portpowered/go-ring/pkg/dependencies/websocket"
@@ -52,14 +53,23 @@ func (c *EventConnection) Receive() (*ringapimodels.Event, error) {
 		return nil, ringapimodels.NewConnectionError("failed to receive event frame", err)
 	}
 
-	event := &ringapimodels.Event{
+	eventValue := ringapimodels.Event{
+		Data:      nil,
 		DeviceID:  int64(frame.DeviceId),
 		Kind:      frame.Kind,
 		Timestamp: frame.Timestamp,
-		Data:      raw,
 	}
 
-	return event, nil
+	err = json.Unmarshal(raw, &eventValue.Data)
+	if err != nil {
+		return nil, ringapimodels.NewConnectionError("invalid account event payload", err)
+	}
+
+	if eventValue.Data == nil {
+		return nil, ringapimodels.NewConnectionError("invalid account event payload", nil)
+	}
+
+	return &eventValue, nil
 }
 
 func (c *EventConnection) Close() error {

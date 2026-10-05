@@ -1,0 +1,144 @@
+# Ring REST components owned by the authentication API responsibility.
+components:
+  responses:
+    OAuthToken:
+      description: Access and refresh token information
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/OAuthToken'}
+          examples:
+            syntheticToken:
+              summary: Synthetic OAuth token response
+              value: {access_token: synthetic-access-token, refresh_token: synthetic-refresh-token, expires_in: 3600, token_type: bearer, scope: client}
+              x-example-evidence: synthetic
+
+    OAuthRedirect:
+      description: Redirect to the next step in OAuth sign-in
+      headers:
+        Location: {required: true, schema: {type: string, format: uri-reference}}
+
+    TwoFactorRequired:
+      description: OAuth server requests or rejects a two-factor verification step
+      content:
+        application/json:
+          schema: {$ref: './common.yaml#/components/schemas/JsonValue'}
+          examples:
+            syntheticTwoFactorRequired:
+              summary: Synthetic two-factor response
+              value: {}
+              x-example-evidence: synthetic
+
+    RateLimited:
+      description: OAuth server rate-limited a request
+      content:
+        application/json:
+          schema: {$ref: './common.yaml#/components/schemas/JsonValue'}
+          examples:
+            syntheticRateLimited:
+              summary: Synthetic rate-limit response
+              value: {}
+              x-example-evidence: synthetic
+
+    AuthFailure:
+      description: The authentication request was rejected
+      content:
+        application/json:
+          schema: {$ref: './common.yaml#/components/schemas/JsonValue'}
+          examples:
+            syntheticFailure:
+              summary: Synthetic authentication failure response
+              value: {synthetic_response: true}
+              x-example-evidence: synthetic
+
+  schemas:
+    SignInForm:
+      type: object
+      required: [username, password, csrf-token]
+      properties:
+        username: {type: string}
+        password: {type: string, format: password}
+        csrf-token: {type: string}
+      example: {username: person@example.invalid, password: synthetic-password, csrf-token: synthetic-csrf-token}
+      x-example-evidence: synthetic
+
+    TwoFactorForm:
+      type: object
+      required: [2fa_code, csrf-token, remember_me]
+      properties:
+        2fa_code: {type: string}
+        csrf-token: {type: string}
+        remember_me: {type: string, enum: ['false']}
+      example: {2fa_code: synthetic-code, csrf-token: synthetic-csrf-token, remember_me: 'false'}
+      x-example-evidence: synthetic
+
+    ClientDeviceModel:
+      type: string
+      const: go-ring
+
+    OAuthTokenGrant:
+      description: >-
+        Supports authorization-code PKCE, refresh, and a compatibility password grant.
+      oneOf:
+        - {$ref: '#/components/schemas/AuthorizationCodeGrant'}
+        - {$ref: '#/components/schemas/RefreshTokenGrant'}
+        - {$ref: '#/components/schemas/LegacyPasswordGrant'}
+
+    AuthorizationCodeGrant:
+      type: object
+      required: [grant_type, code, redirect_uri, code_verifier, client_id]
+      properties:
+        grant_type: {type: string, const: authorization_code}
+        code: {type: string}
+        redirect_uri: {type: string, format: uri}
+        code_verifier: {type: string}
+        client_id: {type: string}
+      additionalProperties: false
+      example: {grant_type: authorization_code, code: synthetic-authorization-code, redirect_uri: https://example.invalid/callback, code_verifier: synthetic-code-verifier, client_id: synthetic-client}
+      x-example-evidence: synthetic
+
+    RefreshTokenGrant:
+      type: object
+      required: [grant_type, refresh_token, client_id, scope]
+      properties:
+        grant_type: {type: string, const: refresh_token}
+        refresh_token: {type: string}
+        client_id: {type: string}
+        scope: {type: string}
+      additionalProperties: false
+      example: {grant_type: refresh_token, refresh_token: synthetic-refresh-token, client_id: synthetic-client, scope: client}
+      x-example-evidence: synthetic
+
+    LegacyPasswordGrant:
+      type: object
+      required: [grant_type, username, password, client_id, scope]
+      properties:
+        grant_type: {type: string, const: password}
+        username: {type: string}
+        password: {type: string, format: password}
+        client_id: {type: string}
+        scope: {type: string}
+      additionalProperties: false
+      example: {grant_type: password, username: person@example.invalid, password: synthetic-password, client_id: synthetic-client, scope: client}
+      x-example-evidence: synthetic
+
+    OAuthToken:
+      type: object
+      required: [access_token, token_type]
+      properties:
+        access_token: {type: string}
+        refresh_token: {type: string}
+        expires_in: {type: integer}
+        token_type: {type: string}
+        scope: {type: string}
+      additionalProperties: true
+      example: {access_token: synthetic-access-token, refresh_token: synthetic-refresh-token, expires_in: 3600, token_type: bearer, scope: client}
+      x-example-evidence: synthetic
+
+    SignInState:
+      type: object
+      properties:
+        tsv_state: {type: string, description: Presence indicates two-factor verification is required.}
+        next_time_in_secs: {type: integer, minimum: 0}
+      additionalProperties: true
+      example: {tsv_state: synthetic-state, next_time_in_secs: 0}
+      x-example-evidence: synthetic

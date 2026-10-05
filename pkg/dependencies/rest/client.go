@@ -19,22 +19,67 @@ import (
 
 // Client is a REST API client for Ring services.
 type Client struct {
-	httpClient   *http.Client
-	baseURI      string
-	oauthBaseURI string
-	userAgent    string
-	hardwareID   string
-	authMu       sync.Mutex
-	pendingPKCE  *pkceState
+	httpClient       *http.Client
+	configurationErr error
+	baseURI          string
+	oauthBaseURI     string
+	userAgent        string
+	hardwareID       string
+	authMu           sync.Mutex
+	pendingPKCE      *pkceState
+}
+
+// HTTPClientConfigurationError reports an unsafe or unusable HTTP client
+// supplied to a reusable REST client.
+type HTTPClientConfigurationError struct {
+	Reason string
+}
+
+func (e *HTTPClientConfigurationError) Error() string {
+	if e == nil || e.Reason == "" {
+		return "HTTP client configuration error"
+	}
+
+	return "HTTP client configuration error: " + e.Reason
+}
+
+type configurationErrorTransport struct {
+	err error
+}
+
+func (t configurationErrorTransport) RoundTrip(_ *http.Request) (*http.Response, error) {
+	return nil, t.err
 }
 
 // ClientOption is a function that configures a Client.
 type ClientOption func(*Client)
 
-// WithHTTPClient sets a custom HTTP client.
+// WithHTTPClient sets a custom HTTP client snapshot. A configured cookie jar
+// is reported by Client.ConfigurationError and blocks requests.
 func WithHTTPClient(httpClient *http.Client) ClientOption {
-	return func(c *Client) {
-		c.httpClient = httpClient
+	return func(client *Client) {
+		if httpClient == nil {
+			configurationErr := &HTTPClientConfigurationError{Reason: "HTTP client must not be nil"}
+			client.httpClient = &http.Client{Transport: configurationErrorTransport{err: configurationErr}}
+			client.configurationErr = configurationErr
+
+			return
+		}
+
+		httpClientSnapshot := *httpClient
+		if httpClientSnapshot.Jar != nil {
+			configurationErr := &HTTPClientConfigurationError{
+				Reason: "a reusable REST client cannot share an HTTP cookie jar across account requests",
+			}
+			httpClientSnapshot.Transport = configurationErrorTransport{err: configurationErr}
+			client.httpClient = &httpClientSnapshot
+			client.configurationErr = configurationErr
+
+			return
+		}
+
+		client.httpClient = &httpClientSnapshot
+		client.configurationErr = nil
 	}
 }
 
@@ -89,9 +134,18 @@ func (c *Client) Apply(opts ...ClientOption) {
 	}
 }
 
-// HTTPClient returns the underlying HTTP client.
+// ConfigurationError returns an inspectable configuration error, if an
+// option supplied an HTTP client that cannot be used safely.
+func (c *Client) ConfigurationError() error {
+	return c.configurationErr
+}
+
+// HTTPClient returns a shallow copy of the configured HTTP client. Its
+// Transport remains shared so connection pooling and custom transports work.
 func (c *Client) HTTPClient() *http.Client {
-	return c.httpClient
+	httpClient := *c.httpClient
+
+	return &httpClient
 }
 
 // generatedServerBase preserves a caller-supplied base path when generated

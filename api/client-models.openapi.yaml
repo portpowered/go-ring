@@ -112,33 +112,45 @@ components:
     DeviceKind:
       type: string
       description: Open hardware kind in device detail.
+      x-go-type: ringtypes.DeviceKind
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [stickup_cam_mini_ptz_v1]
     DetailDeviceFamily:
       type: string
       description: Open device family in detail and inventory responses.
+      x-go-type: ringtypes.DeviceFamily
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [doorbots, chimes, stickup_cams, other]
     ConnectionState:
       type: string
       description: Open connection state.
+      x-go-type: ringtypes.ConnectionState
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [online, offline]
     PowerMode:
       type: string
       description: Open device power mode.
+      x-go-type: ringtypes.PowerMode
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [wired]
     BatteryReading:
       description: Battery percentage accepted as a JSON number or numeric text by the SDK adapter.
+      x-go-type: ringtypes.BatteryReading
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       oneOf:
         - {type: number, minimum: 0, maximum: 100}
         - {type: string, pattern: '^[0-9]+(\.[0-9]+)?$'}
     OwnerID:
       description: Numeric or text vendor owner identifier normalized to text by the SDK adapter.
+      x-go-type: ringtypes.OwnerID
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       oneOf:
         - {type: string}
         - {type: integer, format: int64}
     DeviceOwner:
       type: object
       properties:
-        id: {$ref: '#/components/schemas/OwnerID'}
+        id: {$ref: '#/components/schemas/OwnerID', x-go-name: ID}
         first_name: {type: string}
         last_name: {type: string}
         email: {type: string}
@@ -153,28 +165,28 @@ components:
       type: object
       properties:
         battery_level: {type: integer}
-        battery_percentage: {type: number}
+        battery_percentage: {type: number, format: double}
         battery_present: {type: boolean}
         battery_percentage_category: {type: string}
         battery_status: {type: string}
         connected: {type: boolean}
         firmware_version: {type: string}
         last_update: {type: string}
-        ptz_connected: {type: string}
-        rssi: {type: number}
+        ptz_connected: {type: string, x-go-name: PTZConnected}
+        rssi: {type: number, x-go-name: RSSI}
         signal_strength: {type: integer}
-        supported_rpc_commands: {type: array, items: {type: string}}
+        supported_rpc_commands: {type: array, x-go-name: SupportedRPCCommands, x-go-type-skip-optional-pointer: true, items: {type: string}}
     FeatureEligibility:
       type: object
       properties:
         eligible: {type: boolean}
-        ineligibility_reasons: {type: array, items: {type: string}}
+        ineligibility_reasons: {type: array, x-go-type-skip-optional-pointer: true, items: {type: string}}
     FeatureEnablement:
       type: object
       properties:
         allowed: {type: boolean}
         enabled: {type: boolean}
-        disallow_reasons: {type: array, items: {type: string}}
+        disallow_reasons: {type: array, x-go-type-skip-optional-pointer: true, items: {type: string}}
     FeatureAvailability:
       type: object
       properties:
@@ -199,8 +211,8 @@ components:
       type: object
       required: [id, description, kind]
       properties:
-        id: {type: integer, format: int64}
-        device_id: {type: string}
+        id: {type: integer, format: int64, x-go-name: ID}
+        device_id: {type: string, x-go-name: DeviceID}
         description: {type: string}
         kind: {$ref: '#/components/schemas/DeviceKind'}
         family: {$ref: '#/components/schemas/DetailDeviceFamily'}
@@ -208,7 +220,7 @@ components:
         deactivated_at: {type: string, format: date-time}
         name: {type: string}
         address: {type: string}
-        location_id: {type: string}
+        location_id: {type: string, x-go-name: LocationID}
         operation_set: {type: string}
         owner: {$ref: '#/components/schemas/DeviceOwner'}
         settings: {$ref: '#/components/schemas/DeviceLegacySettings'}
@@ -238,7 +250,7 @@ components:
       description: SDK-derived status from device detail, not an additional wire response.
       required: [is_offline]
       properties:
-        battery_percent: {type: number, minimum: 0, maximum: 100}
+        battery_percent: {type: number, format: double, minimum: 0, maximum: 100}
         connection: {$ref: '#/components/schemas/ConnectionState'}
         is_offline: {type: boolean}
         power_mode: {$ref: '#/components/schemas/PowerMode'}
@@ -261,11 +273,11 @@ components:
       type: object
       required: [location_id, name]
       properties:
-        location_id: {type: string}
+        location_id: {type: string, x-go-name: ID}
         name: {type: string}
         location_type: {type: string}
         is_owner: {type: boolean}
-        owner_id: {type: integer, format: int64}
+        owner_id: {type: integer, format: int64, x-go-name: OwnerID}
         address: {$ref: '#/components/schemas/LocationAddress'}
         geo_coordinates: {$ref: '#/components/schemas/GeoCoordinates'}
     LocationList:
@@ -273,7 +285,7 @@ components:
       description: SDK projection; OperationSets is derived outside JSON.
       required: [user_locations]
       properties:
-        user_locations: {type: array, items: {$ref: '#/components/schemas/LocationSummary'}}
+        user_locations: {type: array, x-go-name: Locations, items: {$ref: '#/components/schemas/LocationSummary'}}
     LocationAttributes:
       type: object
       properties:
@@ -286,12 +298,14 @@ components:
         time_zone: {type: string}
     LocationResourceType:
       type: string
+      x-go-type: ringtypes.LocationResourceType
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [locations]
     LocationResource:
       type: object
       required: [id, type]
       properties:
-        id: {type: string}
+        id: {type: string, x-go-name: ID}
         type: {$ref: '#/components/schemas/LocationResourceType'}
         attributes: {$ref: '#/components/schemas/LocationAttributes'}
     LocationMeta:
@@ -303,7 +317,7 @@ components:
       required: [data]
       properties:
         data: {$ref: '#/components/schemas/LocationResource'}
-        included: {type: array, items: {$ref: '#/components/schemas/LocationResource'}}
+        included: {type: array, x-go-type-skip-optional-pointer: true, items: {$ref: '#/components/schemas/LocationResource'}}
         meta: {$ref: '#/components/schemas/LocationMeta'}
     LocationGroup:
       type: object
@@ -313,7 +327,7 @@ components:
     LocationGroups:
       type: object
       properties:
-        device_groups: {type: array, items: {$ref: '#/components/schemas/LocationGroup'}}
+        device_groups: {type: array, x-go-type-skip-optional-pointer: true, items: {$ref: '#/components/schemas/LocationGroup'}}
         is_owner: {type: boolean}
     LocationGroupDevices:
       type: object
@@ -322,30 +336,36 @@ components:
         groups: {type: array, items: {$ref: '#/components/schemas/LocationGroup'}}
     TimelineEventType:
       type: string
+      x-go-type: ringtypes.TimelineEventType
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [on_demand, ding, motion]
     RecordingStatus:
       type: string
+      x-go-type: ringtypes.RecordingStatus
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [ready]
     TimelineState:
       type: string
+      x-go-type: ringtypes.TimelineState
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [completed]
     TimelineDevice:
       type: object
       properties:
-        id: {type: integer, format: int64}
+        id: {type: integer, format: int64, x-go-name: ID}
         description: {type: string}
         type: {type: string}
     TimelineEvent:
       type: object
       required: [event_id, event_type, start_time]
       properties:
-        event_id: {type: string}
-        event_type: {$ref: '#/components/schemas/TimelineEventType'}
+        event_id: {type: string, x-go-name: ID}
+        event_type: {allOf: [{$ref: '#/components/schemas/TimelineEventType'}], x-go-name: Type}
         start_time: {type: string, format: date-time}
         end_time: {type: string, format: date-time}
-        duration_ms: {type: integer, minimum: 0}
+        duration_ms: {type: integer, minimum: 0, x-go-name: DurationMS}
         device: {$ref: '#/components/schemas/TimelineDevice'}
-        source_id: {type: string}
+        source_id: {type: string, x-go-name: SourceID}
         is_favorite: {type: boolean}
         recording_status: {$ref: '#/components/schemas/RecordingStatus'}
         state: {$ref: '#/components/schemas/TimelineState'}
@@ -358,18 +378,20 @@ components:
         pagination_key: {type: string}
     HistoryFeedType:
       type: string
+      x-go-type: ringtypes.HistoryFeedType
+      x-go-type-import: {path: github.com/portpowered/go-ring/pkg/ringtypes, name: ringtypes}
       x-extensible-enum: [EVENT]
     HistoryFeedItem:
       type: object
       properties:
-        id: {type: string}
+        id: {type: string, x-go-name: ID}
         type: {$ref: '#/components/schemas/HistoryFeedType'}
     HistoryDevices:
       type: object
       required: [events]
       properties:
         events: {type: array, items: {$ref: '#/components/schemas/TimelineEvent'}}
-        feed: {type: array, items: {$ref: '#/components/schemas/HistoryFeedItem'}}
+        feed: {type: array, x-go-type-skip-optional-pointer: true, items: {$ref: '#/components/schemas/HistoryFeedItem'}}
         pagination_key: {type: string}
         schema: {type: string}
     CapturedTickets:
@@ -378,4 +400,4 @@ components:
       properties:
         host: {type: string}
         ticket: {type: string}
-        subscriptionTopics: {type: array, items: {type: string}}
+        subscriptionTopics: {type: array, x-go-type-skip-optional-pointer: true, items: {type: string}}

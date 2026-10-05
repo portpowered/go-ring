@@ -216,7 +216,62 @@ func authStatus(store tokenStore, out io.Writer) error {
 	}
 
 	expiresAt := tokens.ReceivedAt.Add(time.Duration(tokens.ExpiresIn) * time.Second).Format(time.RFC3339)
-	_, _ = fmt.Fprintf(out, "Saved login at %s; access token expires around %s\n", store.path, expiresAt)
+
+	err = json.NewEncoder(out).Encode(map[string]string{"token_file": store.path, "expires_at": expiresAt})
+	if err != nil {
+		return wrapCommandError("write login status", err)
+	}
+
+	return nil
+}
+
+func refreshLogin(ctx context.Context, store tokenStore, out io.Writer) error {
+	tokens, err := store.load()
+	if err != nil {
+		return err
+	}
+
+	if tokens.RefreshToken == "" {
+		return commandError("no refresh token; run auth login")
+	}
+
+	client, err := ring.NewClient(store.clientOptions...)
+	if err != nil {
+		return wrapCommandError("create Ring client", err)
+	}
+
+	defer func() { _ = client.Close() }()
+
+	refreshed, err := client.RefreshToken(ctx, ring.RefreshTokenRequest{
+		RefreshToken: tokens.RefreshToken,
+		HardwareID:   tokens.HardwareID,
+	})
+	if err != nil {
+		return wrapCommandError("refresh login", err)
+	}
+
+	if refreshed.RefreshToken == "" {
+		refreshed.RefreshToken = tokens.RefreshToken
+	}
+
+	err = store.save(storedTokens{AuthResponse: *refreshed, HardwareID: tokens.HardwareID, ReceivedAt: time.Now()})
+	if err != nil {
+		return wrapCommandError("save refreshed login", err)
+	}
+
+	return authStatus(store, out)
+}
+
+func exportLogin(store tokenStore, out io.Writer) error {
+	tokens, err := store.load()
+	if err != nil {
+		return err
+	}
+
+	err = json.NewEncoder(out).Encode(tokens)
+	if err != nil {
+		return wrapCommandError("export login", err)
+	}
 
 	return nil
 }

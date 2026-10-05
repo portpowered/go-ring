@@ -1,0 +1,123 @@
+{
+  "provenance": "hand-authored synthetic standalone CLI RTC snapshot transcript; no provider capture",
+  "handshake": {
+    "path": "/",
+    "query": {
+      "token": ["snapshot-ticket"]
+    },
+    "headers": {
+      "User-Agent": ["android:com.ringapp"],
+      "Hardware_id": ["snapshot-hardware"]
+    },
+    "exact_headers": true,
+    "require_close": true
+  },
+  "steps": [
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "liveView",
+      "body": {
+        "method": "live_view",
+        "dialog_id": "$uuid:dialog",
+        "body": {
+          "doorbot_id": 12345,
+          "sdp": "$sdp:offer",
+          "stream_options": {"video_enabled": true},
+          "type": "offer"
+        }
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionCreated",
+      "body": {
+        "method": "session_created",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-snapshot",
+        "body": {"doorbot_id": 12345, "session_id": "signal-snapshot"}
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "liveAnswer",
+      "body": {
+        "method": "sdp",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-snapshot",
+        "body": {
+          "doorbot_id": 12345,
+          "session_id": "signal-snapshot",
+          "type": "answer",
+          "sdp": "$ref:answer",
+          "session_info": {"session_id": "control-snapshot", "ping_interval": 10}
+        }
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionActivate",
+      "body": {
+        "method": "activate_session",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-snapshot",
+        "body": {"doorbot_id": 12345, "session_id": "signal-snapshot"}
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionMicrophone",
+      "body": {
+        "method": "mic_enable",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-snapshot",
+        "body": {"doorbot_id": 12345, "session_id": "signal-snapshot", "enabled": false}
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionStreamOptions",
+      "body": {
+        "method": "stream_options",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-snapshot",
+        "body": {"doorbot_id": 12345, "session_id": "signal-snapshot", "audio_enabled": false}
+      }
+    },
+    {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "channel": "serverEnvelope",
+      "body": {
+        "method": "camera_started",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-snapshot",
+        "body": {"doorbot_id": 12345, "session_id": "signal-snapshot"}
+      }
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "channel": "sessionClose",
+      "body": {
+        "method": "close",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-snapshot",
+        "body": {"doorbot_id": 12345, "session_id": "signal-snapshot"}
+      }
+    }
+  ]
+}
