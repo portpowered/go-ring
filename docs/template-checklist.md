@@ -1,16 +1,18 @@
 # go-ring checklist
 
-Requirements copied from the shared template at
-`2f21da33e8acc0f9f94e5b53e9c812140c9cee1c`.
+Requirements copied from the shared template at `62cc3cb5a1308dae8700f92052f99b1c455a1d98`.
 
-The [review record](independent-review.md) verifies the earlier documentation
-cleanup for items 2, 3, 12, and 13. It does not verify the complete model
-population or these expanded requirements. The checklist is reopened until two
-independent reviewers audit every item at the final implementation commit.
-Historical signoffs remain in Git history.
+All items remain open until two independent reviewers verify the final
+implementation and publication evidence against these requirements.
+Historical approvals remain in Git history and do not approve later changes.
+See the [current review record](independent-review.md).
 
 - [ ] **1.** Keep the public client, examples, README, and site independent of any consuming application. Put application adapters and rollout plans in the consuming repository.
 - [ ] **2.** Document supported operations, authentication, errors, and transport injection with examples that match the exported API. Add customer-facing operation guides for important workflows, and distinguish verified behavior from synthetic examples and historical references.
+   Put sanitized, schema-valid request, response and event examples in the canonical schemas,
+   including complete envelopes, nested payloads, resource updates, relation changes and failures.
+   Validate every example against its owning schema in CI and identify its evidence class in
+   contributor material. Never publish credentials or private captures as examples.
 - [ ] **3.** Show Go version, CI, coverage, release, Go Reference, license, and documentation badges in the README. Replace every example repository value and point badges to live reports.
 - [ ] **4.** Generate the API reference in CI with the shared Fumadocs action and publish it to GitHub Pages.
    Inventory **ALL** outbound wire endpoints and exchanges, including private, encrypted, event, and
@@ -19,6 +21,13 @@ Historical signoffs remain in Git history.
    wire request/response types from those schemas. Include nested event properties and payloads
    serialized inside strings or encrypted wrappers; use generated artifacts at every wire boundary,
    and do not sign off while a handwritten wire definition or model remains.
+   Correlate command or message identifiers with their named payload schemas using discriminated
+   variants or an equivalent explicit binding. The generated reference must expose each known
+   variant's required parameters and result shape, even when the transport uses a generic envelope.
+   An unknown or free-form payload does not document known variants. Keep future-value extensions
+   separate so they cannot accept malformed known payloads. Inspect actual rendered fields,
+   variant examples and generated request snippets; schema validity and HTTP 200 alone do not
+   establish that customers can discover the payload they must send.
    Inventory concrete payload variants and library-defined map keys, operation values, and skill
    or message identifiers as well as structs. Generate known nested payloads and their wire
    constants from schema; a generated outer envelope around a handwritten map does not satisfy
@@ -34,6 +43,9 @@ Historical signoffs remain in Git history.
    as well as JSON objects. Negative controls must reject a novel unregistered fixed value or
    key in a generated wire object, later field mutations, local aliases, and forged generated
    markers; a denylist of already-known literal values alone is insufficient.
+   Recursively resolve closed-enum constraints through schema references, nested or anonymous
+   structs, and arrays or slices. Reject invalid values in caller-constructed containers for
+   closed fields, while retaining positive controls for genuinely caller-defined open fields.
    Follow wire values and map provenance through helper arguments and returns,
    including named results with bare returns, local aliases, and returned callbacks.
    Add negative controls for a novel fixed value returned through a named result and
@@ -45,6 +57,11 @@ Historical signoffs remain in Git history.
    helper returns an unregistered fixed value or mutates a generated map, plus
    a caller-defined positive control. A per-file scan does not prove package-wide
    provenance.
+   Do not classify unresolved provenance as caller-defined input. If recursion,
+   a traversal limit, or an unresolved library helper prevents proving a schema-owned
+   wire value or key, fail the gate with a diagnostic. Test a helper chain beyond
+   the traversal limit and a recursive fixed fallback; retain proven caller-input
+   positives.
    Check all intermediate keys in indexed receiver paths and aliases, including slices,
    pointer dereferences, and type assertions. Test inferred nested composites and retain
    positive cases for explicitly caller-defined open keys.
@@ -55,7 +72,9 @@ Historical signoffs remain in Git history.
    feature payloads, and custom decoders. A generated file marker or passing route gate is not proof that the remaining
    structs are generated. Remove unused wire definitions; generate active ones. Test the
    model gate with an unreferenced exported handwritten JSON struct and an anonymous nested wire
-   object; unused compatibility exports must not escape the scan.
+   object; unused compatibility exports must not escape the scan. For each anonymous object,
+   record its exact schema path, JSON field path, Go field path, schema owner, generated Go type,
+   generator command, and actual encode or decode uses.
    For GraphQL, trace generated models to SDL components and actual emitted operation selections.
    Validate generator-added discriminators and exact generated decoder branches against schema
    possible types. Label type-only implementations with no selected subtype fields explicitly;
@@ -82,6 +101,14 @@ Historical signoffs remain in Git history.
    URL origin/path/query, header, or body mutations after construction, including
    aliases, cloned requests, and helper escapes. Add a negative control that changes
    `request.URL.Path` between a generated constructor and `Do` or its equivalent.
+   Include URL user information, body factories, and HTTP framing fields: they can
+   change authentication or the emitted body even when the method and path stay fixed.
+   Track mutable backing buffers used by request body readers through the actual send;
+   test a byte-slice mutation after request construction and retain a safe immutable-body
+   positive control. Scan every shipped production module, including standalone CLI and
+   example modules, for outbound edges; a scan limited to the SDK package is incomplete.
+   Run negative controls through the exact CI or Makefile command with its default
+   working directory and root arguments; an absolute-root helper test alone is insufficient.
    Require generated `QueryParam` and `Header` keys
    for query setters and direct or aliased map writes, map literals, request headers, and
    custom-header maps. Normalize parenthesized map receivers and indexed expressions before checking
@@ -121,9 +148,13 @@ Historical signoffs remain in Git history.
 - [ ] **7.** Put the reusable public provider package under `pkg/<provider>`, generated provider wire models under `pkg/dependencymodels`, and transport behavior under `pkg/dependencies/<transport>`. Use distinct schema and generated Go files for each API responsibility, such as authentication, behaviors, devices, and feature payloads; a compatible shared Go package is allowed. Keep related request, response, and nested component definitions together rather than a monolithic model file or a second catch-all `internal/models` or `internal/wire` model bucket. Keep public semantic projections separate from provider wire contracts. Handwritten model companions may supply conversion or decoding behavior but must not redefine wire fields. Use compatibility aliases when moving existing exported types; when old field shapes differ, generate their compatibility definitions from a separate projection schema. Verify public import paths from a separate consumer module.
 - [ ] **8.** Initialize clients through explicit functional options (for example `NewClient(WithBaseURL(...), WithHTTPClient(...))`) with sensible defaults and validation. Keep account credentials out of reusable client configuration when the client serves multiple accounts.
 - [ ] **9.** Keep the reusable client stateless with respect to accounts and connections. Return explicit session objects for login, event streams, sockets, RTC, or other stateful lifecycles; make ownership, close, errors, and token state visible to callers.
+   Include injected transport state in this audit. A shared `http.Client.Jar` must not
+   transfer account cookies between sessions. Reject unsafe shared cookie jars with a
+   distinguishable configuration error or keep cookie state in explicit sessions. Test
+   two accounts through the same reusable client and assert complete outbound requests.
 - [ ] **10.** Allow callers to inject the transport at every network edge the library uses, including HTTP, HTTP/2, WebSocket, MQTT, RTC signaling, and sockets opened by dependencies as applicable. A configurable concrete dialer is insufficient when it cannot substitute an offline connection; provide a connection-producing dial hook or equivalent seam and test the actual framed request and response through it without real credentials or network access.
-- [ ] **11.** Expose token exchange and refresh as explicit operations that return the current credentials to the caller. Do not silently refresh or retain updated tokens inside a reusable client; document caller storage and renewal responsibilities.
-- [ ] **12.** Publish all customer-facing guides as MDX files under `docs/guides/` in the GitHub Pages site. Link guides to the matching generated reference pages. Keep separate repository Markdown only for contributor and release process notes; check internal links from **all** rendered pages, including the site root and generated references, and review external destinations and release-note links after a docs migration.
+- [ ] **11.** Expose supported token exchange and refresh as explicit operations that return the current credentials to the caller. Do not silently refresh or retain updated tokens inside a reusable client; document caller storage and renewal responsibilities. For providers without a supported refresh contract, document explicit reauthentication and credential retrieval using the supported login operation.
+- [ ] **12.** Publish all customer-facing guides as MDX files under `docs/guides/` in the GitHub Pages site. Link guides to the matching generated reference pages. Keep separate repository Markdown only for contributor and release process notes; check internal links from **all** rendered pages, including the site root and generated references, and review external destinations and release-note links after a docs migration. Check schema-supplied links such as `externalDocs` even when they are loaded at runtime and absent from static HTML anchors. Verify the destination guide exists and renders its expected content; HTTP 200 alone can be a fallback error page.
 - [ ] **13.** Before release, edit every published page for concise copy: remove repeated caveats, stale claims, and links to duplicate repository documents; keep each page's purpose, evidence status, and next action clear. Keep the README focused on installation, a short authenticated example, supported capabilities, caller configuration and lifecycle obligations, and links to user guides. Put wire inventories, generation details, fixture provenance audits, coverage mechanics, migration history, and reviewer evidence in contributor material, not the README or customer guide navigation. Delete obsolete internal reports and duplicate process documents; keep one current checklist and independent review record plus contributor instructions needed to maintain the library. Review every tracked documentation file for audience, purpose, duplication, and incoming links, then review the rendered Pages site. Check release-note copy and URLs against the published guide locations.
 - [ ] **14.** Before signing off a library migration or release, have two independent reviewers who did not implement the change audit the library against every item in this checklist and the linked standards. Have both reviewers write their separate verdicts and concrete evidence for every numbered item in one current repository review document, including the reviewed commit, discrepancies, and the disposition of every finding; link it from the library's checklist. Keep this item unchecked while any finding or other checklist item remains open; recording or tracking a finding does not resolve it. Re-run affected checks and have both reviewers verify every fix at the final commit before checking this item. Do not accept an implementer's own checklist sign-off as independent verification.
     For items 4 and 7, attach the complete wire-model inventory and verify every entry against
@@ -134,6 +165,10 @@ Historical signoffs remain in Git history.
     or absence of redundant internal documents. Missing inventory entries or unexamined files
     keep the corresponding verdict open.
 - [ ] **15.** Store and replay each wire exchange as a paired request and response (or an ordered bidirectional message transcript). Include method, origin, escaped path, repeated query values, relevant headers, and body or frame payload in the request expectation; include response status, relevant headers, and body. Match the outbound request before returning its response, reject unexpected or duplicate calls, and assert that every expected exchange was consumed in order where order matters. Never fall back to a response when request matching fails. Represent volatile IDs, timestamps, signatures, and redacted credentials with explicit match rules that still validate their format or decoded meaning. Apply this to every supported transport and classify each pair as captured or synthetic; a response-only fixture does not satisfy replay verification.
+     For HTTP, validate the effective authority, including any `Request.Host` override, before
+     returning the paired response. Reject unexpected URL user information, opaque URLs, and
+     malformed query strings; include a request-identity mismatch negative control. Keep secret
+     values out of mismatch diagnostics.
     Match authentication forms and headers in full, including CSRF, OTP, and token exchange fields.
     Bind OAuth state to the callback, validate PKCE challenge/verifier relationships, and bind the
     hardware identity across requests. Validate volatile field formats before normalization.
@@ -141,7 +176,23 @@ Historical signoffs remain in Git history.
     close or teardown; a startup notification or terminal read timeout is not cleanup proof.
 
 - [ ] **16.** Provide an installable standalone CLI that consumes the public SDK so customers can test the library without a consuming application. Use a separate module under `cmd/go-<provider>`; keep CLI concerns out of the SDK. Cover authentication and explicit token exchange, device or endpoint discovery, important read/control workflows, and event/session lifecycles where supported. Include useful help, machine-readable output, nonzero failures, cancellation, and session cleanup. Accept credentials through documented environment, stdin, or explicit file inputs; keep secrets out of arguments and ordinary output, and make credential export an explicit action. Require explicit commands for device changes. Document installation and customer examples in an MDX guide. Test CLI commands offline through injected paired request/response transports, including authentication errors and lifecycle cleanup, and run blocking pinned all-linter, build, test, and module checks for the CLI in CI. Verify a separate consumer installation from the published CLI module and release its module tags with the SDK.
+    Make routine use a customer workflow: complete authorization, store credentials with
+    explicit ownership, enumerate devices, select a device by ID, and expose useful reads
+    and controls through named commands. Supply stable client identities, protocol defaults,
+    and discovered device metadata automatically. Do not require request JSON, manual
+    credential copying, or wire parameters for the ordinary login and device-control flow.
+    Provide logout and document credential storage. Write the CLI guide as a short ordered
+    sequence of copyable installation, login, discovery, and device-operation instructions.
+    Explain how to choose discovered IDs; move advanced formats and protocol details to
+    separate help or references. Verify the documented sequence offline, including failed
+    authorization, device lookup, cancellation, and session cleanup.
+    When supported by the provider, implement the complete interactive authorization flow,
+    including browser consent, a localhost callback and provider-required activation calls.
+    Expose composable SDK authorization mechanisms for caller-owned callback endpoints.
+    Validate callback state and PKCE when supported; bind the exact redirect to the exchange.
+    Keep listeners and temporary authorization state in an explicit cancellable lifecycle,
+    with offline browser, listener and transport injection and idempotent cleanup. Document
+    registered redirects, credential ownership and explicit export; manual code exchange alone
+    is not end-to-end authorization.
 
-See the repository standards for [Go](standards/go.md),
-[schemas](standards/schemas.md), [client API](standards/client-api.md), and
-[library verification](standards/library.md).
+See [verification](https://github.com/portpowered/go-third-party-template/blob/62cc3cb5a1308dae8700f92052f99b1c455a1d98/docs/verification.md), [client design](https://github.com/portpowered/go-third-party-template/blob/62cc3cb5a1308dae8700f92052f99b1c455a1d98/docs/client-design.md), and [website publishing](https://github.com/portpowered/go-third-party-template/blob/62cc3cb5a1308dae8700f92052f99b1c455a1d98/docs/website.md).

@@ -12,7 +12,7 @@
 - **API-10** Let the session own signaling, SDP and ICE exchange, ping and pong, PTZ commands, and termination. Make its state changes observable.
 - **API-11** Distinguish command acknowledgement from completed physical action. Do not retry an uncertain movement command automatically.
 - **API-12** Return typed errors for unauthorized, missing resource, unavailable snapshot, connection failure, timeout, and backpressure when the cause is known.
-- **API-13** Keep the reusable client stateless. Put connection state in explicit session objects.
+- **API-13** Keep the reusable client stateless. Put connection state in explicit session objects. Audit mutable state inside injected clients, including shared HTTP cookie jars. Reject unsafe shared account cookie storage with an inspectable configuration error or keep it in the session; prove isolation with complete outbound requests from two accounts.
 - **API-14** Return typed client errors. Do not expose raw transport errors by default.
 - **API-15** Use named request and result structs for public operations. Avoid bare booleans or integers when their meaning needs context.
 - **API-16** Prefer one device abstraction across device families.
