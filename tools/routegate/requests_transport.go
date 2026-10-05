@@ -138,8 +138,8 @@ func retryAttemptAssignmentsAreSafe(function *ast.FuncDecl, request, attempt *as
 	assignments := 0
 	validAssignments := true
 	attemptRequests := map[*ast.Object]HTTPRoute{
-		request: {OperationID: "transport", Method: "", Path: ""},
-		attempt: {OperationID: "transport", Method: "", Path: ""},
+		request: {OperationID: "transport", Method: "", Path: "", HasBody: false},
+		attempt: {OperationID: "transport", Method: "", Path: "", HasBody: false},
 	}
 
 	ast.Inspect(function.Body, func(node ast.Node) bool {
@@ -262,7 +262,7 @@ func retryDoCall(function *ast.FuncDecl) *ast.CallExpr {
 func functionHasOnlyRequestCalls(function *ast.FuncDecl, request *ast.Object, allowedMethods map[string]bool) bool {
 	valid := true
 	testRoutes := map[*ast.Object]HTTPRoute{
-		request: {OperationID: "transport", Method: "", Path: ""},
+		request: {OperationID: "transport", Method: "", Path: "", HasBody: false},
 	}
 
 	ast.Inspect(function.Body, func(node ast.Node) bool {

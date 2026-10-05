@@ -37,6 +37,8 @@ type cliExchange struct {
 	Response       cliResponseExpectation `json:"response"`
 }
 
+const cliSyntheticClassification = "synthetic"
+
 type cliTransport struct {
 	exchange cliExchange
 	calls    int
@@ -102,7 +104,7 @@ func replayTokenStore(t *testing.T) (tokenStore, *cliTransport) {
 		t.Fatal(err)
 	}
 
-	if exchange.Classification != "synthetic" {
+	if exchange.Classification != cliSyntheticClassification {
 		t.Fatal("CLI replay must remain synthetic")
 	}
 

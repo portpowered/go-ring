@@ -1,0 +1,113 @@
+# Ring REST components owned by the device-settings API responsibility.
+components:
+  requestBodies:
+    DeviceSettingsPatch:
+      required: true
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceSettingsPatch'}
+          examples:
+            syntheticDeviceSettingsPatch:
+              summary: Synthetic device settings patch
+              value:
+                motion_settings:
+                  motion_detection_enabled: true
+              x-example-evidence: synthetic
+
+  responses:
+    DeviceSettings:
+      description: Device settings. Unrecognized settings are preserved as JSON values.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceSettings'}
+          examples:
+            syntheticDeviceSettings:
+              summary: Synthetic device settings response
+              value:
+                motion_settings:
+                  motion_detection_enabled: true
+                ptz_settings: {}
+                video_settings: {}
+              x-example-evidence: synthetic
+
+  schemas:
+    LiveViewSettingRequest:
+      type: object
+      required: [entity]
+      properties:
+        entity: {$ref: '#/components/schemas/LiveViewSetting'}
+      example: {entity: {live_view_enabled: true}}
+      x-example-evidence: synthetic
+
+    LiveViewSetting:
+      type: object
+      required: [live_view_enabled]
+      properties:
+        live_view_enabled: {type: boolean}
+
+    DeviceOperationSet:
+      description: Operation names are dynamic; historical entries are empty capability descriptors.
+      type: object
+      additionalProperties: {type: object, additionalProperties: true}
+
+    DeviceSettings:
+      type: object
+      properties:
+        motion_settings:
+          anyOf:
+            - {$ref: '#/components/schemas/MotionSettings'}
+            - {type: 'null'}
+        ptz_settings: {$ref: './cameras.yaml#/components/schemas/PTZSettings'}
+        video_settings: {$ref: './cameras.yaml#/components/schemas/VideoSettings'}
+        volume_settings: {$ref: '#/components/schemas/VolumeSettings'}
+        chime_settings: {$ref: '#/components/schemas/ChimeSettings'}
+      additionalProperties: {$ref: './common.yaml#/components/schemas/JsonValue'}
+      example: {motion_settings: {motion_detection_enabled: true}, ptz_settings: {}, video_settings: {}}
+      x-example-evidence: synthetic
+
+    MotionSettings:
+      type: object
+      properties:
+        motion_detection_enabled: {type: [boolean, 'null']}
+      additionalProperties: {$ref: './common.yaml#/components/schemas/JsonValue'}
+
+    VolumeSettings:
+      type: object
+      properties:
+        doorbell_volume: {type: integer, minimum: 0, maximum: 11, description: Doorbell volume level.}
+        mic_volume: {type: integer, minimum: 0, description: Non-negative device-reported microphone volume; upper bound is not established.}
+        voice_volume: {type: integer, minimum: 0, description: Non-negative device-reported voice volume; upper bound is not established.}
+      additionalProperties: true
+
+    ChimeSettings:
+      type: object
+      properties:
+        duration: {type: integer, minimum: 0, description: Chime duration in seconds.}
+        enable: {type: boolean}
+        type: {type: integer, description: Historical chime type code is 2; other numeric codes remain valid., x-extensible-enum: [2]}
+      additionalProperties: true
+
+    DeviceSettingsPatch:
+      type: object
+      minProperties: 1
+      description: >-
+        Extensible wire patch. Historical variants include motion_settings,
+        video_settings, general_settings, and volume_settings. Additional settings may be available for other device types.
+      properties:
+        motion_settings: {$ref: '#/components/schemas/MotionSettingsPatch'}
+        video_settings: {$ref: '#/components/schemas/SettingsObject'}
+        general_settings: {$ref: '#/components/schemas/SettingsObject'}
+        volume_settings: {$ref: '#/components/schemas/SettingsObject'}
+      additionalProperties: {$ref: '#/components/schemas/SettingsObject'}
+      example: {motion_settings: {motion_detection_enabled: true}}
+      x-example-evidence: synthetic
+
+    MotionSettingsPatch:
+      type: object
+      properties:
+        motion_detection_enabled: {type: boolean}
+      additionalProperties: {$ref: './common.yaml#/components/schemas/JsonValue'}
+
+    SettingsObject:
+      type: object
+      additionalProperties: {$ref: './common.yaml#/components/schemas/JsonValue'}

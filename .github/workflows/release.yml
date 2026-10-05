@@ -33,6 +33,7 @@ jobs:
         shell: bash
         run: |
           make generate-api
+          UPDATE_WIRE_MODEL_INVENTORY=1 go test ./tools/protocols -run TestWireModelInventoryDocumentMatchesGeneratedSources -count=1
           check_generated_outputs() {
             local generated_status ignored_generated
             generated_status="$(git status --porcelain --untracked-files=all -- "$@")"
@@ -50,6 +51,8 @@ jobs:
             fi
           }
           check_generated_outputs \
+            'api/openapi.yaml' \
+            'pkg/dependencymodels/rest/*.gen.go' \
             ':(glob)pkg/**/*.gen.go' \
             ':(glob)pkg/dependencymodels/**/*.go' \
             ':(glob)internal/generatedhttp/*.gen.go' \
@@ -59,7 +62,8 @@ jobs:
             'internal/protocol/signaling.go' \
             'internal/protocol/fcm.go' \
             'internal/protocol/public_models.go' \
-            'internal/protocol/mcs.gen.go'
+            'internal/protocol/mcs.gen.go' \
+            'docs/wire-model-inventory.md'
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version-file: go.mod
@@ -72,7 +76,7 @@ jobs:
       - name: Run all lint checks
         run: make lint
       - name: Verify wire model, endpoint and fixture contracts on the tag
-        run: make test-contracts routegate
+        run: make test-contracts routegate schema-examples
       - name: Verify non-generated coverage on the tag
         run: make test-cover
       - run: go test -race ./... -timeout 120s

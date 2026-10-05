@@ -1,0 +1,554 @@
+openapi: 3.1.0
+info:
+  title: Ring API
+  version: 0.3.0
+  description: >-
+    HTTP endpoints for Ring account authentication, devices, settings, recordings,
+    locations, notifications, and signaling. Some shapes come from inherited
+    historical fixtures without verifiable capture provenance; synthetic cases
+    are test contracts, not current provider evidence. This is not a complete
+    specification of Ring's evolving API.
+servers:
+  - url: https://api.ring.com
+    description: Ring API endpoint
+security:
+  - RingAccessToken: []
+tags:
+  - name: Authentication
+    description: OAuth sign-in and token operations.
+  - name: Sessions
+    description: Client session registration.
+  - name: Devices
+    description: Device inventory and health.
+  - name: Device Settings
+    description: Read and update device configuration.
+  - name: Device Controls
+    description: Device actions and controls.
+  - name: Device History
+    description: Device timelines and event history.
+  - name: Recordings
+    description: Recording discovery, playback, and management.
+  - name: Snapshots
+    description: Device snapshot requests and images.
+  - name: Signaling
+    description: Connection tickets and signaling setup.
+  - name: Locations
+    description: Location inventory and details.
+  - name: Notifications
+    description: Push notification registration and subscriptions.
+paths:
+  /oauth/v2/authorize:
+    get:
+      operationId: beginOrContinueOAuthAuthorization
+      summary: Start or continue OAuth sign-in
+      tags: [Authentication]
+      description: Starts an OAuth authorization session and requests an authorization code. Redirects may continue an existing sign-in session.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      parameters:
+        - {name: redirect_uri, in: query, required: false, schema: {type: string, format: uri, default: 'https://ring.com/signin/callback'}}
+        - {name: client_id, in: query, required: false, schema: {type: string}}
+        - {name: response_type, in: query, required: false, schema: {type: string, enum: [code]}}
+        - {name: prompt, in: query, required: false, description: The implemented PKCE flow sends login; other OAuth prompts may exist., schema: {type: string, x-extensible-enum: [login]}}
+        - {name: state, in: query, required: false, schema: {type: string}}
+        - {name: scope, in: query, required: false, description: The implemented client requests the client scope., schema: {type: string, x-extensible-enum: [client]}}
+        - {name: code_challenge, in: query, required: false, schema: {type: string}}
+        - {name: code_challenge_method, in: query, required: false, schema: {type: string, enum: [S256]}}
+        - {name: device_model, in: query, required: false, schema: {$ref: './schemas/authentication.yaml#/components/schemas/ClientDeviceModel'}}
+        - {name: app_version, in: query, required: false, schema: {type: string}}
+        - {name: dark_mode, in: query, required: false, description: Boolean serialized as a query string., schema: {type: boolean}}
+        - {name: device_brand, in: query, required: false, schema: {type: string}}
+        - {name: device_os_version, in: query, required: false, schema: {type: string}}
+        - {name: app_brand, in: query, required: false, schema: {type: string}}
+        - {name: hardware_id, in: query, required: false, schema: {type: string}}
+      responses:
+        '200':
+          description: Sign-in page
+          content:
+            text/html:
+              schema: {type: string, example: '<html><body>Synthetic sign-in page</body></html>', x-example-evidence: synthetic}
+        '302': {$ref: './schemas/authentication.yaml#/components/responses/OAuthRedirect'}
+        default: {$ref: './schemas/authentication.yaml#/components/responses/AuthFailure'}
+  /oauth/v2/signin:
+    post:
+      operationId: submitOAuthCredentials
+      summary: Submit OAuth credentials
+      tags: [Authentication]
+      description: Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: './schemas/authentication.yaml#/components/schemas/SignInForm'}
+            examples:
+              syntheticCredentials:
+                summary: Synthetic OAuth sign-in request
+                value: {username: person@example.invalid, password: synthetic-password, csrf-token: synthetic-csrf-token}
+                x-example-evidence: synthetic
+      responses:
+        '200':
+          description: Credential submission state
+          content:
+            application/json:
+              schema: {$ref: './schemas/authentication.yaml#/components/schemas/SignInState'}
+              examples:
+                syntheticSignInState:
+                  summary: Synthetic sign-in state response
+                  value: {tsv_state: synthetic-state, next_time_in_secs: 0}
+                  x-example-evidence: synthetic
+        '302': {$ref: './schemas/authentication.yaml#/components/responses/OAuthRedirect'}
+        '412': {$ref: './schemas/authentication.yaml#/components/responses/TwoFactorRequired'}
+        default: {$ref: './schemas/authentication.yaml#/components/responses/AuthFailure'}
+  /oauth/v2/2fa/verify:
+    post:
+      operationId: verifyOAuthTwoFactorCode
+      summary: Verify an OAuth two-factor code
+      tags: [Authentication]
+      description: Submits a two-factor authentication code to complete OAuth sign-in.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: './schemas/authentication.yaml#/components/schemas/TwoFactorForm'}
+            examples:
+              syntheticTwoFactor:
+                summary: Synthetic two-factor request
+                value: {2fa_code: synthetic-code, csrf-token: synthetic-csrf-token, remember_me: 'false'}
+                x-example-evidence: synthetic
+      responses:
+        '200': {$ref: './schemas/common.yaml#/components/responses/Json'}
+        '201': {$ref: './schemas/common.yaml#/components/responses/Json'}
+        '400': {$ref: './schemas/authentication.yaml#/components/responses/AuthFailure'}
+        '401': {$ref: './schemas/authentication.yaml#/components/responses/AuthFailure'}
+        default: {$ref: './schemas/authentication.yaml#/components/responses/AuthFailure'}
+  /oauth/token:
+    post:
+      operationId: exchangeOrRefreshOAuthToken
+      summary: Exchange or refresh an OAuth token
+      tags: [Authentication]
+      description: Exchanges an authorization grant for access tokens or refreshes an existing token.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: './schemas/authentication.yaml#/components/schemas/OAuthTokenGrant'}
+            examples:
+              syntheticAuthorizationCodeGrant:
+                summary: Synthetic authorization-code grant request
+                value: {grant_type: authorization_code, code: synthetic-authorization-code, redirect_uri: https://example.invalid/callback, code_verifier: synthetic-code-verifier, client_id: synthetic-client}
+                x-example-evidence: synthetic
+      responses:
+        '200': {$ref: './schemas/authentication.yaml#/components/responses/OAuthToken'}
+        '400': {$ref: './schemas/authentication.yaml#/components/responses/AuthFailure'}
+        '401': {$ref: './schemas/authentication.yaml#/components/responses/AuthFailure'}
+        '412': {$ref: './schemas/authentication.yaml#/components/responses/TwoFactorRequired'}
+        '429': {$ref: './schemas/authentication.yaml#/components/responses/RateLimited'}
+        default: {$ref: './schemas/authentication.yaml#/components/responses/AuthFailure'}
+  /clients_api/session:
+    post:
+      operationId: registerClientSession
+      summary: Register a client session
+      tags: [Sessions]
+      description: Registers a client session that can be used for device inventory and signaling requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './schemas/sessions.yaml#/components/schemas/ClientSessionRegistration'}
+            examples:
+              syntheticSessionRegistration:
+                summary: Synthetic nested client session request
+                value: {device: {hardware_id: synthetic-hardware-id, metadata: {api_version: 11, device_model: go-ring}, os: android}}
+                x-example-evidence: synthetic
+      responses:
+        '200': {$ref: './schemas/common.yaml#/components/responses/Json'}
+        default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}
+  /clients_api/chimes/{device_id}:
+    put:
+      operationId: setChimeVolume
+      summary: Set chime volume
+      tags: [Device Controls]
+      description: Changes a chime device’s playback volume.
+      parameters:
+        - {$ref: './schemas/common.yaml#/components/parameters/device_id'}
+        - {in: query, name: 'chime[description]', required: true, schema: {type: string}}
+        - {in: query, name: 'chime[settings][volume]', required: true, schema: {type: integer, minimum: 0, maximum: 11}}
+      responses: {'200': {$ref: './schemas/common.yaml#/components/responses/Json'}, default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}}
+  /clients_api/doorbots/{device_id}:
+    put:
+      operationId: updateLegacyDoorbotControls
+      summary: Update doorbell and chime settings
+      tags: [Device Controls]
+      description: Changes supported doorbell volume or in-home chime settings.
+      parameters:
+        - {$ref: './schemas/common.yaml#/components/parameters/device_id'}
+        - {in: query, name: 'doorbot[description]', required: true, schema: {type: string}}
+        - {in: query, name: 'doorbot[settings][doorbell_volume]', schema: {type: integer, minimum: 0, maximum: 11}}
+        - {in: query, name: 'doorbot[settings][chime_settings][type]', schema: {type: integer}}
+        - {in: query, name: 'doorbot[settings][chime_settings][enable]', schema: {type: integer, enum: [0, 1]}}
+        - {in: query, name: 'doorbot[settings][chime_settings][duration]', schema: {type: integer, minimum: 0}}
+      responses: {'200': {$ref: './schemas/common.yaml#/components/responses/Json'}, default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}}
+  /clients_api/chimes/{device_id}/play_sound:
+    post:
+      operationId: testChimeSound
+      summary: Play a chime sound
+      tags: [Device Controls]
+      description: Plays a selected test sound on a chime device.
+      parameters:
+        - {$ref: './schemas/common.yaml#/components/parameters/device_id'}
+        - {in: query, name: kind, required: true, schema: {type: string, enum: [ding, motion]}}
+      responses: {'200': {$ref: './schemas/common.yaml#/components/responses/Json'}, default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}}
+  /clients_api/doorbots/{device_id}/floodlight_light_on:
+    put:
+      operationId: turnFloodlightOn
+      summary: Turn on a floodlight
+      tags: [Device Controls]
+      description: Turns on a device’s floodlight.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses: {'200': {$ref: './schemas/common.yaml#/components/responses/Json'}, default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}}
+  /clients_api/doorbots/{device_id}/floodlight_light_off:
+    put:
+      operationId: turnFloodlightOff
+      summary: Turn off a floodlight
+      tags: [Device Controls]
+      description: Turns off a device’s floodlight.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses: {'200': {$ref: './schemas/common.yaml#/components/responses/Json'}, default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}}
+  /clients_api/ring_devices/{device_id}/health:
+    get:
+      operationId: getLegacyDeviceHealth
+      summary: Get device health
+      tags: [Devices]
+      description: Retrieves health information for a Ring device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses:
+        '200': {description: Legacy device health response, content: {application/json: {schema: {$ref: './schemas/devices.yaml#/components/schemas/LegacyDeviceHealth'}}}}
+        default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}
+  /clients_api/doorbots/{device_id}/history:
+    get:
+      operationId: getLegacyDeviceHistory
+      summary: List doorbell recordings
+      tags: [Recordings]
+      description: Retrieves recordings associated with a doorbell, with optional filters and pagination.
+      parameters:
+        - {$ref: './schemas/common.yaml#/components/parameters/device_id'}
+        - {$ref: './schemas/common.yaml#/components/parameters/limit'}
+        - {$ref: './schemas/device-history.yaml#/components/parameters/kind'}
+        - {$ref: './schemas/device-history.yaml#/components/parameters/older_than'}
+      responses:
+        '200': {$ref: './schemas/recordings.yaml#/components/responses/RecordingArray'}
+        default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}
+  /clients_api/dings/active:
+    get:
+      operationId: getActiveDings
+      summary: List active alerts
+      tags: [Recordings]
+      description: Retrieves currently active Ring alerts.
+      responses:
+        '200': {$ref: './schemas/recordings.yaml#/components/responses/RecordingArray'}
+        default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}
+  /clients_api/dings/{recording_id}/recording:
+    get:
+      operationId: streamRecording
+      summary: Stream a recording
+      tags: [Recordings]
+      description: Returns the recording media as an MP4 stream.
+      parameters: [{$ref: './schemas/recordings.yaml#/components/parameters/recording_id'}]
+      responses:
+        '200':
+          description: Video stream; body remains open for the caller to consume and close.
+          content:
+            video/mp4:
+              schema: {type: string, format: binary, example: synthetic-mp4-binary-payload, x-example-evidence: synthetic}
+        '302':
+          description: Redirect response that points to the recording media location.
+          headers:
+            Location: {schema: {type: string, format: uri-reference}}
+        default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}
+  /clients_api/dings/{recording_id}/share/play:
+    get:
+      operationId: getLegacyRecordingShareURL
+      summary: Get a recording share URL
+      tags: [Recordings]
+      description: Retrieves the playback share link for a recording.
+      parameters: [{$ref: './schemas/recordings.yaml#/components/parameters/recording_id'}]
+      responses:
+        '200':
+          description: Playback share URL
+          content:
+            application/json:
+              schema: {$ref: './schemas/recordings.yaml#/components/schemas/RecordingShare'}
+        default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}
+  /device_info/v3/devices:
+    get:
+      operationId: listDevices
+      summary: List devices
+      tags: [Devices]
+      description: Retrieves the devices available to the authenticated account.
+      responses: {'200': {$ref: './schemas/devices.yaml#/components/responses/DeviceList'}}
+  /device_info/v3/devices/{device_id}:
+    get:
+      operationId: getDevice
+      summary: Get a device
+      tags: [Devices]
+      description: Retrieves details for a specific device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses: {'200': {$ref: './schemas/devices.yaml#/components/responses/DeviceDetail'}}
+  /devices/v1/devices/{device_id}/settings:
+    get:
+      operationId: getDeviceSettings
+      summary: Get device settings
+      tags: [Device Settings]
+      description: Retrieves the current settings for a device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses: {'200': {$ref: './schemas/device-settings.yaml#/components/responses/DeviceSettings'}}
+    patch:
+      operationId: patchDeviceSettings
+      summary: Update device settings
+      tags: [Device Settings]
+      description: Updates one or more supported settings for a device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      requestBody: {$ref: './schemas/device-settings.yaml#/components/requestBodies/DeviceSettingsPatch'}
+      responses: {'200': {$ref: './schemas/device-settings.yaml#/components/responses/DeviceSettings'}}
+  /evm/v2/timeline/devices/{device_id}:
+    get:
+      operationId: getDeviceTimeline
+      summary: Get a device timeline
+      tags: [Device History]
+      description: Retrieves timeline events for a device within an optional time range.
+      parameters:
+        - {$ref: './schemas/common.yaml#/components/parameters/device_id'}
+        - {$ref: './schemas/device-history.yaml#/components/parameters/start_time'}
+        - {$ref: './schemas/device-history.yaml#/components/parameters/end_time'}
+        - {$ref: './schemas/device-history.yaml#/components/parameters/order'}
+        - {$ref: './schemas/common.yaml#/components/parameters/limit'}
+        - {$ref: './schemas/device-history.yaml#/components/parameters/capabilities'}
+      responses: {'200': {$ref: './schemas/device-history.yaml#/components/responses/DeviceTimeline'}}
+  /evm/v3/history/devices:
+    get:
+      operationId: getHistoryDevices
+      summary: List account history events
+      tags: [Device History]
+      description: Retrieves account history events and feed items, with optional source and capability filters.
+      parameters:
+        - {$ref: './schemas/device-history.yaml#/components/parameters/source_ids'}
+        - {$ref: './schemas/device-history.yaml#/components/parameters/capabilities'}
+      responses: {'200': {$ref: './schemas/device-history.yaml#/components/responses/HistoryDevices'}}
+  /clients_api/doorbots/{device_id}/siren_on:
+    put:
+      operationId: turnSirenOn
+      summary: Turn on a siren
+      tags: [Device Controls]
+      description: Activates the siren on a doorbell device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses: {'200': {$ref: './schemas/device-controls.yaml#/components/responses/SirenOn'}}
+  /clients_api/doorbots/{device_id}/siren_off:
+    put:
+      operationId: turnSirenOff
+      summary: Turn off a siren
+      tags: [Device Controls]
+      description: Stops the siren on a doorbell device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses: {'200': {description: Siren stopped; no response body.}}
+  /clients_api/snapshots/timestamps:
+    post:
+      operationId: refreshLegacySnapshotTimestamp
+      summary: Request a snapshot timestamp
+      tags: [Snapshots]
+      description: Requests the latest snapshot timestamp for a device. A timestamp can be used to retrieve the corresponding image.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './schemas/snapshots.yaml#/components/schemas/SnapshotTimestampRequest'}
+      responses:
+        '200':
+          description: Optional timestamp for the requested snapshot
+          content:
+            application/json:
+              schema: {$ref: './schemas/snapshots.yaml#/components/schemas/SnapshotTimestampResponse'}
+        default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}
+  /clients_api/snapshots/image/{device_id}:
+    get:
+      operationId: getLegacySnapshotImage
+      summary: Get a snapshot image
+      tags: [Snapshots]
+      description: Retrieves a device snapshot as JPEG image data.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses:
+        '200':
+          description: Snapshot image bytes
+          content:
+            image/jpeg: {schema: {type: string, format: binary, example: synthetic-jpeg-binary-payload, x-example-evidence: synthetic}}
+        default: {$ref: './schemas/common.yaml#/components/responses/HTTPFailure'}
+  /api/v1/clap/tickets:
+    get:
+      operationId: getCapturedLocationTickets
+      summary: Get location signaling tickets
+      tags: [Signaling]
+      description: Retrieves signaling tickets and connection metadata for a location.
+      servers: [{url: https://prd-api-us.prd.rings.solutions}]
+      parameters:
+        - {$ref: './schemas/signaling.yaml#/components/parameters/allowUserOnly'}
+        - {$ref: './schemas/signaling.yaml#/components/parameters/locationID'}
+        - {$ref: './schemas/signaling.yaml#/components/parameters/locationSubscription'}
+        - {$ref: './schemas/signaling.yaml#/components/parameters/enableExtendedEmergencyCellUsage'}
+        - {$ref: './schemas/signaling.yaml#/components/parameters/requestedTransport'}
+      responses: {'200': {$ref: './schemas/signaling.yaml#/components/responses/CapturedTickets'}}
+  /api/v1/clap/ticket/request/signalsocket:
+    post:
+      operationId: requestLegacySignalingTicket
+      summary: Request a signaling ticket
+      tags: [Signaling]
+      description: Requests a signaling ticket used to establish a device connection.
+      servers: [{url: https://prd-api-us.prd.rings.solutions}]
+      responses: {'200': {$ref: './schemas/signaling.yaml#/components/responses/LegacySignalingTicket'}}
+  /commands/v1/devices/{device_id}:
+    patch:
+      operationId: sendDeviceCommand
+      summary: Send a device command
+      tags: [Device Controls]
+      description: Sends a command to a device and returns when Ring accepts it.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './schemas/device-controls.yaml#/components/schemas/DeviceCommand'}
+            examples:
+              syntheticDeviceCommand:
+                summary: Synthetic supported device command request
+                value: {command_name: reboot}
+                x-example-evidence: synthetic
+      responses: {'204': {description: Command accepted; empty response}}
+  /commands/v1/devices/{device_id}/device_rpc:
+    put:
+      operationId: unlockIntercom
+      summary: Unlock an intercom
+      tags: [Device Controls]
+      description: Sends an unlock command to an intercom device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './schemas/intercom.yaml#/components/schemas/IntercomUnlockCommand'}
+            examples:
+              syntheticUnlockCommand:
+                summary: Synthetic intercom unlock request
+                value: {command_name: device_rpc, request: {jsonrpc: '2.0', method: unlock_door, params: {door_id: 0, user_id: 0}}}
+                x-example-evidence: synthetic
+      responses:
+        '200': {description: Ring accepted the device RPC}
+        '204': {description: Ring accepted the device RPC without a body}
+  /duos/v1/devices/{device_id}/update:
+    put:
+      operationId: setLiveViewEnabled
+      summary: Set live view availability
+      tags: [Device Settings]
+      description: Enables or disables live view for a device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './schemas/device-settings.yaml#/components/schemas/LiveViewSettingRequest'}
+      responses: {'204': {description: Setting accepted; empty response}}
+  /groups/v1/locations/{location_id}/devices:
+    get:
+      operationId: listLocationDevices
+      summary: List devices at a location
+      tags: [Locations]
+      description: Retrieves the devices assigned to a location.
+      parameters: [{$ref: './schemas/locations.yaml#/components/parameters/location_id'}]
+      responses: {'200': {$ref: './schemas/locations.yaml#/components/responses/LocationGroupDevices'}}
+  /groups/v1/locations/{location_id}/groups:
+    get:
+      operationId: listLocationGroups
+      summary: List device groups at a location
+      tags: [Locations]
+      description: Retrieves device groups configured for a location.
+      parameters: [{$ref: './schemas/locations.yaml#/components/parameters/location_id'}]
+      responses: {'200': {$ref: './schemas/locations.yaml#/components/responses/LocationGroups'}}
+  /location_info/v3/locations:
+    get:
+      operationId: listLocations
+      summary: List locations
+      tags: [Locations]
+      description: Retrieves locations available to the authenticated account.
+      responses: {'200': {$ref: './schemas/locations.yaml#/components/responses/LocationList'}}
+  /location_info/v4/locations/{location_id}:
+    get:
+      operationId: getLocation
+      summary: Get a location
+      tags: [Locations]
+      description: Retrieves details for a specific location, with optional related resources.
+      parameters:
+        - {$ref: './schemas/locations.yaml#/components/parameters/location_id'}
+        - {$ref: './schemas/locations.yaml#/components/parameters/include'}
+      responses: {'200': {$ref: './schemas/locations.yaml#/components/responses/LocationDetail'}}
+  /clients_api/dings/{recording_id}:
+    delete:
+      operationId: deleteRecording
+      summary: Delete a recording
+      tags: [Recordings]
+      description: Deletes a recording. A confirmation parameter may be required for a favorited recording.
+      parameters:
+        - {$ref: './schemas/recordings.yaml#/components/parameters/recording_id'}
+        - {$ref: './schemas/recordings.yaml#/components/parameters/confirm_delete_favorite'}
+      responses: {'204': {description: Recording deleted; empty response}}
+  /clients_api/device:
+    patch:
+      operationId: registerPushDevice
+      summary: Register a push notification device
+      tags: [Notifications]
+      description: Registers a push notification token so the device can receive Ring alerts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './schemas/notifications.yaml#/components/schemas/PushDeviceRegistration'}
+      responses:
+        '200': {description: Push registration accepted}
+        '204': {description: Push registration accepted without body}
+  /clients_api/doorbots/{device_id}/subscribe:
+    post:
+      operationId: subscribeDeviceDing
+      summary: Subscribe to device alerts
+      tags: [Notifications]
+      description: Subscribes to alert notifications from a doorbell device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses: {'200': {description: Ding subscription accepted}}
+  /clients_api/doorbots/{device_id}/motions_subscribe:
+    post:
+      operationId: subscribeDeviceMotion
+      summary: Subscribe to motion alerts
+      tags: [Notifications]
+      description: Subscribes to motion notifications from a doorbell device.
+      parameters: [{$ref: './schemas/common.yaml#/components/parameters/device_id'}]
+      responses: {'200': {description: Motion subscription accepted}}
+  /clients_api/dings/{recording_id}/favorite:
+    put:
+      operationId: favoriteRecording
+      summary: Favorite a recording
+      tags: [Recordings]
+      description: Marks a recording as a favorite.
+      parameters: [{$ref: './schemas/recordings.yaml#/components/parameters/recording_id'}]
+      responses: {'201': {description: Recording favorited; no response body.}}
+components:
+  securitySchemes:
+    RingAccessToken:
+      type: http
+      scheme: bearer
+      bearerFormat: OAuth access token
+      description: >-
+        Send an OAuth access token in the Authorization: Bearer header. Token
+        exchange and refresh operations are described under Authentication.
+
+  # Remaining component sections are assembled from api/schemas/*.yaml.

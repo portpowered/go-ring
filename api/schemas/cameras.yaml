@@ -1,0 +1,1368 @@
+# Ring REST components owned by the cameras API responsibility.
+components:
+  schemas:
+    CameraDeviceKind:
+      description: Known camera kinds from historical and baseline inventories.
+      type: string
+      enum: [hp_cam_v1, floodlight_v2, floodlight_pro, cocoa_floodlight, stickup_cam_mini, stickup_cam_mini_v2, stickup_cam_mini_ptz_v1, stickup_cam_v4, hp_cam_v2, spotlightw_v2, cocoa_spotlight, stickup_cam_longfin, stickup_cam, stickup_cam_v3, stickup_cam_lunar, stickup_cam_elite, stickup_cam_wired, cocoa_camera]
+      example: stickup_cam_mini_ptz_v1
+      x-example-evidence: synthetic
+
+    VideoRenderingFeature:
+      type: object
+      properties:
+        max_digital_zoom_level: {type: number, minimum: 0, description: Device-reported maximum digital zoom level; units beyond the historical fixture are not established.}
+      additionalProperties: true
+      example: {max_digital_zoom_level: 1}
+      x-example-evidence: synthetic
+
+    DeviceLegacySettings:
+      type: object
+      properties:
+        motion_detection_enabled:
+          type: boolean
+        doorbell_volume:
+          type: integer
+          minimum: 0
+          maximum: 11
+          description: Doorbell volume level.
+        live_view_disabled:
+          type: boolean
+        motion_snooze_preset_profile:
+          type: string
+        motion_snooze_presets:
+          type: array
+          items:
+            type: string
+        live_view_preset_profile:
+          type: string
+        extended_live_view:
+          type: integer
+        live_view_presets:
+          type: array
+          items:
+            type: string
+        advanced_motion_detection_enabled:
+          type: boolean
+        advanced_motion_detection_human_only_mode:
+          type: boolean
+        enable_audio_recording:
+          type: boolean
+        people_detection_eligible:
+          type: boolean
+        ignore_zones:
+          type: object
+          properties:
+            zone1:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+              additionalProperties: true
+            zone2:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+              additionalProperties: true
+            zone3:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+              additionalProperties: true
+            zone4:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+              additionalProperties: true
+          additionalProperties: true
+        enable_rich_notifications:
+          type: boolean
+        rich_notifications_billing_eligible:
+          type: boolean
+        rich_notifications_face_crop_enabled:
+          type: boolean
+        user_specified_recording_ttl:
+          type: integer
+        loitering_threshold:
+          type: integer
+        advanced_motion_detection_types:
+          type: array
+          items:
+            type: string
+        rich_notifications_scene_source:
+          type: string
+        offline_motion_event_settings:
+          type: object
+          properties:
+            subscribed:
+              type: boolean
+            enabled:
+              type: boolean
+            max_upload_kb:
+              type: integer
+            resolution_p:
+              type: integer
+            frequency_after_secs:
+              type: integer
+            period_after_secs:
+              type: integer
+          additionalProperties: true
+        cv_settings:
+          type: object
+          properties:
+            detection_types:
+              type: object
+              properties:
+                baby_cry:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                car_alarm:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                co2_smoke_alarm:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                dog_bark:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                general_sound:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                glass_break:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                human:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                loitering:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                motion:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                moving_vehicle:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                other_motion:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                package_delivery:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                package_pickup:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                vehicle:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                animal:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                unverified_motion:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+                motion_stop:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                    record:
+                      type: boolean
+                    notification:
+                      type: boolean
+                  additionalProperties: true
+              additionalProperties: true
+            threshold:
+              type: object
+              properties:
+                baby_cry:
+                  type: number
+                car_alarm:
+                  type: number
+                co2_smoke_alarm:
+                  type: number
+                dog_bark:
+                  type: number
+                general_sound:
+                  type: number
+                glass_break:
+                  type: number
+                loitering:
+                  type: number
+                package_delivery:
+                  type: number
+                unverified_motion:
+                  type: number
+              additionalProperties: true
+            triggers:
+              type: array
+              items: {}
+            search_types:
+              type: object
+              properties:
+                natural_language_search:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                    mode:
+                      type: string
+                  additionalProperties: true
+              additionalProperties: true
+          additionalProperties: true
+        sheila_settings:
+          type: object
+          properties:
+            cv_processing_enabled:
+              type: boolean
+            local_storage_enabled:
+              type: boolean
+          additionalProperties: true
+        server_settings:
+          type: object
+          properties:
+            ring_media_server_enabled:
+              type: boolean
+            ring_media_server_host:
+              type: string
+          additionalProperties: true
+        cv_paid_features:
+          type: object
+          properties:
+            baby_cry:
+              type: boolean
+            car_alarm:
+              type: boolean
+            co2_smoke_alarm:
+              type: boolean
+            dog_bark:
+              type: boolean
+            general_sound:
+              type: boolean
+            glass_break:
+              type: boolean
+            human:
+              type: boolean
+            loitering:
+              type: boolean
+            motion:
+              type: boolean
+            other_motion:
+              type: boolean
+            package_delivery:
+              type: boolean
+            package_pickup:
+              type: boolean
+            cv_triggers:
+              type: boolean
+            vehicle:
+              type: boolean
+            animal:
+              type: boolean
+          additionalProperties: true
+        other_paid_features:
+          type: object
+          properties:
+            alexa_concierge:
+              type: boolean
+            sheila_cv:
+              type: boolean
+            sheila_recording:
+              type: boolean
+            critical_alerts:
+              type: boolean
+            system_level_pip:
+              type: boolean
+            extended_live_view:
+              type: boolean
+            snapshot_capture_plus:
+              type: boolean
+            live_speak:
+              type: boolean
+            closed_caption:
+              type: boolean
+            daily_digest:
+              type: boolean
+            ding_call:
+              type: boolean
+            natural_language_search:
+              type: boolean
+            multicam_live_view:
+              type: boolean
+            package_protection:
+              type: boolean
+            alarm_triggered_recording:
+              type: boolean
+            recording_24x7:
+              type: boolean
+          additionalProperties: true
+        zone_settings:
+          type: object
+          properties:
+            motion:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  state:
+                    type: string
+                  properties:
+                    type: object
+                    properties:
+                      detection_types:
+                        type: array
+                        items:
+                          type: string
+                      zone_types:
+                        type: array
+                        items: {}
+                    additionalProperties: true
+                  vertices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        x:
+                          type: number
+                        y:
+                          type: number
+                      additionalProperties: true
+                additionalProperties: true
+            monitoring:
+              type: array
+              items: {}
+          additionalProperties: true
+        stark_enrolled:
+          type: boolean
+        network_settings:
+          type: object
+          properties:
+            mac_address_ble:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+            max_dynamic_listen_interval:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+            network_diagnosis:
+              type: object
+              properties:
+                channel_analysis:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                periodic_diagnosis:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                lan_performance:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                tcp_iperf:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                tcp_host:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                tcp_port:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                udp_iperf:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                udp_host:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                udp_port:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+                udp_bandwidth:
+                  type: 'null'
+                  description: Only null was observed in the historical device response; future values are unverified.
+              additionalProperties: true
+            multi_net_pref:
+              type: integer
+            data_restriction_enabled:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+            mac_address_wifi_24:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+            mac_address_wifi_5:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+          additionalProperties: true
+        audio_settings:
+          type: object
+          properties:
+            enable_live_view_audio_override:
+              type: boolean
+          additionalProperties: true
+        motion_settings:
+          type: object
+          properties:
+            motion_snooze_preset_profile:
+              type: string
+          additionalProperties: true
+        motion_zones:
+          description: Empty array in the v3 capture; structured zone map in legacy families.
+          oneOf:
+          - {type: array, items: {}}
+          - {type: object, additionalProperties: true}
+        active_streaming_event_led_enabled:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        enable_vod:
+          description: Integer in the v3 camera capture; boolean in legacy family responses.
+          oneOf:
+          - {type: integer}
+          - {type: boolean}
+        exposure_control:
+          type: integer
+        vod_suspended:
+          type: integer
+        vod_status:
+          type: string
+        voice_volume:
+          type: integer
+        video_settings:
+          type: object
+          properties:
+            encryption_enabled:
+              type: boolean
+            encryption_method:
+              type: integer
+            encryption_eligibility_mode:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+            hevc_enabled:
+              type: boolean
+            recording_24x7_mode:
+              type: integer
+          additionalProperties: true
+        advanced_motion_zones:
+          type: object
+          properties:
+            zone1:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: number
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex3:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex4:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: number
+                  additionalProperties: true
+                vertex5:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex6:
+                  type: object
+                  properties:
+                    x:
+                      type: number
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex7:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex8:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: number
+                  additionalProperties: true
+              additionalProperties: true
+            zone2:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex3:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex4:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex5:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex6:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex7:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex8:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+              additionalProperties: true
+            zone3:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex3:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex4:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex5:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex6:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex7:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex8:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+              additionalProperties: true
+          additionalProperties: true
+        advanced_motion_zones_enabled:
+          type: boolean
+        advanced_motion_zones_type:
+          type: string
+        advanced_pir_motion_zones:
+          type: object
+          properties:
+            zone1_sensitivity:
+              type: integer
+            zone2_sensitivity:
+              type: integer
+            zone3_sensitivity:
+              type: integer
+            zone4_sensitivity:
+              type: integer
+            zone5_sensitivity:
+              type: integer
+            zone6_sensitivity:
+              type: integer
+          additionalProperties: true
+        terms_of_service_accepted:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        stark_enabled:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        motion_announcement:
+          type: boolean
+        enable_ir_led:
+          type: boolean
+        power_mode:
+          type: string
+          description: Wired in the historical camera response; other power modes remain valid.
+          x-extensible-enum: [wired]
+        ptz_settings:
+          type: object
+          properties:
+            mode:
+              type: string
+            auto_scan:
+              type: object
+              properties:
+                step_size:
+                  type: number
+                pause_ms:
+                  type: integer
+              additionalProperties: true
+            pan_settings:
+              type: object
+              properties:
+                positions:
+                  type: object
+                  properties:
+                    min:
+                      type: number
+                    max:
+                      type: number
+                    default:
+                      type: number
+                  additionalProperties: true
+                movement:
+                  type: object
+                  properties:
+                    max_speed:
+                      type: number
+                    max_acceleration:
+                      type: number
+                    step_size:
+                      type: number
+                  additionalProperties: true
+              additionalProperties: true
+            tilt_settings:
+              type: object
+              properties:
+                positions:
+                  type: object
+                  properties:
+                    min:
+                      type: number
+                    max:
+                      type: number
+                    default:
+                      type: number
+                  additionalProperties: true
+                movement:
+                  type: object
+                  properties:
+                    max_speed:
+                      type: number
+                    max_acceleration:
+                      type: number
+                    step_size:
+                      type: number
+                  additionalProperties: true
+              additionalProperties: true
+          additionalProperties: true
+        hybrid_motion_zones:
+          type: object
+          properties:
+            motion_snooze_privacy_timeout:
+              type: integer
+            enable_ir:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+            active_motion_filter:
+              type: integer
+            enable_pir_validation:
+              type: boolean
+            enable_rlmd:
+              type: boolean
+            sensitivity:
+              type: integer
+            enable_audio:
+              type: boolean
+            zone1:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: number
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex3:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex4:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: number
+                  additionalProperties: true
+                vertex5:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex6:
+                  type: object
+                  properties:
+                    x:
+                      type: number
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex7:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex8:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: number
+                  additionalProperties: true
+              additionalProperties: true
+            zone2:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex3:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex4:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex5:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex6:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex7:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex8:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+              additionalProperties: true
+            zone3:
+              type: object
+              properties:
+                name:
+                  type: string
+                state:
+                  type: integer
+                vertex1:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex2:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex3:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex4:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex5:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex6:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex7:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+                vertex8:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+                    y:
+                      type: integer
+                  additionalProperties: true
+              additionalProperties: true
+            advanced_motion_zones_enabled:
+              type: boolean
+            advanced_motion_zones_type:
+              type: string
+            advanced_pir_motion_zones:
+              type: object
+              properties:
+                zone1_sensitivity:
+                  type: integer
+                zone2_sensitivity:
+                  type: integer
+                zone3_sensitivity:
+                  type: integer
+                zone4_sensitivity:
+                  type: integer
+                zone5_sensitivity:
+                  type: integer
+                zone6_sensitivity:
+                  type: integer
+              additionalProperties: true
+            advanced_object_settings:
+              type: object
+              properties:
+                human_detection_confidence:
+                  type: object
+                  properties:
+                    day:
+                      type: number
+                    night:
+                      type: number
+                  additionalProperties: true
+                motion_zone_overlap:
+                  type: object
+                  properties:
+                    day:
+                      type: number
+                    night:
+                      type: number
+                  additionalProperties: true
+                object_time_overlap:
+                  type: object
+                  properties:
+                    day:
+                      type: number
+                    night:
+                      type: number
+                  additionalProperties: true
+                object_size_minimum:
+                  type: object
+                  properties:
+                    day:
+                      type: number
+                    night:
+                      type: number
+                  additionalProperties: true
+                object_size_maximum:
+                  type: object
+                  properties:
+                    day:
+                      type: number
+                    night:
+                      type: number
+                  additionalProperties: true
+              additionalProperties: true
+          additionalProperties: true
+        light_snooze_settings:
+          type: object
+          properties:
+            duration:
+              type: integer
+            always_on:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+          additionalProperties: true
+        flick_elim_recommended_mode:
+          type: integer
+        lite_24x7_footage_ttl:
+          type: integer
+        pir_sensitivity_1:
+          type: integer
+        lite_24x7:
+          type: object
+          properties:
+            subscribed:
+              type: boolean
+            enabled:
+              type: boolean
+            frequency_secs:
+              type: integer
+            resolution_p:
+              type: integer
+          additionalProperties: true
+      additionalProperties: true
+
+    PTZSettings:
+      type: object
+      properties:
+        mode: {type: string, description: Observed PTZ mode is user; other device modes remain valid., x-extensible-enum: [user]}
+        auto_scan: {$ref: '#/components/schemas/PTZAutoScan'}
+        pan_settings: {$ref: '#/components/schemas/PTZAxisSettings'}
+        tilt_settings: {$ref: '#/components/schemas/PTZAxisSettings'}
+      additionalProperties: true
+      example: {mode: user}
+      x-example-evidence: synthetic
+
+    PTZAutoScan:
+      type: object
+      properties:
+        pause_ms: {type: integer, minimum: 0, description: Auto-scan pause in milliseconds.}
+        step_size: {type: number, minimum: 0, description: Device-reported auto-scan step size; units are not established by the historical fixture.}
+      additionalProperties: true
+      example: {pause_ms: 0, step_size: 0}
+      x-example-evidence: synthetic
+
+    PTZAxisSettings:
+      type: object
+      properties:
+        movement: {$ref: '#/components/schemas/PTZMovement'}
+        positions: {$ref: '#/components/schemas/PTZPositions'}
+      additionalProperties: true
+      example: {movement: {max_speed: 1}}
+      x-example-evidence: synthetic
+
+    PTZMovement:
+      type: object
+      properties:
+        max_acceleration: {type: number, minimum: 0, description: Non-negative device-reported acceleration limit; its scale is not established.}
+        max_speed: {type: number, minimum: 0, maximum: 1, description: "Device-reported normalized maximum PTZ speed, distinct from a command's requested speed."}
+        step_size: {type: number, minimum: 0, description: Device-reported movement step size; units are not established by the historical fixture.}
+      additionalProperties: true
+      example: {max_acceleration: 0, max_speed: 1, step_size: 0}
+      x-example-evidence: synthetic
+
+    PTZPositions:
+      type: object
+      properties:
+        default: {type: number}
+        max: {type: number}
+        min: {type: number}
+      additionalProperties: true
+      example: {default: 0, max: 0, min: 0}
+      x-example-evidence: synthetic
+
+    VideoSettings:
+      type: object
+      properties:
+        hdr_enable: {type: boolean}
+        hevc_enabled: {type: boolean}
+        brightness: {type: integer, minimum: 0, description: Device-reported brightness level; the historical fixture does not establish a maximum.}
+        clip_length_max: {type: integer, minimum: 0, description: Maximum clip duration in seconds.}
+        clip_length_min: {type: integer, minimum: 0, description: Minimum clip duration in seconds.}
+      additionalProperties: true
+      example: {hdr_enable: false, brightness: 0}
+      x-example-evidence: synthetic

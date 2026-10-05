@@ -1,0 +1,67 @@
+# Ring REST components owned by the common API responsibility.
+components:
+  parameters:
+    device_id: {name: device_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+
+    limit: {name: limit, in: query, required: false, description: Positive maximum number of results; 20 was recorded., schema: {type: integer, minimum: 1}}
+
+  requestBodies:
+    Json:
+      required: true
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/JsonValue'}
+          examples:
+            syntheticJsonRequest:
+              summary: Synthetic JSON request value
+              value: {}
+              x-example-evidence: synthetic
+
+    ExtensibleObject:
+      required: true
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ExtensibleObject'}
+          examples:
+            syntheticExtensibleObject:
+              summary: Synthetic extensible object request
+              value: {}
+              x-example-evidence: synthetic
+
+  responses:
+    Json:
+      description: JSON response
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/JsonValue'}
+          examples:
+            syntheticJsonResponse:
+              summary: Synthetic JSON response value
+              value: {}
+              x-example-evidence: synthetic
+
+    HTTPFailure:
+      description: The request failed. The response may include error details.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/JsonValue'}
+          examples:
+            syntheticHttpFailure:
+              summary: Synthetic HTTP failure payload
+              value: {}
+              x-example-evidence: synthetic
+
+
+
+  schemas:
+    RingHeaderName:
+      type: string
+      description: Named outbound Ring request headers used by the handwritten adapters.
+      enum: [2fa-Code, 2fa-Support, Accept, Authorization, Content-Type, Hardware_id, User-Agent]
+
+    ExtensibleObject:
+      type: object
+      additionalProperties: {$ref: '#/components/schemas/JsonValue'}
+
+    JsonValue:
+      description: Explicit escape hatch for fields without observed structure or typed error responses.

@@ -1,0 +1,38 @@
+# Ring REST components owned by the notifications API responsibility.
+components:
+  schemas:
+    PushDeviceRegistration:
+      type: object
+      required: [device]
+      properties:
+        device: {$ref: '#/components/schemas/PushDeviceRegistrationDevice'}
+      example:
+        device:
+          metadata: {pn_dict_version: '2.0.0', pn_service: fcm, api_version: 1, device_model: go-ring}
+          os: android
+          push_notification_token: synthetic-push-token
+      x-example-evidence: synthetic
+
+    PushDeviceRegistrationDevice:
+      type: object
+      required: [metadata, os, push_notification_token]
+      properties:
+        metadata: {$ref: '#/components/schemas/PushDeviceMetadata'}
+        os: {type: string, enum: [android]}
+        push_notification_token: {type: string, minLength: 1}
+      example:
+        metadata: {pn_dict_version: '2.0.0', pn_service: fcm, api_version: 1, device_model: go-ring}
+        os: android
+        push_notification_token: synthetic-push-token
+      x-example-evidence: synthetic
+
+    PushDeviceMetadata:
+      type: object
+      required: [pn_dict_version, pn_service]
+      properties:
+        pn_dict_version: {type: string, enum: ['2.0.0']}
+        pn_service: {type: string, enum: [fcm]}
+        api_version: {type: integer}
+        device_model: {$ref: './authentication.yaml#/components/schemas/ClientDeviceModel'}
+      example: {pn_dict_version: '2.0.0', pn_service: fcm, api_version: 1, device_model: go-ring}
+      x-example-evidence: synthetic

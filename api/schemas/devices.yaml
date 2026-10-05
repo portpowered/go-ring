@@ -1,0 +1,831 @@
+# Ring REST components owned by the devices API responsibility.
+components:
+  responses:
+    DeviceList:
+      description: Device inventory. Device-specific fields may vary by device.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceList'}
+          examples:
+            syntheticDeviceList:
+              summary: Synthetic device list response
+              value: {devices: []}
+              x-example-evidence: synthetic
+
+    DeviceDetail:
+      description: Device details and related resources.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceDetail'}
+          examples:
+            syntheticDeviceDetail:
+              summary: Synthetic device detail response
+              value:
+                device: {id: 1, kind: stickup_cam_mini_ptz_v1, description: Synthetic device}
+              x-example-evidence: synthetic
+
+  schemas:
+    DeviceList:
+      type: object
+      required: [devices]
+      properties:
+        devices: {type: array, items: {$ref: '#/components/schemas/Device'}}
+        device_operation_sets:
+          type: object
+          additionalProperties: {$ref: './device-settings.yaml#/components/schemas/DeviceOperationSet'}
+      additionalProperties: true
+      example: {devices: []}
+      x-example-evidence: synthetic
+
+    LegacyDeviceHealth:
+      description: Device health fields. Additional fields may be returned.
+      type: object
+      properties:
+        battery_level: {type: integer}
+        battery_status: {type: string}
+        signal_strength: {type: integer}
+        firmware_version: {type: string}
+        last_update: {type: string}
+      additionalProperties: true
+      example: {battery_level: 50}
+      x-example-evidence: synthetic
+
+    DeviceDetail:
+      type: object
+      required: [device]
+      properties:
+        device: {$ref: '#/components/schemas/Device'}
+        device_operation_set:
+          type: object
+          additionalProperties: {$ref: './device-settings.yaml#/components/schemas/DeviceOperationSet'}
+      additionalProperties: true
+      example: {device: {id: 1, kind: stickup_cam_mini_ptz_v1, description: Synthetic device}}
+      x-example-evidence: synthetic
+
+    Device:
+      description: Historical inventory/detail shape with additional baseline fixture fields; unknown hardware fields remain open.
+      type: object
+      required:
+      - id
+      - kind
+      - description
+      properties:
+        id:
+          type: integer
+          format: int64
+        device_id:
+          type: string
+        kind:
+          type: string
+          description: Observed v3 kind is stickup_cam_mini_ptz_v1; baseline fixtures also include doorbells, chimes and intercoms.
+            Unknown kinds remain valid.
+          x-extensible-enum:
+          - stickup_cam_mini_ptz_v1
+          - lpd_v1
+          - chime
+          - intercom_handset_audio
+        description:
+          type: string
+        name:
+          type: string
+          description: Legacy inventory display name; v3 capture uses description.
+        address:
+          type: string
+        timezone:
+          type: string
+        time_zone:
+          type: string
+          description: Alternate legacy timezone spelling.
+        wifi_name:
+          type: string
+        wifi_signal_strength:
+          type: integer
+        volume:
+          type: integer
+          minimum: 0
+          maximum: 11
+        has_light:
+          type: boolean
+        light_brightness:
+          type: integer
+        motion_detection_enabled:
+          type: boolean
+        location_id:
+          type: string
+        family:
+          type: string
+          description: Baseline families include doorbots, chimes, stickup_cams and other; absent in the v3 capture and unknown
+            families remain valid.
+          x-extensible-enum:
+          - doorbots
+          - chimes
+          - stickup_cams
+          - other
+        owned:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        deactivated_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        operation_set:
+          type: string
+        owner:
+          $ref: '#/components/schemas/DeviceOwner'
+        health:
+          $ref: '#/components/schemas/DeviceHealth'
+        features:
+          $ref: '#/components/schemas/DeviceFeatures'
+        settings:
+          $ref: './cameras.yaml#/components/schemas/DeviceLegacySettings'
+        schema_id:
+          type: string
+        is_sidewalk_gateway:
+          type: boolean
+        encryption_group:
+          type: object
+          properties:
+            id:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+            account_group_revision_id:
+              type: 'null'
+              description: Only null was observed in the historical device response; future values are unverified.
+          additionalProperties: true
+        device_resource_id:
+          type: string
+        firmware_version:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        stolen:
+          type: boolean
+        ring_id:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        shared_at:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        subscribed:
+          type: boolean
+        subscribed_motions:
+          type: boolean
+        external_connection:
+          type: boolean
+        ring_net_id:
+          type: [string, 'null']
+          description: Null in the v3 camera capture; text in a legacy device response.
+        active_schedule_uuid:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        alerts:
+          type: object
+          properties:
+            connection:
+              type: string
+              description: Online in the historical camera response; offline in a baseline family fixture. Other states remain valid.
+              x-extensible-enum: [online, offline]
+            ota_status:
+              type: string
+            sidewalk_connection:
+              type: boolean
+            privacy_cover_enabled:
+              type: boolean
+          additionalProperties: true
+        motion_snooze:
+          anyOf:
+          - type: object
+            properties:
+              scheduled: {type: boolean}
+            additionalProperties: true
+          - {type: 'null'}
+        snooze_settings:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        camera_location_indoor:
+          type: boolean
+        facing_window:
+          type: boolean
+        siren_status:
+          type: object
+          properties:
+            seconds_remaining:
+              type: integer
+            started_at:
+              type: string
+            duration:
+              type: string
+            ends_at:
+              type: string
+          additionalProperties: true
+        ext_power_state:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        battery_life:
+          description: Ring has returned a percentage, numeric text, and out-of-range hardware values (for example 4081 in a baseline fixture); callers must validate before treating it as a percentage.
+          oneOf:
+          - {type: integer}
+          - {type: string}
+          - {type: 'null'}
+        battery_life_2:
+          description: Optional second battery, with the same wire variants as battery_life.
+          oneOf:
+          - {type: integer}
+          - {type: string}
+          - {type: 'null'}
+      additionalProperties: true
+      example: {id: 1, kind: stickup_cam_mini_ptz_v1, description: Synthetic device}
+      x-example-evidence: synthetic
+
+    DeviceFamilyCode:
+      description: Observed legacy family labels. The device family field itself remains open to future values.
+      type: string
+      enum: [doorbots, chimes, stickup_cams, other]
+
+    DoorbellDeviceKind:
+      description: Known doorbell kinds from historical and baseline inventories; unknown kinds remain valid on Device.kind.
+      type: string
+      enum: [doorbot, doorbell, doorbell_v3, doorbell_v4, doorbell_v5, doorbell_scallop_lite, doorbell_oyster, doorbell_scallop, lpd_v1, lpd_v2, lpd_v3, lpd_v4, jbox_v1, doorbell_graham_cracker, df_doorbell_clownfish, doorbell_portal, cocoa_doorbell, cocoa_doorbell_v2]
+
+    ChimeDeviceKind:
+      description: Known chime kinds from historical and baseline inventories.
+      type: string
+      enum: [chime, chime_v2, chime_pro, chime_pro_v2]
+
+    OtherDeviceKind:
+      description: Known devices with no doorbell, chime, or camera projection.
+      type: string
+      enum: [beams_ct200_transformer, intercom_handset_audio, intercom_handset_video]
+
+    DeviceOwner:
+      type: object
+      properties:
+        id:
+          description: Numeric in the v3 capture and string in legacy inventory fixtures.
+          oneOf:
+            - {type: integer, format: int64}
+            - {type: string}
+        first_name: {type: string}
+        last_name: {type: string}
+        email: {type: string}
+      additionalProperties: true
+
+    DeviceHealth:
+      type: object
+      properties:
+        battery_level:
+          type: integer
+        battery_percentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Seen in other Ring device families; absent from the historical wired camera.
+        battery_present:
+          type: boolean
+          description: Seen in other Ring device families; absent from the historical wired camera.
+        battery_status:
+          type: string
+        signal_strength:
+          type: integer
+        last_update:
+          type: string
+        connected:
+          type: boolean
+        rssi:
+          type: number
+        ptz_connected:
+          type:
+          - string
+          - 'null'
+          description: Observed non-null PTZ connection label is emperor; other hardware labels remain valid.
+          x-extensible-enum:
+          - emperor
+        supported_rpc_commands:
+          type: array
+          items:
+            type: string
+        firmware_version:
+          type: string
+        battery_percentage_category:
+          type: string
+          description: The capture reports unknown; other battery categories remain valid.
+          x-extensible-enum:
+          - unknown
+        ac_power:
+          type: integer
+        battery_voltage_category:
+          type: string
+        device_type:
+          type: string
+        external_connection:
+          type: boolean
+        floodlight_on:
+          type: boolean
+        last_update_time:
+          type: integer
+        network_connection_value:
+          type: string
+        night_mode_on:
+          type: boolean
+        ota_status:
+          type: string
+        rss_connected:
+          type: boolean
+        rssi_category:
+          type: string
+        second_battery_percentage_category:
+          type: string
+        second_battery_voltage_category:
+          type: string
+        sidewalk_connection:
+          type: boolean
+        white_led_on:
+          type: boolean
+        firmware_version_status:
+          type: string
+        packet_loss:
+          type: number
+        packet_loss_category:
+          type: string
+        hatch_open:
+          type: boolean
+        privacy_cover_enabled:
+          type: boolean
+        bandwidth:
+          type: integer
+        pref_run_mode:
+          type: string
+        run_mode:
+          type: string
+        siren_on:
+          type: boolean
+        status_time:
+          type: integer
+          format: int64
+        vod_enabled:
+          type: boolean
+        battery_error:
+          type: boolean
+        bandwidth_last_time:
+          type: integer
+        firmware_avg_bitrate:
+          type: string
+        video_packets_total:
+          type: string
+        wifi_is_ring_network:
+          type: boolean
+        wifi_name:
+          type: string
+        channel:
+          type: string
+        egress_tx_rate:
+          type: string
+        fast_ping_hop1_score:
+          type: string
+        tx_rate:
+          type: integer
+        egress_tx_rate_category:
+          type: string
+        current_bandwidth:
+          type: integer
+        current_bandwidth_mb:
+          type: number
+        current_bandwidth_category:
+          type: string
+        encryption_group_error:
+          type: integer
+      additionalProperties: true
+
+    DeviceFeatures:
+      type: object
+      properties:
+        auto_track:
+          $ref: '#/components/schemas/FeatureAvailability'
+        auto_zoom_track:
+          anyOf:
+          - $ref: '#/components/schemas/FeatureAvailability'
+          - type: 'null'
+        video_rendering:
+          $ref: './cameras.yaml#/components/schemas/VideoRenderingFeature'
+        motions_enabled:
+          type: boolean
+        cfes_eligible:
+          type: boolean
+        package_warning:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        smart_video_search:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                allowed:
+                  type: boolean
+                enabled:
+                  type: boolean
+                disallow_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+          additionalProperties: true
+        smart_video_description:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                allowed:
+                  type: boolean
+                enabled:
+                  type: boolean
+                disallow_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+          additionalProperties: true
+        live_view_audio_privacy_controls:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+          additionalProperties: true
+        person_identification:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                allowed:
+                  type: boolean
+                enabled:
+                  type: boolean
+                disallow_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+          additionalProperties: true
+        retinal_tuning:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                allowed:
+                  type: boolean
+                enabled:
+                  type: boolean
+                disallow_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+            rt_max_digital_zoom_level:
+              type: number
+          additionalProperties: true
+        original_video_quality_download_offer:
+          type: object
+          properties:
+            is_enabled:
+              type: boolean
+          additionalProperties: true
+        single_alert:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                allowed:
+                  type: boolean
+                enabled:
+                  type: boolean
+                disallow_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+          additionalProperties: true
+        chime_settings:
+          type: object
+          properties:
+            is_eligible:
+              type: boolean
+          additionalProperties: true
+        unusual_alert:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                allowed:
+                  type: boolean
+                enabled:
+                  type: boolean
+                disallow_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+            learning:
+              type: object
+              properties:
+                state:
+                  type: string
+              additionalProperties: true
+          additionalProperties: true
+        transformer_score:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        video_donation:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+          additionalProperties: true
+        ai_automated_warnings:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items: {}
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                allowed:
+                  type: boolean
+                enabled:
+                  type: boolean
+                disallow_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+          additionalProperties: true
+        automated_siren:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        alexa_plus_greetings:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        remote_access_control:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        ai_labs_daily_clip:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+              additionalProperties: true
+            allows_no_location:
+              type: boolean
+          additionalProperties: true
+        ai_labs_memorable_moments:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+              additionalProperties: true
+            allows_no_location:
+              type: boolean
+          additionalProperties: true
+        network_backup:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+            enablement:
+              type: object
+              properties:
+                allowed:
+                  type: boolean
+                enabled:
+                  type: boolean
+                disallow_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+          additionalProperties: true
+        network_backup_host:
+          type: object
+          properties:
+            eligibility:
+              type: object
+              properties:
+                eligible:
+                  type: boolean
+                ineligibility_reasons:
+                  type: array
+                  items:
+                    type: string
+              additionalProperties: true
+          additionalProperties: true
+        property_view:
+          type: object
+          properties:
+            enablement:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+              additionalProperties: true
+          additionalProperties: true
+        auto_shutoff_device:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        tracklight:
+          type: 'null'
+          description: Only null was observed in the historical device response; future values are unverified.
+        motion_zone_recommendation:
+          type: boolean
+        motion_message_enabled:
+          type: boolean
+        show_recordings:
+          type: boolean
+        show_vod_settings:
+          type: boolean
+        rich_notifications_eligible:
+          type: boolean
+        show_offline_motion_events:
+          type: boolean
+        sheila_camera_eligible:
+          type: boolean
+        sheila_camera_processing_eligible:
+          type: boolean
+        dynamic_network_switching_eligible:
+          type: boolean
+        video_recording:
+          type: object
+          properties:
+            recording_mode:
+              type: string
+            recording_enabled:
+              type: boolean
+            recording_state:
+              type: string
+            recording_mode_availability:
+              type: object
+              properties:
+                continuous:
+                  type: object
+                  properties:
+                    supported:
+                      type: boolean
+                    available:
+                      type: boolean
+                    unavailability_reason:
+                      type: string
+                  additionalProperties: true
+              additionalProperties: true
+          additionalProperties: true
+        ptz_setup_complete:
+          type: boolean
+        vehicle_detection_eligible:
+          type: boolean
+        animal_detection_eligible:
+          type: boolean
+        motion_stop_edge_eligible:
+          type: boolean
+        show_24x7_lite:
+          type: boolean
+        recording_24x7_eligible:
+          type: boolean
+      additionalProperties: true
+
+    FeatureAvailability:
+      type: object
+      properties:
+        eligibility: {$ref: '#/components/schemas/FeatureEligibility'}
+        enablement: {$ref: '#/components/schemas/FeatureEnablement'}
+      additionalProperties: true
+
+    FeatureEligibility:
+      type: object
+      properties:
+        eligible: {type: boolean}
+        ineligibility_reasons: {type: array, items: {type: string}}
+      additionalProperties: true
+
+    FeatureEnablement:
+      type: object
+      properties:
+        allowed: {type: boolean}
+        enabled: {type: boolean}
+        disallow_reasons: {type: array, items: {type: string}}
+      additionalProperties: true

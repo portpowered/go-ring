@@ -1,18 +1,21 @@
 # go-ring checklist
 
-Requirements copied from the shared template at `62cc3cb5a1308dae8700f92052f99b1c455a1d98`.
+Requirements copied from the shared template at `c6cfd7edf23924ba43ca994dbacabbf82ea85344`.
 
-All items remain open until two independent reviewers verify the final
-implementation and publication evidence against these requirements.
-Historical approvals remain in Git history and do not approve later changes.
+Final independent review and checklist closure are deferred at the user's request.
+Unchecked items remain open; passing CI and a release do not establish final approval.
 See the [current review record](independent-review.md).
 
 - [ ] **1.** Keep the public client, examples, README, and site independent of any consuming application. Put application adapters and rollout plans in the consuming repository.
 - [ ] **2.** Document supported operations, authentication, errors, and transport injection with examples that match the exported API. Add customer-facing operation guides for important workflows, and distinguish verified behavior from synthetic examples and historical references.
-   Put sanitized, schema-valid request, response and event examples in the canonical schemas,
+   Put synthetic, schema-valid request, response and event examples in the canonical schemas,
    including complete envelopes, nested payloads, resource updates, relation changes and failures.
-   Validate every example against its owning schema in CI and identify its evidence class in
-   contributor material. Never publish credentials or private captures as examples.
+   Mark each sample declaration `x-example-evidence: synthetic`; for AsyncAPI, put each `examples[]` sample's evidence on its enclosing Message Object and direct payload-schema sample evidence on that schema; the closed Example Object does not take evidence. Cover every OpenAPI request,
+   success-response and failure-response schema group and every AsyncAPI message with a payload
+   schema; a direct root schema or media example covers a group, but a nested-property example does
+   not. Validate every declared sample, local reference and group with `go run ./tools/schemaexamples`
+   as a blocking part of `make check`, pull-request CI and release checks. Never publish credentials
+   or private captures as examples.
 - [ ] **3.** Show Go version, CI, coverage, release, Go Reference, license, and documentation badges in the README. Replace every example repository value and point badges to live reports.
 - [ ] **4.** Generate the API reference in CI with the shared Fumadocs action and publish it to GitHub Pages.
    Inventory **ALL** outbound wire endpoints and exchanges, including private, encrypted, event, and
@@ -164,7 +167,7 @@ See the [current review record](independent-review.md).
     rendered pages. A successful build or link check does not establish appropriate audience
     or absence of redundant internal documents. Missing inventory entries or unexamined files
     keep the corresponding verdict open.
-- [ ] **15.** Store and replay each wire exchange as a paired request and response (or an ordered bidirectional message transcript). Include method, origin, escaped path, repeated query values, relevant headers, and body or frame payload in the request expectation; include response status, relevant headers, and body. Match the outbound request before returning its response, reject unexpected or duplicate calls, and assert that every expected exchange was consumed in order where order matters. Never fall back to a response when request matching fails. Represent volatile IDs, timestamps, signatures, and redacted credentials with explicit match rules that still validate their format or decoded meaning. Apply this to every supported transport and classify each pair as captured or synthetic; a response-only fixture does not satisfy replay verification.
+- [ ] **15.** Store and replay each wire exchange as a paired request and response (or an ordered bidirectional message transcript). Include method, origin, escaped path, repeated query values, relevant headers, and body or frame payload in the request expectation; include response status, relevant headers, and body. Match the outbound request before returning its response, reject unexpected or duplicate calls, and assert that every expected exchange was consumed in order where order matters. Never fall back to a response when request matching fails. For HTTP client request matching, require an empty `RequestURI` and `URL.Fragment`; add negative tests for both. Represent volatile IDs, timestamps, signatures, and redacted credentials with explicit match rules that still validate their format or decoded meaning. Apply this to every supported transport and classify each pair as captured or synthetic; a response-only fixture does not satisfy replay verification.
      For HTTP, validate the effective authority, including any `Request.Host` override, before
      returning the paired response. Reject unexpected URL user information, opaque URLs, and
      malformed query strings; include a request-identity mismatch negative control. Keep secret
@@ -195,4 +198,5 @@ See the [current review record](independent-review.md).
     registered redirects, credential ownership and explicit export; manual code exchange alone
     is not end-to-end authorization.
 
-See [verification](https://github.com/portpowered/go-third-party-template/blob/62cc3cb5a1308dae8700f92052f99b1c455a1d98/docs/verification.md), [client design](https://github.com/portpowered/go-third-party-template/blob/62cc3cb5a1308dae8700f92052f99b1c455a1d98/docs/client-design.md), and [website publishing](https://github.com/portpowered/go-third-party-template/blob/62cc3cb5a1308dae8700f92052f99b1c455a1d98/docs/website.md).
+See [verification](https://github.com/portpowered/go-third-party-template/blob/c6cfd7edf23924ba43ca994dbacabbf82ea85344/docs/verification.md), [client design](https://github.com/portpowered/go-third-party-template/blob/c6cfd7edf23924ba43ca994dbacabbf82ea85344/docs/client-design.md), and
+[website publishing](https://github.com/portpowered/go-third-party-template/blob/c6cfd7edf23924ba43ca994dbacabbf82ea85344/docs/website.md) for the implementation details.

@@ -56,7 +56,7 @@ func wireModelInventories() []wireModelInventory {
 			name:           "provider REST",
 			schemaPath:     "api/openapi.yaml",
 			modelDirectory: "pkg/dependencymodels/rest",
-			generator:      "oapi-codegen pkg/dependencymodels/rest/config.yaml",
+			generator:      "oapi-codegen v2.8.0, then tools/restmodelsplit split via make generate-api",
 			transportFiles: []string{
 				"pkg/dependencies/rest/client.go",
 				"pkg/ring/client_captured_http.go",
@@ -69,7 +69,7 @@ func wireModelInventories() []wireModelInventory {
 			name:           "FCM HTTP and JSON-in-string payloads",
 			schemaPath:     "api/external/fcm.openapi.yaml",
 			modelDirectory: "pkg/dependencymodels/fcm",
-			generator:      "oapi-codegen pkg/dependencymodels/fcm/config.yaml",
+			generator:      "oapi-codegen v2.8.0 pkg/dependencymodels/fcm/config.yaml via make generate-api",
 			transportFiles: []string{
 				"pkg/dependencies/push/http_transport.go",
 				"third_party/go-push-receiver/fcm.go",
@@ -83,7 +83,7 @@ func wireModelInventories() []wireModelInventory {
 			name:           "public read projections",
 			schemaPath:     "api/client-models.openapi.yaml",
 			modelDirectory: "pkg/ringapimodels",
-			generator:      "oapi-codegen pkg/ringapimodels/config.yaml",
+			generator:      "oapi-codegen v2.8.0 pkg/ringapimodels/config.yaml via make generate-api",
 			transportFiles: []string{
 				"pkg/ring/client_captured_http.go",
 				"pkg/ring/client_read_models.go",
@@ -96,7 +96,7 @@ func wireModelInventories() []wireModelInventory {
 			name:           "signaling and push",
 			schemaPath:     "api/asyncapi.yaml",
 			modelDirectory: "pkg/dependencymodels/signaling",
-			generator:      "Modelina tools/protocols/generate_signaling.mjs",
+			generator:      "Modelina tools/protocols/generate_signaling.mjs via make generate-api",
 			transportFiles: []string{
 				"pkg/dependencies/websocket/wire.go",
 				"internal/signaling/session.go",
@@ -314,26 +314,7 @@ type anonymousSignalingOrigin struct {
 func assertAnonymousSignalingOrigins(t *testing.T) {
 	t.Helper()
 
-	origins := []anonymousSignalingOrigin{
-		{
-			goType: "AnonymousSchema_1", owner: reflect.TypeFor[signalingmodels.SignalingInboundDiscriminator](),
-			property: "method", ownerName: "SignalingInboundDiscriminator.method",
-		},
-		{
-			goType: "AnonymousSchema_82", owner: reflect.TypeFor[signalingmodels.ServerCloseReason](),
-			property: "code", ownerName: "ServerCloseReason.code",
-		},
-		{
-			goType: "AnonymousSchema_91", owner: reflect.TypeFor[signalingmodels.ServerRpcBody](),
-			property: "command", ownerName: "ServerRPCBody.command",
-		},
-		{
-			goType: "AnonymousSchema_199", owner: reflect.TypeFor[signalingmodels.PtzContinuousWireCommand](),
-			property: "method", ownerName: "PTZContinuousWireCommand.method",
-		},
-	}
-
-	for _, origin := range origins {
+	for _, origin := range anonymousSignalingOrigins() {
 		field, found := generatedFieldByJSONName(origin.owner, origin.property)
 		if !found {
 			t.Errorf("%s has no generated field", origin.ownerName)
@@ -373,6 +354,27 @@ func assertAnonymousSignalingOrigins(t *testing.T) {
 				t.Errorf("generated union %s fields = %v, missing schema message member %s", name, fields, want)
 			}
 		}
+	}
+}
+
+func anonymousSignalingOrigins() []anonymousSignalingOrigin {
+	return []anonymousSignalingOrigin{
+		{
+			goType: "AnonymousSchema_1", owner: reflect.TypeFor[signalingmodels.SignalingInboundDiscriminator](),
+			property: "method", ownerName: "SignalingInboundDiscriminator.method",
+		},
+		{
+			goType: "AnonymousSchema_82", owner: reflect.TypeFor[signalingmodels.ServerCloseReason](),
+			property: "code", ownerName: "ServerCloseReason.code",
+		},
+		{
+			goType: "AnonymousSchema_91", owner: reflect.TypeFor[signalingmodels.ServerRpcBody](),
+			property: "command", ownerName: "ServerRPCBody.command",
+		},
+		{
+			goType: "AnonymousSchema_199", owner: reflect.TypeFor[signalingmodels.PtzContinuousWireCommand](),
+			property: "method", ownerName: "PTZContinuousWireCommand.method",
+		},
 	}
 }
 

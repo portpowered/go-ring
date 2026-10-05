@@ -56,19 +56,16 @@ type Pair struct {
 	Value string `json:"value"`
 }
 
-type noMatchingExchangeError struct {
-	method string
-	url    string
+type noMatchingExchangeError struct{}
+
+func (noMatchingExchangeError) Error() string {
+	return "replay: no unused exchange matches request"
 }
 
-func (replayErr noMatchingExchangeError) Error() string {
-	return fmt.Sprintf("replay: no unused exchange matches %s %s", replayErr.method, replayErr.url)
-}
-
-type unconsumedExchangesError struct{ exchanges string }
+type unconsumedExchangesError struct{ count int }
 
 func (e unconsumedExchangesError) Error() string {
-	return "replay: unconsumed exchanges: " + e.exchanges
+	return fmt.Sprintf("replay: %d unconsumed exchanges", e.count)
 }
 
 type multipleJSONValuesError struct{}
@@ -215,7 +212,7 @@ func (t *Transport) RoundTrip(request *http.Request) (*http.Response, error) {
 		t.mu.Unlock()
 	}
 
-	err = noMatchingExchangeError{method: request.Method, url: request.URL.String()}
+	err = noMatchingExchangeError{}
 
 	t.mu.Lock()
 	t.err = errors.Join(t.err, err)
@@ -227,17 +224,17 @@ func (t *Transport) AssertConsumed() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	var left []string
+	left := 0
 
-	for i, x := range t.exchanges {
+	for i := range t.exchanges {
 		if !t.used[i] {
-			left = append(left, x.Request.Method+" "+x.Request.Origin+x.Request.Path)
+			left++
 		}
 	}
 
 	var errs []error
-	if len(left) > 0 {
-		errs = append(errs, unconsumedExchangesError{exchanges: strings.Join(left, ", ")})
+	if left > 0 {
+		errs = append(errs, unconsumedExchangesError{count: left})
 	}
 
 	if t.err != nil {
@@ -248,13 +245,30 @@ func (t *Transport) AssertConsumed() error {
 }
 func matches(expected Request, request *http.Request, requestBody []byte) (bool, string) {
 	requestURL := request.URL
+	if requestURL == nil || request.RequestURI != "" || requestURL.User != nil ||
+		requestURL.Opaque != "" || requestURL.Fragment != "" {
+		return false, "request URL"
+	}
+
+	query, err := url.ParseQuery(requestURL.RawQuery)
+	if err != nil {
+		return false, "query"
+	}
 
 	origin := requestURL.Scheme + "://" + requestURL.Host
-	if expected.Method != request.Method || expected.Origin != origin || expected.Path != requestURL.EscapedPath() {
+
+	effectiveAuthority := requestURL.Host
+	if request.Host != "" {
+		effectiveAuthority = request.Host
+	}
+
+	effectiveOrigin := requestURL.Scheme + "://" + effectiveAuthority
+	if expected.Method != request.Method || expected.Origin != origin || expected.Origin != effectiveOrigin ||
+		expected.Path != requestURL.EscapedPath() {
 		return false, "method/origin/path"
 	}
 
-	if !reflect.DeepEqual(sortedPairs(expected.Query), sortedPairs(queryPairs(requestURL.Query()))) {
+	if !reflect.DeepEqual(sortedPairs(expected.Query), sortedPairs(queryPairs(query))) {
 		return false, "query"
 	}
 

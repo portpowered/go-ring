@@ -3,6 +3,7 @@ package routegate
 import (
 	"go/ast"
 	"go/token"
+	"go/types"
 	"net/url"
 	"strings"
 )
@@ -14,6 +15,7 @@ type generatedRequestAuditContext struct {
 	imports      map[string]string
 	contracts    Contracts
 	packageFiles []*parsedGoFile
+	identities   *types.Info
 	add          func(ast.Node, string, string)
 }
 
@@ -46,6 +48,7 @@ func auditGeneratedRequests(
 		imports:      imports,
 		contracts:    contracts,
 		packageFiles: packageFiles,
+		identities:   nil,
 		add:          add,
 	}
 
@@ -62,6 +65,10 @@ func auditGeneratedRequests(
 			continue
 		}
 
+		if context.identities == nil {
+			context.identities = resolveFileIdentifiers(fileSet, file)
+		}
+
 		state.valid = make(map[*ast.Object]bool, len(state.routes))
 		for object := range state.routes {
 			state.valid[object] = true
@@ -69,6 +76,7 @@ func auditGeneratedRequests(
 
 		wireMaps := newRequestWireMapState(function, state, context)
 		wireMaps.audit()
+		auditGeneratedRequestBodyBacking(function, state, context)
 		auditGeneratedRequestUses(function, state, wireMaps, context)
 		recordVerifiedGeneratedSends(function, state.valid, packageFiles, verified)
 	}
@@ -478,7 +486,7 @@ func generatedRequestServerBound(call *ast.CallExpr, function *ast.FuncDecl, con
 }
 
 func emptyHTTPRoute() HTTPRoute {
-	return HTTPRoute{OperationID: "", Method: "", Path: ""}
+	return HTTPRoute{OperationID: "", Method: "", Path: "", HasBody: false}
 }
 
 func safeRequestCopy(assignment *ast.AssignStmt, object *ast.Object) bool {

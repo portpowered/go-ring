@@ -1,0 +1,54 @@
+# Ring REST components owned by the recordings API responsibility.
+components:
+  parameters:
+    recording_id: {name: recording_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+
+    confirm_delete_favorite: {name: confirm_delete_favorite, in: query, required: false, description: Boolean encoded as a query string; false was recorded and requiredness is not established., schema: {type: boolean}}
+
+  responses:
+    RecordingArray:
+      description: A list of recordings.
+      content:
+        application/json:
+          schema:
+            type: array
+            items: {$ref: '#/components/schemas/Recording'}
+          examples:
+            syntheticRecordingArray:
+              summary: Synthetic recording list
+              value:
+                - id: 1
+                  kind: ding
+                  answered: false
+                  created_at: '2025-01-01T00:00:00Z'
+                  doorbot: {id: 1}
+              x-example-evidence: synthetic
+
+  schemas:
+    RecordingShare:
+      type: object
+      required: [url]
+      properties:
+        url: {type: string, format: uri}
+      example: {url: 'https://example.invalid/recordings/synthetic'}
+      x-example-evidence: synthetic
+
+    Recording:
+      type: object
+      required: [id, kind, answered, created_at, doorbot]
+      properties:
+        id: {type: integer}
+        kind: {type: string, description: "Known recording kinds include ding, motion and on_demand; future kinds remain valid.", x-extensible-enum: [ding, motion, on_demand]}
+        answered: {type: boolean}
+        created_at: {type: string}
+        doorbot:
+          type: object
+          required: [id]
+          properties:
+            id: {type: integer}
+            description: {type: string, description: Legacy recording fixture field.}
+            type: {type: string, description: Legacy recording fixture field.}
+          additionalProperties: true
+      additionalProperties: true
+      example: {id: 1, kind: ding, answered: false, created_at: '2025-01-01T00:00:00Z', doorbot: {id: 1}}
+      x-example-evidence: synthetic

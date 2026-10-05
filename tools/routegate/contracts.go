@@ -16,12 +16,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type HTTPRoute struct {
-	OperationID string
-	Method      string
-	Path        string
-}
-
 type SignalingRoute struct {
 	OperationID string
 	Channel     string
@@ -330,7 +324,13 @@ func readOpenAPIRoutes(path string) (map[string]HTTPRoute, error) {
 				return nil, newRouteGateError("OpenAPI operation %s %s has no operationId", strings.ToUpper(method), routePath)
 			}
 
-			route := HTTPRoute{OperationID: operationID, Method: strings.ToUpper(method), Path: routePath}
+			_, hasBody := stringMap(operationValue)["requestBody"]
+			route := HTTPRoute{
+				OperationID: operationID,
+				Method:      strings.ToUpper(method),
+				Path:        routePath,
+				HasBody:     hasBody,
+			}
 
 			key := routeKey(route.Method, route.Path)
 			if _, exists := routes[key]; exists {
@@ -458,7 +458,12 @@ func resolveGeneratedFunctionRoute(
 	if function.Doc != nil {
 		match := generatedRoutePattern.FindStringSubmatch(function.Doc.Text())
 		if len(match) == generatedRouteMatchParts {
-			route := HTTPRoute{OperationID: lowerFirst(match[3]), Method: match[1], Path: match[2]}
+			route := HTTPRoute{
+				OperationID: lowerFirst(match[3]),
+				Method:      match[1],
+				Path:        match[2],
+				HasBody:     false,
+			}
 			key := routeKey(route.Method, route.Path)
 
 			schemaRoute, exists := schemaRoutes[key]
@@ -743,22 +748,6 @@ func readContractFile(path string) ([]byte, error) {
 	return data, nil
 }
 
-func stringMap(value any) map[string]any {
-	if values, ok := value.(map[string]any); ok {
-		return values
-	}
-
-	return nil
-}
-
-func anySlice(value any) []any {
-	if values, ok := value.([]any); ok {
-		return values
-	}
-
-	return nil
-}
-
 func stringValue(value any) string {
 	if text, ok := value.(string); ok {
 		return text
@@ -775,10 +764,6 @@ func refName(value string) string {
 	parts := strings.Split(value, "/")
 
 	return parts[len(parts)-1]
-}
-
-func routeKey(method, path string) string {
-	return strings.ToUpper(method) + " " + path
 }
 
 func lowerFirst(value string) string {

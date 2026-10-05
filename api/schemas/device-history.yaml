@@ -1,0 +1,96 @@
+# Ring REST components owned by the device-history API responsibility.
+components:
+  parameters:
+    start_time: {name: start_time, in: query, required: false, description: Inclusive timeline start in RFC 3339 format; requiredness is not established., schema: {type: string, format: date-time}}
+
+    end_time: {name: end_time, in: query, required: false, description: Timeline end in RFC 3339 format; requiredness is not established., schema: {type: string, format: date-time}}
+
+    order: {name: order, in: query, required: false, description: Descending order was recorded; other values may be accepted., schema: {type: string, x-extensible-enum: [desc]}}
+
+    capabilities: {name: capabilities, in: query, required: false, description: "Comma-separated capability tokens. Observed tokens are offline_event, vehicle and ringtercom; future tokens are possible.", schema: {type: string, x-known-tokens: [offline_event, vehicle, ringtercom]}}
+
+    source_ids: {name: source_ids, in: query, required: false, description: Historical query name; values are syntheticized., schema: {type: string}}
+
+    kind: {name: kind, in: query, required: false, description: "History category. Known values include ding, motion, and on_demand.", schema: {type: string, x-extensible-enum: [ding, motion, on_demand]}}
+
+    older_than: {name: older_than, in: query, required: false, description: "Returns history older than this Unix timestamp, when supported.", schema: {type: integer, format: int64, minimum: 0}}
+
+
+
+  responses:
+    DeviceTimeline:
+      description: Device timeline
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DeviceTimeline'}
+          examples:
+            syntheticDeviceTimeline:
+              summary: Synthetic device timeline response
+              value: {items: []}
+              x-example-evidence: synthetic
+
+    HistoryDevices:
+      description: Account history
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HistoryDevices'}
+          examples:
+            syntheticHistoryDevices:
+              summary: Synthetic history response
+              value: {events: []}
+              x-example-evidence: synthetic
+
+  schemas:
+    TimelineEvent:
+      type: object
+      required: [event_id, start_time, event_type]
+      properties:
+        schema: {type: string}
+        source_id: {type: string}
+        event_id: {type: string}
+        start_time: {type: string, format: date-time}
+        end_time: {type: [string, 'null'], format: date-time}
+        event_type: {type: string, description: Historical type is on_demand; other event kinds remain valid., x-extensible-enum: [on_demand]}
+        state: {type: string, description: Historical event state is completed; other states remain valid., x-extensible-enum: [completed]}
+        duration_ms: {type: integer, minimum: 0, description: Event duration in milliseconds.}
+        is_favorite: {type: boolean}
+        recording_status: {type: string, description: Historical recording status is ready; other statuses remain valid., x-extensible-enum: [ready]}
+        device: {$ref: '#/components/schemas/TimelineDevice'}
+      additionalProperties: true
+
+    TimelineDevice:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        description: {type: string}
+        type: {type: string}
+      additionalProperties: true
+
+    DeviceTimeline:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/TimelineEvent'}}
+        pagination_key: {type: [string, 'null']}
+      additionalProperties: true
+      example: {items: []}
+      x-example-evidence: synthetic
+
+    HistoryDevices:
+      type: object
+      required: [events]
+      properties:
+        schema: {type: string}
+        events: {type: array, items: {$ref: '#/components/schemas/TimelineEvent'}}
+        feed: {type: array, items: {$ref: '#/components/schemas/HistoryFeedItem'}}
+        pagination_key: {type: [string, 'null']}
+      additionalProperties: true
+      example: {events: []}
+      x-example-evidence: synthetic
+
+    HistoryFeedItem:
+      type: object
+      properties:
+        id: {type: string}
+        type: {type: string, description: Historical feed item type is EVENT; other types remain valid., x-extensible-enum: [EVENT]}
+      additionalProperties: true

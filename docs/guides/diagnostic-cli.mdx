@@ -1,80 +1,81 @@
 ---
 title: Diagnostic CLI
-description: Authenticate, inspect devices, watch events, and debug live video from a terminal.
+description: Log in, choose a device, and run Ring commands from a terminal.
 ---
 
-The `go-ring` CLI uses the public SDK and stores credentials in your
-configuration directory. Until its first CLI release, build it from
-`cmd/go-ring` with `go build .`, or run it there with `go run .`.
-After the first CLI release, install its exact version with
-`go install github.com/portpowered/go-ring/cmd/go-ring@vX.Y.Z`.
+The `go-ring` CLI uses the public SDK. It stores login and push credentials in
+private files under your user configuration directory. The standalone CLI
+release is planned for v0.7.0. After it is published, install it with:
 
-## Common commands
-
-```text
-go-ring auth login
-go-ring auth status
-go-ring auth refresh
-go-ring auth export > tokens.json
-go-ring devices list
-go-ring health 12345 --refresh
-go-ring snapshot 12345 --output camera.jpg --timeout 45s
-go-ring siren 12345 on
-go-ring sound 67890 ding
-go-ring reboot 12345
-go-ring events watch 12345 --duration 60s
-go-ring view 12345 --player ffplay
-go-ring view 12345 --player none --continuous --speed 0.5
-go-ring view 12345 --record-rtp camera.rtp --debug
-go-ring replay-video camera.rtp --output camera.h264
+```sh
+go install github.com/portpowered/go-ring/cmd/go-ring@v0.7.0
 ```
 
-Put the global `--token-file path` before the command to select a token file.
-Login prompts for credentials and a verification code when challenged.
-`RING_PASSWORD` and `RING_OTP_CODE` support scripted login. Ordinary commands
-never print tokens or refresh them. Run `auth refresh` to replace saved tokens;
-`auth export` explicitly prints credential JSON, so protect its destination.
-`auth status` prints expiry information as JSON. `auth logout` removes saved
-login and push credentials. The CLI restricts its private files to the current
-user. See [authentication](/docs/guides/authentication) for token lifecycle
-and the [OAuth exchange](/docs/openapi/authentication/exchangeOrRefreshOAuthToken)
+Until then, build the CLI from a repository checkout with
+`go build -o go-ring ./cmd/go-ring` and run the resulting executable.
+
+## Log in and choose a device
+
+Run this sequence in a POSIX shell. When prompted, paste an ID from the JSON
+array printed by `devices list`.
+
+```sh
+go-ring auth login
+go-ring devices list
+printf 'Device ID from the list: '
+read -r DEVICE_ID
+go-ring health "$DEVICE_ID"
+go-ring auth logout
+```
+
+`health` reads device status. To change a device, use an explicit command such
+as `go-ring siren "$DEVICE_ID" on`. Commands report server acknowledgement;
+check the device before retrying a mutation whose response timed out. `sound`
+requires a chime device. See [device operations](/docs/guides/device-operations)
+and the [device list contract](/docs/openapi/devices/listDevices).
+
+Login prompts for your username, password, and a verification code when
+required. For scripted login, provide `RING_PASSWORD` and, when prompted,
+`RING_OTP_CODE`. The CLI does not print credentials during ordinary commands.
+`auth status` prints expiry information; `auth refresh` explicitly replaces
+saved tokens. `auth export` prints credential JSON, so protect its destination.
+`auth logout` removes the saved login and push credentials. See
+[authentication](/docs/guides/authentication) and the
+[OAuth exchange](/docs/openapi/authentication/exchangeOrRefreshOAuthToken)
 contract.
 
-## Devices and events
+Put global options before the command. For example,
+`go-ring --token-file ./tokens.json auth status` selects a token file.
 
-`devices list` prints a JSON array of devices, including IDs for controls.
-`health --refresh` also queries the
-legacy health route, which may return no populated fields. `sound` requires a
-chime device. A successful `siren` or `reboot` request reports server
-acknowledgement; check the device before retrying a timed-out mutation.
-See [device operations](/docs/guides/device-operations) and the
-[device list contract](/docs/openapi/devices/listDevices).
+## Events
 
-`events watch` registers an FCM receiver and subscribes to motion events.
-Use `--ding` for ding events or `--motion=false` to disable motion events.
-Push credentials are saved in a separate private `push.json` beside the token
-file. A connected receiver does not prove that an event was delivered; an
-event must occur during the watch window. See
-[push notifications](/docs/guides/push-notifications).
+`go-ring events watch "$DEVICE_ID" --duration 60s` listens for motion events.
+Use `--ding` to subscribe to ding events or `--motion=false` to disable motion
+subscriptions. Press Ctrl+C to stop early; the CLI closes the push session.
+Push credentials are saved beside the token file. An event appears only if it
+occurs during the watch window. See [push notifications](/docs/guides/push-notifications).
 
-## Live video and offline playback
+## Advanced video diagnostics
 
-`view` starts a receive-only WebRTC session. The default preview needs
-`ffplay` from FFmpeg on `PATH`; `--player none` consumes packets without a
-preview. `--debug` reports connection and PTZ state without logging tokens,
-SDP, or raw signaling payloads. `--ice-servers file.json` accepts a JSON
-array of Pion ICE servers. Arrow keys move the camera, Space stops continuous
-movement, and `q` or Ctrl+C closes the session. A disconnected session cannot
-guarantee that physical movement stopped.
+`go-ring snapshot "$DEVICE_ID" --output camera.jpg` captures the first usable
+live video frame. It requires `ffmpeg` on `PATH` and does not call the legacy
+snapshot endpoint. See [snapshots and intercom](/docs/guides/snapshots-and-intercom).
 
-`snapshot` captures the first usable live video frame with `ffmpeg`, which
-must be on `PATH`; it does not call the legacy snapshot endpoint. For decoder
-problems, `view --record-rtp camera.rtp` writes incoming packets to a private
-file and refuses to overwrite an existing recording. That file contains
-camera footage. `replay-video camera.rtp --output camera.h264` runs the same
-H264 assembler offline. See [live sessions](/docs/guides/live-sessions) and
-[snapshots](/docs/guides/snapshots-and-intercom).
+`go-ring view "$DEVICE_ID"` starts a receive-only WebRTC session. The preview
+requires `ffplay` from FFmpeg on `PATH`; add `--player none` to consume packets
+without a preview. Use `--debug` to report connection and PTZ state without
+logging tokens, SDP, or raw signaling payloads. `--ice-servers file.json`
+accepts a JSON array of Pion ICE servers. Arrow keys move the camera, Space
+stops continuous movement, and `q` or Ctrl+C closes the session. A
+disconnected session cannot guarantee that physical movement stopped.
+
+For decoder debugging, `go-ring view "$DEVICE_ID" --record-rtp camera.rtp`
+writes incoming packets to a private file and refuses to overwrite an existing
+recording. The file contains camera footage. Convert it offline with
+`go-ring replay-video camera.rtp --output camera.h264`. See
+[live sessions](/docs/guides/live-sessions) and
+[SDP and ICE](/docs/guides/sdp-ice).
 
 For local synthetic replay, `--api-base`, `--oauth-base`,
-`--solutions-base`, and `--signaling-url` override service origins. Plain
-HTTP and WS overrides are accepted only for loopback hosts.
+`--solutions-base`, and `--signaling-url` override service origins. Plain HTTP
+and WS overrides are accepted only for loopback hosts.

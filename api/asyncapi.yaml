@@ -401,68 +401,228 @@ components:
   messages:
     ClientMessage:
       payload: {$ref: '#/components/schemas/ClientEnvelope'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticClientMessage
+          summary: Synthetic client session ping
+          payload: {method: ping, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     ServerMessage:
       payload: {$ref: '#/components/schemas/ServerEnvelope'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticServerMessage
+          summary: Synthetic server session-created message
+          payload: {method: session_created, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     InboundDiscriminator:
       payload: {$ref: '#/components/schemas/SignalingInboundDiscriminator'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticInboundDiscriminator
+          summary: Synthetic inbound notification discriminator
+          payload: {method: notification, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, is_ok: true, text: synthetic-notification}}
     ServerICE:
       payload: {$ref: '#/components/schemas/ServerICEFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticServerICE
+          summary: Synthetic server ICE message
+          payload: {method: ice, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, ice: synthetic-ice-candidate, mlineindex: 0}}
     ServerCameraStarted:
       payload: {$ref: '#/components/schemas/ServerCameraStartedFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticServerCameraStarted
+          summary: Synthetic server camera-started message
+          payload: {method: camera_started, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     ServerClose:
       payload: {$ref: '#/components/schemas/ServerCloseFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticServerClose
+          summary: Synthetic server close message
+          payload: {method: close, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     ServerRPC:
       payload: {$ref: '#/components/schemas/ServerRPCFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticServerRPC
+          summary: Synthetic server RPC result
+          payload: {method: rpc, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, command: {jsonrpc: '2.0', id: synthetic-rpc-id, result: {sessionId: synthetic-session, timestamp: 0, version: 1}}}}
     PushSubscribe:
       payload: {$ref: '#/components/schemas/PushSubscribeFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPushSubscribe
+          summary: Synthetic push subscription request
+          payload: {method: push_subscribe, dialog_id: synthetic-dialog, body: {requested_notifications: [{filter_identifier: synthetic-filter, filters: {}, notification_scope: event, notification_type: shoulder_tap}]}}
     PushEvent:
       payload: {$ref: '#/components/schemas/PushEventFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPushEvent
+          summary: Synthetic push event
+          payload: {method: push_event, dialog_id: synthetic-dialog, body: {notification_scope: event, notification_type: shoulder_tap, payload: {device_id: synthetic-device-id}, subscription_id: synthetic-subscription}}
     PushSubscriptionAck:
       payload: {$ref: '#/components/schemas/PushSubscriptionAckFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPushSubscriptionAck
+          summary: Synthetic push subscription acknowledgment
+          payload: {method: push_subscription_ack, dialog_id: synthetic-dialog, body: {status: ok, subscription_id: synthetic-subscription}}
     PushHeartbeat:
       payload: {$ref: '#/components/schemas/PushHeartbeatFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPushHeartbeat
+          summary: Synthetic push heartbeat
+          payload: {method: push_heartbeat, dialog_id: synthetic-dialog, body: {subscription_id: synthetic-subscription}}
     PushUnsubscribe:
       payload: {$ref: '#/components/schemas/PushUnsubscribeFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPushUnsubscribe
+          summary: Synthetic push unsubscribe request
+          payload: {method: push_unsubscribe, dialog_id: synthetic-dialog, body: {subscription_id: synthetic-subscription}}
     PlaybackOffer:
       payload: {$ref: '#/components/schemas/PlaybackOfferFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPlaybackOffer
+          summary: Synthetic playback offer
+          payload: {method: playback, dialog_id: synthetic-dialog, body: {doorbot_id: 1, entry_point: timeline, sdp: synthetic-sdp, type: cloud}}
     PlaybackAnswer:
       payload: {$ref: '#/components/schemas/PlaybackAnswerFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPlaybackAnswer
+          summary: Synthetic playback answer
+          payload: {method: sdp, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, type: answer, sdp: synthetic-sdp}}
     PlaybackClose:
       payload: {$ref: '#/components/schemas/PlaybackCloseFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPlaybackClose
+          summary: Synthetic playback close request
+          payload: {method: close, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, reason: {code: 0, text: client_closed}}}
     ICECandidate:
       payload: {$ref: '#/components/schemas/ICECandidateFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticICECandidate
+          summary: Synthetic ICE candidate
+          payload: {method: ice, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, ice: synthetic-ice-candidate, mlineindex: 0}}
     SessionNotification:
       payload: {$ref: '#/components/schemas/SessionNotificationFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionNotification
+          summary: Synthetic session notification
+          payload: {method: notification, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, is_ok: true, text: synthetic-notification}}
     SessionPing:
       payload: {$ref: '#/components/schemas/SessionPingFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionPing
+          summary: Synthetic session ping
+          payload: {method: ping, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     SessionActivate:
       payload: {$ref: '#/components/schemas/SessionActivateFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionActivate
+          summary: Synthetic session activation
+          payload: {method: activate_session, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     SessionMicrophone:
       payload: {$ref: '#/components/schemas/SessionMicrophoneFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionMicrophone
+          summary: Synthetic microphone state update
+          payload: {method: mic_enable, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, enabled: true}}
     SessionStreamAudioOptions:
       payload: {$ref: '#/components/schemas/SessionStreamAudioOptionsFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionStreamAudioOptions
+          summary: Synthetic audio stream options
+          payload: {method: stream_options, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, audio_enabled: true}}
     SessionStreamVideoOptions:
       payload: {$ref: '#/components/schemas/SessionStreamVideoOptionsFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionStreamVideoOptions
+          summary: Synthetic video stream options
+          payload: {method: stream_options, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, video_enabled: true}}
     SessionStreamAudioVideoOptions:
       payload: {$ref: '#/components/schemas/SessionStreamAudioVideoOptionsFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionStreamAudioVideoOptions
+          summary: Synthetic audio and video stream options
+          payload: {method: stream_options, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, audio_enabled: true, video_enabled: true}}
     SessionClose:
       payload: {$ref: '#/components/schemas/SessionCloseFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionClose
+          summary: Synthetic session close request
+          payload: {method: close, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     SessionPong:
       payload: {$ref: '#/components/schemas/SessionPongFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionPong
+          summary: Synthetic session pong
+          payload: {method: pong, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     LiveView:
       payload: {$ref: '#/components/schemas/LiveViewFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticLiveView
+          summary: Synthetic live view offer
+          payload: {method: live_view, dialog_id: synthetic-dialog, body: {doorbot_id: 1, sdp: synthetic-sdp, stream_options: {audio_enabled: true, video_enabled: true}, type: offer}}
     SessionCreated:
       payload: {$ref: '#/components/schemas/SessionCreatedFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionCreated
+          summary: Synthetic session-created message
+          payload: {method: session_created, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     LiveAnswer:
       payload: {$ref: '#/components/schemas/LiveAnswerFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticLiveAnswer
+          summary: Synthetic live view answer
+          payload: {method: sdp, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, sdp: synthetic-sdp, session_info: {session_id: synthetic-control-session}, type: answer}}
     LiveICE:
       payload: {$ref: '#/components/schemas/LiveICEFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticLiveICE
+          summary: Synthetic live-view ICE message
+          payload: {method: ice, dialog_id: synthetic-dialog, body: {doorbot_id: 1, ice: synthetic-ice-candidate, mid: synthetic-mid, mlineindex: 0}}
     PTZCommand:
       payload: {$ref: '#/components/schemas/PTZCommandFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPTZCommand
+          summary: Synthetic PTZ step command
+          payload: {method: rpc, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, command: {jsonrpc: '2.0', id: synthetic-rpc-id, method: PTZ.Pan.Step, params: {sessionId: synthetic-session, timestamp: 0, version: 1, direction: LEFT}}}}
     PTZContinuousCommand:
       payload: {$ref: '#/components/schemas/PTZContinuousCommandFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticPTZContinuousCommand
+          summary: Synthetic continuous PTZ command
+          payload: {method: rpc, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session, command: {jsonrpc: '2.0', id: synthetic-rpc-id, method: PTZ.Pan.Continuous, params: {sessionId: synthetic-session, timestamp: 0, version: 1, direction: LEFT, speed: 0.5}}}}
     AccountEvent:
       payload: {$ref: '#/components/schemas/AccountEventFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticAccountEvent
+          summary: Synthetic account event
+          payload: {kind: synthetic, device_id: 1, timestamp: '2025-01-01T00:00:00Z'}
   schemas:
     ServerCameraStartedFrame:
       type: object
