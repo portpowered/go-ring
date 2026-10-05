@@ -37,3 +37,17 @@ fmt.Println(frame.Kind, extensions)
 The higher-level account event API keeps its map projection. See the
 [account events guide](/docs/guides/account-events-and-tickets) for normal client
 usage.
+
+## Shared HTTP clients
+
+The v0.7 client snapshots an injected `*http.Client` when `ring.NewClient` is
+created and reuses its `Transport`. A cookie jar already set on that client is
+rejected because one reusable Ring client can serve multiple accounts. Setting
+a jar on the supplied `*http.Client` later does not change the Ring client's
+snapshot.
+
+Low-level REST clients also snapshot injected HTTP clients. If a REST client is
+configured with a cookie jar, `client.ConfigurationError()` returns a typed
+`*rest.HTTPClientConfigurationError` and requests fail with that cause. The
+`HTTPClient()` accessor returns a shallow copy, so changing its fields does not
+change the reusable client; its `Transport` remains shared.

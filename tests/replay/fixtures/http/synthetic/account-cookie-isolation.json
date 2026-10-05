@@ -1,0 +1,51 @@
+{
+  "classification": "synthetic",
+  "exchanges": [
+    {
+      "request": {
+        "method": "POST",
+        "origin": "https://oauth.synthetic.test",
+        "path": "/oauth/token",
+        "query": [],
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/x-www-form-urlencoded"],
+          "Hardware_id": ["first-hardware"],
+          "User-Agent": ["android:com.ringapp"]
+        },
+        "headers_mode": "exact",
+        "body": "client_id=ring_official_android&grant_type=refresh_token&refresh_token=first-refresh&scope=client",
+        "json": false
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": ["application/json"]},
+        "body": "{\"access_token\":\"first-next-access\",\"refresh_token\":\"first-next-refresh\",\"token_type\":\"Bearer\"}",
+        "json": false
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "origin": "https://oauth.synthetic.test",
+        "path": "/oauth/token",
+        "query": [],
+        "headers": {
+          "Accept": ["application/json"],
+          "Content-Type": ["application/x-www-form-urlencoded"],
+          "Hardware_id": ["second-hardware"],
+          "User-Agent": ["android:com.ringapp"]
+        },
+        "headers_mode": "exact",
+        "body": "client_id=ring_official_android&grant_type=refresh_token&refresh_token=second-refresh&scope=client",
+        "json": false
+      },
+      "response": {
+        "status": 200,
+        "headers": {"Content-Type": ["application/json"]},
+        "body": "{\"access_token\":\"second-next-access\",\"refresh_token\":\"second-next-refresh\",\"token_type\":\"Bearer\"}",
+        "json": false
+      }
+    }
+  ]
+}

@@ -22,7 +22,21 @@ func TestSyntheticRecordedHeartbeatRejectsWriteBeforeExpiryTimerDelivery(t *test
 	out := make(chan signaling.Message, 1)
 	session := newHeartbeatReplaySession(t, ping, clock, out)
 
-	err := session.Send(context.Background(), ping.Method, ping.Body)
+	cancelledContext, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := session.Send(cancelledContext, ping.Method, ping.Body)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("send with canceled context = %v, want context cancellation", err)
+	}
+
+	select {
+	case unexpected := <-out:
+		t.Fatalf("canceled session send emitted a frame: %+v", unexpected)
+	default:
+	}
+
+	err = session.Send(context.Background(), ping.Method, ping.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,6 +67,11 @@ func TestSyntheticRecordedHeartbeatRejectsWriteBeforeExpiryTimerDelivery(t *test
 	err = session.Wait(ctx)
 	if !errors.Is(err, signaling.ErrExpired) {
 		t.Fatalf("expiry completion = %v", err)
+	}
+
+	err = session.Handle(pong)
+	if !errors.Is(err, signaling.ErrExpired) {
+		t.Fatalf("late pong after expiry = %v", err)
 	}
 
 	select {

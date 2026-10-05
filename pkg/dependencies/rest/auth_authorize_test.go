@@ -15,6 +15,13 @@ func TestOAuthAuthorizationRejectsUnmodeledRedirectsBeforeNetwork(t *testing.T) 
 		"https://oauth.example.test/unmodeled-route",
 		"https://elsewhere.example.test/oauth/v2/authorize",
 		"https://oauth.example.test/oauth/v2/authorize?unexpected=value",
+		"https://oauth.example.test/oauth/v2/authorize?response_type=token",
+		"https://oauth.example.test/oauth/v2/authorize?code_challenge_method=plain",
+		"https://oauth.example.test/oauth/v2/authorize?dark_mode=invalid",
+		"https://oauth.example.test/oauth/v2/authorize?device_model=unsupported",
+		"https://oauth.example.test/oauth/v2/authorize?state=first&state=second",
+		"https://oauth.example.test/oauth/v2/authorize#fragment",
+		"https://oauth.example.test/%invalid",
 	} {
 		t.Run(redirectURL, func(t *testing.T) {
 			t.Parallel()

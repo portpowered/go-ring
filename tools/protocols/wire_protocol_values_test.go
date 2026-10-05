@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/portpowered/go-ring/tools/routegate"
 )
 
 func TestGeneratedSignalingFieldConstantsComeFromAsyncAPISchema(t *testing.T) {
@@ -271,24 +273,15 @@ func TestKnownSignalingValuesUseGeneratedProtocolConstants(t *testing.T) {
 	t.Parallel()
 
 	root := repositoryRoot(t)
-	async := readYAMLObject(t, filepath.Join(root, "api", "asyncapi.yaml"))
-	knownValues := make(map[string]bool)
-	collectSchemaKnownValues(nestedMap(async, "components", "schemas"), knownValues)
 
-	sources := append(signalingProductionSources(t, root),
-		"pkg/ring/device_session.go",
-		"pkg/ring/signaling_extras.go",
-	)
-	for _, relative := range sources {
-		path := filepath.Join(root, relative)
+	findings, err := routegate.Audit(root)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if literals := schemaValueLiterals(file, knownValues); len(literals) > 0 {
-			t.Errorf("%s hard-codes schema-defined signaling values %v", relative, literals)
+	for _, finding := range findings {
+		if finding.Rule == "unregistered-signaling-primitive-value" {
+			t.Errorf("signaling primitive bypasses its schema provenance: %s", finding)
 		}
 	}
 

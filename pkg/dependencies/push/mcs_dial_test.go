@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -47,13 +48,15 @@ func TestFCMDialContextRunsMCSFramesOverOfflineTLS(t *testing.T) {
 	clientConfig := &tls.Config{RootCAs: roots, ServerName: protocol.MCSHost, MinVersion: tls.VersionTLS13}
 
 	serverResult := make(chan error, 1)
-	dialCalls := 0
+	peerClosed := make(chan error, 1)
+
+	var dialCalls atomic.Int32
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	dial := push.DialContextFunc(func(_ context.Context, network, address string) (net.Conn, error) {
-		dialCalls++
+		dialCalls.Add(1)
 
 		if network != protocol.MCSNetwork || address != net.JoinHostPort(protocol.MCSHost, protocol.MCSPort) {
 			return nil, io.ErrUnexpectedEOF
@@ -118,7 +121,18 @@ func TestFCMDialContextRunsMCSFramesOverOfflineTLS(t *testing.T) {
 				return
 			}
 
-			serverResult <- exchangeMCSHeartbeat(server, transcript)
+			heartbeatErr := exchangeMCSHeartbeat(server, transcript)
+			serverResult <- heartbeatErr
+
+			if heartbeatErr != nil {
+				return
+			}
+
+			// Keep the peer open: cancellation must close the client socket.
+			var unexpected [1]byte
+
+			_, readErr := server.Read(unexpected[:])
+			peerClosed <- readErr
 		}()
 
 		return tls.Client(clientPipe, clientConfig), nil
@@ -156,7 +170,7 @@ func TestFCMDialContextRunsMCSFramesOverOfflineTLS(t *testing.T) {
 	}
 
 	require.True(t, connected, "MCS login response should produce a connected event")
-	require.Equal(t, 1, dialCalls)
+	require.EqualValues(t, 1, dialCalls.Load())
 
 	select {
 	case serverErr := <-serverResult:
@@ -167,7 +181,36 @@ func TestFCMDialContextRunsMCSFramesOverOfflineTLS(t *testing.T) {
 
 	cancel()
 
-	for range events {
+	assertMCSPublicClosure(t, events)
+
+	select {
+	case closeErr := <-peerClosed:
+		require.ErrorIs(t, closeErr, io.EOF, "client cancellation must close the MCS socket")
+	case <-time.After(3 * time.Second):
+		t.Fatal("client cancellation did not close the MCS socket")
+	}
+
+	require.EqualValues(t, 1, dialCalls.Load(), "cancellation must not redial")
+}
+
+func assertMCSPublicClosure(t *testing.T, events <-chan push.Event) {
+	t.Helper()
+
+	deadline := time.NewTimer(3 * time.Second)
+	defer deadline.Stop()
+
+	for {
+		select {
+		case event, open := <-events:
+			if !open {
+				return
+			}
+
+			require.Equal(t, push.KindClosed, event.Kind, "only termination may follow cancellation")
+			require.NoError(t, event.Err)
+		case <-deadline.C:
+			t.Fatal("MCS public event channel did not close after cancellation")
+		}
 	}
 }
 

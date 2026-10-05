@@ -114,6 +114,10 @@ func StartWithTransports(
 		}
 
 		for raw := range client.Events {
+			if ctx.Err() != nil {
+				return
+			}
+
 			event, ok := TranslateEvent(raw)
 			if event.Err != nil {
 				if stage, valid := diagnostics.failed.Load().(string); valid && stage != "" {

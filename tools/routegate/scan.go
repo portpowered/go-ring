@@ -70,7 +70,15 @@ func Audit(root string) ([]Finding, error) {
 		byDirectory[filepath.Dir(path)] = append(byDirectory[filepath.Dir(path)], item)
 	}
 
+	protocolValues := protocolStringConstants(root)
 	findings = append(findings, auditSignalingSourceModels(root, parsed)...)
+
+	primitiveFindings, err := auditSchemaPrimitiveProvenance(root, parsed, protocolScalarConstants(root))
+	if err != nil {
+		return nil, err
+	}
+
+	findings = append(findings, primitiveFindings...)
 
 	verifiedFCMCalls, fcmFindings := auditExternalFCM(root, parsed)
 	findings = append(findings, fcmFindings...)
@@ -84,8 +92,6 @@ func Audit(root string) ([]Finding, error) {
 	for call := range verifiedMCSCalls {
 		verifiedFCMCalls[call] = true
 	}
-
-	protocolValues := protocolStringConstants(root)
 
 	for _, item := range parsed {
 		packageFiles := byDirectory[filepath.Dir(item.path)]

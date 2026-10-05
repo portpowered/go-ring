@@ -40,49 +40,26 @@ func auditSignalingSourceModels(root string, files []*parsedGoFile) []Finding {
 }
 
 func signalingSourceModelRule(node ast.Node) string {
-	switch value := node.(type) {
-	case *ast.StructType:
-		for _, field := range value.Fields.List {
-			if field.Tag == nil {
-				continue
-			}
+	value, ok := node.(*ast.StructType)
+	if !ok {
+		return ""
+	}
 
-			tag, ok := stringConstant(field.Tag)
-			if !ok {
-				continue
-			}
-
-			name, tagged := reflect.StructTag(tag).Lookup("json")
-
-			name, _, _ = strings.Cut(name, ",")
-			if tagged && name != "-" {
-				return "handwritten-signaling-wire-model"
-			}
+	for _, field := range value.Fields.List {
+		if field.Tag == nil {
+			continue
 		}
-	case *ast.IndexExpr:
-		if _, literal := stringConstant(value.Index); literal {
-			return handwrittenSignalingKeyRule
-		}
-	case *ast.CompositeLit:
-		mapping, ok := value.Type.(*ast.MapType)
+
+		tag, ok := stringConstant(field.Tag)
 		if !ok {
-			return ""
+			continue
 		}
 
-		keyType, ok := mapping.Key.(*ast.Ident)
-		if !ok || keyType.Name != "string" {
-			return ""
-		}
+		name, tagged := reflect.StructTag(tag).Lookup("json")
 
-		for _, element := range value.Elts {
-			pair, ok := element.(*ast.KeyValueExpr)
-			if !ok {
-				continue
-			}
-
-			if _, literal := stringConstant(pair.Key); literal {
-				return handwrittenSignalingKeyRule
-			}
+		name, _, _ = strings.Cut(name, ",")
+		if tagged && name != "-" {
+			return "handwritten-signaling-wire-model"
 		}
 	}
 

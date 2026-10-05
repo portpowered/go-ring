@@ -307,31 +307,6 @@ func collectSchemaPropertyNames(value any, properties map[string]bool) {
 	}
 }
 
-func collectSchemaKnownValues(value any, known map[string]bool) {
-	switch current := value.(type) {
-	case map[string]any:
-		if constant, ok := current["const"].(string); ok {
-			known[constant] = true
-		}
-
-		for _, name := range []string{"enum", "x-extensible-enum"} {
-			for _, raw := range sliceValue(current[name]) {
-				if constant, ok := raw.(string); ok {
-					known[constant] = true
-				}
-			}
-		}
-
-		for _, child := range current {
-			collectSchemaKnownValues(child, known)
-		}
-	case []any:
-		for _, child := range current {
-			collectSchemaKnownValues(child, known)
-		}
-	}
-}
-
 func stringBasicLiteral(expression ast.Expr) (string, bool) {
 	literal, ok := expression.(*ast.BasicLit)
 	if !ok || literal.Kind != token.STRING {

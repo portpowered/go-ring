@@ -58,7 +58,10 @@ func (w withHTTPClient) apply(client *Client) error {
 		return ringapimodels.NewBadRequestError("shared HTTP client must not have a cookie jar", nil)
 	}
 
-	client.restClient.Apply(rest.WithHTTPClient(w.httpClient))
+	// Keep the caller's transport, but snapshot the mutable client fields so a
+	// Jar assigned after construction cannot become shared account state.
+	httpClient := *w.httpClient
+	client.restClient.Apply(rest.WithHTTPClient(&httpClient))
 
 	return nil
 }
