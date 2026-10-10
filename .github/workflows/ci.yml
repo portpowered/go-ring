@@ -141,7 +141,7 @@ jobs:
         run: go run ./tools/schemalinks -site api-docs-out -schemas api/openapi.yaml,api/external/fcm.openapi.yaml,api/asyncapi.yaml -base-path /go-ring
       - name: Upload rendered API documentation for review
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rendered-api-docs-${{ github.sha }}
           path: api-docs-out/
