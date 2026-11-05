@@ -18,6 +18,8 @@ Requires Go 1.24 or later.
 go get github.com/portpowered/go-ring@latest
 ```
 
+To use Ring cameras and doorbells from ChatGPT, Claude or another AI assistant without writing code, see [Ring MCP](https://github.com/portpowered/port-os-smart-home-cloud-mcp/blob/main/providers/ring-mcp.md) in Port OS Smart Home Cloud MCP.
+
 ## Authenticate
 
 Create a login session, request a verification code, and complete the exchange.
