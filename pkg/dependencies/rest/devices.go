@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/portpowered/go-ring/internal/generatedhttp"
 	"github.com/portpowered/go-ring/internal/ringerrors"
@@ -45,7 +46,13 @@ func (c *Client) RegisterSession(ctx context.Context) error {
 		return ringerrors.NewNetworkError("failed to build client session request", err)
 	}
 
-	return c.doGeneratedJSON(ctx, req, nil)
+	err = c.doGeneratedJSON(ctx, req, nil)
+	// Ring answers a throttled registration with 406 Not Acceptable rather than 429.
+	if ringerrors.IsHTTPStatusCode(err, http.StatusNotAcceptable) {
+		return &ringerrors.RateLimitError{Message: "client session registration throttled", Err: err}
+	}
+
+	return err
 }
 
 // GetDeviceHealth retrieves health data for a specific device.

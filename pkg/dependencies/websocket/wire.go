@@ -12,9 +12,14 @@ import (
 )
 
 func unmarshalSignalingFrame(encoded []byte) (signaling.Message, error) {
+	unmodeled, isUnmodeled, err := unmarshalUnmodeledFrame(encoded)
+	if isUnmodeled {
+		return unmodeled, err
+	}
+
 	var discriminator generatedsignaling.SignalingInboundDiscriminator
 
-	err := json.Unmarshal(encoded, &discriminator)
+	err = json.Unmarshal(encoded, &discriminator)
 	if err != nil {
 		return signaling.Message{}, wrapSignalingWireError(err, "decode generated signaling discriminator")
 	}
@@ -48,6 +53,45 @@ func unmarshalSignalingFrame(encoded []byte) (signaling.Message, error) {
 	}
 
 	return signaling.Message{Method: fields.method, DialogID: fields.dialogID, RIID: fields.riid, Body: fields.body}, nil
+}
+
+// unmarshalUnmodeledFrame passes through a well-formed frame whose method go-ring does not model,
+// such as Ring's stream_info, so that a new informational message from Ring does not end every
+// session on the connection. The frame still needs a method, a dialog_id and an object body; it
+// reaches the session that owns the dialog, and DeviceSession.Receive returns it with its method
+// and raw body. It reports false for a modeled or missing method, which the typed decoding
+// validates and reports.
+func unmarshalUnmodeledFrame(encoded []byte) (signaling.Message, bool, error) {
+	var none signaling.Message
+
+	fields, err := decodeEnvelopeFields(encoded)
+	if err != nil {
+		return none, true, err
+	}
+
+	if fields.method == "" {
+		return none, false, nil
+	}
+
+	if _, modeled := generatedsignaling.ValuesToAnonymousSchema_1[fields.method]; modeled {
+		return none, false, nil
+	}
+
+	if fields.dialogID == "" || fields.body == nil {
+		return none, true, signalingWireError("unmodeled signaling method %q requires dialog_id and body", fields.method)
+	}
+
+	_, err = decodeBodyFields(fields.body)
+	if err != nil {
+		return none, true, err
+	}
+
+	return signaling.Message{
+		Method:   fields.method,
+		DialogID: fields.dialogID,
+		RIID:     fields.riid,
+		Body:     fields.body,
+	}, true, nil
 }
 
 type signalingEnvelopeFields struct {
