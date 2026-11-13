@@ -100,11 +100,6 @@ func (c *Client) OpenSignaling(ctx context.Context, req OpenSignalingRequest) (*
 }
 
 func (c *Client) requestSignalingTicket(ctx context.Context) (string, error) {
-	err := c.ensureSession(ctx)
-	if err != nil {
-		return "", ringapimodels.NewConnectionError("failed to register Ring session", err)
-	}
-
 	token, err := c.getToken(ctx)
 	if err != nil {
 		return "", ringapimodels.NewTokenError("failed to get token for signaling", err)

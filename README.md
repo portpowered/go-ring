@@ -57,6 +57,16 @@ auth := ring.AuthContext{
 See the [authentication guide](https://portpowered.github.io/go-ring/docs/guides/authentication/)
 for token refresh and secure token storage.
 
+Register the hardware ID as a Ring client session once, when you link the
+account. go-ring never registers on its own, and Ring throttles registration
+(HTTP 406, returned as a rate limit error).
+
+```go
+if err := client.RegisterSession(ctx, ring.RegisterSessionRequest{Auth: auth}); err != nil {
+    return err
+}
+```
+
 ## List devices
 
 Use the same authentication context for device requests.

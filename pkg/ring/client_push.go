@@ -38,11 +38,6 @@ func (c *Client) RegisterPushDevice(ctx context.Context, req RegisterPushDeviceR
 
 	ctx = c.accountContext(ctx, req.Auth)
 
-	err := c.ensureSession(ctx)
-	if err != nil {
-		return err
-	}
-
 	return c.restClient.RegisterPushDevice(ctx, req.Token)
 }
 
@@ -54,13 +49,6 @@ func (c *Client) SubscribeDeviceDing(ctx context.Context, req DeviceIDRequest) e
 		return err
 	}
 
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
 	return c.restClient.SubscribeDeviceDing(ctx, id)
 }
 
@@ -70,13 +58,6 @@ func (c *Client) SubscribeDeviceMotion(ctx context.Context, req DeviceIDRequest)
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err
-	}
-
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	return c.restClient.SubscribeDeviceMotion(ctx, id)
@@ -366,12 +347,7 @@ func defaultFCMSource(
 }
 
 func (p *PushConnection) register(token string, deviceIDs []int64, ding, motion bool) error {
-	err := p.client.ensureSession(p.ctx)
-	if err != nil {
-		return err
-	}
-
-	err = p.client.restClient.RegisterPushDevice(p.ctx, token)
+	err := p.client.restClient.RegisterPushDevice(p.ctx, token)
 	if err != nil {
 		return err
 	}

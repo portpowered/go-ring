@@ -90,6 +90,14 @@ func run() error {
 		return ringapimodels.NewConnectionError("Authentication response is nil", nil)
 	}
 
+	// Register the hardware ID as a Ring client session, once per linked account.
+	err = client.RegisterSession(ctx, ring.RegisterSessionRequest{
+		Auth: ring.AuthContext{AccessToken: authResp.AccessToken, HardwareID: login.HardwareID()},
+	})
+	if err != nil {
+		return exampleerrors.Wrap("register Ring client session", err)
+	}
+
 	fmt.Printf("✓ Authentication successful!\n")
 	fmt.Printf("  Access Token length: %d\n", len(authResp.AccessToken))
 	fmt.Printf("  Refresh Token length: %d\n", len(authResp.RefreshToken))

@@ -70,17 +70,12 @@ func TestListDevicesUsesTokenGetterAndPropagatesConfiguredRequestHeaders(t *test
 		require.NotNil(t, devices)
 	}
 
-	// The hardware ID registers a client session once; the second list reuses it.
-	require.Len(t, transport.requests, 3)
-	require.Equal(t, http.MethodPost, transport.requests[0].Method, "hardware ID triggers session registration")
+	// Listing never registers a client session; that is the caller's RegisterSession.
+	require.Len(t, transport.requests, 2)
 
-	for i, req := range transport.requests {
-		if i == 0 {
-			require.Equal(t, "https://api.override.example/clients_api/session", req.URL.String())
-		} else {
-			require.Equal(t, "https://api.override.example/device_info/v3/devices", req.URL.String())
-			require.Equal(t, http.MethodGet, req.Method)
-		}
+	for _, req := range transport.requests {
+		require.Equal(t, "https://api.override.example/device_info/v3/devices", req.URL.String())
+		require.Equal(t, http.MethodGet, req.Method)
 
 		require.Equal(t, "Bearer dynamic-token", req.Header.Get("Authorization"))
 		require.Equal(t, "test-agent/1", req.Header.Get("User-Agent"))
@@ -382,18 +377,9 @@ func TestAuthContextClaimHandlingAndHardwareIDPrecedence(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			if tc.wantHardwareID == "" {
-				require.Len(t, transport.requests, 1, "without a claim there is no hardware session registration")
-				require.Equal(t, http.MethodGet, transport.requests[0].Method)
-
-				return
-			}
-
-			require.Len(t, transport.requests, 2)
-			require.Equal(t, http.MethodPost, transport.requests[0].Method)
-			require.Equal(t, "/clients_api/session", transport.requests[0].URL.Path)
+			require.Len(t, transport.requests, 1, "listing never registers a client session")
+			require.Equal(t, http.MethodGet, transport.requests[0].Method)
 			require.Equal(t, tc.wantHardwareID, transport.requests[0].Header.Get("Hardware_id"))
-			require.Equal(t, "Bearer "+tc.token, transport.requests[0].Header.Get("Authorization"))
 		})
 	}
 }

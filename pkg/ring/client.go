@@ -4,7 +4,6 @@ package ring
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"strings"
@@ -62,37 +61,21 @@ func hardwareIDFromAccessToken(accessToken string) string {
 	return claims.HardwareID
 }
 
-// ensureSession registers the request's hardware ID as a Ring client session once per access
-// token. Ring throttles registration (HTTP 406 after about 60 in 10 minutes, then refuses every
-// request for up to half an hour), so registering before every request starves a busy account.
-// A new token for the hardware ID registers again; a failed registration is not remembered.
-func (c *Client) ensureSession(ctx context.Context) error {
-	auth, ok := requestauth.FromContext(ctx)
-	if !ok || auth.HardwareID == "" {
-		return nil
-	}
+// RegisterSessionRequest names the account and hardware ID to register as a Ring client session.
+type RegisterSessionRequest struct {
+	Auth AuthContext
+}
 
-	token := sha256.Sum256([]byte(auth.AccessToken))
+// RegisterSession registers the request's hardware ID as a Ring client session (POST
+// /clients_api/session). Ring expects a client to register once, after it signs in or links an
+// account, before it reads devices or opens live sessions; the client does not register on its own
+// and keeps no record of registrations. Ring throttles registration: after about 60 in 10 minutes it
+// answers 406, returned as a RateLimitError, and refuses more for up to half an hour, so callers
+// register when they link an account rather than before each request.
+func (c *Client) RegisterSession(ctx context.Context, req RegisterSessionRequest) error {
+	ctx = c.accountContext(ctx, req.Auth)
 
-	c.registeredSessionsMu.Lock()
-	defer c.registeredSessionsMu.Unlock()
-
-	if registered, ok := c.registeredSessions[auth.HardwareID]; ok && registered == token {
-		return nil
-	}
-
-	err := c.restClient.RegisterSession(ctx)
-	if err != nil {
-		return err
-	}
-
-	if c.registeredSessions == nil {
-		c.registeredSessions = make(map[string][sha256.Size]byte)
-	}
-
-	c.registeredSessions[auth.HardwareID] = token
-
-	return nil
+	return c.restClient.RegisterSession(ctx)
 }
 
 // getToken retrieves the access token.
