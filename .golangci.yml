@@ -277,6 +277,9 @@ linters:
       # GO-15: The expiry replay injects a private clock after opening the public signaling connection; exporting a test-only clock would weaken the client API boundary.
       - path: '^pkg/ring/device_session_expiry_replay_test\.go$'
         linters: [testpackage]
+      # GO-15: This handoff test seeds private routing queues and registers the private activated session; the paired WebSocket replay separately verifies the public client surface.
+      - path: '^pkg/ring/device_session_handoff_test\.go$'
+        linters: [testpackage]
       # GO-15: These signaling tests inspect private queues, maps, and worker completion to verify close and failure cleanup that is not part of the public API.
       - path: '^pkg/ring/signaling_connection_(failure|stress)_test\.go$'
         linters: [testpackage]

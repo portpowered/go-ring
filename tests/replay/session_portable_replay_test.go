@@ -166,6 +166,15 @@ func TestRecordedLiveViewBehaviors(t *testing.T) {
 				},
 			)
 			if err != nil {
+				// The synthetic peer closes immediately after camera_started. If
+				// its close is already queued at handoff, Start returns that terminal
+				// outcome instead of exposing an already-ended session.
+				if scenario == remoteTerminationScenario && errors.Is(err, ring.ErrSessionClosed) && session == nil {
+					_ = conn.Close()
+
+					return
+				}
+
 				t.Fatal(err)
 			}
 
