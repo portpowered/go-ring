@@ -70,11 +70,12 @@ func TestListDevicesUsesTokenGetterAndPropagatesConfiguredRequestHeaders(t *test
 		require.NotNil(t, devices)
 	}
 
-	require.Len(t, transport.requests, 4)
+	// The hardware ID registers a client session once; the second list reuses it.
+	require.Len(t, transport.requests, 3)
 	require.Equal(t, http.MethodPost, transport.requests[0].Method, "hardware ID triggers session registration")
 
 	for i, req := range transport.requests {
-		if i%2 == 0 {
+		if i == 0 {
 			require.Equal(t, "https://api.override.example/clients_api/session", req.URL.String())
 		} else {
 			require.Equal(t, "https://api.override.example/device_info/v3/devices", req.URL.String())

@@ -104,8 +104,12 @@ func TestReadSignalingRejectsUnmodeledAndIncompleteFrames(t *testing.T) {
 		frame string
 	}{
 		{
-			name:  "unknown method",
-			frame: `{"method":"motion_event","dialog_id":"dialog","body":{"event":"motion"}}`,
+			name:  "unmodeled method without dialog id",
+			frame: `{"method":"stream_info","body":{"doorbot_id":1000,"session_id":"session"}}`,
+		},
+		{
+			name:  "unmodeled method with non-object body",
+			frame: `{"method":"stream_info","dialog_id":"dialog","body":"info"}`,
 		},
 		{
 			name:  "missing dialog id",
@@ -139,6 +143,22 @@ func TestReadSignalingRejectsUnmodeledAndIncompleteFrames(t *testing.T) {
 				t.Fatalf("invalid frame reached route callback: %#v", message)
 			}
 		})
+	}
+}
+
+func TestReadSignalingPassesUnmodeledMethodsToTheirDialog(t *testing.T) {
+	t.Parallel()
+
+	frame := `{"method":"stream_info","dialog_id":"dialog","riid":"riid",` +
+		`"body":{"doorbot_id":1000,"session_id":"session","stream":{"bitrate":512}}}`
+
+	message, err := readOneSignalingFrame(t, frame)
+	if message.Method != "stream_info" || message.DialogID != "dialog" || message.RIID != "riid" {
+		t.Fatalf("unmodeled frame routed as %#v (error: %v)", message, err)
+	}
+
+	if string(message.Body) != `{"doorbot_id":1000,"session_id":"session","stream":{"bitrate":512}}` {
+		t.Fatalf("unmodeled frame body = %s", message.Body)
 	}
 }
 

@@ -4,6 +4,7 @@ package ring
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"net/http"
 	"sync"
@@ -33,6 +34,11 @@ type Client struct {
 	signalingWebSocketURL string
 	eventWebSocketURL     string
 	fcmSource             FCMSource
+
+	// registeredSessions holds, per hardware ID, a fingerprint of the access token whose client
+	// session Ring accepted, so the client registers once per token instead of on every request.
+	registeredSessionsMu sync.Mutex
+	registeredSessions   map[string][sha256.Size]byte
 }
 
 // ClientAPI is the complete public account-level surface implemented by Client.

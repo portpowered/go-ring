@@ -4,6 +4,7 @@ package ring
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"strings"
@@ -61,13 +62,37 @@ func hardwareIDFromAccessToken(accessToken string) string {
 	return claims.HardwareID
 }
 
+// ensureSession registers the request's hardware ID as a Ring client session once per access
+// token. Ring throttles registration (HTTP 406 after about 60 in 10 minutes, then refuses every
+// request for up to half an hour), so registering before every request starves a busy account.
+// A new token for the hardware ID registers again; a failed registration is not remembered.
 func (c *Client) ensureSession(ctx context.Context) error {
 	auth, ok := requestauth.FromContext(ctx)
 	if !ok || auth.HardwareID == "" {
 		return nil
 	}
 
-	return c.restClient.RegisterSession(ctx)
+	token := sha256.Sum256([]byte(auth.AccessToken))
+
+	c.registeredSessionsMu.Lock()
+	defer c.registeredSessionsMu.Unlock()
+
+	if registered, ok := c.registeredSessions[auth.HardwareID]; ok && registered == token {
+		return nil
+	}
+
+	err := c.restClient.RegisterSession(ctx)
+	if err != nil {
+		return err
+	}
+
+	if c.registeredSessions == nil {
+		c.registeredSessions = make(map[string][sha256.Size]byte)
+	}
+
+	c.registeredSessions[auth.HardwareID] = token
+
+	return nil
 }
 
 // getToken retrieves the access token.
