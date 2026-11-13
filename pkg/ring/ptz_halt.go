@@ -21,7 +21,9 @@ type PTZHalt struct {
 	SessionID string
 }
 
-// PTZHalt reads the event as Ring's PTZ.Pan.Halted notice. It reports false for any other event.
+// PTZHalt reads the event as Ring's PTZ.Pan.Halted notice. Ring sends the live notice wrapped as
+// command.message (seen on a camera 2026-11-13); recorded sessions also hold it unwrapped.
+// It reports false for any other event.
 func (e SessionEvent) PTZHalt() (PTZHalt, bool) {
 	var none PTZHalt
 
@@ -36,10 +38,8 @@ func (e SessionEvent) PTZHalt() (PTZHalt, bool) {
 		return none, false
 	}
 
-	var command generatedsignaling.ServerRpcCommand
-
-	err = json.Unmarshal(body[protocol.FieldCommand], &command)
-	if err != nil || command.Method != protocol.RPCPanHalted {
+	command, ok := haltCommand(body[protocol.FieldCommand])
+	if !ok || command.Method != protocol.RPCPanHalted {
 		return none, false
 	}
 
@@ -52,4 +52,29 @@ func (e SessionEvent) PTZHalt() (PTZHalt, bool) {
 	}
 
 	return PTZHalt{Axis: PanAxis, Direction: PanDirection(direction), Reason: reason, SessionID: sessionID}, true
+}
+
+// haltCommand decodes an rpc command, unwrapping command.message when Ring wraps it.
+func haltCommand(raw json.RawMessage) (generatedsignaling.ServerRpcCommand, bool) {
+	var command generatedsignaling.ServerRpcCommand
+
+	err := json.Unmarshal(raw, &command)
+	if err != nil {
+		return command, false
+	}
+
+	if command.Method != "" {
+		return command, true
+	}
+
+	var wrapper struct {
+		Message *generatedsignaling.ServerRpcCommand `json:"message"`
+	}
+
+	err = json.Unmarshal(raw, &wrapper)
+	if err != nil || wrapper.Message == nil {
+		return command, false
+	}
+
+	return *wrapper.Message, true
 }
