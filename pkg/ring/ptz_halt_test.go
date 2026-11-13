@@ -27,6 +27,28 @@ func TestSessionEventPTZHaltReadsRecordedPanHalt(t *testing.T) {
 	}
 }
 
+func TestSessionEventPTZHaltReadsWrappedLiveHalt(t *testing.T) {
+	t.Parallel()
+
+	// A live camera sends the halt with the command wrapped as command.message.
+	event := ring.SessionEvent{Method: "rpc", Body: []byte(`{"doorbot_id":1000,"session_id":"session-2",` +
+		`"command":{"message":{"id":"command-23","jsonrpc":"2.0","method":"PTZ.Pan.Halted","params":` +
+		`{"direction":"RIGHT","reason":"LIMIT_REACHED","sessionId":"session-4",` +
+		`"timestamp":2929592333000.0,"version":1.0}}}}`)}
+
+	halt, ok := event.PTZHalt()
+	if !ok {
+		t.Fatal("PTZHalt did not read the wrapped halt")
+	}
+
+	want := ring.PTZHalt{
+		Axis: ring.PanAxis, Direction: ring.PanRight, Reason: ring.PTZHaltLimitReached, SessionID: "session-4",
+	}
+	if halt != want {
+		t.Fatalf("PTZHalt = %#v, want %#v", halt, want)
+	}
+}
+
 func TestSessionEventPTZHaltIgnoresOtherEvents(t *testing.T) {
 	t.Parallel()
 
@@ -37,6 +59,9 @@ func TestSessionEventPTZHaltIgnoresOtherEvents(t *testing.T) {
 		"bad direction": {Method: "rpc", Body: []byte(`{"command":{"jsonrpc":"2.0","id":"c",` +
 			`"method":"PTZ.Pan.Halted","params":{"direction":"UP","reason":"LIMIT_REACHED"}}}`)},
 		"not json": {Method: "rpc", Body: []byte(`{`)},
+		"wrapped other rpc": {Method: "rpc", Body: []byte(`{"command":{"message":{"jsonrpc":"2.0","id":"c",` +
+			`"method":"PTZ.Pan.Step","params":{"direction":"LEFT"}}}}`)},
+		"empty wrapper": {Method: "rpc", Body: []byte(`{"command":{"message":null}}`)},
 	} {
 		if _, ok := event.PTZHalt(); ok {
 			t.Errorf("%s: PTZHalt reported a halt", name)
