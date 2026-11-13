@@ -251,7 +251,7 @@ linters:
         linters: [gochecknoglobals]
       # API-03/API-09: Keep the documented complete client and device-session facade interfaces intact for consumers; callers can define smaller local interfaces when needed.
       - path: '^pkg/ring/interface\.go$'
-        text: '^the interface has more than 10 methods: (43|13)$'
+        text: '^the interface has more than 10 methods: (44|13)$'
         linters: [interfacebloat]
       # API-03: Option constructors intentionally return the sealed Option interface so its implementations stay private and composable.
       - path: '^pkg/ring/(client_options|client_push)\.go$'

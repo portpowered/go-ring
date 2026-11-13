@@ -20,13 +20,6 @@ func (c *Client) GetDeviceDetail(ctx context.Context, req GetDeviceDetailRequest
 		return nil, err
 	}
 
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	wire, err := c.restClient.GetDeviceDetail(ctx, id)
 	if err != nil {
 		return nil, err
@@ -56,12 +49,6 @@ func (c *Client) GetDeviceStatus(ctx context.Context, req GetDeviceDetailRequest
 
 func (c *Client) ListLocations(ctx context.Context, req ListLocationsRequest) (*LocationList, error) {
 	ctx = c.accountContext(ctx, req.Auth)
-	{
-		err := c.ensureSession(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	wire, err := c.restClient.ListLocations(ctx)
 	if err != nil {
@@ -112,13 +99,6 @@ func (c *Client) GetLocation(ctx context.Context, req GetLocationRequest) (*Loca
 		return nil, err
 	}
 
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	wire, err := c.restClient.GetLocation(ctx, id, req.Params.wire())
 	if err != nil {
 		return nil, err
@@ -135,13 +115,6 @@ func (c *Client) ListLocationGroups(ctx context.Context, req LocationRequest) (*
 		return nil, err
 	}
 
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	wire, err := c.restClient.ListLocationGroups(ctx, id)
 	if err != nil {
 		return nil, err
@@ -156,13 +129,6 @@ func (c *Client) ListLocationDevices(ctx context.Context, req LocationRequest) (
 	id, err := locationID(req.LocationID)
 	if err != nil {
 		return nil, err
-	}
-
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	wire, err := c.restClient.ListLocationDevices(ctx, id)
@@ -185,13 +151,6 @@ func (c *Client) GetDeviceTimeline(ctx context.Context, req GetDeviceTimelineReq
 		return nil, ringapimodels.NewBadRequestError("timeline limit must be positive", nil)
 	}
 
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	wire, err := c.restClient.GetDeviceTimeline(ctx, id, req.Params.wire())
 	if err != nil {
 		return nil, err
@@ -202,12 +161,6 @@ func (c *Client) GetDeviceTimeline(ctx context.Context, req GetDeviceTimelineReq
 
 func (c *Client) GetHistoryDevices(ctx context.Context, req GetHistoryDevicesRequest) (*HistoryDevices, error) {
 	ctx = c.accountContext(ctx, req.Auth)
-	{
-		err := c.ensureSession(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	wire, err := c.restClient.GetHistoryDevices(ctx, req.Params.wire())
 	if err != nil {
@@ -225,13 +178,6 @@ func (c *Client) RebootDevice(ctx context.Context, req DeviceIDRequest) error {
 		return err
 	}
 
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
 	return c.restClient.RebootDevice(ctx, id)
 }
 
@@ -244,13 +190,6 @@ func (c *Client) UnlockIntercom(ctx context.Context, req DeviceIDRequest) error 
 		return err
 	}
 
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
 	return c.restClient.UnlockIntercom(ctx, id)
 }
 
@@ -260,13 +199,6 @@ func (c *Client) SetPersistentLiveViewEnabled(ctx context.Context, req SetPersis
 	id, err := settingsDeviceID(req.DeviceID)
 	if err != nil {
 		return err
-	}
-
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	return c.restClient.SetPersistentLiveViewEnabled(ctx, id, req.Enabled)
@@ -288,13 +220,6 @@ func (c *Client) FavoriteRecording(ctx context.Context, req RecordingIDRequest) 
 		return err
 	}
 
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
 	return c.restClient.FavoriteRecording(ctx, id)
 }
 
@@ -304,13 +229,6 @@ func (c *Client) DeleteRecording(ctx context.Context, req DeleteRecordingRequest
 	id, err := recordingID(req.RecordingID)
 	if err != nil {
 		return err
-	}
-
-	{
-		err = c.ensureSession(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	return c.restClient.DeleteRecording(ctx, id, req.ConfirmDeleteFavorite)

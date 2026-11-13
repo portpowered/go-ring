@@ -50,6 +50,22 @@ If you omit `HardwareID` when opening the login session, save the generated
 installation. Avoid requesting multiple verification codes: Ring can rate-limit
 their delivery.
 
+## Register the client session
+
+Ring expects each hardware ID to register as a client session once, after it
+signs in, before the account reads devices or opens live sessions. go-ring does
+not register on its own and keeps no record of registrations: call
+`RegisterSession` when you link an account, and again only when Ring stops
+accepting the hardware ID.
+
+```go
+err := client.RegisterSession(ctx, ring.RegisterSessionRequest{Auth: auth})
+if ringapimodels.IsRateLimitError(err) {
+	// Ring answers about 60 registrations in 10 minutes with 406 and refuses
+	// more for up to half an hour. Retry later.
+}
+```
+
 ## Use and refresh tokens
 
 Pass the account context with each request. A single `Client` can serve more

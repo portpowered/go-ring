@@ -78,7 +78,16 @@ func requireListed(t *testing.T, client *ring.Client, token string) {
 	require.NoError(t, err)
 }
 
-func TestClientRegistersOncePerTokenAndAgainForANewToken(t *testing.T) {
+// registerSession registers the test account's hardware ID; the client's own error is the subject.
+func registerSession(client *ring.Client) error {
+	//nolint:wrapcheck // The tests assert the client's own error type.
+	return client.RegisterSession(
+		context.Background(),
+		ring.RegisterSessionRequest{Auth: ring.AuthContext{AccessToken: "token-1", HardwareID: "hardware-abc"}},
+	)
+}
+
+func TestClientOperationsNeverRegisterASession(t *testing.T) {
 	t.Parallel()
 
 	client, server := newRegistrationClient(t)
@@ -87,22 +96,27 @@ func TestClientRegistersOncePerTokenAndAgainForANewToken(t *testing.T) {
 		requireListed(t, client, "token-1")
 	}
 
-	require.Equal(t, 1, server.count("token-1"), "one registration serves every request with the same token")
-
-	requireListed(t, client, "token-2")
-	requireListed(t, client, "token-2")
-	require.Equal(t, 1, server.count("token-2"), "a refreshed token registers once")
+	require.Zero(t, server.count("token-1"), "registration is the caller's explicit operation")
 }
 
-func TestThrottledRegistrationIsARateLimitAndIsRetried(t *testing.T) {
+func TestRegisterSessionRegistersOnEveryCall(t *testing.T) {
+	t.Parallel()
+
+	client, server := newRegistrationClient(t)
+
+	require.NoError(t, registerSession(client))
+	require.NoError(t, registerSession(client))
+	require.Equal(t, 2, server.count("token-1"), "the client keeps no record of registrations")
+}
+
+func TestThrottledRegistrationIsARateLimit(t *testing.T) {
 	t.Parallel()
 
 	client, server := newRegistrationClient(t, http.StatusNotAcceptable)
 
-	_, err := client.ListDevices(context.Background(), listDevicesRequest("token-1"))
+	err := registerSession(client)
 	require.True(t, ringapimodels.IsRateLimitError(err), "406 from registration is a rate limit: %v", err)
 
-	requireListed(t, client, "token-1")
-	requireListed(t, client, "token-1")
-	require.Equal(t, 2, server.count("token-1"), "a refused registration is not remembered")
+	require.NoError(t, registerSession(client))
+	require.Equal(t, 2, server.count("token-1"))
 }

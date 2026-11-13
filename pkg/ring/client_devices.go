@@ -12,12 +12,6 @@ import (
 // ListDevices retrieves all devices associated with the account.
 func (c *Client) ListDevices(ctx context.Context, req ListDevicesRequest) (*ringapimodels.DevicesResponse, error) {
 	ctx = c.accountContext(ctx, req.Auth)
-	{
-		err := c.ensureSession(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	rawResponse, err := c.restClient.GetDevices(ctx)
 	if err != nil {
