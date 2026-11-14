@@ -162,6 +162,48 @@ func TestReadSignalingPassesUnmodeledMethodsToTheirDialog(t *testing.T) {
 	}
 }
 
+// Ring sends camera_options when a camera starts, and can send ping, which the session answers.
+// Both reach their dialog instead of ending the connection.
+func TestReadSignalingPassesCameraOptionsAndPingToTheirDialog(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name  string
+		frame string
+		want  string
+		body  string
+	}{
+		{
+			name: "camera options",
+			frame: `{"method":"camera_options","dialog_id":"dialog",` +
+				`"body":{"doorbot_id":1000,"session_id":"session","stealth_mode":false}}`,
+			want: protocol.MethodCameraOptions,
+			body: `{"doorbot_id":1000,"session_id":"session","stealth_mode":false}`,
+		},
+		{
+			name:  "ping",
+			frame: `{"method":"ping","dialog_id":"dialog","body":{"doorbot_id":1000,"session_id":"session"}}`,
+			want:  protocol.MethodPing,
+			body:  `{"doorbot_id":1000,"session_id":"session"}`,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			message, err := readOneSignalingFrame(t, testCase.frame)
+			if message.Method != testCase.want || message.DialogID != "dialog" {
+				t.Fatalf("frame routed as %#v (error: %v)", message, err)
+			}
+
+			if string(message.Body) != testCase.body {
+				t.Fatalf("frame body = %s", message.Body)
+			}
+		})
+	}
+}
+
 func TestReadSignalingAcceptsCloseFramesWithoutOptionalReasonCode(t *testing.T) {
 	t.Parallel()
 

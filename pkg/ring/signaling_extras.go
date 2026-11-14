@@ -364,6 +364,12 @@ func (c *SignalingConnection) StartPlayback(ctx context.Context, req StartPlayba
 }
 func (s *PlaybackSession) Answer() SessionDescription { return s.answer }
 func (s *PlaybackSession) handle(message signaling.Message) {
+	if message.Method == protocol.MethodPing {
+		s.answerPing(message)
+
+		return
+	}
+
 	if message.Method == protocol.MethodPong {
 		var body generatedsignaling.SessionBody
 		if json.Unmarshal(message.Body, &body) == nil && int64(body.DoorbotId) == s.deviceID && body.SessionId == s.id {
@@ -384,6 +390,22 @@ func (s *PlaybackSession) handle(message signaling.Message) {
 	default:
 		s.terminate(signaling.ErrBackpressure)
 	}
+}
+
+// answerPing answers a ping from Ring for this session with a pong, as Ring's own clients do, and
+// counts it as a sign the session is alive the same way a pong is.
+func (s *PlaybackSession) answerPing(message signaling.Message) {
+	var body generatedsignaling.SessionBody
+	if json.Unmarshal(message.Body, &body) != nil || int64(body.DoorbotId) != s.deviceID || body.SessionId != s.id {
+		return
+	}
+
+	s.lastPong.Store(time.Now().UnixNano())
+
+	ctx, cancel := context.WithTimeout(context.Background(), signaling.SendTimeout)
+	defer cancel()
+
+	_ = s.connection.sendTyped(ctx, protocol.MethodPong, s.dialog, s.riid, body)
 }
 func (s *PlaybackSession) terminate(err error) {
 	s.once.Do(func() {

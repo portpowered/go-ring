@@ -563,6 +563,10 @@ func (s *Session) Handle(message Message) error {
 		return nil
 	}
 
+	if message.Method == protocol.MethodPing {
+		return s.answerPing()
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -604,6 +608,31 @@ func (s *Session) Receive(ctx context.Context) (Message, error) {
 	case <-ctx.Done():
 		return Message{}, wrapSessionContextError("receive signaling event", ctx.Err())
 	}
+}
+
+// answerPing answers a ping from Ring with a pong, as Ring's own clients do, and counts the ping as
+// a sign the session is alive the same way a pong is. It runs without the session lock, which Send
+// takes. A pong that cannot be sent ends the session, the same as a ping that cannot be sent.
+func (s *Session) answerPing() error {
+	s.mu.Lock()
+
+	closed, terminal := s.closed, s.terminal
+	if !closed {
+		s.lastPong = s.clock.Now()
+	}
+
+	s.mu.Unlock()
+
+	if closed {
+		return terminal
+	}
+
+	err := s.Send(s.ctx, protocol.MethodPong, nil)
+	if err != nil {
+		s.finish(err)
+	}
+
+	return nil
 }
 
 func (s *Session) handleRPCFrame(body json.RawMessage) (bool, error) {
