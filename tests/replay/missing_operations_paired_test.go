@@ -42,7 +42,7 @@ func loadMissingOperationPairs(t *testing.T) []syntheticOperationPair {
 	var pairs []syntheticOperationPair
 
 	require.NoError(t, json.Unmarshal(data, &pairs))
-	require.Len(t, pairs, 17)
+	require.Len(t, pairs, 18)
 
 	return pairs
 }
@@ -67,7 +67,7 @@ func TestCompletePairedOperationInventory(t *testing.T) {
 	}
 
 	require.Empty(t, missing, "OpenAPI operations without a complete stored pair")
-	require.Len(t, covered, 39)
+	require.Len(t, covered, 40)
 }
 
 func collectStoredPairCoverage(t *testing.T, paths map[string]any) map[string]bool {
@@ -164,7 +164,7 @@ func TestSyntheticPairMetadataMatchesOpenAPI(t *testing.T) {
 		}
 	}
 
-	require.Len(t, seen, 38)
+	require.Len(t, seen, 39)
 }
 
 func pairObjects(data []byte) []json.RawMessage {
@@ -258,6 +258,9 @@ func missingOperationCalls() map[string]func(*generatedhttp.Client) (*http.Respo
 	calls := map[string]func(*generatedhttp.Client) (*http.Response, error){
 		"beginOrContinueOAuthAuthorization": func(c *generatedhttp.Client) (*http.Response, error) {
 			return c.BeginOrContinueOAuthAuthorization(ctx, nil, accept("text/html"))
+		},
+		"loadOAuthSignInPage": func(c *generatedhttp.Client) (*http.Response, error) {
+			return c.LoadOAuthSignInPage(ctx, accept("text/html"))
 		},
 		"submitOAuthCredentials": func(c *generatedhttp.Client) (*http.Response, error) {
 			return c.SubmitOAuthCredentialsWithBody(

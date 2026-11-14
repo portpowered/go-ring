@@ -27,6 +27,33 @@
     }
   },
   {
+    "operation_id": "loadOAuthSignInPage",
+    "request": {
+      "method": "GET",
+      "origin": "https://oauth.ring.com",
+      "path": "/oauth/v2/signin",
+      "query": [],
+      "headers": {
+        "Accept": [
+          "text/html"
+        ]
+      },
+      "headers_mode": "required",
+      "body": null,
+      "json": false
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "Content-Type": [
+          "text/html"
+        ]
+      },
+      "body": "<html>synthetic sign-in</html>",
+      "json": false
+    }
+  },
+  {
     "operation_id": "submitOAuthCredentials",
     "request": {
       "method": "POST",

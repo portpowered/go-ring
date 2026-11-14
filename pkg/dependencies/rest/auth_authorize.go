@@ -12,8 +12,10 @@ import (
 	"github.com/portpowered/go-ring/internal/ringerrors"
 )
 
-// sendOAuthAuthorize follows only the schema-defined authorization route on
-// the configured OAuth origin. Redirects to other paths are never fetched.
+// sendOAuthAuthorize follows only the schema-defined authorization route and
+// sign-in page on the configured OAuth origin. Redirects to other paths are
+// never fetched. Ring redirects a new authorization to the sign-in page, which
+// takes no query parameters.
 func (c *Client) sendOAuthAuthorize(
 	ctx context.Context, authClient *http.Client, currentURL string,
 ) (*http.Response, error) {
@@ -27,9 +29,33 @@ func (c *Client) sendOAuthAuthorize(
 		return nil, ringerrors.NewBadRequestError("invalid OAuth origin", err)
 	}
 
-	expectedPath := strings.TrimSuffix(base.EscapedPath(), "/") + protocol.OAuthAuthorizePath
-	if candidate.Scheme != base.Scheme || !strings.EqualFold(candidate.Host, base.Host) ||
-		candidate.EscapedPath() != expectedPath || candidate.Fragment != "" {
+	basePath := strings.TrimSuffix(base.EscapedPath(), "/")
+	if candidate.Scheme != base.Scheme || !strings.EqualFold(candidate.Host, base.Host) || candidate.Fragment != "" {
+		return nil, ringerrors.NewBadRequestError("OAuth redirect is outside the authorization operation", nil)
+	}
+
+	switch candidate.EscapedPath() {
+	case basePath + protocol.OAuthAuthorizePath:
+	case basePath + protocol.OAuthSigninPath:
+		if candidate.RawQuery != "" {
+			return nil, ringerrors.NewBadRequestError("OAuth sign-in page redirect has a query", nil)
+		}
+
+		req, err := generatedhttp.NewLoadOAuthSignInPageRequest(generatedServerBase(c.oauthBaseURI))
+		if err != nil {
+			return nil, ringerrors.NewNetworkError("failed to build OAuth sign-in page request", err)
+		}
+
+		req = req.WithContext(ctx)
+		req.Header.Set(string(generatedhttp.UserAgent), c.userAgent)
+
+		resp, err := authClient.Do(req)
+		if err != nil {
+			return nil, ringerrors.NewNetworkError("OAuth sign-in page request failed", err)
+		}
+
+		return resp, nil
+	default:
 		return nil, ringerrors.NewBadRequestError("OAuth redirect is outside the authorization operation", nil)
 	}
 

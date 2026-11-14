@@ -70,6 +70,21 @@ paths:
         '302': {$ref: '#/components/responses/OAuthRedirect'}
         default: {$ref: '#/components/responses/AuthFailure'}
   /oauth/v2/signin:
+    get:
+      operationId: loadOAuthSignInPage
+      summary: Load the OAuth sign-in page
+      tags: [Authentication]
+      description: Returns the sign-in page that carries the sign-in session's CSRF token. Ring redirects an authorization request here (seen 2026-11-13) and keeps the authorization parameters in the sign-in session cookie, so the page takes no query parameters.
+      servers: [{url: https://oauth.ring.com}]
+      security: []
+      responses:
+        '200':
+          description: Sign-in page
+          content:
+            text/html:
+              schema: {type: string, example: '<html><body>Synthetic sign-in page</body></html>', x-example-evidence: synthetic}
+        '302': {$ref: '#/components/responses/OAuthRedirect'}
+        default: {$ref: '#/components/responses/AuthFailure'}
     post:
       operationId: submitOAuthCredentials
       summary: Submit OAuth credentials
