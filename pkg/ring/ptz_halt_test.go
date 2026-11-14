@@ -20,7 +20,8 @@ func TestSessionEventPTZHaltReadsRecordedPanHalt(t *testing.T) {
 	}
 
 	want := ring.PTZHalt{
-		Axis: ring.PanAxis, Direction: ring.PanLeft, Reason: ring.PTZHaltLimitReached, SessionID: "session-4",
+		Axis: ring.PanAxis, Direction: ring.PTZDirection(ring.PanLeft), Reason: ring.PTZHaltLimitReached,
+		SessionID: "session-4",
 	}
 	if halt != want {
 		t.Fatalf("PTZHalt = %#v, want %#v", halt, want)
@@ -42,7 +43,31 @@ func TestSessionEventPTZHaltReadsWrappedLiveHalt(t *testing.T) {
 	}
 
 	want := ring.PTZHalt{
-		Axis: ring.PanAxis, Direction: ring.PanRight, Reason: ring.PTZHaltLimitReached, SessionID: "session-4",
+		Axis: ring.PanAxis, Direction: ring.PTZDirection(ring.PanRight), Reason: ring.PTZHaltLimitReached,
+		SessionID: "session-4",
+	}
+	if halt != want {
+		t.Fatalf("PTZHalt = %#v, want %#v", halt, want)
+	}
+}
+
+func TestSessionEventPTZHaltReadsWrappedLiveTiltHalt(t *testing.T) {
+	t.Parallel()
+
+	// A live camera sends the tilt halt wrapped like the pan halt (seen 2026-11-13).
+	event := ring.SessionEvent{Method: "rpc", Body: []byte(`{"doorbot_id":1000,"session_id":"session-2",` +
+		`"command":{"destination":"app","message":{"id":"command-23","jsonrpc":"2.0","method":"PTZ.Tilt.Halted",` +
+		`"params":{"direction":"DOWN","reason":"LIMIT_REACHED","sessionId":"session-4",` +
+		`"timestamp":2929592333000.0,"version":1.0}}}}`)}
+
+	halt, ok := event.PTZHalt()
+	if !ok {
+		t.Fatal("PTZHalt did not read the tilt halt")
+	}
+
+	want := ring.PTZHalt{
+		Axis: ring.TiltAxis, Direction: ring.PTZDirection(ring.TiltDown), Reason: ring.PTZHaltLimitReached,
+		SessionID: "session-4",
 	}
 	if halt != want {
 		t.Fatalf("PTZHalt = %#v, want %#v", halt, want)

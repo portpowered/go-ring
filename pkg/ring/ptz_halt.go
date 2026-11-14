@@ -10,20 +10,26 @@ import (
 // PTZHaltLimitReached is the halt reason Ring sends when a turn reaches the end of the camera's range.
 const PTZHaltLimitReached = "LIMIT_REACHED"
 
-// PTZHalt is Ring's notice that a continuous pan stopped on its own (PTZ.Pan.Halted). Ring sends it
-// when the camera reaches the end of its range (Reason PTZHaltLimitReached), so a caller can mark
-// that end as a known position. Other reasons may appear. Ring has not been seen to send a tilt halt.
+// PTZDirection names the end of an axis a PTZHalt reports: PanLeft or PanRight for the pan axis,
+// TiltUp or TiltDown for the tilt axis.
+type PTZDirection string
+
+// PTZHalt is Ring's notice that an axis sits at an end of its travel (PTZ.Pan.Halted or
+// PTZ.Tilt.Halted, Reason PTZHaltLimitReached). Measured on a pan-tilt camera on 2026-11-13, the
+// camera does not send it when the axis arrives: it sends one for each axis at an end when a later
+// PTZ command reaches it, such as the stop that ends the turn or a turn on the other axis. A caller
+// can take it as a known position at that moment, but not as the time the axis got there.
 type PTZHalt struct {
 	Axis      PTZAxis
-	Direction PanDirection
+	Direction PTZDirection
 	Reason    string
 	// SessionID is the control session whose turn halted.
 	SessionID string
 }
 
-// PTZHalt reads the event as Ring's PTZ.Pan.Halted notice. Ring sends the live notice wrapped as
-// command.message (seen on a camera 2026-11-13); recorded sessions also hold it unwrapped.
-// It reports false for any other event.
+// PTZHalt reads the event as Ring's PTZ.Pan.Halted or PTZ.Tilt.Halted notice. Ring sends the live
+// notice wrapped as command.message (seen on a camera 2026-11-13); recorded sessions also hold it
+// unwrapped. It reports false for any other event.
 func (e SessionEvent) PTZHalt() (PTZHalt, bool) {
 	var none PTZHalt
 
@@ -39,7 +45,7 @@ func (e SessionEvent) PTZHalt() (PTZHalt, bool) {
 	}
 
 	command, ok := haltCommand(body[protocol.FieldCommand])
-	if !ok || command.Method != protocol.RPCPanHalted {
+	if !ok {
 		return none, false
 	}
 
@@ -47,11 +53,25 @@ func (e SessionEvent) PTZHalt() (PTZHalt, bool) {
 	reason, _ := command.Params[protocol.FieldReason].(string)
 	sessionID, _ := command.Params[protocol.FieldSessionIDRPC].(string)
 
-	if PanDirection(direction) != PanLeft && PanDirection(direction) != PanRight {
+	axis, ok := haltAxis(command.Method, direction)
+	if !ok {
 		return none, false
 	}
 
-	return PTZHalt{Axis: PanAxis, Direction: PanDirection(direction), Reason: reason, SessionID: sessionID}, true
+	return PTZHalt{Axis: axis, Direction: PTZDirection(direction), Reason: reason, SessionID: sessionID}, true
+}
+
+// haltAxis reports the axis of a halt notice, if the method is one and the direction names an end
+// of that axis.
+func haltAxis(method, direction string) (PTZAxis, bool) {
+	switch method {
+	case protocol.RPCPanHalted:
+		return PanAxis, direction == protocol.PanLeft || direction == protocol.PanRight
+	case protocol.RPCTiltHalted:
+		return TiltAxis, direction == protocol.TiltUp || direction == protocol.TiltDown
+	default:
+		return "", false
+	}
 }
 
 // haltCommand decodes an rpc command, unwrapping command.message when Ring wraps it.

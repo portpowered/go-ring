@@ -1251,7 +1251,7 @@ components:
                           - {$ref: '#/components/schemas/RPCError'}
                           - allOf:
                               - {$ref: '#/components/schemas/PTZRPC'}
-                              - properties: {method: {const: PTZ.Pan.Halted}}
+                              - properties: {method: {enum: [PTZ.Pan.Halted, PTZ.Tilt.Halted]}}
         - if: {properties: {method: {const: sdp}}}
           then:
             properties:
@@ -1308,7 +1308,8 @@ components:
         id: {type: string}
         method:
           type: string
-          enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Tilt.Step, PTZ.Tilt.Continuous, PTZ.Pan.Halted]
+          description: The camera sends PTZ.Pan.Halted and PTZ.Tilt.Halted. It sends one for each axis that sits at an end of its travel when a later PTZ command reaches it, rather than when the axis arrives there; the direction names that end.
+          enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Tilt.Step, PTZ.Tilt.Continuous, PTZ.Pan.Halted, PTZ.Tilt.Halted]
         params:
           type: object
           required: [sessionId, timestamp, version, direction]
@@ -1322,11 +1323,11 @@ components:
       allOf:
         - if: {properties: {method: {enum: [PTZ.Pan.Step, PTZ.Pan.Continuous, PTZ.Pan.Halted]}}}
           then: {properties: {params: {properties: {direction: {enum: [LEFT, RIGHT]}}}}}
-        - if: {properties: {method: {enum: [PTZ.Tilt.Step, PTZ.Tilt.Continuous]}}}
+        - if: {properties: {method: {enum: [PTZ.Tilt.Step, PTZ.Tilt.Continuous, PTZ.Tilt.Halted]}}}
           then: {properties: {params: {properties: {direction: {enum: [UP, DOWN]}}}}}
         - if: {properties: {method: {enum: [PTZ.Pan.Continuous, PTZ.Tilt.Continuous]}}}
           then: {properties: {params: {required: [speed]}}}
-        - if: {properties: {method: {const: PTZ.Pan.Halted}}}
+        - if: {properties: {method: {enum: [PTZ.Pan.Halted, PTZ.Tilt.Halted]}}}
           then: {properties: {params: {required: [reason]}}}
     SessionBody:
       type: object
@@ -1346,7 +1347,7 @@ components:
           required: [sessionId, timestamp, version]
           properties:
             sessionId: {type: string}
-            timestamp: {type: number}
+            timestamp: {type: number, description: Camera time in milliseconds. The camera reports whole seconds.}
             version: {type: number, const: 1}
     RPCError:
       description: Synthetic error-handling contract; no RPC error was observed in these recordings.
