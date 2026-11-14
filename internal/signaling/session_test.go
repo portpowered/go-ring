@@ -419,7 +419,7 @@ func TestPingAfterCloseReportsTheClose(t *testing.T) {
 func TestPongThatCannotBeSentEndsTheSession(t *testing.T) {
 	t.Parallel()
 
-	refused := errors.New("synthetic write refused")
+	refused := terminalError("synthetic write refused")
 
 	session, err := NewSession(
 		context.Background(),
