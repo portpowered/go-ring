@@ -55,12 +55,14 @@ func unmarshalSignalingFrame(encoded []byte) (signaling.Message, error) {
 	return signaling.Message{Method: fields.method, DialogID: fields.dialogID, RIID: fields.riid, Body: fields.body}, nil
 }
 
-// unmarshalUnmodeledFrame passes through a well-formed frame whose method go-ring does not model,
-// such as Ring's stream_info, so that a new informational message from Ring does not end every
-// session on the connection. The frame still needs a method, a dialog_id and an object body; it
-// reaches the session that owns the dialog, and DeviceSession.Receive returns it with its method
-// and raw body. It reports false for a modeled or missing method, which the typed decoding
-// validates and reports.
+// unmarshalUnmodeledFrame passes through a well-formed frame whose method go-ring does not decode
+// as a typed inbound frame, so that an informational message from Ring does not end every session
+// on the connection. That covers methods go-ring does not model, such as Ring's stream_info, and
+// methods it models only for sending, such as camera_options and ping, which Ring also sends to
+// the client. The frame still needs a method, a dialog_id and an object body; it reaches the
+// session that owns the dialog, and DeviceSession.Receive returns it with its method and raw body.
+// It reports false for a typed inbound or missing method, which the typed decoding validates and
+// reports.
 func unmarshalUnmodeledFrame(encoded []byte) (signaling.Message, bool, error) {
 	var none signaling.Message
 
@@ -73,7 +75,7 @@ func unmarshalUnmodeledFrame(encoded []byte) (signaling.Message, bool, error) {
 		return none, false, nil
 	}
 
-	if _, modeled := generatedsignaling.ValuesToAnonymousSchema_1[fields.method]; modeled {
+	if isTypedInboundMethod(fields.method) {
 		return none, false, nil
 	}
 
@@ -92,6 +94,26 @@ func unmarshalUnmodeledFrame(encoded []byte) (signaling.Message, bool, error) {
 		RIID:     fields.riid,
 		Body:     fields.body,
 	}, true, nil
+}
+
+// isTypedInboundMethod reports whether validateInboundFrame decodes method as a typed inbound
+// frame. Keep it in step with that switch.
+func isTypedInboundMethod(method string) bool {
+	switch method {
+	case protocol.MethodCameraStarted,
+		protocol.MethodClose,
+		protocol.MethodICE,
+		protocol.MethodNotification,
+		protocol.MethodPong,
+		protocol.MethodPushEvent,
+		protocol.MethodPushSubscriptionAck,
+		protocol.MethodRPC,
+		protocol.MethodSDP,
+		protocol.MethodSessionCreated:
+		return true
+	default:
+		return false
+	}
 }
 
 type signalingEnvelopeFields struct {
