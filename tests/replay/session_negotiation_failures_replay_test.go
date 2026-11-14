@@ -3,6 +3,7 @@ package replay_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -16,6 +17,10 @@ const (
 	remoteCloseBeforeCameraScenario   = "remote close before camera start"
 	invalidRPCBeforeCameraScenario    = "invalid RPC before camera start"
 	cameraStartTimeoutScenario        = "camera start timeout"
+
+	// negotiationFailureWait only bounds a broken run. Each scenario ends on the peer's frames or,
+	// for the camera start timeout, on the cancellation that follows the peer's activation read.
+	negotiationFailureWait = 5 * time.Second
 )
 
 func TestRecordedSessionNegotiationFailureVariants(t *testing.T) {
@@ -32,19 +37,28 @@ func TestRecordedSessionNegotiationFailureVariants(t *testing.T) {
 		t.Run(scenario, func(t *testing.T) {
 			t.Parallel()
 
+			activated := make(chan struct{})
 			conn := identityPeer(t, func(connection *websocket.Conn, dialog string) {
-				serveRecordedNegotiationFailure(t, connection, dialog, recorded, scenario)
+				serveRecordedNegotiationFailure(t, connection, dialog, recorded, scenario, activated)
 			})
 
 			t.Cleanup(func() { _ = conn.Close() })
 
-			wait := 2 * time.Second
-			if scenario == cameraStartTimeoutScenario {
-				wait = 150 * time.Millisecond
-			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), wait)
+			ctx, cancel := context.WithTimeout(context.Background(), negotiationFailureWait)
 			t.Cleanup(cancel)
+
+			if scenario == cameraStartTimeoutScenario {
+				// The caller's context is what bounds the wait for camera_started. End it once the
+				// peer holds the activation, so the client is waiting for camera_started whatever
+				// the scheduling.
+				go func() {
+					select {
+					case <-activated:
+						cancel()
+					case <-ctx.Done():
+					}
+				}()
+			}
 
 			_, err := conn.StartDeviceSession(
 				ctx,
@@ -57,6 +71,10 @@ func TestRecordedSessionNegotiationFailureVariants(t *testing.T) {
 			if err == nil {
 				t.Fatal("invalid recorded negotiation variant accepted")
 			}
+
+			if scenario == cameraStartTimeoutScenario && !errors.Is(err, context.Canceled) {
+				t.Fatalf("camera start wait ended with %v, want the caller's cancellation", err)
+			}
 		})
 	}
 }
@@ -67,6 +85,7 @@ func serveRecordedNegotiationFailure(
 	dialog string,
 	recorded map[string]json.RawMessage,
 	scenario string,
+	activated chan<- struct{},
 ) {
 	t.Helper()
 
@@ -95,6 +114,7 @@ func serveRecordedNegotiationFailure(
 		return
 	}
 
+	close(activated)
 	serveCameraStartFailure(connection, dialog, createdBody, scenario)
 }
 

@@ -16,6 +16,11 @@ import (
 	"github.com/portpowered/go-ring/pkg/ring"
 )
 
+// recordedPeerFinishWait bounds how long a test waits for its peer handler after closing the
+// client. Closing the client ends any pending read, so only a script blocked elsewhere waits this
+// long.
+const recordedPeerFinishWait = 10 * time.Second
+
 // These are synthetic mutations of the recorded signaling envelope shapes.
 func identityPeer(t *testing.T, script func(*websocket.Conn, string)) *ring.SignalingConnection {
 	t.Helper()
@@ -102,6 +107,19 @@ func openRecordedPeerWithDone(
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// httptest.Server.Close does not wait for hijacked websocket handlers, so a peer script could
+	// still report through t after the test returned. Close the client side, which ends the
+	// script's pending read, and wait for the handler before the test completes.
+	t.Cleanup(func() {
+		_ = conn.Close()
+
+		select {
+		case <-serverDone:
+		case <-time.After(recordedPeerFinishWait):
+			t.Error("recorded peer handler did not finish after the signaling connection closed")
+		}
+	})
 
 	return conn, serverDone
 }
