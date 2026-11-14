@@ -162,9 +162,9 @@ func TestReadSignalingPassesUnmodeledMethodsToTheirDialog(t *testing.T) {
 	}
 }
 
-// Ring sends camera_options when a camera starts and can send ping, both methods go-ring models
-// only for sending. They reach their dialog instead of ending the connection.
-func TestReadSignalingPassesSendOnlyMethodsFromRingToTheirDialog(t *testing.T) {
+// Ring sends camera_options when a camera starts, and can send ping, which the session answers.
+// Both reach their dialog instead of ending the connection.
+func TestReadSignalingPassesCameraOptionsAndPingToTheirDialog(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {

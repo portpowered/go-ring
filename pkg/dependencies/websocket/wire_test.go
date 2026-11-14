@@ -229,6 +229,21 @@ func TestStreamOptionsFramePreservesAudioAndCombinedSettings(t *testing.T) {
 	}
 }
 
+func TestPongFrameCarriesTheSession(t *testing.T) {
+	t.Parallel()
+
+	encoded, err := writeAndReadSignalingMessage(t, signaling.Message{
+		Method:   protocol.MethodPong,
+		DialogID: "dialog-1",
+		RIID:     "",
+		Body:     json.RawMessage(`{"doorbot_id":1000,"session_id":"session"}`),
+	})
+	require.NoError(t, err)
+	require.JSONEq(t,
+		`{"method":"pong","dialog_id":"dialog-1","body":{"doorbot_id":1000,"session_id":"session"}}`,
+		string(encoded))
+}
+
 func TestStreamOptionsRejectsEmptySetting(t *testing.T) {
 	t.Parallel()
 

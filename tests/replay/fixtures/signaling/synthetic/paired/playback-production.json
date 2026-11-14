@@ -111,6 +111,36 @@
       "channel": "sessionPong"
     },
     {
+      "kind": "send",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "ping",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-playback"
+        }
+      },
+      "channel": "sessionServerPing"
+    },
+    {
+      "kind": "expect",
+      "frame": "text",
+      "template": true,
+      "body": {
+        "method": "pong",
+        "dialog_id": "$ref:dialog",
+        "riid": "route-1",
+        "body": {
+          "doorbot_id": 1000,
+          "session_id": "synthetic-playback"
+        }
+      },
+      "channel": "sessionClientPong"
+    },
+    {
       "kind": "expect",
       "frame": "text",
       "template": true,

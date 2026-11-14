@@ -342,6 +342,61 @@ func TestUnmatchedPongDoesNotExtendLiveness(t *testing.T) {
 	}
 }
 
+// Ring can ping the client. The session answers each ping with a pong for the same session, keeps
+// the ping out of its events, and counts it as liveness, so pings from Ring alone keep it open.
+func TestRingPingIsAnsweredAndKeepsTheSessionAlive(t *testing.T) {
+	t.Parallel()
+
+	session, clock, out := setupSession(t)
+	for range 2 * MissedHeartbeatIntervals {
+		clock.advance(10 * time.Second)
+
+		if got := nextMessage(t, out).Method; got != "ping" {
+			t.Fatalf("heartbeat sent %q, want ping", got)
+		}
+
+		err := session.Handle(
+			Message{Method: "ping", DialogID: "dialog", Body: json.RawMessage(`{"doorbot_id":1001,"session_id":"signal"}`)},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		pong := nextMessage(t, out)
+		if pong.Method != "pong" || pong.DialogID != "dialog" ||
+			string(pong.Body) != `{"doorbot_id":1001,"session_id":"signal"}` {
+			t.Fatalf("answer to Ring's ping = %#v (body %s)", pong, pong.Body)
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	event, err := session.Receive(ctx)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Receive = %#v, %v; want no event and the deadline", event, err)
+	}
+}
+
+func TestPingForAnotherSessionIsNotAnswered(t *testing.T) {
+	t.Parallel()
+
+	session, _, out := setupSession(t)
+
+	err := session.Handle(
+		Message{Method: "ping", DialogID: "dialog", Body: json.RawMessage(`{"doorbot_id":1001,"session_id":"other"}`)},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case message := <-out:
+		t.Fatalf("answered another session's ping with %#v", message)
+	case <-time.After(50 * time.Millisecond):
+	}
+}
+
 func TestExpiryCancelsBlockedWriteAndPendingRPC(t *testing.T) {
 	t.Parallel()
 

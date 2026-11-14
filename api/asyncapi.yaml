@@ -164,6 +164,20 @@ channels:
     messages:
       sessionPong:
         $ref: '#/components/messages/SessionPong'
+  sessionServerPing:
+    address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
+    messages:
+      sessionServerPing:
+        $ref: '#/components/messages/SessionServerPing'
+  sessionClientPong:
+    address: /ws
+    servers: [{$ref: '#/servers/ring'}]
+    bindings: *signalingWebSocketBinding
+    messages:
+      sessionClientPong:
+        $ref: '#/components/messages/SessionClientPong'
   liveView:
     address: /ws
     servers: [{$ref: '#/servers/ring'}]
@@ -313,6 +327,14 @@ operations:
     tags: [{name: Session}]
     channel:
       $ref: '#/channels/sessionPing'
+  receiveSessionPing:
+    action: receive
+    title: Receive a session heartbeat from the service
+    summary: The service checks that a signaling session remains active.
+    description: The service can ping the client with the device and session. The client replies with a pong for the same session, as Ring's own clients do.
+    tags: [{name: Session}]
+    channel:
+      $ref: '#/channels/sessionServerPing'
   sendSessionActivate:
     action: send
     title: Activate a device session
@@ -349,6 +371,14 @@ operations:
     tags: [{name: Session}]
     channel:
       $ref: '#/channels/sessionPong'
+  sendSessionPong:
+    action: send
+    title: Answer a session heartbeat from the service
+    summary: Confirms receipt of a ping from the service.
+    description: The pong identifies the device and session of the ping it answers.
+    tags: [{name: Session}]
+    channel:
+      $ref: '#/channels/sessionClientPong'
   sendLiveView:
     action: send
     title: Start a live view
@@ -573,6 +603,20 @@ components:
       examples:
         - name: syntheticSessionPong
           summary: Synthetic session pong
+          payload: {method: pong, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
+    SessionServerPing:
+      payload: {$ref: '#/components/schemas/SessionPingFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionServerPing
+          summary: Synthetic ping from the service
+          payload: {method: ping, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
+    SessionClientPong:
+      payload: {$ref: '#/components/schemas/SessionPongFrame'}
+      x-example-evidence: synthetic
+      examples:
+        - name: syntheticSessionClientPong
+          summary: Synthetic pong answering a ping from the service
           payload: {method: pong, dialog_id: synthetic-dialog, body: {doorbot_id: 1, session_id: synthetic-session}}
     LiveView:
       payload: {$ref: '#/components/schemas/LiveViewFrame'}
@@ -1162,7 +1206,7 @@ components:
       properties:
         method:
           type: string
-          enum: [activate_session, camera_options, close, ice, live_view, mic_enable, notification, ping, playback, push_heartbeat, push_subscribe, push_unsubscribe, rpc, sdp, stream_options]
+          enum: [activate_session, camera_options, close, ice, live_view, mic_enable, notification, ping, playback, pong, push_heartbeat, push_subscribe, push_unsubscribe, rpc, sdp, stream_options]
         dialog_id: {type: string}
         riid: {type: string}
         body: {type: object}
@@ -1231,7 +1275,7 @@ components:
       properties:
         method:
           type: string
-          enum: [camera_started, close, ice, notification, pong, push_event, push_subscription_ack, rpc, sdp, session_created]
+          enum: [camera_started, close, ice, notification, ping, pong, push_event, push_subscription_ack, rpc, sdp, session_created]
         dialog_id: {type: string}
         riid: {type: string}
         body: {type: object}

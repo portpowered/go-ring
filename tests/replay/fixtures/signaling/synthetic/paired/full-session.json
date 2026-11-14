@@ -13,6 +13,8 @@
     {"channel":"sessionNotification","kind":"send","frame":"text","body":{"method":"notification","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","is_ok":true,"text":"accepted"}}},
     {"channel":"sessionPing","kind":"expect","frame":"text","body":{"method":"ping","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
     {"channel":"sessionPong","kind":"send","frame":"text","body":{"method":"pong","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
+    {"channel":"sessionServerPing","kind":"send","frame":"text","body":{"method":"ping","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
+    {"channel":"sessionClientPong","kind":"expect","frame":"text","body":{"method":"pong","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},
     {"channel":"playbackClose","kind":"expect","frame":"text","body":{"method":"close","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session","reason":{"code":0,"text":"client_closed"}}}},
     {"channel":"liveView","kind":"expect","frame":"text","body":{"method":"live_view","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"sdp":"synthetic-live-offer","stream_options":{"audio_enabled":false,"video_enabled":true},"type":"offer"}}},
     {"channel":"sessionCreated","kind":"send","frame":"text","body":{"method":"session_created","dialog_id":"synthetic-dialog","body":{"doorbot_id":1000,"session_id":"synthetic-session"}}},

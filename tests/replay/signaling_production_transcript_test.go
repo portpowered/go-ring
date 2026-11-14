@@ -110,8 +110,9 @@ func TestProductionPlaybackSignalingTranscript(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "notification", event.Method)
 	require.Contains(t, string(event.Body), "accepted")
-	// The playback heartbeat is a real one-second timer owned by the session.
-	require.NoError(t, peer.WaitStep(5, 2*time.Second))
+	// The playback heartbeat is a real one-second timer owned by the session. Ring's ping after
+	// the pong must be answered with a pong before the session closes.
+	require.NoError(t, peer.WaitStep(7, 2*time.Second))
 	require.NoError(t, session.Close())
 	require.NoError(t, peer.AssertComplete(3*time.Second))
 	require.NoError(t, transport.AssertConsumed())
@@ -147,6 +148,8 @@ func TestProductionLiveSignalingTranscript(t *testing.T) {
 	result, err := session.PanStep(ctx, ring.PanStepRequest{Direction: ring.PanRight})
 	require.NoError(t, err)
 	require.Equal(t, "synthetic-control", result.SessionID)
+	// Ring pings after the PTZ reply; the session answers with a pong before it closes.
+	require.NoError(t, peer.WaitStep(11, 2*time.Second))
 	require.NoError(t, session.Close())
 	require.NoError(t, peer.AssertComplete(3*time.Second))
 	require.NoError(t, transport.AssertConsumed())
