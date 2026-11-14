@@ -203,7 +203,6 @@ func TestRecordedPublicPlaybackAnswerICEAndClose(t *testing.T) {
 	closeReceived := make(chan struct{})
 	allowPeerClose := make(chan struct{})
 
-	t.Cleanup(func() { close(allowPeerClose) })
 	conn := openRecordedPeer(t, func(connection *websocket.Conn) {
 		request := readSignalRequest(t, connection, "playback")
 		if request == nil {
@@ -228,6 +227,8 @@ func TestRecordedPublicPlaybackAnswerICEAndClose(t *testing.T) {
 		<-allowPeerClose
 	})
 
+	// Registered after the peer so it runs before the peer helper waits for this script.
+	t.Cleanup(func() { close(allowPeerClose) })
 	t.Cleanup(func() { _ = conn.Close() })
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -528,10 +529,16 @@ func TestRecordedPublicPlaybackRemoteCloseAndValidation(t *testing.T) {
 	}
 }
 
+// The cycle takes two real one-second ping intervals, the shortest interval go-ring accepts. The wait only
+// bounds a broken run, so it leaves room for slow race-enabled runners.
+const playbackPingPongWait = 20 * time.Second
+
 func TestRecordedPublicPlaybackPingPongLifecycle(t *testing.T) {
 	t.Parallel()
 
 	conn := openRecordedPeer(t, func(connection *websocket.Conn) {
+		_ = connection.SetReadDeadline(time.Now().Add(playbackPingPongWait))
+
 		request := readSignalRequest(t, connection, "playback")
 		if request == nil {
 			return
@@ -578,7 +585,7 @@ func TestRecordedPublicPlaybackPingPongLifecycle(t *testing.T) {
 
 	defer func() { _ = conn.Close() }()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), playbackPingPongWait)
 	defer cancel()
 
 	session, err := conn.StartPlayback(
