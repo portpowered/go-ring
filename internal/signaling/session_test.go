@@ -397,6 +397,64 @@ func TestPingForAnotherSessionIsNotAnswered(t *testing.T) {
 	}
 }
 
+func TestPingAfterCloseReportsTheClose(t *testing.T) {
+	t.Parallel()
+
+	session, _, _ := setupSession(t)
+
+	err := session.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = session.Handle(
+		Message{Method: "ping", DialogID: "dialog", Body: json.RawMessage(`{"doorbot_id":1001,"session_id":"signal"}`)},
+	)
+	if !errors.Is(err, ErrClosed) {
+		t.Fatalf("ping after close = %v, want ErrClosed", err)
+	}
+}
+
+// A pong that cannot be sent ends the session, the same as a heartbeat ping that cannot be sent.
+func TestPongThatCannotBeSentEndsTheSession(t *testing.T) {
+	t.Parallel()
+
+	refused := errors.New("synthetic write refused")
+
+	session, err := NewSession(
+		context.Background(),
+		SessionConfig{
+			DeviceID:  1001,
+			DialogID:  "dialog",
+			SignalID:  "signal",
+			ControlID: "control",
+			Heartbeat: 10 * time.Second,
+			Clock:     newClock(),
+			Send:      func(context.Context, Message) error { return refused },
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = session.Close() })
+
+	err = session.Handle(
+		Message{Method: "ping", DialogID: "dialog", Body: json.RawMessage(`{"doorbot_id":1001,"session_id":"signal"}`)},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err = session.Wait(ctx)
+	if !errors.Is(err, refused) {
+		t.Fatalf("session ended with %v, want the refused write", err)
+	}
+}
+
 func TestExpiryCancelsBlockedWriteAndPendingRPC(t *testing.T) {
 	t.Parallel()
 
