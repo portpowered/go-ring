@@ -45,6 +45,7 @@ const (
 	RPCTiltStep                     = "PTZ.Tilt.Step"
 	RPCTiltContinuous               = "PTZ.Tilt.Continuous"
 	RPCPanHalted                    = "PTZ.Pan.Halted"
+	RPCTiltHalted                   = "PTZ.Tilt.Halted"
 	JSONRPCVersion                  = "2.0"
 	PTZVersion                      = 1
 	PTZMaxSpeed                     = 1
