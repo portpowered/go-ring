@@ -16,9 +16,12 @@ import (
 )
 
 type pkceMockTransport struct {
-	state    string
-	requests []*http.Request
-	bodies   []string
+	// signInRedirect answers a new authorization with a redirect to the
+	// sign-in page, as Ring does since 2026-11-13.
+	signInRedirect bool
+	state          string
+	requests       []*http.Request
+	bodies         []string
 }
 
 func (m *pkceMockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -51,7 +54,13 @@ func (m *pkceMockTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		req.URL.Query().Get("response_type") == "code":
 		m.state = req.URL.Query().Get("state")
 
+		if m.signInRedirect {
+			return respond(http.StatusFound, "", http.Header{"Location": []string{oauthSignInPath}}), nil
+		}
+
 		return respond(http.StatusOK, `<script id="oauth-args">{"csrf-token":"csrf-value"}</script>`, nil), nil
+	case req.Method == http.MethodGet && req.URL.Path == oauthSignInPath && m.signInRedirect:
+		return respond(http.StatusOK, `<script>window.args={"locale":"en-us","csrf-token":"csrf-value"}</script>`, nil), nil
 	case req.Method == http.MethodPost && req.URL.Path == "/oauth/v2/signin":
 		return respond(http.StatusPreconditionFailed, syntheticEmailTwoFactorState, nil), nil
 	case req.Method == http.MethodPost && req.URL.Path == "/oauth/v2/2fa/verify":
@@ -109,6 +118,31 @@ func TestAuthenticate_PKCEWith2FA(t *testing.T) {
 	assert.Contains(t, transport.bodies[2], "2fa_code=123456")
 	assert.Contains(t, transport.bodies[4], "grant_type=authorization_code")
 	assert.Contains(t, transport.bodies[5], "grant_type=refresh_token")
+}
+
+func TestAuthenticate_PKCEFollowsRedirectToSignInPage(t *testing.T) {
+	t.Parallel()
+
+	transport := &pkceMockTransport{signInRedirect: true}
+	client, err := ring.NewClient(ring.WithHTTPClient(&http.Client{Transport: transport}))
+	require.NoError(t, err)
+
+	defer func() { _ = client.Close() }()
+
+	ctx := newTestContext()
+	flow, err := client.NewLoginSession(ring.LoginSessionRequest{Username: "testuser", Password: "testpass"})
+	require.NoError(t, err)
+
+	defer func() { _ = flow.Close() }()
+
+	require.NoError(t, flow.Request2FACode(ctx))
+	authResp, err := flow.Authenticate(ctx, ring.CompleteLoginRequest{OTPCode: "123456"})
+	require.NoError(t, err)
+	assert.Equal(t, "pkce-access-refreshed", authResp.AccessToken)
+	require.Len(t, transport.requests, 7)
+	assert.Equal(t, http.MethodGet+" "+oauthSignInPath+" ",
+		transport.requests[1].Method+" "+transport.requests[1].URL.Path+" "+transport.requests[1].URL.RawQuery)
+	assert.Contains(t, transport.bodies[2], "csrf-token=csrf-value")
 }
 
 func TestAuthenticate_Success(t *testing.T) {

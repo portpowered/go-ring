@@ -48,6 +48,8 @@ func TestOAuthAuthorizationRejectsUnmodeledRedirectsBeforeNetwork(t *testing.T) 
 	}
 }
 
+const signInPageToken = "sign-in-page-token"
+
 func TestInitiatePKCEFollowsRedirectToSignInPage(t *testing.T) {
 	t.Parallel()
 
@@ -69,7 +71,7 @@ func TestInitiatePKCEFollowsRedirectToSignInPage(t *testing.T) {
 			StatusCode: http.StatusOK,
 			Header:     http.Header{"Content-Type": []string{"text/html"}},
 			Body: io.NopCloser(strings.NewReader(
-				`<script>window.args={"locale":"en-us","csrf-token":"page-token"}</script>`,
+				`<script>window.args={"locale":"en-us","csrf-token":"` + signInPageToken + `"}</script>`,
 			)),
 			Request: req,
 		}, nil
@@ -80,7 +82,7 @@ func TestInitiatePKCEFollowsRedirectToSignInPage(t *testing.T) {
 		t.Fatalf("initiatePKCE() error = %v", err)
 	}
 
-	if client.pendingPKCE == nil || client.pendingPKCE.csrfToken != "page-token" {
+	if client.pendingPKCE == nil || client.pendingPKCE.csrfToken != signInPageToken {
 		t.Fatalf("initiatePKCE() pending = %#v, want the sign-in page's CSRF token", client.pendingPKCE)
 	}
 

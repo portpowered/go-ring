@@ -19,47 +19,78 @@ import (
 func (c *Client) sendOAuthAuthorize(
 	ctx context.Context, authClient *http.Client, currentURL string,
 ) (*http.Response, error) {
+	candidate, signInPage, err := c.oauthRedirectTarget(currentURL)
+	if err != nil {
+		return nil, err
+	}
+
+	var req *http.Request
+
+	if signInPage {
+		req, err = generatedhttp.NewLoadOAuthSignInPageRequest(generatedServerBase(c.oauthBaseURI))
+	} else {
+		params, paramsErr := oauthAuthorizeParams(candidate.Query())
+		if paramsErr != nil {
+			return nil, paramsErr
+		}
+
+		req, err = generatedhttp.NewBeginOrContinueOAuthAuthorizationRequest(generatedServerBase(c.oauthBaseURI), params)
+	}
+
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("failed to build OAuth authorization request", err)
+	}
+
+	req = req.WithContext(ctx)
+	req.Header.Set(string(generatedhttp.UserAgent), c.userAgent)
+
+	resp, err := authClient.Do(req)
+	if err != nil {
+		return nil, ringerrors.NewNetworkError("OAuth authorization request failed", err)
+	}
+
+	return resp, nil
+}
+
+// oauthRedirectTarget checks that a URL is the authorization route or the
+// bare sign-in page on the configured OAuth origin, and reports which.
+func (c *Client) oauthRedirectTarget(currentURL string) (*url.URL, bool, error) {
 	candidate, err := url.Parse(currentURL)
 	if err != nil {
-		return nil, ringerrors.NewBadRequestError("invalid OAuth authorization URL", err)
+		return nil, false, ringerrors.NewBadRequestError("invalid OAuth authorization URL", err)
 	}
 
 	base, err := url.Parse(c.oauthBaseURI)
 	if err != nil {
-		return nil, ringerrors.NewBadRequestError("invalid OAuth origin", err)
+		return nil, false, ringerrors.NewBadRequestError("invalid OAuth origin", err)
+	}
+
+	outside := ringerrors.NewBadRequestError("OAuth redirect is outside the authorization operation", nil)
+	if candidate.Scheme != base.Scheme || !strings.EqualFold(candidate.Host, base.Host) || candidate.Fragment != "" {
+		return nil, false, outside
 	}
 
 	basePath := strings.TrimSuffix(base.EscapedPath(), "/")
-	if candidate.Scheme != base.Scheme || !strings.EqualFold(candidate.Host, base.Host) || candidate.Fragment != "" {
-		return nil, ringerrors.NewBadRequestError("OAuth redirect is outside the authorization operation", nil)
-	}
 
 	switch candidate.EscapedPath() {
 	case basePath + protocol.OAuthAuthorizePath:
+		return candidate, false, nil
 	case basePath + protocol.OAuthSigninPath:
 		if candidate.RawQuery != "" {
-			return nil, ringerrors.NewBadRequestError("OAuth sign-in page redirect has a query", nil)
+			return nil, false, ringerrors.NewBadRequestError("OAuth sign-in page redirect has a query", nil)
 		}
 
-		req, err := generatedhttp.NewLoadOAuthSignInPageRequest(generatedServerBase(c.oauthBaseURI))
-		if err != nil {
-			return nil, ringerrors.NewNetworkError("failed to build OAuth sign-in page request", err)
-		}
-
-		req = req.WithContext(ctx)
-		req.Header.Set(string(generatedhttp.UserAgent), c.userAgent)
-
-		resp, err := authClient.Do(req)
-		if err != nil {
-			return nil, ringerrors.NewNetworkError("OAuth sign-in page request failed", err)
-		}
-
-		return resp, nil
+		return candidate, true, nil
 	default:
-		return nil, ringerrors.NewBadRequestError("OAuth redirect is outside the authorization operation", nil)
+		return nil, false, outside
 	}
+}
 
-	query := candidate.Query()
+// oauthAuthorizeParams reads an authorization redirect's query into the
+// schema-defined parameters, refusing values the schema does not allow.
+func oauthAuthorizeParams(
+	query url.Values,
+) (*generatedhttp.BeginOrContinueOAuthAuthorizationParams, error) {
 	for key, values := range query {
 		if len(values) != 1 || !oauthAuthorizeParameter(key) {
 			return nil, ringerrors.NewBadRequestError("OAuth redirect has an unsupported query parameter", nil)
@@ -109,11 +140,14 @@ func (c *Client) sendOAuthAuthorize(
 	}
 
 	var model *generatedhttp.ClientDeviceModel
+
 	if raw := value("device_model"); raw != nil {
-		model, err = parseClientDeviceModel(*raw)
-		if err != nil {
-			return nil, err
+		parsed, parseErr := parseClientDeviceModel(*raw)
+		if parseErr != nil {
+			return nil, parseErr
 		}
+
+		model = parsed
 	}
 
 	params := &generatedhttp.BeginOrContinueOAuthAuthorizationParams{
@@ -134,20 +168,7 @@ func (c *Client) sendOAuthAuthorize(
 		HardwareId:          value("hardware_id"),
 	}
 
-	req, err := generatedhttp.NewBeginOrContinueOAuthAuthorizationRequest(generatedServerBase(c.oauthBaseURI), params)
-	if err != nil {
-		return nil, ringerrors.NewNetworkError("failed to build OAuth authorization request", err)
-	}
-
-	req = req.WithContext(ctx)
-	req.Header.Set(string(generatedhttp.UserAgent), c.userAgent)
-
-	resp, err := authClient.Do(req)
-	if err != nil {
-		return nil, ringerrors.NewNetworkError("OAuth authorization request failed", err)
-	}
-
-	return resp, nil
+	return params, nil
 }
 
 func parseClientDeviceModel(value string) (*generatedhttp.ClientDeviceModel, error) {

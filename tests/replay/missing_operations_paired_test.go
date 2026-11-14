@@ -241,20 +241,24 @@ func TestMissingOperationsPairedReplay(t *testing.T) {
 	}
 }
 
+// syntheticAccept sets the Accept header, and a synthetic bearer token for
+// every origin other than OAuth.
+func syntheticAccept(value string) generatedhttp.RequestEditorFn {
+	return func(_ context.Context, request *http.Request) error {
+		request.Header.Set("Accept", value)
+
+		if request.URL.Host != "oauth.ring.com" {
+			request.Header.Set("Authorization", "Bearer synthetic-access")
+		}
+
+		return nil
+	}
+}
+
 func missingOperationCalls() map[string]func(*generatedhttp.Client) (*http.Response, error) {
 	ctx := context.Background()
 	form := "application/x-www-form-urlencoded"
-	accept := func(value string) generatedhttp.RequestEditorFn {
-		return func(_ context.Context, request *http.Request) error {
-			request.Header.Set("Accept", value)
-
-			if request.URL.Host != "oauth.ring.com" {
-				request.Header.Set("Authorization", "Bearer synthetic-access")
-			}
-
-			return nil
-		}
-	}
+	accept := syntheticAccept
 	calls := map[string]func(*generatedhttp.Client) (*http.Response, error){
 		"beginOrContinueOAuthAuthorization": func(c *generatedhttp.Client) (*http.Response, error) {
 			return c.BeginOrContinueOAuthAuthorization(ctx, nil, accept("text/html"))
