@@ -455,6 +455,13 @@ type ClientInterface interface {
 	// Corresponds with GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId).
 	BeginOrContinueOAuthAuthorization(ctx context.Context, params *BeginOrContinueOAuthAuthorizationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// LoadOAuthSignInPage Load the OAuth sign-in page
+	//
+	// Returns the sign-in page that carries the sign-in session's CSRF token. Ring redirects an authorization request here (seen 2026-11-13) and keeps the authorization parameters in the sign-in session cookie, so the page takes no query parameters.
+	//
+	// Corresponds with GET /oauth/v2/signin (the `LoadOAuthSignInPage` operationId).
+	LoadOAuthSignInPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SubmitOAuthCredentialsWithBody Submit OAuth credentials
 	//
 	// Submits sign-in credentials to continue OAuth authorization. The response may indicate that a two-factor code is required.
@@ -1299,6 +1306,23 @@ func (c *Client) VerifyOAuthTwoFactorCodeWithFormdataBody(ctx context.Context, b
 // Corresponds with GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId).
 func (c *Client) BeginOrContinueOAuthAuthorization(ctx context.Context, params *BeginOrContinueOAuthAuthorizationParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBeginOrContinueOAuthAuthorizationRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// LoadOAuthSignInPage Load the OAuth sign-in page
+//
+// Returns the sign-in page that carries the sign-in session's CSRF token. Ring redirects an authorization request here (seen 2026-11-13) and keeps the authorization parameters in the sign-in session cookie, so the page takes no query parameters.
+//
+// Corresponds with GET /oauth/v2/signin (the `LoadOAuthSignInPage` operationId).
+func (c *Client) LoadOAuthSignInPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLoadOAuthSignInPageRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -3286,6 +3310,33 @@ func NewBeginOrContinueOAuthAuthorizationRequest(server string, params *BeginOrC
 	return req, nil
 }
 
+// NewLoadOAuthSignInPageRequest constructs an http.Request for the LoadOAuthSignInPage method
+func NewLoadOAuthSignInPageRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/oauth/v2/signin")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewSubmitOAuthCredentialsRequestWithFormdataBody calls the generic SubmitOAuthCredentials builder with application/x-www-form-urlencoded body
 func NewSubmitOAuthCredentialsRequestWithFormdataBody(server string, body SubmitOAuthCredentialsFormdataRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -3792,6 +3843,15 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /oauth/v2/authorize (the `BeginOrContinueOAuthAuthorization` operationId).
 	BeginOrContinueOAuthAuthorizationWithResponse(ctx context.Context, params *BeginOrContinueOAuthAuthorizationParams, reqEditors ...RequestEditorFn) (*BeginOrContinueOAuthAuthorizationResponse, error)
+
+	// LoadOAuthSignInPageWithResponse Load the OAuth sign-in page
+	//
+	// Returns the sign-in page that carries the sign-in session's CSRF token. Ring redirects an authorization request here (seen 2026-11-13) and keeps the authorization parameters in the sign-in session cookie, so the page takes no query parameters.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /oauth/v2/signin (the `LoadOAuthSignInPage` operationId).
+	LoadOAuthSignInPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*LoadOAuthSignInPageResponse, error)
 
 	// SubmitOAuthCredentialsWithBodyWithResponse Submit OAuth credentials
 	//
@@ -5461,6 +5521,54 @@ func (r BeginOrContinueOAuthAuthorizationResponse) ContentType() string {
 	return ""
 }
 
+// LoadOAuthSignInPageResponse302Headers the declared response headers of an HTTP 302 response for LoadOAuthSignInPage
+type LoadOAuthSignInPageResponse302Headers struct {
+	Location string
+}
+
+type LoadOAuthSignInPageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *AuthFailure
+	// Headers302 the parsed response headers for an HTTP 302 response
+	Headers302 *LoadOAuthSignInPageResponse302Headers
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r LoadOAuthSignInPageResponse) GetJSONDefault() *AuthFailure {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r LoadOAuthSignInPageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r LoadOAuthSignInPageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LoadOAuthSignInPageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r LoadOAuthSignInPageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // SubmitOAuthCredentialsResponse302Headers the declared response headers of an HTTP 302 response for SubmitOAuthCredentials
 type SubmitOAuthCredentialsResponse302Headers struct {
 	Location string
@@ -6226,6 +6334,21 @@ func (c *ClientWithResponses) BeginOrContinueOAuthAuthorizationWithResponse(ctx 
 		return nil, err
 	}
 	return ParseBeginOrContinueOAuthAuthorizationResponse(rsp)
+}
+
+// LoadOAuthSignInPageWithResponse Load the OAuth sign-in page
+//
+// Returns the sign-in page that carries the sign-in session's CSRF token. Ring redirects an authorization request here (seen 2026-11-13) and keeps the authorization parameters in the sign-in session cookie, so the page takes no query parameters.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /oauth/v2/signin (the `LoadOAuthSignInPage` operationId).
+func (c *ClientWithResponses) LoadOAuthSignInPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*LoadOAuthSignInPageResponse, error) {
+	rsp, err := c.LoadOAuthSignInPage(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLoadOAuthSignInPageResponse(rsp)
 }
 
 // SubmitOAuthCredentialsWithBodyWithResponse Submit OAuth credentials
@@ -7315,6 +7438,48 @@ func ParseBeginOrContinueOAuthAuthorizationResponse(rsp *http.Response) (*BeginO
 	switch {
 	case rsp.StatusCode == 302:
 		var headers BeginOrContinueOAuthAuthorizationResponse302Headers
+		if values := rsp.Header.Values("Location"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uri-reference"}); err != nil {
+				return nil, err
+			}
+			headers.Location = value
+		}
+		response.Headers302 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseLoadOAuthSignInPageResponse parses an HTTP response from a LoadOAuthSignInPageWithResponse call
+func ParseLoadOAuthSignInPageResponse(rsp *http.Response) (*LoadOAuthSignInPageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LoadOAuthSignInPageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 302:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest AuthFailure
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 302:
+		var headers LoadOAuthSignInPageResponse302Headers
 		if values := rsp.Header.Values("Location"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uri-reference"}); err != nil {
