@@ -22,7 +22,7 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
         with:
           go-version: ${{ matrix.go }}
       - run: go build ./...
@@ -62,7 +62,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
         with:
           go-version-file: go.mod
       - name: Check public Go API compatibility
@@ -75,7 +75,7 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
         with:
           go-version-file: go.mod
       - name: Build downstream consumer without a receiver replace
@@ -118,7 +118,7 @@ jobs:
           repository: portpowered/api-docs-website-github-action
           ref: f7bb9340238620b058d6bff9fb953a9efb2f3bd5
           path: .api-docs-action
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
         with:
           go-version-file: go.mod
           cache: true
@@ -158,7 +158,7 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
         with:
           go-version: '1.24.x'
       - name: Replay coverage (primary compatibility gate)
@@ -197,7 +197,7 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
         with:
           go-version: '1.24.x'
       - run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.0
@@ -209,7 +209,7 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
         with:
           go-version: '1.26.x'
       - uses: actions/setup-node@v4
@@ -232,7 +232,7 @@ jobs:
       GOTOOLCHAIN: local
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
         with:
           go-version: '1.24.x'
       - uses: actions/setup-node@v4
